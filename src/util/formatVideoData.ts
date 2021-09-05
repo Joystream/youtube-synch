@@ -22,7 +22,7 @@ const formatVideoData = (videos: youtube_v3.Schema$PlaylistItem[]) => {
       title: video?.snippet?.title ?? "",
       description: video?.snippet?.description ?? "",
       thumbnail: selectHighestQualityThumbnail(video?.snippet?.thumbnails),
-      publishedAt: video?.contentDetails?.videoPublishedAt ?? "",
+      publishedAt: video?.snippet?.publishedAt ?? "",
       videoId: video?.contentDetails?.videoId ?? ""
     };
   });
@@ -30,4 +30,4 @@ const formatVideoData = (videos: youtube_v3.Schema$PlaylistItem[]) => {
   return formattedVideos;
 };
 
-export default formatVideoData;
+export { formatVideoData, selectHighestQualityThumbnail };
