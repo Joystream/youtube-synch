@@ -1,28 +1,36 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { DocumentClient } from "aws-sdk/lib/dynamodb/document_client";
-import { youtube_v3 } from 'googleapis/build/src/apis/youtube/v3';
+import { youtube_v3 } from "googleapis/build/src/apis/youtube/v3";
+import axios from "axios";
 
-import getAllPublicYoutubeVideos from '../util/getAllPublicYoutubeVideos';
-import formatVideoData from '../util/formatVideoData';
+import getAllPublicYoutubeVideos from "../util/getAllPublicYoutubeVideos";
+import { formatVideoData } from "../util/formatVideoData";
+import { HTTPException } from "../exceptions/HTTPException";
 
 type requestUserData = {
   youtubeChannelId?: string;
   youtubeUploadsPlaylistId?: string;
 };
 
-const createUser = (dynamoDB: DocumentClient, dynamoDBTableName: string, youtubeApi: youtube_v3.Youtube) => {
-  return async (req: Request, res: Response) => {
+const MAX_HUB_LEASE_SECONDS_VALUE = 828000;
+
+const createUser = (
+  dynamoDB: DocumentClient,
+  dynamoDBTableName: string,
+  youtubeApi: youtube_v3.Youtube
+) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     const { youtubeChannelId, youtubeUploadsPlaylistId }: requestUserData = req.body;
 
     const videos: youtube_v3.Schema$PlaylistItem[] = [];
 
     if (!(youtubeChannelId && youtubeUploadsPlaylistId)) {
-      res.status(400);
-      res.send({
-        text:
-          "Data missing. Make sure to include all of the necessary data in the json body.",
-      });
-      return;
+      return next(
+        new HTTPException(
+          400,
+          "Data missing. Make sure to include all of the necessary data in the json body."
+        )
+      );
     }
 
     try {
@@ -33,33 +41,63 @@ const createUser = (dynamoDB: DocumentClient, dynamoDBTableName: string, youtube
 
       videos.push(...userPublicYoutubeVideos);
     } catch (error) {
-      console.log(error);
-      res.status(500);
-      res.send({
-        text:
-          "There's been a problem while trying to retrieve videos from youtube's API.",
-        youtubeAPIError: error,
-      });
-      return;
+      return next(
+        new HTTPException(500, "Error while trying to retrieve videos from youtube's API.", error)
+      );
     }
 
     try {
+      // TODO:
+      // 400KB is the max allowed amount per request. If the data is larger than that then we
+      //  should probably split it in some way. This is approximately more than 400 videos.
       await dynamoDB
         .put({
           TableName: dynamoDBTableName,
           Item: {
             youtubeChannelId,
             youtubeUploadsPlaylistId,
-            videos: formatVideoData(videos),
+            videos: formatVideoData(videos)
           },
-          ConditionExpression: "attribute_not_exists(youtubeChannelId)",
+          ConditionExpression: "attribute_not_exists(youtubeChannelId)"
         })
         .promise();
     } catch (error) {
-      console.log(error);
-      res.status(500);
-      res.send(error);
-      return;
+      return next(
+        new HTTPException(500, "Error while trying to add new user to the database.", error)
+      );
+    }
+
+    const callbackEndpoint = req.protocol + "://" + req.get("host") + "/youtube-api-subscription";
+
+    const params = {
+      "hub.callback": callbackEndpoint,
+      "hub.mode": "subscribe",
+      "hub.topic": `https://www.youtube.com/xml/feeds/videos.xml?channel_id=${youtubeChannelId}`,
+      "hub.lease_seconds": `${MAX_HUB_LEASE_SECONDS_VALUE}`,
+      "hub.secret": "",
+      "hub.verify": "sync",
+      "hub.verify_token": ""
+    };
+
+    const data = (Object.keys(params) as Array<keyof typeof params>)
+      .map(key => `${key}=${encodeURIComponent(params[key])}`)
+      .join("&");
+
+    try {
+      await axios({
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        data,
+        url: "https://pubsubhubbub.appspot.com/subscribe"
+      });
+    } catch (error) {
+      return next(
+        new HTTPException(
+          500,
+          "Error while trying to setup youtube push notifications for this user",
+          error
+        )
+      );
     }
 
     // TODO:
@@ -72,8 +110,8 @@ const createUser = (dynamoDB: DocumentClient, dynamoDBTableName: string, youtube
         youtubeChannelId,
         youtubeUploadsPlaylistId,
         numberOfVideos: videos.length,
-        videos,
-      },
+        videos
+      }
     });
   };
 };
