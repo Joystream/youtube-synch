@@ -2,9 +2,10 @@ import { NextFunction, Request, Response } from "express";
 import { DocumentClient } from "aws-sdk/lib/dynamodb/document_client";
 import { youtube_v3 } from "googleapis/build/src/apis/youtube/v3";
 
-import { User } from "../types";
 import { selectHighestQualityThumbnail } from "../util/formatVideoData";
-import { HTTPException } from "../exceptions/HTTPException";
+
+import { User } from "../types";
+import HTTPException from "../exceptions/HTTPException";
 
 const addVideoToUser = (
   dynamoDB: DocumentClient,
@@ -12,8 +13,6 @@ const addVideoToUser = (
   youtubeApi: youtube_v3.Youtube
 ) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    console.log(JSON.stringify(req.body, null, 2));
-
     const notificationData = req.body?.feed?.entry?.[0];
 
     const videoId = notificationData?.["yt:videoid"]?.[0];
@@ -70,12 +69,15 @@ const addVideoToUser = (
       await dynamoDB
         .update({
           TableName: dynamoDBTableName,
-          Key: {
-            youtubeChannelId: channelId
+          Key: { youtubeChannelId: channelId },
+          UpdateExpression:
+            "set #videos = list_append(if_not_exists(#videos, :empty_list), :value)",
+          ExpressionAttributeNames: {
+            "#videos": "videos"
           },
-          UpdateExpression: `set videos = :value`,
           ExpressionAttributeValues: {
-            ":value": [...user.videos, formattedVideo]
+            ":value": [formattedVideo],
+            ":empty_list": []
           }
         })
         .promise();

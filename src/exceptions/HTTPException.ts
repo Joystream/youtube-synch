@@ -10,4 +10,4 @@ class HTTPException extends Error {
   }
 }
 
-export { HTTPException };
+export default HTTPException;
