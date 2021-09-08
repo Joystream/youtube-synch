@@ -1,16 +1,20 @@
-import { youtube_v3 } from 'googleapis/build/src/apis/youtube/v3';
+import { youtube_v3 } from "googleapis/build/src/apis/youtube/v3";
 
 const MAX_VIDEO_AMOUNT = 50;
 
 type videoBatchData = {
   videos: youtube_v3.Schema$PlaylistItem[];
   nextPageToken?: string | null;
-}
+};
 
-const getNextVideoBatch = async (youtubeApi: youtube_v3.Youtube, playlistId: string, nextPageToken?: string) => {
+const getNextVideoBatch = async (
+  youtubeApi: youtube_v3.Youtube,
+  playlistId: string,
+  nextPageToken?: string
+) => {
   let batchData: videoBatchData = {
     videos: [],
-    nextPageToken: "",
+    nextPageToken: ""
   };
 
   // TODO:
@@ -19,7 +23,7 @@ const getNextVideoBatch = async (youtubeApi: youtube_v3.Youtube, playlistId: str
     part: ["snippet", "contentDetails"],
     playlistId,
     maxResults: MAX_VIDEO_AMOUNT,
-    pageToken: nextPageToken,
+    pageToken: nextPageToken
   });
 
   const { data } = request;
@@ -37,11 +41,7 @@ const getAllPublicYoutubeVideos = async (youtubeApi: youtube_v3.Youtube, playlis
   const allPublicYoutubeVideos: youtube_v3.Schema$PlaylistItem[] = [];
 
   while (true) {
-    const { videos, nextPageToken } = await getNextVideoBatch(
-      youtubeApi,
-      playlistId,
-      nextToken
-    );
+    const { videos, nextPageToken } = await getNextVideoBatch(youtubeApi, playlistId, nextToken);
 
     allPublicYoutubeVideos.push(...videos);
 

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { HTTPException } from "../exceptions/HTTPException";
+
+import HTTPException from "../exceptions/HTTPException";
 
 type ResponseObject = {
   status: number;

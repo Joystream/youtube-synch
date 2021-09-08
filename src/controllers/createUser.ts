@@ -5,12 +5,9 @@ import axios from "axios";
 
 import getAllPublicYoutubeVideos from "../util/getAllPublicYoutubeVideos";
 import { formatVideoData } from "../util/formatVideoData";
-import { HTTPException } from "../exceptions/HTTPException";
 
-type requestUserData = {
-  youtubeChannelId?: string;
-  youtubeUploadsPlaylistId?: string;
-};
+import { User } from "../types";
+import HTTPException from "../exceptions/HTTPException";
 
 const MAX_HUB_LEASE_SECONDS_VALUE = 828000;
 
@@ -20,15 +17,20 @@ const createUser = (
   youtubeApi: youtube_v3.Youtube
 ) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const { youtubeChannelId, youtubeUploadsPlaylistId }: requestUserData = req.body;
+    const {
+      youtubeChannelId,
+      youtubeUploadsPlaylistId,
+      joystreamChannelId
+    }: Partial<User> = req.body;
 
     const videos: youtube_v3.Schema$PlaylistItem[] = [];
 
-    if (!(youtubeChannelId && youtubeUploadsPlaylistId)) {
+    if (!(youtubeChannelId && youtubeUploadsPlaylistId && joystreamChannelId)) {
       return next(
         new HTTPException(
           400,
-          "Data missing. Make sure to include all of the necessary data in the json body."
+          "Data missing. Make sure to include all of the necessary data in the json body.",
+          { youtubeChannelId, youtubeUploadsPlaylistId, joystreamChannelId }
         )
       );
     }
@@ -48,14 +50,17 @@ const createUser = (
 
     try {
       // TODO:
-      // 400KB is the max allowed amount per request. If the data is larger than that then we
-      //  should probably split it in some way. This is approximately more than 400 videos.
+      // 400KB is the max allowed amount per dynamoDB column, we need to find another way of uploading
+      // more than this amount. Probably a different approach to table design would be best.
       await dynamoDB
         .put({
           TableName: dynamoDBTableName,
           Item: {
             youtubeChannelId,
             youtubeUploadsPlaylistId,
+            joystreamChannelId,
+            // After adding synching functionality this line will need to be changed!
+            lastSynchedVideo: null,
             videos: formatVideoData(videos)
           },
           ConditionExpression: "attribute_not_exists(youtubeChannelId)"
