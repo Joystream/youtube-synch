@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { DocumentClient } from "aws-sdk/lib/dynamodb/document_client";
 
-import completeDBScan from "../util/completeDBScan";
+import completeDBScan from "../util/db/completeDBScan";
 
 import HTTPException from "../exceptions/HTTPException";
 
@@ -17,7 +17,7 @@ const getAllUsers = (dynamoDB: DocumentClient, dynamoDBTableName: string) => {
 
     res.status(200);
     res.send({
-      data: items
+      data: items.filter(item => item.SK === "profile")
     });
   };
 };

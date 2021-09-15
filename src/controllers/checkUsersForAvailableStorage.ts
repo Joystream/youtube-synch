@@ -1,10 +1,10 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { ApiPromise } from "@polkadot/api";
 
-import completeDBScan from "../util/completeDBScan";
-import findUsersWithFreeSpace from '../util/findUsersWithFreeSpace';
+import completeDBScan from "../util/db/completeDBScan";
+import findUsersWithFreeSpace from "../util/general/findUsersWithFreeSpace";
 
-import { User } from "../types";
+import { User, DBUser } from "../types";
 
 const checkUsersForAvailableStorage = async (
   joyApi: ApiPromise,
@@ -15,7 +15,8 @@ const checkUsersForAvailableStorage = async (
   let usersWithFreeSpace: User[] = [];
 
   try {
-    allUsers = (await completeDBScan(dynamoDB, dynamoDBTableName)) as User[];
+    const dbItems = (await completeDBScan(dynamoDB, dynamoDBTableName)) as DBUser[];
+    allUsers = dbItems.filter(item => item.SK === "profile");
   } catch (e) {
     console.log(e);
   }
