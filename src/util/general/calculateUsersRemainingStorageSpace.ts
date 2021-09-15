@@ -2,7 +2,7 @@ import { ApiPromise } from "@polkadot/api";
 import { StorageObjectOwner } from "@joystream/types/storage";
 import { Voucher } from "@joystream/types/augment";
 
-import { User } from "../types";
+import { User } from "../../types";
 
 const calculateUsersRemainingStorageSpace = async (joyApi: ApiPromise, user: User) => {
   const storageObjectOwner = new StorageObjectOwner(joyApi.registry, {

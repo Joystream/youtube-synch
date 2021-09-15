@@ -3,8 +3,9 @@ import { DocumentClient } from "aws-sdk/lib/dynamodb/document_client";
 import { youtube_v3 } from "googleapis/build/src/apis/youtube/v3";
 import axios from "axios";
 
-import getAllPublicYoutubeVideos from "../util/getAllPublicYoutubeVideos";
-import { formatVideoData } from "../util/formatVideoData";
+import getAllPublicYoutubeVideos from "../util/general/getAllPublicYoutubeVideos";
+import { formatVideoData } from "../util/general/formatVideoData";
+import addNewUserToDB from "../util/db/addNewUserToDB";
 
 import { User } from "../types";
 import HTTPException from "../exceptions/HTTPException";
@@ -48,24 +49,23 @@ const createUser = (
       );
     }
 
+    const formattedVideos = formatVideoData(videos, youtubeChannelId);
+
     try {
       // TODO:
-      // 400KB is the max allowed amount per dynamoDB column, we need to find another way of uploading
-      // more than this amount. Probably a different approach to table design would be best.
-      await dynamoDB
-        .put({
-          TableName: dynamoDBTableName,
-          Item: {
-            youtubeChannelId,
-            youtubeUploadsPlaylistId,
-            joystreamChannelId,
-            // After adding synching functionality this line will need to be changed!
-            lastSynchedVideo: null,
-            videos: formatVideoData(videos)
-          },
-          ConditionExpression: "attribute_not_exists(youtubeChannelId)"
-        })
-        .promise();
+      // Last synched video using first video atm. May need to be
+      // changed after implementing synchronization.
+      await addNewUserToDB(
+        dynamoDB,
+        dynamoDBTableName,
+        {
+          youtubeChannelId,
+          youtubeUploadsPlaylistId,
+          joystreamChannelId,
+          lastSynchedVideo: formattedVideos[0].videoId
+        },
+        formattedVideos
+      );
     } catch (error) {
       return next(
         new HTTPException(500, "Error while trying to add new user to the database.", error)
@@ -114,8 +114,8 @@ const createUser = (
       data: {
         youtubeChannelId,
         youtubeUploadsPlaylistId,
-        numberOfVideos: videos.length,
-        videos
+        numberOfVideos: formattedVideos.length,
+        videos: formattedVideos
       }
     });
   };

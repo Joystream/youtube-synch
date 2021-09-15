@@ -1,6 +1,7 @@
 import { youtube_v3 } from "googleapis/build/src/apis/youtube/v3";
 
 type Video = {
+  youtubeChannelId: string;
   title: string;
   description: string;
   thumbnail: youtube_v3.Schema$Thumbnail | null | undefined;
@@ -9,12 +10,19 @@ type Video = {
   isSynched: boolean;
 };
 
+interface DBVideo extends Omit<Video, "videoId"> {
+  SK: string;
+}
+
 type User = {
   joystreamChannelId: number;
   youtubeChannelId: string;
   youtubeUploadsPlaylistId: string;
-  lastSynchedVideo: Video;
-  videos: Array<Video>;
+  lastSynchedVideo: string;
 };
 
-export { Video, User };
+interface DBUser extends User{
+  SK: "profile";
+}
+
+export { Video, User, DBVideo, DBUser };

@@ -19,9 +19,10 @@ const selectHighestQualityThumbnail = (thumbnailsObject?: youtube_v3.Schema$Thum
   }
 };
 
-const formatVideoData = (videos: youtube_v3.Schema$PlaylistItem[]) => {
+const formatVideoData = (videos: youtube_v3.Schema$PlaylistItem[], youtubeChannelId: string) => {
   const formattedVideos = videos.map(video => {
     return {
+      youtubeChannelId,
       title: video?.snippet?.title ?? "",
       description: video?.snippet?.description ?? "",
       thumbnail: selectHighestQualityThumbnail(video?.snippet?.thumbnails),
