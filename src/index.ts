@@ -20,9 +20,9 @@ const main = async () => {
   app.use(router(dynamoDB, dynamoDBTableName, youtubeApi));
   app.use(errorMiddleware);
 
-  // cron.schedule("*/1 * * * *", () =>
-  //   checkUsersForAvailableStorage(joyApi, dynamoDB, dynamoDBTableName)
-  // );
+  cron.schedule("*/1 * * * *", () =>
+    checkUsersForAvailableStorage(joyApi, dynamoDB, dynamoDBTableName)
+  );
 
   app.listen(port, () => {
     console.log("Server listening on PORT: ", port);
