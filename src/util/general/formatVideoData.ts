@@ -12,9 +12,9 @@ const selectHighestQualityThumbnail = (thumbnailsObject?: youtube_v3.Schema$Thum
 
   const availableQualityTypes = Object.keys(thumbnailsObject);
 
-  for (let index = 0; index < YOUTUBE_THUMBNAIL_QUALITY_TYPES.length; index++) {
-    if (availableQualityTypes.includes(YOUTUBE_THUMBNAIL_QUALITY_TYPES[index])) {
-      return thumbnailsObject[YOUTUBE_THUMBNAIL_QUALITY_TYPES[index]];
+  for(let qualityType of YOUTUBE_THUMBNAIL_QUALITY_TYPES) {
+    if(availableQualityTypes.includes(qualityType)) {
+      return thumbnailsObject[qualityType];
     }
   }
 };

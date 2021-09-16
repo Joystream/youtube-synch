@@ -17,10 +17,9 @@ const getNextVideoBatch = async (
     nextPageToken: ""
   };
 
-  // TODO:
-  // All the youtube api queries can be optimized with the fields property.
   let request = await youtubeApi.playlistItems.list({
     part: ["snippet", "contentDetails"],
+    fields: "items(snippet(title,description,thumbnails,publishedAt),contentDetails(videoId))",
     playlistId,
     maxResults: MAX_VIDEO_AMOUNT,
     pageToken: nextPageToken
