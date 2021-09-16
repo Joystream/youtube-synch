@@ -44,7 +44,8 @@ const addVideoToUser = (
     try {
       const { data } = await youtubeApi.videos.list({
         id: videoId,
-        part: ["snippet"]
+        part: ["snippet"],
+        fields: "items(id, snippet(title, description, publishedAt, thumbnails))"
       });
 
       video = data?.items?.[0] as youtube_v3.Schema$Video;

@@ -1,5 +1,8 @@
 import { DocumentClient } from "aws-sdk/lib/dynamodb/document_client";
 
+// TODO:
+// The usage of this function should be removed as scans are to be avoided when
+// working with dynamo. A better solution needs to be found. Works fine with less data.
 const completeDBScan = async (dynamoDB: DocumentClient, dynamoDBTableName: string) => {
   let result = [];
   let nextPageKey: DocumentClient.Key | undefined;
