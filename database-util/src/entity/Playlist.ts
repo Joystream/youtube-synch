@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "typeorm";
 import { Channel } from "./Channel";
 
-@Entity({ name: "Playlists" })
+@Entity({ name: "playlists" })
 export class Playlist {
 
     @PrimaryGeneratedColumn("uuid")

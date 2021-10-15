@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 
 type UserState = "New" | "Verified" | "Blocked";
 
-@Entity({ name: "Users" })
+@Entity({ name: "users" })
 export class User {
 
     @PrimaryGeneratedColumn("uuid")

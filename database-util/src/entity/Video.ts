@@ -3,7 +3,7 @@ import { Playlist } from './Playlist';
 
 type VideoStatus = "New" | "Downloading" | "Error" | "Ready";
 
-@Entity({ name: "Videos" })
+@Entity({ name: "videos" })
 export class Video {
 
     @PrimaryGeneratedColumn("uuid")
