@@ -6,10 +6,12 @@
       ],
       "target": "es5",
       "module": "commonjs",
+      "declaration": true,
       "moduleResolution": "node",
       "outDir": "./build",
       "emitDecoratorMetadata": true,
       "experimentalDecorators": true,
-      "sourceMap": true
+      "sourceMap": true,
+      "skipLibCheck": true
    }
 }
