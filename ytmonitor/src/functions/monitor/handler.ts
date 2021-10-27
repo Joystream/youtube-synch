@@ -15,4 +15,3 @@ const monitor: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event)
 }
 
 export const main = middyfy(monitor);
-
