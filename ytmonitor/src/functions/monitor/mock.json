@@ -2,5 +2,5 @@
     "headers": {
         "Content-Type": "application/json"
     },
-    "body": "{\"username\": \"GoogleDevelopers\"}"
+    "body": "{\"username\": \"GoogleDevelopers\", \"playlistId\": \"UU_x5XG1OV2P6uZZ5FSM9Ttw\", \"channelId\": \"UC_x5XG1OV2P6uZZ5FSM9Ttw\"}"
 }
