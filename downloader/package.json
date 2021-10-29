@@ -1,0 +1,22 @@
+{
+  "name": "downloader",
+  "version": "1.0.0",
+  "description": "",
+  "dependencies": {
+    "aws-sdk": "^2.1017.0",
+    "youtube-dl-exec": "^1.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.6",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.4.4"
+  },
+  "scripts": {
+    "build": "rimraf ./build && tsc",
+    "test-local": "npm run build && node build/index.js",
+    "build-docker": "npm run build && docker build -t downloader .",
+    "test-docker": "docker run --rm --network host downloader https://www.youtube.com/watch?v=qroG2u4A2Q0"
+  },
+  "author": "",
+  "license": "ISC"
+}
