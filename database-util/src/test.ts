@@ -4,6 +4,10 @@ import { User } from "./entity/User";
 import { Channel } from "./entity/Channel";
 import { Playlist } from "./entity/Playlist";
 import { Video } from "./entity/Video";
+import { UserRepository } from "./repository/User";
+import { ChannelRepository } from "./repository/Channel";
+import { PlaylistRepository } from "./repository/Playlist";
+import { VideoRepository } from "./repository/Video";
 
 const thumbnails = {
   thumDefault: "{}",
@@ -13,16 +17,16 @@ const thumbnails = {
   thumMaxRes: "{}"
 };
 
-const createUser = (manager: EntityManager) => {
-  return manager.create(User, {
+const createUser = (userRepository: UserRepository) => {
+  return userRepository.create({
     email: "user123@email.com",
     status: "New",
     ytUserName: "ilovecookies56"
   });
 };
 
-const createChannel = (manager: EntityManager, user: User) => {
-  return manager.create(Channel, {
+const createChannel = (channelRepository: ChannelRepository, user: User) => {
+  return channelRepository.create({
     user,
     ytChannelId: "1",
     title: "youtuber1",
@@ -34,8 +38,8 @@ const createChannel = (manager: EntityManager, user: User) => {
   });
 };
 
-const createPlaylist = (manager: EntityManager, channel: Channel) => {
-  return manager.create(Playlist, {
+const createPlaylist = (playlistRepository: PlaylistRepository, channel: Channel) => {
+  return playlistRepository.create({
     channel,
     ytPlaylistId: "1",
     title: "My cool playlist",
@@ -44,8 +48,8 @@ const createPlaylist = (manager: EntityManager, channel: Channel) => {
   });
 };
 
-const createVideo = (manager: EntityManager, playlist: Playlist) => {
-  return manager.create(Video, {
+const createVideo = (videoRepository: VideoRepository, playlist: Playlist) => {
+  return videoRepository.create({
     playlist,
     ytPlaylistId: "1",
     ytVideoId: "3000",
@@ -67,44 +71,50 @@ const createVideo = (manager: EntityManager, playlist: Playlist) => {
 
 const test = async () => {
   const connection = await createConnection();
-  const { manager } = connection;
+  const userRepository = connection.getCustomRepository(UserRepository);
+  const channelRepository = connection.getCustomRepository(ChannelRepository);
+  const playlistRepository = connection.getCustomRepository(PlaylistRepository);
+  const videoRepository = connection.getCustomRepository(VideoRepository);
 
   // Creating each entity and searching for them based on their id.
 
-  let user = createUser(manager);
-  await manager.save(user);
+  let user = createUser(userRepository);
+  await userRepository.save(user);
 
-  let channel = createChannel(manager, user);
-  await manager.save(channel);
+  let channel = createChannel(channelRepository, user);
+  await channelRepository.save(channel);
 
-  let playlist = createPlaylist(manager, channel);
-  await manager.save(playlist);
+  let playlist = createPlaylist(playlistRepository, channel);
+  await playlistRepository.save(playlist);
 
-  let video = createVideo(manager, playlist);
-  await manager.save(video);
+  let video = createVideo(videoRepository, playlist);
+  await videoRepository.save(video);
 
-  console.log("Created user:\n", await manager.findOne(User, user.id), "\n");
-  console.log("Created channel:\n", await manager.findOne(Channel, channel.id), "\n");
-  console.log("Created playlist:\n", await manager.findOne(Playlist, playlist.id), "\n");
-  console.log("Created video:\n", await manager.findOne(Video, video.id), "\n");
+  console.log("Created user:\n", await userRepository.findOne(user.id), "\n");
+  console.log("Created channel:\n", await channelRepository.findOne(channel.id), "\n");
+  console.log("Created playlist:\n", await playlistRepository.findOne(playlist.id), "\n");
+  console.log("Created video:\n", await videoRepository.findOne(video.id), "\n");
 
   // Update entities and search for all entities of given type.
   
-  await manager.update(User, { id: user.id }, { ytUserName: "idontlovecookiesanymore:(" });
-  console.log("Loaded users after update:\n", await manager.find(User), "\n");
+  await userRepository.update({ id: user.id }, { ytUserName: "idontlovecookiesanymore:(" });
+  console.log("Loaded users after update:\n", await userRepository.find(), "\n");
 
-  await manager.update(Channel, { id: channel.id }, { description: "Joystream is better than Youtube. I'm moving there now ;)" });
-  console.log("Loaded channels after update:\n", await manager.find(Channel), "\n");
+  await channelRepository.update({ id: channel.id }, { description: "Joystream is better than Youtube. I'm moving there now ;)" });
+  console.log("Loaded channels after update:\n", await channelRepository.find(), "\n");
 
-  await manager.update(Playlist, { id: playlist.id }, { description: "Only my favorite songs." });
-  console.log("Loaded playlists after update:\n", await manager.find(Playlist), "\n");
+  await playlistRepository.update({ id: playlist.id }, { description: "Only my favorite songs." });
+  console.log("Loaded playlists after update:\n", await playlistRepository.find(), "\n");
 
-  await manager.update(Video, { id: video.id }, { description: "I don't like cookies anymore, watch my new videos for update!" });
-  console.log("Loaded videos after update:\n", await manager.find(Video), "\n");
+  await videoRepository.update({ id: video.id }, { description: "I don't like cookies anymore, watch my new videos for update!" });
+  console.log("Loaded videos after update:\n", await videoRepository.find(), "\n");
 
   // Remove all the created entities.
 
-  await manager.remove([user, channel, playlist, video]);
+  await videoRepository.remove(video);
+  await playlistRepository.remove(playlist);
+  await channelRepository.remove(channel);
+  await userRepository.remove(user);
 
   connection.close();
 };
