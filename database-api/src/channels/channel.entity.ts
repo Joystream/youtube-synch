@@ -1,21 +1,21 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "typeorm";
-import { Channel } from "./Channel";
+import { User } from "../users/user.entity";
 
-@Entity({ name: "playlists" })
-export class Playlist {
+@Entity({ name: "channels" })
+export class Channel {
 
     @PrimaryGeneratedColumn("uuid")
     id: string;
 
-    @ManyToOne(() => Channel, channel => channel)
-    @JoinColumn({ name: "channelId" })
-    channel: Channel;
+    @ManyToOne(() => User, user => user)
+    @JoinColumn({ name: "userId" })
+    user: User;
 
     @Column()
-    channelId: string;
+    userId: string;
     
     @Column("text")
-    ytPlaylistId: string;
+    ytChannelId: string;
 
     @Column("text")
     title: string;
@@ -37,4 +37,13 @@ export class Playlist {
 
     @Column("text")
     thumMaxRes: string;
+
+    @Column("int")
+    views: number;
+
+    @Column("int")
+    subscribers: number;
+
+    @Column("int")
+    videoCount: number;
 }
