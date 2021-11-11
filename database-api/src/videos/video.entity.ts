@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "typeorm";
-import { Playlist } from './Playlist';
+import { Playlist } from '../playlists/playlist.entity';
 
 type VideoStatus = "New" | "Downloading" | "Error" | "Ready";
 
