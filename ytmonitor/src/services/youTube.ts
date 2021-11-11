@@ -7,5 +7,6 @@ export const getChannels = async (username:string) =>{
     const requestParams = {
         url
     }
-    return await executeHttp('get',requestParams);
+    return {getChannels:''}
+    //return await executeHttp('get',requestParams);
 }
