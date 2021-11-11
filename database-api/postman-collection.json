@@ -1,0 +1,493 @@
+{
+	"info": {
+		"_postman_id": "b08d4638-d989-44ff-b21a-cbe28c859d6b",
+		"name": "YT-Synch-DB-Api",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get all users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user by id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/users/user-id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"users",
+								"user-id"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create user",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user123@email.com\",\n    \"status\": \"New\",\n    \"ytUserName\": \"ilovecookies56\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update user",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user123@email.com\",\n    \"status\": \"New\",\n    \"ytUserName\": \"idontlovecookies13\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/users/user-id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"users",
+								"user-id"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete user",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/users/user-id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"users",
+								"user-id"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Channels",
+			"item": [
+				{
+					"name": "Get all channels",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/channels",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"channels"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get channel by id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/channels/channel-id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"channels",
+								"channel-id"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create channel",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"user-id\",\n    \"channel\": {\n        \"ytChannelId\": \"1\",\n        \"title\": \"youtuber1\",\n        \"description\": \"I make youtube videos.\",\n        \"thumDefault\": \"{}\",\n        \"thumMedium\": \"{}\",\n        \"thumHigh\": \"{}\",\n        \"thumStandard\": \"{}\",\n        \"thumMaxRes\": \"{}\",\n        \"views\": 1000,\n        \"subscribers\": 13,\n        \"videoCount\": 12\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/channels",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"channels"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update channel",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ytChannelId\": \"1\",\n    \"title\": \"youtuber1\",\n    \"description\": \"I don't make youtube videos :P\",\n    \"thumDefault\": \"{}\",\n    \"thumMedium\": \"{}\",\n    \"thumHigh\": \"{}\",\n    \"thumStandard\": \"{}\",\n    \"thumMaxRes\": \"{}\",\n    \"views\": 1000,\n    \"subscribers\": 13,\n    \"videoCount\": 12\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/channels/channel-id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"channels",
+								"channel-id"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete channel",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/channels/channel-id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"channels",
+								"channel-id"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Playlists",
+			"item": [
+				{
+					"name": "Get all playlists",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/playlists",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"playlists"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get playlist by id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/playlists/playlist-id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"playlists",
+								"playlist-id"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create playlist",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"channelId\": \"channel-id\",\n    \"playlist\": {\n        \"ytPlaylistId\": \"1\",\n        \"title\": \"My cool playlist\",\n        \"description\": \"Favorite songs and videos\",\n        \"thumDefault\": \"{}\",\n        \"thumMedium\": \"{}\",\n        \"thumHigh\": \"{}\",\n        \"thumStandard\": \"{}\",\n        \"thumMaxRes\": \"{}\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/playlists",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"playlists"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update playlist",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ytPlaylistId\": \"1\",\n    \"title\": \"My cool playlist\",\n    \"description\": \"Only songs here :)\",\n    \"thumDefault\": \"{}\",\n    \"thumMedium\": \"{}\",\n    \"thumHigh\": \"{}\",\n    \"thumStandard\": \"{}\",\n    \"thumMaxRes\": \"{}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/playlists/playlist-id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"playlists",
+								"playlist-id"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete playlist",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/playlists/playlist-id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"playlists",
+								"playlist-id"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Videos",
+			"item": [
+				{
+					"name": "Get all videos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/videos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"videos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get video by id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/videos/video-id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"videos",
+								"video-id"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create video",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"playlistId\": \"playlist-id\",\n    \"video\": {\n        \"ytPlaylistId\": \"1\",\n        \"ytVideoId\": \"3000\",\n        \"ytResourceId\": \"120\",\n        \"thumDefault\": \"{}\",\n        \"thumMedium\": \"{}\",\n        \"thumHigh\": \"{}\",\n        \"thumStandard\": \"{}\",\n        \"thumMaxRes\": \"{}\",\n        \"ytUrl\": \"www.youtube.com/video?id=3000\",\n        \"title\": \"My cool video\",\n        \"description\": \"Me eating cookies :)\",\n        \"status\": \"New\",\n        \"bucket\": \"bucket\",\n        \"viewCount\": 332,\n        \"likeCount\": 30,\n        \"dislikeCount\": 1,\n        \"favoriteCount\": 1,\n        \"commentCount\": 13,\n        \"discoveryDate\": \"2021-10-12\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/videos",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"videos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update video",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ytPlaylistId\": \"1\",\n    \"ytVideoId\": \"3000\",\n    \"ytResourceId\": \"120\",\n    \"thumDefault\": \"{}\",\n    \"thumMedium\": \"{}\",\n    \"thumHigh\": \"{}\",\n    \"thumStandard\": \"{}\",\n    \"thumMaxRes\": \"{}\",\n    \"ytUrl\": \"www.youtube.com/video?id=3000\",\n    \"title\": \"My cool video\",\n    \"description\": \"Me eating brownies now..\",\n    \"status\": \"New\",\n    \"bucket\": \"bucket\",\n    \"viewCount\": 332,\n    \"likeCount\": 30,\n    \"dislikeCount\": 1,\n    \"favoriteCount\": 1,\n    \"commentCount\": 13,\n    \"discoveryDate\": \"2021-10-12\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/videos/video-id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"videos",
+								"video-id"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete video",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/videos/video-id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"videos",
+								"video-id"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
