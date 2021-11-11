@@ -1,25 +1,33 @@
 import AWS from 'aws-sdk';
 import fs from 'fs';
-import {config, s3Config} from './awsConfig';
+import {config, bucket} from './awsConfig';
 import path from "path";
-AWS.config.update(config);
+const s3 = new AWS.S3(config);
 
-export const uploadFile = async (fileName: string) =>{
-    const s3 = new AWS.S3();
+console.log(config, bucket);
+
+export const uploadFile = async (fileName: string):Promise<any> => {
     const fileStream = fs.createReadStream(fileName);
-
     fileStream.on('error', function(err) {
         throw err;
     });
 
     const uploadParams = {
-        Bucket: s3Config.bucket,
+        Bucket: bucket,
         Key: path.basename(fileName),
         Body: fileStream
     }
 
-    console.log('READY TO UPLOAD', uploadParams);
-
-    // const uploadResult = await s3.upload(uploadParams);
-    // console.log("Upload: ", uploadResult);
+    return new Promise((resolve, reject) => {
+        console.log('READY TO UPLOAD', uploadParams.Bucket, uploadParams.Key);
+        const uploadResult = s3.upload(uploadParams, (err: any, data: unknown)=>{
+            fileStream.destroy();
+            if (err) {
+                console.log("Upload failed: ", err);
+                return reject(err);
+            }
+            console.log("Upload complete: ", data);
+            return resolve(data);
+        });
+    });
 }

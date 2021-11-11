@@ -1,6 +1,9 @@
+const dotenv = require('dotenv');
+const env = process.env.ENV || 'local';
+dotenv.config({path: `./${env}.env`});
+
 import youtubedl from 'youtube-dl-exec';
 import { uploadFile } from './aws';
-import {start} from "repl";
 
 const getFileName = (output: string):string => {
     const startMarker = '[download] Destination:';
@@ -23,15 +26,7 @@ const executeDownload = () => {
     const videoUrl = process.argv[2];
     console.log('DOWNLOADING VIDEO:', videoUrl);
 
-    const dl = youtubedl(videoUrl, {
-//     dumpSingleJson: true,
-//     noWarnings: true,
-//     noCallHome: true,
-//     noCheckCertificate: true,
-//     preferFreeFormats: true,
-//     youtubeSkipDashManifest: true,
-//     referer: 'https://www.youtube.com/'
-    }).then(async output => {
+    const dl = youtubedl(videoUrl, {}).then(async output => {
         console.log(output.toString());
         const fileName = getFileName(output.toString());
         await uploadFile(fileName);
