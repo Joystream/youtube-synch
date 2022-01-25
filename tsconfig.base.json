@@ -14,7 +14,10 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@joystream/monitor": ["packages/monitor/index.ts"],
+      "@joystream/ytube": ["packages/ytube/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }

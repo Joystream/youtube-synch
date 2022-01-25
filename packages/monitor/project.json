@@ -1,0 +1,34 @@
+{
+  "root": "packages/monitor",
+  "sourceRoot": "packages/monitor/src",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/monitor/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/packages/monitor"],
+      "options": {
+        "jestConfig": "packages/monitor/jest.config.js",
+        "passWithNoTests": true
+      }
+    },
+    "build": {
+      "executor": "@nrwl/node:package",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/monitor",
+        "tsConfig": "packages/monitor/tsconfig.lib.json",
+        "packageJson": "packages/monitor/package.json",
+        "main": "packages/monitor/src/index.ts",
+        "assets": ["packages/monitor/*.md"]
+      }
+    }
+  },
+  "tags": []
+}

@@ -1,4 +1,9 @@
 {
   "version": 2,
-  "projects": {}
+  "projects": {
+    "api": "packages/api",
+    "monitor": "packages/monitor",
+    "ui": "packages/ui",
+    "ytube": "packages/ytube"
+  }
 }

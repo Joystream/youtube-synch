@@ -1,0 +1,6 @@
+config:
+  aws:region: eu-west-1
+  app:youtube:
+    clientId: 79131856482-fo4akvhmeokn24dvfo83v61g03c6k7o0.apps.googleusercontent.com
+    clientSecret: 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
+    redirectUri: http://localhost:3000
