@@ -3,3 +3,5 @@ export {UploadService} from '../src/lib/uploadService'
 export {MessageBus} from './lib/messageBus'
 export * from '../src/lib/domain'
 export * from '../src/lib/database'
+
+// just to test nx: affected
