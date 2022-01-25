@@ -25,7 +25,7 @@
         "outputPath": "dist/packages/monitor",
         "tsConfig": "packages/monitor/tsconfig.lib.json",
         "packageJson": "packages/monitor/package.json",
-        "main": "packages/monitor/src/index.ts",
+        "main": "packages/monitor/index.ts",
         "assets": ["packages/monitor/*.md"]
       }
     }

@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: '16'
       - run: npm install
-      - run: npx nx affected --target=build --parallel --max-parallel=3
+      - run: npx nx affected --target=build --parallel --max-parallel=3 --exclude monitor
       - run: npx nx affected --target=test --parallel --max-parallel=2
   pr:
     runs-on: ubuntu-latest
@@ -36,5 +36,5 @@ jobs:
         with:
           node-version: '16'
       - run: npm install
-      - run: npx nx affected --target=build --parallel --max-parallel=3
+      - run: npx nx affected --target=build --parallel --max-parallel=3 --exclude monitor
       - run: npx nx affected --target=test --parallel --max-parallel=2
