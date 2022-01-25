@@ -9,8 +9,7 @@ interface UserCreateRequest {
 @Controller('users')
 export class UsersController {
   constructor(
-    private userService: UsersService,
-    private channelsService: ChannelsService
+    private userService: UsersService
   ) {}
   @Post()
   async create(@Body() request: UserCreateRequest): Promise<User> {
