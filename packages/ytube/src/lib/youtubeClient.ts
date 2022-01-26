@@ -23,7 +23,8 @@ export class YoutubeClient{
             refreshToken: tokenResponse.tokens.refresh_token,
             email: tokenInfo.email,
             googleId: tokenInfo.sub,
-            youtubeUsername: tokenInfo.email
+            youtubeUsername: tokenInfo.email,
+            channelsCount: 0
         }
         return user
     }
@@ -35,6 +36,7 @@ export class YoutubeClient{
             part: ['snippet', 'contentDetails', 'statistics'],
             mine: true
         });
+        channels.status
         return channels.data.items?.map<Channel>(item => <Channel>{
             id: item.id,
             description: item.snippet?.description,

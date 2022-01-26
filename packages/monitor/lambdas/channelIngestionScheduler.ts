@@ -19,7 +19,6 @@ export async function channelIngestionScheduler(event: EventRuleEvent) {
     'channelEvents'
   );
 }
-
 function getEventMinutes(event: EventRuleEvent) {
   const fireDateTime = new Date(event.time);
   const hours = fireDateTime.getUTCHours();

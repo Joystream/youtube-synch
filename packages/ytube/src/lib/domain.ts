@@ -18,9 +18,11 @@ interface Channel {
         subscriberCount: number,
         videoCount: number
     },
+    aggregatedStats: number
     userAccessToken: string,
     userRefreshToken: string,
-    uploadsPlaylistId: string
+    uploadsPlaylistId: string,
+    shouldBeInjested: boolean
 }
 interface IEvent{
     timestamp: number,
@@ -40,6 +42,14 @@ class UserCreated implements IEvent{
         this.timestamp = timestamp;
     }
     subject = 'userCreated'
+}
+
+class UserIngestionTriggered implements IEvent{
+     constructor(public user: User, public timestamp: number) {
+        this.user = user;
+        this.timestamp = timestamp;
+    }
+    subject = "userIngestionTriggered"
 }
 class VideoEvent implements IEvent{
     constructor(
@@ -61,6 +71,7 @@ interface User{
     accessToken: string
     refreshToken: string,
     avatarUrl: string
+    channelsCount: number
 }
 
 type VideoState = "new"
@@ -86,4 +97,8 @@ interface Video{
     destinationUrl: string,
     createdAt: number
 }
-export {User, Channel, Video, VideoState, IngestChannel, VideoEvent, UserCreated, IEvent}
+
+class Stats {
+    quotaUsed: number
+}
+export {User, Channel, Video, VideoState, IngestChannel, VideoEvent, UserCreated, IEvent, Stats, UserIngestionTriggered}

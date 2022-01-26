@@ -1,4 +1,5 @@
 import * as dynamoose from 'dynamoose'
+import { Condition } from 'dynamoose/dist/Condition';
 import { AnyDocument } from 'dynamoose/dist/Document';
 
 export function channelRepository(){
@@ -43,7 +44,11 @@ export function channelRepository(){
         },
         userAccessToken: String,
         userRefreshToken: String,
-        uploadsPlaylistId: String
+        uploadsPlaylistId: String,
+        shouldBeIngested: {
+            type: Number,
+            default: true
+        }
     })
     return dynamoose.model('channel', channelSchema);
 }
@@ -63,7 +68,8 @@ export function userRepository(){
         googleId: String,
         accessToken: String,
         refreshToken: String,
-        avatarUrl: String
+        avatarUrl: String,
+        channelsCount: Number
     }, {
         timestamps: {
             createdAt: 'createdAt',
@@ -129,7 +135,16 @@ export function videoStateRepository(){
         }});
     return dynamoose.model('videoStateLogs', videoStateSchema)
 }
-
+export function statsRepository(){
+    const schema = new dynamoose.Schema({
+        date:{
+            type: Number,
+            hashKey: true,
+        },
+        quotaUsed: Number,
+    })
+    return dynamoose.model('stats', schema);
+}
 export function mapTo<TEntity>(doc: AnyDocument){
     return doc.toJSON() as TEntity
 }
