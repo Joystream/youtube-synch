@@ -34,6 +34,3 @@ userCreatedTopic.onEvent('userCreated', userCreatedHandler);
 ingestChannelTopic.onEvent('ingestChannel', ingestChannelHandler);
 videoEvents.onEvent('videoCreated', videoCreatedHandler);
 videoEvents.onEvent('videoEvent', videoStateLogger);
-
-// joystream upload queue
-const uploadVideoQueue = new aws.sqs.Queue('uploadVideo');

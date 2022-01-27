@@ -5,15 +5,16 @@ import {
   User,
   UserCreated,
   userRepository,
-  YoutubeClient,
+  IYoutubeClient,
+  YtClient,
 } from '@joystream/ytube';
 import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class UsersService {
-  private _client: YoutubeClient;
+  private _client: IYoutubeClient;
   private _bus: MessageBus;
   constructor(private configService: ConfigService) {
-    this._client = new YoutubeClient(
+    this._client = YtClient.create(
       configService.get<string>('YOUTUBE_CLIENT_ID'),
       configService.get<string>('YOUTUBE_CLIENT_SECRET'),
       configService.get<string>('YOUTUBE_REDIRECT_URI')
@@ -26,7 +27,7 @@ export class UsersService {
     const existingUser = await repo.get({ partition: 'users', id: user.id });
     if (existingUser) return user;
     const savedUser = await repo.update({ ...user, partition: 'users' });
-    this._bus.publish(new UserCreated(user, Date.now()), 'userCreated');
+    this._bus.publish(new UserCreated(user, Date.now()), 'userEvents');
     return mapTo<User>(savedUser);
   }
   async get(id: string): Promise<User> {

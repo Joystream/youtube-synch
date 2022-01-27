@@ -3,16 +3,17 @@ import {
   channelRepository,
   Channel,
   User,
-  YoutubeClient,
+  YtClient,
   mapTo,
+  IYoutubeClient,
 } from '@joystream/ytube';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class ChannelsService {
-  private youtube: YoutubeClient;
+  private youtube: IYoutubeClient;
   constructor(private configService: ConfigService) {
-    this.youtube = new YoutubeClient(
+    this.youtube = YtClient.create(
       configService.get<string>('YOUTUBE_CLIENT_ID'),
       configService.get<string>('YOUTUBE_CLIENT_SECRET'),
       configService.get<string>('YOUTUBE_REDIRECT_URI')

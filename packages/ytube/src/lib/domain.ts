@@ -1,104 +1,111 @@
-interface Channel {
-    id: string,
-    title: string,
-    frequency: number,
-    description: string,
-    userId: string,
-    createdAt: number,
-    thumbnails: {
-        default: string,
-        medium: string,
-        high: string,
-        maxRes: string,
-        standard: string
-    },
-    statistics: {
-        viewCount: number,
-        commentCount: number,
-        subscriberCount: number,
-        videoCount: number
-    },
-    aggregatedStats: number
-    userAccessToken: string,
-    userRefreshToken: string,
-    uploadsPlaylistId: string,
-    shouldBeInjested: boolean
+export interface Channel {
+  id: string;
+  title: string;
+  frequency: number;
+  description: string;
+  userId: string;
+  createdAt: number;
+  thumbnails: {
+    default: string;
+    medium: string;
+    high: string;
+    maxRes: string;
+    standard: string;
+  };
+  statistics: {
+    viewCount: number;
+    commentCount: number;
+    subscriberCount: number;
+    videoCount: number;
+  };
+  aggregatedStats: number;
+  userAccessToken: string;
+  userRefreshToken: string;
+  uploadsPlaylistId: string;
+  shouldBeInjested: boolean;
 }
-interface IEvent{
-    timestamp: number,
-    subject: string,
-}
-
-class IngestChannel implements IEvent{
-    constructor(public channel: Channel, public timestamp: number) {
-        this.channel = channel
-        this.timestamp = timestamp;
-    }
-    subject = 'ingestChannel'
-}
-class UserCreated implements IEvent{
-    constructor(public user: User, public timestamp: number) {
-        this.user = user;
-        this.timestamp = timestamp;
-    }
-    subject = 'userCreated'
+export interface IEvent {
+  timestamp: number;
+  subject: string;
 }
 
-class UserIngestionTriggered implements IEvent{
-     constructor(public user: User, public timestamp: number) {
-        this.user = user;
-        this.timestamp = timestamp;
-    }
-    subject = "userIngestionTriggered"
+export class ChannelSpotted implements IEvent {
+  /**
+   *
+   */
+  constructor(public channel: Channel, public timestamp: number) {}
+  subject = 'channelSpotted';
 }
-class VideoEvent implements IEvent{
-    constructor(
-        public state: VideoState, 
-        public videoId: string, 
-        public channelId: string, 
-        public timestamp: number,
-        ) {
-            this.subject = state
-    }
-    subject: string;
+export class IngestChannel implements IEvent {
+  constructor(public channel: Channel, public timestamp: number) {
+    this.channel = channel;
+    this.timestamp = timestamp;
+  }
+  subject = 'ingestChannel';
 }
-
-interface User{
-    id: string
-    email: string
-    youtubeUsername: string
-    googleId: string
-    accessToken: string
-    refreshToken: string,
-    avatarUrl: string
-    channelsCount: number
+export class UserCreated implements IEvent {
+  constructor(public user: User, public timestamp: number) {
+    this.user = user;
+    this.timestamp = timestamp;
+  }
+  subject = 'userCreated';
 }
 
-type VideoState = "new"
-    | "uploadToJoystreamStarted"
-    | "uploadToJoystreamFailed"
-    | "uploadToJoystreamSucceded"
-interface Video{
-    url: string,
-    title: string,
-    description: string,
-    id: string,
-    playlistId: string,
-    resourceId: string;
-    channelId: string,
-    thumbnails:{
-        default: string,
-        medium: string,
-        high: string,
-        maxRes: string,
-        standard: string
-    },
-    state: VideoState,
-    destinationUrl: string,
-    createdAt: number
+export class UserIngestionTriggered implements IEvent {
+  constructor(public user: User, public timestamp: number) {
+    this.user = user;
+    this.timestamp = timestamp;
+  }
+  subject = 'userIngestionTriggered';
+}
+export class VideoEvent implements IEvent {
+  constructor(
+    public state: VideoState,
+    public videoId: string,
+    public channelId: string,
+    public timestamp: number
+  ) {
+    this.subject = state;
+  }
+  subject: string;
 }
 
-class Stats {
-    quotaUsed: number
+export interface User {
+  id: string;
+  email: string;
+  youtubeUsername: string;
+  googleId: string;
+  accessToken: string;
+  refreshToken: string;
+  avatarUrl: string;
+  channelsCount: number;
 }
-export {User, Channel, Video, VideoState, IngestChannel, VideoEvent, UserCreated, IEvent, Stats, UserIngestionTriggered}
+
+export type VideoState =
+  | 'new'
+  | 'uploadToJoystreamStarted'
+  | 'uploadToJoystreamFailed'
+  | 'uploadToJoystreamSucceded';
+export interface Video {
+  url: string;
+  title: string;
+  description: string;
+  id: string;
+  playlistId: string;
+  resourceId: string;
+  channelId: string;
+  thumbnails: {
+    default: string;
+    medium: string;
+    high: string;
+    maxRes: string;
+    standard: string;
+  };
+  state: VideoState;
+  destinationUrl: string;
+  createdAt: number;
+}
+
+export class Stats {
+  quotaUsed: number;
+}

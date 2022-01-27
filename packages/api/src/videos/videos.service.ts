@@ -3,16 +3,17 @@ import { ConfigService } from '@nestjs/config';
 import {
   Channel,
   Video,
-  YoutubeClient,
+  YtClient,
   videoRepository,
   mapTo,
+  IYoutubeClient,
 } from '@joystream/ytube';
 
 @Injectable()
 export class VideosService {
-  private youtube: YoutubeClient;
+  private youtube: IYoutubeClient;
   constructor(private configService: ConfigService) {
-    this.youtube = new YoutubeClient(
+    this.youtube = YtClient.create(
       configService.get<string>('YOUTUBE_CLIENT_ID'),
       configService.get<string>('YOUTUBE_CLIENT_SECRET'),
       configService.get<string>('YOUTUBE_REDIRECT_URI')
@@ -20,7 +21,7 @@ export class VideosService {
   }
 
   async ingest(channel: Channel): Promise<Video[]> {
-    const videos = await this.youtube.getAllVideos(channel);
+    const videos = await this.youtube.getAllVideos(channel, 100);
     await videoRepository().batchPut(videos);
     return videos;
   }
