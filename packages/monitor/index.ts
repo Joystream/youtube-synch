@@ -8,6 +8,7 @@ import {
 } from './lambdas/videoCreatedHandler';
 import { EventRuleEvent } from '@pulumi/aws/cloudwatch';
 import { orphanUsersChecker } from './lambdas/orphanUsersChecker';
+// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { AvailableTopic } from '../ytube/src';
 // Create an AWS resource (S3 Bucket)
 

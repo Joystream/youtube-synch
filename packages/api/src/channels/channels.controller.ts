@@ -1,13 +1,14 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
-  ParseIntPipe,
   Post,
-  Query,
+  Put,
 } from '@nestjs/common';
 import { ChannelsService } from './channels.service';
 import { VideosService } from '../videos/videos.service';
+import { Channel } from '@joystream/ytube';
 
 @Controller({ path: 'users/:userId/channels' })
 export class ChannelsController {
@@ -23,8 +24,7 @@ export class ChannelsController {
   }
   @Get()
   async getAll(
-    @Param('userId') userId: string,
-    @Query('frequency', ParseIntPipe) frequency: number
+    @Param('userId') userId: string
   ) {
     return this.channelsService.getAll(userId);
   }
@@ -40,4 +40,10 @@ export class ChannelsController {
     const videos = await this.videosService.ingest(channel);
     return videos;
   }
+
+  @Put(':id')
+  async updateChannel(@Body() channel: Channel){
+    return this.channelsService.update(channel);
+  }
+
 }

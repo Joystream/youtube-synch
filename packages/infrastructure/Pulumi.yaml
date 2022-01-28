@@ -1,0 +1,3 @@
+name: api-infrastructure
+runtime: nodejs
+description: Joystream AWS infrastructure for youtube channels monitoring api

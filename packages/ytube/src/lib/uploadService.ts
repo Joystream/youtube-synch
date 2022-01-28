@@ -71,7 +71,7 @@ export class S3UploadService implements IUploadService {
         })
         .promise();
       return true;
-    } catch (err) {
+    } catch (err : any) {
       if (err.statusCode === 404) return false;
       throw err;
     }

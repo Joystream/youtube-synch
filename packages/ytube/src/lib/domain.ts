@@ -107,5 +107,5 @@ export interface Video {
 }
 
 export class Stats {
-  quotaUsed: number;
+  quotaUsed = 0
 }

@@ -15,7 +15,7 @@ import {
   Box,
 } from '@mui/material';
 import Dashboard from './Dashboard';
-import { User } from '../../ytube/src';
+import { User } from '@joystream/ytube'
 const theme = createTheme({
   palette: {
     mode: 'dark',

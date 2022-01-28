@@ -22,6 +22,7 @@ import {
 import { S3UploadService } from './uploadService';
 import { getMatchingFrequencies, Frequency } from './frequency';
 
+const DailtyQuota = 10000
 export class SyncService {
   private _uploader: IUploadService;
   constructor(private youtube: IYoutubeClient, private bus: MessageBus) {
@@ -31,10 +32,12 @@ export class SyncService {
     const rawChannels = await channelRepository()
       .scan('frequency')
       .in(frequencies)
+      .filter('shouldBeInjested')
+      .eq(true)
       .exec();
     const channels = rawChannels.map((ch) => mapTo<Channel>(ch));
     console.log('Found channels', channels);
-    await new MessageBus('eu-west-1').publishAll(
+    await this.bus.publishAll(
       channels.map((ch) => new IngestChannel(ch, Date.now())),
       'channelEvents'
     );
@@ -74,12 +77,12 @@ export class SyncService {
     channel: Channel,
     videos: Video[]
   ): Promise<Video[]> {
-    const existingVideos = await videoRepository()
+    const existingVideos: Set<string> = await videoRepository()
       .query({ channelId: channel.id })
       .filter('id')
       .in(videos.map((v) => v.id))
-      .exec();
-    return videos.filter((v) => !existingVideos.find((e) => e.id == v.id));
+      .exec().then(videos => new Set(videos.map(v => v.id)));
+    return videos.filter((v) => !existingVideos.has(v.id));
   }
   private async canCallYoutube(): Promise<boolean> {
     const today = new Date();
@@ -89,6 +92,6 @@ export class SyncService {
       date: today.setUTCHours(0, 0, 0, 0),
     });
     const stats = mapTo<Stats>(statsDoc);
-    return stats.quotaUsed < 10000;
+    return stats.quotaUsed < DailtyQuota;
   }
 }

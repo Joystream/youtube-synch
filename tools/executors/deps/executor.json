@@ -1,9 +1,0 @@
-{
-  "executors": {
-    "deps": {
-      "implementation": "./impl",
-      "schema": "./schema.json",
-      "description": "Automatically updated npm packages in pulumi project based on usages"
-    }
-  }
-}

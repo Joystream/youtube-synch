@@ -1,0 +1,59 @@
+service: api
+
+plugins:
+  - '@ns3/nx-serverless/plugin'
+  - serverless-offline
+
+package:
+  individually: true
+
+
+custom:
+  stage: ${opt:stage, 'dev'}
+  serverless-offline:
+    httpPort: 3333
+    lambdaPort: 2333
+    noPrependStageInUrl: true
+  optimize:
+    external: ['swagger-ui-dist']
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: ${self:custom.stage}
+  endpointType: regional
+  region: eu-west-1
+  timeout: 20
+  environment:
+    APP_ENV: ${self:custom.stage}
+    NODE_OPTIONS: --enable-source-maps
+  iamRoleStatements:
+    - Effect: Allow
+      Action: 
+        - 'dynamodb:*'
+      Resource: 'arn:aws:dynamodb:eu-west-1:226498669520:table/stats'
+    - Effect: Allow
+      Action: 
+        - 'dynamodb:*'
+      Resource: 'arn:aws:dynamodb:eu-west-1:226498669520:table/user'
+    - Effect: Allow
+      Action: 
+        - 'dynamodb:*'
+      Resource: 'arn:aws:dynamodb:eu-west-1:226498669520:table/channel'
+    - Effect: Allow
+      Action: 
+        - 'dynamodb:*'
+      Resource: 'arn:aws:dynamodb:eu-west-1:226498669520:table/video'
+    - Effect: Allow
+      Action: 
+        - 'dynamodb:*'
+      Resource: 'arn:aws:dynamodb:eu-west-1:226498669520:table/videoState'
+
+functions:
+  main:
+    handler: src/main.handler
+    events:
+       - http:
+          method: ANY
+          path: '{proxy+}'
+

@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "./out-tsc",
     "rootDir": "./src",
-    "types": ["node"]
+    "types": ["node"],
+    "jsx": "react"
   },
   "include": ["src/**/*.ts"]
 }
