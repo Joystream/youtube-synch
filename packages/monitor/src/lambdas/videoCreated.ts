@@ -5,7 +5,7 @@ import {
   videoStateRepository,
   SyncService,
   MessageBus,
-} from '../../ytube/src';
+} from '@joystream/ytube';
 
 export async function videoCreatedHandler(event: TopicEvent) {
   const videoCreated: VideoEvent = JSON.parse(event.Records[0].Sns.Message);

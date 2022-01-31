@@ -5,7 +5,7 @@ import {
   MessageBus,
   UserIngestionTriggered,
   SyncService,
-} from '../../ytube/src';
+} from '@joystream/ytube';
 
 export async function userCreatedHandler(event: TopicEvent) {
   const client = YtClient.create(

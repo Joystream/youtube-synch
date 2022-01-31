@@ -50,7 +50,7 @@ export function channelRepository() {
       default: true,
     },
   });
-  return dynamoose.model('channel', channelSchema);
+  return dynamoose.model('channels', channelSchema, {create: false});
 }
 export function userRepository() {
   const userSchema = new dynamoose.Schema(
@@ -78,7 +78,7 @@ export function userRepository() {
       },
     }
   );
-  return dynamoose.model('user', userSchema);
+  return dynamoose.model('users', userSchema, {create: false});
 }
 export function videoRepository() {
   const videoSchema = new dynamoose.Schema(
@@ -123,7 +123,7 @@ export function videoRepository() {
       },
     }
   );
-  return dynamoose.model('video', videoSchema);
+  return dynamoose.model('videos', videoSchema);
 }
 export function videoStateRepository() {
   const videoStateSchema = new dynamoose.Schema(
@@ -147,7 +147,7 @@ export function videoStateRepository() {
       },
     }
   );
-  return dynamoose.model('videoStateLogs', videoStateSchema);
+  return dynamoose.model('videoLogs', videoStateSchema, {create: false});
 }
 export function statsRepository() {
   const schema = new dynamoose.Schema({
@@ -161,7 +161,7 @@ export function statsRepository() {
     },
     quotaUsed: Number,
   });
-  return dynamoose.model('stats', schema);
+  return dynamoose.model('stats', schema, {create: false});
 }
 export function mapTo<TEntity>(doc: AnyDocument) {
   return doc.toJSON() as TEntity;

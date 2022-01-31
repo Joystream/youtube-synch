@@ -1,17 +1,27 @@
 {
   "root": "packages/infrastructure",
-  "sourceRoot": "packages/infrastructure",
+  "sourceRoot": "packages/infrastructure/src",
   "projectType": "library",
   "targets": {
-    "build": {
-      "executor": "@nrwl/node:package",
-      "outputs": ["{options.outputPath}"],
+    "preview":{
+      "executor":"@nrwl/workspace:run-commands",
       "options": {
-        "outputPath": "dist/packages/infrastructure",
-        "tsConfig": "packages/infrastructure/tsconfig.lib.json",
-        "packageJson": "packages/infrastructure/package.json",
-        "main": "packages/infrastructure/index.ts",
-        "assets": ["packages/infrastructure/*.md"]
+        "command": "pulumi preview",
+        "cwd": "packages/infrastructure"
+      }
+    },
+    "deploy":{
+      "executor":"@nrwl/workspace:run-commands",
+      "options": {
+        "command": "pulumi up --skip-preview --yes",
+        "cwd": "packages/infrastructure"
+      }
+    },
+    "destroy":{
+      "executor":"@nrwl/workspace:run-commands",
+      "options": {
+        "command": "pulumi destroy --skip-preview --yes",
+        "cwd": "packages/infrastructure"
       }
     },
     "lint": {

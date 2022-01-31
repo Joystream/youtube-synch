@@ -6,8 +6,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { INestApplication } from '@nestjs/common';
-import serverlessExpress from '@vendia/serverless-express'
-import { Callback, Context, Handler } from 'aws-lambda';
+import {config} from 'aws-sdk'
+config.update({'region':'eu-west-1'})
 function setupSwagger(app: INestApplication){
   const config = new DocumentBuilder()
   .setTitle('Joystream Youtube Sync API')
@@ -18,7 +18,7 @@ function setupSwagger(app: INestApplication){
   SwaggerModule.setup('api', app, document);
 }
 
-async function bootstrap() {
+async function bootstrap(){
   const app = await NestFactory.create(AppModule);
   
   app.enableCors({
@@ -28,17 +28,7 @@ async function bootstrap() {
   });
   setupSwagger(app);
   await app.init();
-  const expressApp = app.getHttpAdapter().getInstance();
- 
-  return serverlessExpress({ app: expressApp });
+  return app.listen(3001)
 }
 
-
-export const handler: Handler = async (event: any, context: Context, callback: Callback) => {
-  if(event.path === '/api'){
-    event.path = '/api/'
-  }
-  event.path = event.path.includes('swagger-ui') ? `/api${event.path}` : event.path
-  const server = await bootstrap();
-  return server(event, context, callback)
-}
+bootstrap()

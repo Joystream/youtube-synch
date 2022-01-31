@@ -9,7 +9,7 @@ import { VideosService } from './videos/videos.service';
 
 @Module({
   imports: [ConfigModule.forRoot()],
-  controllers: [UsersController, VideosController, ChannelsController],
-  providers: [ChannelsService, VideosService, UsersService],
+  controllers: [VideosController, ChannelsController, UsersController],
+  providers: [ChannelsService, VideosService, UsersService]
 })
 export class AppModule {}

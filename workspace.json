@@ -4,7 +4,6 @@
     "api": "packages/api",
     "infrastructure": "packages/infrastructure",
     "monitor": "packages/monitor",
-    "monitor-serverless": "packages/monitor-serverless",
     "ui": "packages/ui",
     "ytube": "packages/ytube"
   }

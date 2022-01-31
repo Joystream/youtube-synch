@@ -1,4 +1,4 @@
-name: youtube-sync.monitor
+name: youtube-sync.api
 runtime: 
   name: nodejs
 main: "pulumi.ts"

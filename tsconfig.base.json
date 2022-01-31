@@ -17,7 +17,8 @@
     "paths": {
       "@joystream/monitor": ["packages/monitor/index.ts"],
       "@joystream/ytube": ["packages/ytube/src/index.ts"],
-      "@youtube-sync/infrastructure": ["packages/infrastructure/index.ts"]
+      "@youtube-sync/infrastructure": ["packages/infrastructure/src/index.ts"],
+      "@youtube-sync/monitor": ["packages/monitor/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

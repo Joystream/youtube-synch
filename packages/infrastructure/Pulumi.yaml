@@ -1,3 +1,5 @@
-name: api-infrastructure
-runtime: nodejs
-description: Joystream AWS infrastructure for youtube channels monitoring api
+name: youtube-sync
+runtime: 
+  name: nodejs
+main: "src/index.ts"
+description: Common infrastructure of youtube-sync project

@@ -108,4 +108,6 @@ export interface Video {
 
 export class Stats {
   quotaUsed = 0
+  date: number
+  partition = 'stats'
 }

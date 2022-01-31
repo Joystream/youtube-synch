@@ -8,15 +8,15 @@ module.exports = (config, context) => {
     new IgnorePlugin({
       checkResource(resource) {
         const lazyImports = [
-          '@nestjs/microservices',
-          '@nestjs/platform-express',
-          'cache-manager',
-          'class-validator',
-          'class-transformer',
-          '@nestjs/websockets/socket-module',
-          '@nestjs/microservices/microservices-module',
-          'class-transformer/storage',
-          'fastify-swagger'
+            "@nestjs/microservices",
+            "@nestjs/platform-express",
+            "cache-manager",
+            "class-validator",
+            "class-transformer",
+            "@nestjs/websockets/socket-module",
+            "@nestjs/microservices/microservices-module",
+            "class-transformer/storage",
+            "fastify-swagger",
         ];
         if (!lazyImports.includes(resource)) {
           return false;
@@ -30,6 +30,7 @@ module.exports = (config, context) => {
       },
     }),
   ];
+  config.output.libraryTarget = 'commonjs2'
 
   return config;
 };
