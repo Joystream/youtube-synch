@@ -25,7 +25,8 @@ export class UsersService {
     const user = await this._client.getUserFromCode(code);
     const repo = userRepository();
     const existingUser = await repo.get({ partition: 'users', id: user.id });
-    if (existingUser) return user;
+    if (existingUser) 
+      return user;
     const savedUser = await repo.update({ ...user, partition: 'users' });
     this._bus.publish(new UserCreated(user, Date.now()), 'userEvents');
     return mapTo<User>(savedUser);

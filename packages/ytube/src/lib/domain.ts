@@ -70,15 +70,19 @@ export class VideoEvent implements IEvent {
   subject: string;
 }
 
-export interface User {
-  id: string;
-  email: string;
-  youtubeUsername: string;
-  googleId: string;
-  accessToken: string;
-  refreshToken: string;
-  avatarUrl: string;
-  channelsCount: number;
+export class User {
+  /**
+   *
+   */
+  constructor(public id: string,
+    public email: string,
+    public youtubeUsername: string,
+    public googleId: string,
+    public accessToken: string,
+    public refreshToken: string,
+    public avatarUrl: string,
+    public channelsCount: number) {
+  }
 }
 
 export type VideoState =
@@ -108,6 +112,6 @@ export interface Video {
 
 export class Stats {
   quotaUsed = 0
-  date: number
+  date: number = Date.now()
   partition = 'stats'
 }

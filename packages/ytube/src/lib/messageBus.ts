@@ -36,7 +36,10 @@ export class MessageBus{
     private async getTopic(name: AvailableTopic):Promise<Topic>{
         return await this
             .getOrInitTopics()
-            .then(topis => topis.find(t => t.TopicArn!.includes(name))!)
+            .then(topics => {
+                console.log(topics);
+                return topics.find(t => t.TopicArn!.includes(name))!
+            })
         
     }
     private async getOrInitTopics(){

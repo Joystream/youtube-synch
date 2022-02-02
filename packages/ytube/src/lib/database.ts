@@ -1,5 +1,4 @@
 import * as dynamoose from 'dynamoose';
-import { Condition } from 'dynamoose/dist/Condition';
 import { AnyDocument } from 'dynamoose/dist/Document';
 
 export function channelRepository() {

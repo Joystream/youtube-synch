@@ -41,11 +41,10 @@
         "optimization": true,
         "extractLicenses": true,
         "inspect": false,
-        "webpackConfig":"packages/api/webpack.config.js",
+        "webpackConfig": "packages/api/webpack.config.js",
         "externalDependencies": "none"
       },
-      "configurations": {
-      }
+      "configurations": {}
     },
     "serve": {
       "executor": "@nrwl/node:execute",
@@ -60,10 +59,12 @@
         "color": true,
         "cwd": "packages/api"
       },
-      "dependsOn":[{
-        "target":"build-lambda",
-        "projects":"self"
-      }]
+      "dependsOn": [
+        {
+          "target": "build-lambda",
+          "projects": "self"
+        }
+      ]
     },
     "lint": {
       "executor": "@nrwl/linter:eslint",

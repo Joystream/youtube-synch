@@ -81,7 +81,9 @@ export class SyncService {
       .query({ channelId: channel.id })
       .filter('id')
       .in(videos.map((v) => v.id))
-      .exec().then(videos => new Set(videos.map(v => v.id)));
+      .exec()
+      .then(videos => videos.map(v => mapTo<Video>(v)))
+      .then(videos => new Set(videos.map(v => v.id)));
     return videos.filter((v) => !existingVideos.has(v.id));
   }
   private async canCallYoutube(): Promise<boolean> {

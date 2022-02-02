@@ -25,31 +25,33 @@
         }
       }
     },
-    "preview":{
-      "executor":"@nrwl/workspace:run-commands",
+    "preview": {
+      "executor": "@nrwl/workspace:run-commands",
       "options": {
         "commands": ["pulumi preview"],
         "color": true,
         "cwd": "packages/monitor"
       },
-      "dependsOn":[
+      "dependsOn": [
         {
-          "target":"build:production",
-          "projects":"self"
+          "target": "build:production",
+          "projects": "self"
         }
       ]
     },
-    "deploy":{
-      "executor":"@nrwl/workspace:run-commands",
+    "deploy": {
+      "executor": "@nrwl/workspace:run-commands",
       "options": {
         "command": "pulumi up --skip-preview --yes",
         "cwd": "packages/monitor",
         "color": true
       },
-      "dependsOn":[{
-        "target":"build",
-        "projects":"self"
-      }]
+      "dependsOn": [
+        {
+          "target": "build",
+          "projects": "self"
+        }
+      ]
     },
     "lint": {
       "executor": "@nrwl/linter:eslint",

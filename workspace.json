@@ -2,9 +2,10 @@
   "version": 2,
   "projects": {
     "api": "packages/api",
+    "app": "packages/app",
+    "app-e2e": "packages/app-e2e",
     "infrastructure": "packages/infrastructure",
     "monitor": "packages/monitor",
-    "ui": "packages/ui",
     "ytube": "packages/ytube"
   }
 }
