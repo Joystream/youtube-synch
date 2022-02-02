@@ -1,33 +1,22 @@
 import { Avatar, List, ListItem, ListItemAvatar, ListItemText } from "@mui/material";
 import { bool } from "aws-sdk/clients/redshiftdata";
+import axios from "axios";
 import { useState } from "react";
+import { useQuery } from "react-query";
 import { Channel } from "./app";
 import { User } from "./usersList";
 
 export function ChannelsList({user, onSelect}: {user: User, onSelect:(channel: Channel) => void}){
-    const [channels, setChannels] = useState<Channel[]>([
-        {
-            id: '1',
-            title: '808',
-            description:'this is description',
-            thumbnails: {
-                default: 'https://i.pravatar.cc/300'
-            },
-            statistics:{
-                videoCount: 100,
-                commentCount: 1232313123123,
-                subscriberCount: 1321000000,
-                viewCount: 131231243412
-            },
-        }
-    ])
+    const {isLoading, error, data} = useQuery('channels', ({signal}) => axios
+        .get<Channel[]>(`http://localhost:3001/users/${user.id}/channels`, {signal})
+        .then(resp => resp.data))
     const handleSelect = (c: Channel) => {
         setSelected(c);
         onSelect(c);
     }
     const [selected, setSelected] = useState<Channel>()
     return <List sx={{width: '100%'}}>
-        {channels.map(ch => <ChannelItem channel={ch} isSelected={selected?.id === ch.id} onSelect={handleSelect}/>)}
+        {isLoading? "Loading..." :data?.map(ch => <ChannelItem channel={ch} isSelected={selected?.id === ch.id} onSelect={handleSelect}/>)}
     </List>
 }
 

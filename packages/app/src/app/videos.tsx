@@ -1,17 +1,21 @@
 import { Card, CardContent, CardMedia, Grid, Typography } from "@mui/material"
+import axios from "axios"
 import { useState } from "react"
+import { useQuery } from "react-query"
 import { Channel, Video } from "./app"
 import { generateTestVideos } from "./generateVideos"
 import { User } from "./usersList"
 
 
 export function Videos({channel, user}: {channel: Channel, user: User}){
-    const [videos, setVideos] = useState<Video[]>(generateTestVideos(100))
+    const {isLoading, error, data} = useQuery('channels', ({signal}) => axios
+        .get<Video[]>(`http://localhost:3001/users/${user.id}/channels/${channel.id}/videos`, {signal})
+        .then(resp => resp.data))
     return <Grid container spacing={4} direction={'row'}
      justifyContent={'flex-start'}
      alignItems={'flex-start'}
      sx={{py: 1, maxHeight:'100%', overflow: 'scroll'}}>
-        {videos.map(video => <Grid item>
+        {isLoading ? "Loading..." : data?.map(video => <Grid item>
             <VideoCard video={video}></VideoCard>
         </Grid>)}
     </Grid>

@@ -6,6 +6,7 @@ import { ChannelsList } from './channelsList';
 import { useState } from 'react';
 import { Videos } from './videos';
 import {GoogleLogin, GoogleLoginResponse, GoogleLoginResponseOffline} from 'react-google-login'
+import {QueryClient, QueryClientProvider} from 'react-query'
 
 const StyledApp = styled.div`
 `;
@@ -44,6 +45,7 @@ export interface Video{
   state: VideoState;
 }
 
+const queryClient = new QueryClient();
 export function App() {
   const [selectedUser, setSelectedUser] = useState<User>()
   const [selectedChannel, setSelectedChannel] = useState<Channel>()
@@ -56,53 +58,55 @@ export function App() {
     console.log(JSON.stringify(response));
   };
   return (
-    <StyledApp>
-      <ThemeProvider theme={theme}>
-      <Box
-        sx={{ bgcolor: 'background.default', color: 'text.primary' }}
-        height={'100vh'}
-        display={'flex'}
-        flexDirection="column"
-        overflow={'hidden'}
-      >
-        <AppBar position="static">
-          <Toolbar>
-            <Typography variant='h6' component="div" sx={{flexGrow:1}}>
-              Youtube Sync
-            </Typography>
-            <GoogleLogin
-              clientId="79131856482-fo4akvhmeokn24dvfo83v61g03c6k7o0.apps.googleusercontent.com"
-              onSuccess={successAuth}
-              accessType="offline"
-              responseType="code"
-              onFailure={failedAuth}
-              isSignedIn={true}
-              cookiePolicy="single_host_origin"
-              scope="https://www.googleapis.com/auth/youtube.readonly"
-              render={props => <IconButton onClick={props.onClick} disabled={props.disabled}>
-                <Add/>
-              </IconButton>}
-            />
-            
-          </Toolbar>
-        </AppBar>
-        <Grid container direction={'row'} spacing={2} height={'100%'} sx={{marginTop:0}}>
-            <Grid item xs={2}>
-              <UsersList onSelect={setSelectedUser}/>
-            </Grid>
-            <Grid item xs={2}>
-              {selectedUser ? <ChannelsList 
-                user={selectedUser} 
-                onSelect={setSelectedChannel}></ChannelsList>  : <>Select user</>}
-            </Grid>
-            <Grid item xs={8} overflow={'hidden'} maxHeight={'100%'}>
-              {selectedChannel? <Videos user={selectedUser!} channel={selectedChannel}></Videos>
-              : "Select User and Channel"}
-            </Grid>
-          </Grid>
-        </Box>
-        </ThemeProvider>
-    </StyledApp>
+    <QueryClientProvider client={queryClient}>
+      <StyledApp>
+            <ThemeProvider theme={theme}>
+            <Box
+              sx={{ bgcolor: 'background.default', color: 'text.primary' }}
+              height={'100vh'}
+              display={'flex'}
+              flexDirection="column"
+              overflow={'hidden'}
+            >
+              <AppBar position="static">
+                <Toolbar>
+                  <Typography variant='h6' component="div" sx={{flexGrow:1}}>
+                    Youtube Sync
+                  </Typography>
+                  <GoogleLogin
+                    clientId="79131856482-fo4akvhmeokn24dvfo83v61g03c6k7o0.apps.googleusercontent.com"
+                    onSuccess={successAuth}
+                    accessType="offline"
+                    responseType="code"
+                    onFailure={failedAuth}
+                    isSignedIn={true}
+                    cookiePolicy="single_host_origin"
+                    scope="https://www.googleapis.com/auth/youtube.readonly"
+                    render={props => <IconButton onClick={props.onClick} disabled={props.disabled}>
+                      <Add/>
+                    </IconButton>}
+                  />
+                  
+                </Toolbar>
+              </AppBar>
+              <Grid container direction={'row'} spacing={2} height={'100%'} sx={{marginTop:0}}>
+                  <Grid item xs={2}>
+                    <UsersList onSelect={setSelectedUser}/>
+                  </Grid>
+                  <Grid item xs={2}>
+                    {selectedUser ? <ChannelsList 
+                      user={selectedUser} 
+                      onSelect={setSelectedChannel}></ChannelsList>  : <>Select user</>}
+                  </Grid>
+                  <Grid item xs={8} overflow={'hidden'} maxHeight={'100%'}>
+                    {selectedChannel? <Videos user={selectedUser!} channel={selectedChannel}></Videos>
+                    : "Select User and Channel"}
+                  </Grid>
+                </Grid>
+              </Box>
+              </ThemeProvider>
+      </StyledApp>
+    </QueryClientProvider>
   );
 }
 

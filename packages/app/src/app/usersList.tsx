@@ -1,5 +1,7 @@
 import { Avatar, List, ListItem, ListItemAvatar, ListItemText } from "@mui/material";
 import { useState } from "react";
+import { useQuery } from "react-query";
+import axios from 'axios'
 
 export interface User{
     id: string,
@@ -9,19 +11,16 @@ export interface User{
 }
 
 export function UsersList({onSelect}: {onSelect: (user: User) => void}){
-    const [users, setUsers] = useState<User[]>([{
-        id: '123',
-        email:"ihorkorotenko@gmail.com",
-        youtubeUsername:'Ihor',
-        avatarUrl:"https://i.pravatar.cc/300"
-    }])
+    const {isLoading, error, data} = useQuery('users', ({signal}) => axios
+        .get<User[]>('http://localhost:3001/users', {signal})
+        .then(resp => resp.data))
     const [selected, setSelected] = useState<User>()
     const handleSelecction = (user: User) => {
         setSelected(user)
         onSelect(user)
     }
     return <List sx={{width: '100%'}} >
-        {users.map(user => <UserItem 
+        {isLoading ? "Loading..." : data?.map(user => <UserItem 
             user={user} 
             isSelected={user.id===selected?.id ?? false}
             onSelect={handleSelecction}/>)}
