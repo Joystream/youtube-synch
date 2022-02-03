@@ -1,0 +1,44 @@
+{
+  "root": "packages/infrastructure",
+  "sourceRoot": "packages/infrastructure/src",
+  "projectType": "library",
+  "targets": {
+    "preview": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "command": "pulumi preview",
+        "cwd": "packages/infrastructure"
+      }
+    },
+    "deploy": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "command": "pulumi up --skip-preview --yes",
+        "cwd": "packages/infrastructure"
+      }
+    },
+    "destroy": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "command": "pulumi destroy --skip-preview --yes",
+        "cwd": "packages/infrastructure"
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/infrastructure/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/packages/infrastructure"],
+      "options": {
+        "jestConfig": "packages/infrastructure/jest.config.js",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

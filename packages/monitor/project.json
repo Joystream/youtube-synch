@@ -1,0 +1,73 @@
+{
+  "root": "packages/monitor",
+  "sourceRoot": "packages/monitor",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/node:build",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/monitor",
+        "tsConfig": "packages/monitor/tsconfig.lib.json",
+        "packageJson": "packages/monitor/package.json",
+        "main": "packages/monitor/index.ts",
+        "optimization": true,
+        "extractLicenses": true,
+        "inspect": false,
+        "externalDependencies": "none"
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false,
+          "externalDependencies": "none"
+        }
+      }
+    },
+    "preview": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": ["pulumi preview"],
+        "color": true,
+        "cwd": "packages/monitor"
+      },
+      "dependsOn": [
+        {
+          "target": "build:production",
+          "projects": "self"
+        }
+      ]
+    },
+    "deploy": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "command": "pulumi up --skip-preview --yes",
+        "cwd": "packages/monitor",
+        "color": true
+      },
+      "dependsOn": [
+        {
+          "target": "build",
+          "projects": "self"
+        }
+      ]
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/monitor/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/packages/monitor"],
+      "options": {
+        "jestConfig": "packages/monitor/jest.config.js",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

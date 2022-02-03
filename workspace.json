@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "projects": {
+    "api": "packages/api",
+    "app": "packages/app",
+    "app-e2e": "packages/app-e2e",
+    "infrastructure": "packages/infrastructure",
+    "joy-api": "packages/joy-api",
+    "monitor": "packages/monitor",
+    "ytube": "packages/ytube"
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "root": "packages/api",
+  "sourceRoot": "packages/api/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/node:build",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/api",
+        "main": "packages/api/src/main.ts",
+        "tsConfig": "packages/api/tsconfig.app.json",
+        "assets": ["packages/api/src/assets"]
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false,
+          "externalDependencies": [
+            "@nestjs/microservices",
+            "cache-manager",
+            "class-validator",
+            "class-transformer",
+            "@nestjs/websockets/socket-module",
+            "@nestjs/microservices/microservices-module",
+            "class-transformer/storage",
+            "fastify-swagger"
+          ]
+        }
+      }
+    },
+    "build-lambda": {
+      "executor": "@nrwl/node:build",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/api-lambda",
+        "main": "packages/api/src/lambda.ts",
+        "tsConfig": "packages/api/tsconfig.app.json",
+        "assets": ["packages/api/src/assets"],
+        "optimization": true,
+        "extractLicenses": true,
+        "inspect": false,
+        "webpackConfig": "packages/api/webpack.config.js",
+        "externalDependencies": "none"
+      },
+      "configurations": {}
+    },
+    "serve": {
+      "executor": "@nrwl/node:execute",
+      "options": {
+        "buildTarget": "api:build"
+      }
+    },
+    "deploy": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "command": "pulumi up --skip-preview --yes",
+        "color": true,
+        "cwd": "packages/api"
+      },
+      "dependsOn": [
+        {
+          "target": "build-lambda",
+          "projects": "self"
+        }
+      ]
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/api/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/packages/api"],
+      "options": {
+        "jestConfig": "packages/api/jest.config.js",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

@@ -1,0 +1,5 @@
+name: youtube-sync.monitor
+runtime: 
+  name: nodejs
+main: "pulumi.ts"
+description: Common infrastructure of youtube-sync project

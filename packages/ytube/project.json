@@ -1,0 +1,34 @@
+{
+  "root": "packages/ytube",
+  "sourceRoot": "packages/ytube/src",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/ytube/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/packages/ytube"],
+      "options": {
+        "jestConfig": "packages/ytube/jest.config.js",
+        "passWithNoTests": true
+      }
+    },
+    "build": {
+      "executor": "@nrwl/node:package",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/ytube",
+        "tsConfig": "packages/ytube/tsconfig.lib.json",
+        "packageJson": "packages/ytube/package.json",
+        "main": "packages/ytube/src/index.ts",
+        "assets": ["packages/ytube/*.md"]
+      }
+    }
+  },
+  "tags": []
+}
