@@ -6,7 +6,7 @@ import {
   Video,
   VideoEvent,
   ChannelSpotted,
-} from './domain';
+} from '@youtube-sync/domain';
 import {
   channelRepository,
   statsRepository,
@@ -21,7 +21,6 @@ import {
 } from '..';
 import { S3UploadService } from './uploadService';
 import { getMatchingFrequencies, Frequency } from './frequency';
-
 const DailtyQuota = 10000
 export class SyncService {
   private _uploader: IUploadService;

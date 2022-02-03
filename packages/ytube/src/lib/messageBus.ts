@@ -1,6 +1,6 @@
 import {SNS, Config} from 'aws-sdk'
 import { Topic } from 'aws-sdk/clients/sns';
-import { IEvent } from './domain';
+import { IEvent } from '@youtube-sync/domain';
 
 export type AvailableTopic = 'userEvents' | 'channelEvents' | 'videoEvents'
 export class MessageBus{

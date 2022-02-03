@@ -5,7 +5,6 @@ export {
 } from '../src/lib/uploadService';
 export { SyncService } from '../src/lib/monitor';
 export * from './lib/messageBus';
-export * from '../src/lib/domain';
 export * from '../src/lib/database';
 export * from '../src/lib/frequency';
 

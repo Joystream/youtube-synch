@@ -1,1 +1,2 @@
-export * from './lib/joy-api';
+export * from './types'
+export * from './joy-api'

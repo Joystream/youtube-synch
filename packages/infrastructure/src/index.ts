@@ -1,7 +1,9 @@
 import * as aws from '@pulumi/aws';
 // pulumi doesn't work properly with monorepos atm
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import {AvailableTopic, User, Channel, Video, VideoEvent, Stats} from '../../ytube/src'
+import {User, Channel, Video, VideoEvent, Stats} from '../../domain/src'
+// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
+import { AvailableTopic } from '../../ytube/src';
 
 const nameof = <T>(name: keyof T) => <string>name;
 

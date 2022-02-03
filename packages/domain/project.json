@@ -1,0 +1,15 @@
+{
+  "root": "packages/domain",
+  "sourceRoot": "packages/domain/src",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/domain/**/*.ts"]
+      }
+    }
+  },
+  "tags": []
+}

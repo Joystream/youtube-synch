@@ -2,7 +2,7 @@ import { youtube_v3 } from '@googleapis/youtube';
 import { OAuth2Client } from 'google-auth-library';
 import * as ytdl from 'ytdl-core';
 import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem;
-import { Channel, User, Video } from './domain';
+import { Channel, User, Video } from '@youtube-sync/domain';
 import { Readable } from 'stream';
 import { statsRepository } from '..';
 
