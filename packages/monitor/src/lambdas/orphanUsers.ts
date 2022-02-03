@@ -1,5 +1,6 @@
 import { EventRuleEvent } from "@pulumi/aws/cloudwatch";
-import { mapTo, UserIngestionTriggered, userRepository, User, MessageBus } from "@joystream/ytube";
+import { mapTo, userRepository, MessageBus } from "@joystream/ytube";
+import { User, UserIngestionTriggered } from "@youtube-sync/domain";
 
 export async function orphanUsersChecker(event: EventRuleEvent){
     console.log(event)

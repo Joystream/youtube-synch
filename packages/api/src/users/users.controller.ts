@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { User } from '@joystream/ytube';
+import { User } from '@youtube-sync/domain';
 import { UsersService } from './users.service';
 import { ChannelsService } from '../channels/channels.service';
 

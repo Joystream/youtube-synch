@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import {  Channel, User } from '@youtube-sync/domain' 
 import {
   channelRepository,
-  Channel,
-  User,
   YtClient,
   mapTo,
   IYoutubeClient,

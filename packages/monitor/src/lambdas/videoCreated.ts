@@ -1,11 +1,11 @@
 import { TopicEvent } from '@pulumi/aws/sns';
 import {
-  VideoEvent,
   YtClient,
   videoStateRepository,
   SyncService,
   MessageBus,
 } from '@joystream/ytube';
+import { VideoEvent } from '@youtube-sync/domain';
 
 export async function videoCreatedHandler(event: TopicEvent) {
   const videoCreated: VideoEvent = JSON.parse(event.Records[0].Sns.Message);

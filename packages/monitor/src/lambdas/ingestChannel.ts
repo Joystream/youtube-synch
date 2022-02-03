@@ -1,10 +1,10 @@
 import { TopicEvent } from '@pulumi/aws/sns';
 import {
-  IngestChannel,
   YtClient,
   MessageBus,
   SyncService,
 } from '@joystream/ytube';
+import { IngestChannel } from '@youtube-sync/domain';
 
 export async function ingestChannelHandler(event: TopicEvent) {
   console.log(event)

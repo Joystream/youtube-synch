@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ChannelsService } from './channels.service';
 import { VideosService } from '../videos/videos.service';
-import { Channel } from '@joystream/ytube';
+import { Channel } from '@youtube-sync/domain';
 
 @Controller({ path: 'users/:userId/channels' })
 export class ChannelsController {

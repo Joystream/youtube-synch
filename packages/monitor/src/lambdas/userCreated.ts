@@ -1,11 +1,10 @@
 import { TopicEvent } from '@pulumi/aws/sns';
 import {
   YtClient,
-  UserCreated,
   MessageBus,
-  UserIngestionTriggered,
   SyncService,
 } from '@joystream/ytube';
+import { UserCreated, UserIngestionTriggered } from '@youtube-sync/domain';
 
 export async function userCreatedHandler(event: TopicEvent) {
   const client = YtClient.create(
