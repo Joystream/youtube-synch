@@ -1,6 +1,6 @@
 import { IYoutubeClient } from './youtubeClient';
 import * as stream from 'stream';
-import { Video } from './domain';
+import { Video } from '@youtube-sync/domain';
 import { videoRepository } from './database';
 import { S3 } from 'aws-sdk';
 import { mapTo } from '..';

@@ -16,7 +16,7 @@ export class Faucet {
     address: string
   ): Promise<Result<RegisteredMember, RegistrationError>> {
     const response = await axios.post<RegisteredMember | RegistrationError>(
-      this.faucetNodeUri,
+      `${this.faucetNodeUri}/register`,
       { account: address, handle }
     );
     if (response.status === 200)

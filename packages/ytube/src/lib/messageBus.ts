@@ -1,5 +1,6 @@
 import {SNS, Config} from 'aws-sdk'
 import { Topic } from 'aws-sdk/clients/sns';
+// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { IEvent } from '@youtube-sync/domain';
 
 export type AvailableTopic = 'userEvents' | 'channelEvents' | 'videoEvents'

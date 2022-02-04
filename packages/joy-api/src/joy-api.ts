@@ -5,17 +5,29 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { Membership, Mnemonic } from './types'
 import { map, Result } from './results'
 import { Faucet, RegistrationError } from './faucet'
+import {ApiPromise, WsProvider} from '@polkadot/api'
+import { types } from '@joystream/types'
 
 
 export class JoystreamClient{
-  constructor(private faucet: Faucet) {
+  private api: ApiPromise
+  private provider: WsProvider
+  constructor(private faucet: Faucet, private nodeUrl: string) {
   }
   async registerUser(user: User) : Promise<Result<Membership, RegistrationError>>{
+    await this.ensureApi();
     const [account, mnemonic] = createPolkadotAccount(user.googleId, user.youtubeUsername)
     const membershipResponse = await this.faucet.register(user.youtubeUsername, account.address);
     return map(membershipResponse, member => {
       return {accountAddress: account.address, accountMnemonic: mnemonic, memberId: member.memberId}
     })
+  }
+  private async ensureApi(){
+    if(!this.api)
+    {
+      const provider = new WsProvider(this.nodeUrl);
+      this.api = await ApiPromise.create({provider, types})
+    }
   }
 }
 
