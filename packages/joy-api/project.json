@@ -3,6 +3,34 @@
   "sourceRoot": "packages/joy-api/src",
   "projectType": "library",
   "targets": {
+    "generate":{
+      "executor":"@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "npx graphql-codegen --config packages/joy-api/codegen.yaml"
+          }
+        ]
+      }
+    },
+    "build": {
+      "executor": "@nrwl/node:build",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/joy-api",
+        "tsConfig": "packages/joy-api/tsconfig.lib.json",
+        "packageJson": "packages/joy-api/package.json",
+        "main": "packages/joy-api/src/index.ts"
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false,
+          "externalDependencies": "none"
+        }
+      }
+    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],

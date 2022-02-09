@@ -1,3 +1,5 @@
+export * from './lib'
+export * from './errors'
 export * from './types'
-export * from './joy-api'
+export * from './signer'
 export * from './faucet'

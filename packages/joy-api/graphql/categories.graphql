@@ -1,0 +1,10 @@
+fragment VideoCategoryFields on VideoCategory {
+  id
+  name
+}
+
+query GetVideoCategories {
+  videoCategories {
+    ...VideoCategoryFields
+  }
+}

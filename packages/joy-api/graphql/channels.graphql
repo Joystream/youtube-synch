@@ -1,0 +1,157 @@
+fragment BasicChannelFields on Channel {
+  id
+  title
+  createdAt
+  views
+  follows
+
+  avatarPhoto {
+    ...StorageDataObjectFields
+  }
+}
+
+fragment AllChannelFields on Channel {
+  ...BasicChannelFields
+  description
+  isPublic
+  isCensored
+  language {
+    id
+    iso
+  }
+  ownerMember {
+    id
+    handle
+    avatarUri
+  }
+  coverPhoto {
+    ...StorageDataObjectFields
+  }
+}
+
+query GetBasicChannel($where: ChannelWhereUniqueInput!) {
+  channelByUniqueInput(where: $where) {
+    ...BasicChannelFields
+  }
+}
+
+query GetChannel($where: ChannelWhereUniqueInput!) {
+  channelByUniqueInput(where: $where) {
+    ...AllChannelFields
+  }
+}
+
+query GetVideoCount($where: VideoWhereInput) {
+  videosConnection(first: 0, where: $where) {
+    totalCount
+  }
+}
+
+query GetChannels($where: ChannelWhereInput, $limit: Int = 50, $orderBy: [ChannelOrderByInput!] = [createdAt_DESC]) {
+  channels(where: $where, orderBy: $orderBy, limit: $limit) {
+    ...AllChannelFields
+  }
+}
+
+query GetChannelsConnection(
+  $first: Int
+  $after: String
+  $where: ChannelWhereInput
+  $orderBy: [ChannelOrderByInput!] = [createdAt_DESC]
+) {
+  channelsConnection(first: $first, after: $after, where: $where, orderBy: $orderBy) {
+    edges {
+      cursor
+      node {
+        ...AllChannelFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}
+
+mutation FollowChannel($channelId: ID!) {
+  followChannel(channelId: $channelId) {
+    id
+    follows
+  }
+}
+
+mutation UnfollowChannel($channelId: ID!) {
+  unfollowChannel(channelId: $channelId) {
+    id
+    follows
+  }
+}
+
+query GetMostViewedChannelsConnection(
+  $limit: Int = 50
+  $periodDays: Int
+  $first: Int
+  $after: String
+  $where: ChannelWhereInput
+) {
+  mostViewedChannelsConnection(limit: $limit, first: $first, after: $after, periodDays: $periodDays, where: $where) {
+    edges {
+      cursor
+      node {
+        ...AllChannelFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}
+
+query GetMostFollowedChannelsConnection(
+  $limit: Int!
+  $periodDays: Int
+  $first: Int
+  $after: String
+  $where: ChannelWhereInput
+) {
+  mostFollowedChannelsConnection(limit: $limit, first: $first, after: $after, periodDays: $periodDays, where: $where) {
+    edges {
+      cursor
+      node {
+        ...AllChannelFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}
+
+query GetTop10Channels($where: ChannelWhereInput) {
+  top10Channels(where: $where) {
+    ...BasicChannelFields
+  }
+}
+
+query GetPromisingChannels($where: ChannelWhereInput) {
+  promisingChannels(where: $where) {
+    ...BasicChannelFields
+  }
+}
+
+query GetDiscoverChannels($where: ChannelWhereInput) {
+  discoverChannels(where: $where) {
+    ...BasicChannelFields
+  }
+}
+
+query GetPopularChannels($where: ChannelWhereInput) {
+  popularChannels(where: $where) {
+    ...BasicChannelFields
+  }
+}

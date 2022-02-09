@@ -7,8 +7,9 @@
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "esModuleInterop": true,
     "importHelpers": true,
-    "target": "es2015",
+    "target": "es2017",
     "module": "esnext",
     "lib": ["es2017", "dom"],
     "skipLibCheck": true,
@@ -20,7 +21,9 @@
       "@youtube-sync/domain": ["packages/domain/src/index.ts"],
       "@youtube-sync/infrastructure": ["packages/infrastructure/src/index.ts"],
       "@youtube-sync/joy-api": ["packages/joy-api/src/index.ts"],
-      "@youtube-sync/monitor": ["packages/monitor/index.ts"]
+      "@youtube-sync/monitor": ["packages/monitor/index.ts"],
+      "@polkadot/types/augment": ["node_modules/@joystream/types/augment-codec/augment-types.ts"],
+      "@polkadot/api/augment": ["node_modules/@joystream/types/augment-codec/augment-api.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
