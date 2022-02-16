@@ -23,6 +23,11 @@ export interface Channel {
   userRefreshToken: string;
   uploadsPlaylistId: string;
   shouldBeInjested: boolean;
+  chainMetadata: ChannelChainMetadata
+}
+
+export class ChannelChainMetadata {
+  id: string
 }
 export interface IEvent {
   timestamp: number;
@@ -70,6 +75,11 @@ export class VideoEvent implements IEvent {
   subject: string;
 }
 
+export type Membership = {
+  memberId: string,
+  address: string,
+  secret: string
+}
 export class User {
   /**
    *
@@ -83,6 +93,8 @@ export class User {
     public avatarUrl: string,
     public channelsCount: number) {
   }
+
+  membership: Membership
 }
 
 export type VideoState =

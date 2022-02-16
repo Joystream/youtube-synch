@@ -21,6 +21,11 @@ export class Result<T, TE extends DomainError>{
         return Result.Success(mapper(this.value))
       return Result.Error(this.error);
     }
+    onFailure(err: (error: TE) => void){
+      if(this.isFailure)
+        err(this.error)
+      return this;
+    }
     pipe<K>(mapper: (value:T) => Result<K,TE>) : Result<K, TE>{
       if(this.isSuccess)
         return mapper(this.value)

@@ -1,5 +1,5 @@
 import { types } from '@joystream/types'
-import { ApiPromise, Keyring, WsProvider } from '@polkadot/api'
+import { ApiPromise, WsProvider } from '@polkadot/api'
 import '@polkadot/api/augment'
 
 import { JoystreamLibError } from './errors'
@@ -51,6 +51,9 @@ export class JoystreamLib {
     await this.ensureApi()
     const chain = await this.api.rpc.system.chain()
     ConsoleLogger.log(`[JoystreamLib] Connected to chain "${chain}" via "${endpoint}"`)
+  }
+  async connect(){
+    await this.ensureApi()
   }
   async getAccountBalance(accountId: AccountId): Promise<number> {
     await this.ensureApi()

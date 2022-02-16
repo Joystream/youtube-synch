@@ -1,50 +1,36 @@
-import { MemberId } from '@joystream/types/members';
 import { Controller, Get, Query } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Channel, DomainError, User } from '@youtube-sync/domain';
-import { Account, ChannelInputAssets, ChannelInputMetadata, Faucet, JoystreamLib, RegisteredMember, AccountsUtil } from '@youtube-sync/joy-api';
-import axios from 'axios';
-import {createHash} from 'blake3'
+import { JoystreamClient } from '@youtube-sync/joy-api';
+import { ChannelsService } from '../channels/channels.service';
+import {UsersService} from '../users/users.service'
+import { VideosService } from '../videos/videos.service';
 @Controller('network')
 export class NetworkController {
-
-    /**
-     *
-     */
-    private client: JoystreamLib;
-    private signer: AccountsUtil;
-    private faucet: Faucet
-    constructor(private configService: ConfigService) {
+    private jClient: JoystreamClient
+    constructor(
+        private configService: ConfigService, 
+        private usersService: UsersService,
+        private channelsService: ChannelsService,
+        private videoService: VideosService) {
         const nodeUrl = this.configService.get<string>('JOYSTREAM_WEBSOCKET_RPC');
         const faucetUrl = this.configService.get<string>('JOYSTREAM_FAUCET_URL');
-        this.client = new JoystreamLib(nodeUrl);
-        this.signer = new AccountsUtil()
-        this.faucet = new Faucet(faucetUrl)
+        const orionUrl = this.configService.get<string>('JOYSTREAM_ORION_URL')
+        const rootAccount = this.configService.get<string>('JOYSTREAM_ROOT_ACCOUNT');
+        this.jClient = new JoystreamClient(faucetUrl, nodeUrl, orionUrl, rootAccount);
     }
-    @Get()
-    async get(){
-        const channel: ChannelInputMetadata = {
-            title: 'This is channel',
-            description: 'This is description',
-            isPublic: true
-        }
-        const handle = Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 8)
-        const assets: ChannelInputAssets = {}
-        const signer = new AccountsUtil()
-        const result = await signer.addKnownAccount('//Alice')
-            .pipe(id => signer.createAccount('ihork'))
-            .pipeAsync(account => this.faucet
-                .register(handle, account.address.address)
-                .then(member => member.map(m => [account, m] as [Account, RegisteredMember]))
-            )
-    
-        const channelResult = await result.pipeAsync(
-            ([account, member]) => this.client.extrinsics.createChannel(account.address, member.memberId , channel, assets))
+    @Get('e2e')
+    async e2eTest(@Query('code') code: string){
+        const user = await this.usersService.createFromCode(code);
+        const channels = await this.channelsService.ingest(user);
+        const videos = await this.videoService.ingest(channels[0])
+        const channel = channels[0];
+        const video = videos[0];
+        const videoResult = await this.jClient
+        .createMembership(user)
+        .then(membershipResult => membershipResult
+            .pipeAsync(mem => this.jClient
+                .createChannel(mem, channel)
+                .then(ch => ch.pipeAsync(c => this.jClient.uploadVideo(mem, {...channel, chainMetadata: {id: c.channelId}}, video)))));
+        return videoResult;
     }
 }
-
-const mapChannel = (channel: Channel) : ChannelInputMetadata => ({
-    title: channel.title,
-    description: channel.description,
-    isPublic: true
-})

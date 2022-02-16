@@ -27,17 +27,8 @@ class YoutubeClient implements IYoutubeClient {
     const tokenInfo = await this._auth.getTokenInfo(
       tokenResponse.tokens.access_token!
     );
-    const user: User = {
-      id: tokenInfo.sub!,
-      avatarUrl: '',
-      accessToken: tokenResponse.tokens.access_token!,
-      refreshToken: tokenResponse.tokens.refresh_token!,
-      email: tokenInfo.email!,
-      googleId: tokenInfo.sub!,
-      youtubeUsername: tokenInfo.email!,
-      channelsCount: 0,
-    };
-    return user;
+    return new User(tokenInfo.sub!, tokenInfo.email!, tokenInfo.email!, tokenInfo.sub!,
+      tokenResponse.tokens.access_token!, tokenResponse.tokens.refresh_token!, '', 0);
   }
 
   async getChannels(user: User): Promise<Channel[]> {

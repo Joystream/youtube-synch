@@ -118,7 +118,7 @@ export class JoystreamLibExtrinsics {
     channelId: ChannelId,
     inputMetadata: VideoInputMetadata,
     inputAssets: VideoInputAssets,
-  ): Promise<VideoExtrinsicResult> {
+  ): Promise<Result<VideoExtrinsicResult, DomainError>> {
     await this.ensureApi()
 
     const [videoMetadata, videoAssets] = await parseVideoExtrinsicInput(this.api, inputMetadata, inputAssets)
@@ -135,10 +135,10 @@ export class JoystreamLibExtrinsics {
 
     const videoId = getEventData('content', 'VideoCreated')[2]
 
-    return {
+    return Result.Success({
       videoId: videoId.toString(),
       block,
       assetsIds: extractVideoResultAssetsIds(inputAssets, getEventData),
-    }
+    })
   }
 }

@@ -1,8 +1,14 @@
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
-export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
-export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
-export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
+export type Exact<T extends { [key: string]: unknown }> = {
+  [K in keyof T]: T[K];
+};
+export type MakeOptional<T, K extends keyof T> = Omit<T, K> & {
+  [SubKey in K]?: Maybe<T[SubKey]>;
+};
+export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & {
+  [SubKey in K]: Maybe<T[SubKey]>;
+};
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: string;
@@ -169,18 +175,17 @@ export type ChannelCategoryEdge = {
   node: ChannelCategory;
 };
 
-export enum ChannelCategoryOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  CreatedInBlockAsc = 'createdInBlock_ASC',
-  CreatedInBlockDesc = 'createdInBlock_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  NameAsc = 'name_ASC',
-  NameDesc = 'name_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type ChannelCategoryOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'createdInBlock_ASC'
+  | 'createdInBlock_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'name_ASC'
+  | 'name_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type ChannelCategoryUpdateInput = {
   createdInBlock?: InputMaybe<Scalars['Float']>;
@@ -268,38 +273,37 @@ export type ChannelFollowsInfo = {
   id: Scalars['ID'];
 };
 
-export enum ChannelOrderByInput {
-  AvatarPhotoAsc = 'avatarPhoto_ASC',
-  AvatarPhotoDesc = 'avatarPhoto_DESC',
-  CategoryAsc = 'category_ASC',
-  CategoryDesc = 'category_DESC',
-  CoverPhotoAsc = 'coverPhoto_ASC',
-  CoverPhotoDesc = 'coverPhoto_DESC',
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  CreatedInBlockAsc = 'createdInBlock_ASC',
-  CreatedInBlockDesc = 'createdInBlock_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  DescriptionAsc = 'description_ASC',
-  DescriptionDesc = 'description_DESC',
-  IsCensoredAsc = 'isCensored_ASC',
-  IsCensoredDesc = 'isCensored_DESC',
-  IsPublicAsc = 'isPublic_ASC',
-  IsPublicDesc = 'isPublic_DESC',
-  LanguageAsc = 'language_ASC',
-  LanguageDesc = 'language_DESC',
-  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
-  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
-  OwnerMemberAsc = 'ownerMember_ASC',
-  OwnerMemberDesc = 'ownerMember_DESC',
-  RewardAccountAsc = 'rewardAccount_ASC',
-  RewardAccountDesc = 'rewardAccount_DESC',
-  TitleAsc = 'title_ASC',
-  TitleDesc = 'title_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type ChannelOrderByInput =
+  | 'avatarPhoto_ASC'
+  | 'avatarPhoto_DESC'
+  | 'category_ASC'
+  | 'category_DESC'
+  | 'coverPhoto_ASC'
+  | 'coverPhoto_DESC'
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'createdInBlock_ASC'
+  | 'createdInBlock_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'description_ASC'
+  | 'description_DESC'
+  | 'isCensored_ASC'
+  | 'isCensored_DESC'
+  | 'isPublic_ASC'
+  | 'isPublic_DESC'
+  | 'language_ASC'
+  | 'language_DESC'
+  | 'ownerCuratorGroup_ASC'
+  | 'ownerCuratorGroup_DESC'
+  | 'ownerMember_ASC'
+  | 'ownerMember_DESC'
+  | 'rewardAccount_ASC'
+  | 'rewardAccount_DESC'
+  | 'title_ASC'
+  | 'title_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type ChannelUpdateInput = {
   avatarPhoto?: InputMaybe<Scalars['ID']>;
@@ -386,15 +390,7 @@ export type ChannelWhereUniqueInput = {
   id: Scalars['ID'];
 };
 
-export enum Continent {
-  Af = 'AF',
-  An = 'AN',
-  As = 'AS',
-  Eu = 'EU',
-  Na = 'NA',
-  Oc = 'OC',
-  Sa = 'SA'
-}
+export type Continent = 'AF' | 'AN' | 'AS' | 'EU' | 'NA' | 'OC' | 'SA';
 
 export type CuratorGroup = BaseGraphQlObject & {
   __typename?: 'CuratorGroup';
@@ -431,16 +427,15 @@ export type CuratorGroupEdge = {
   node: CuratorGroup;
 };
 
-export enum CuratorGroupOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  IsActiveAsc = 'isActive_ASC',
-  IsActiveDesc = 'isActive_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type CuratorGroupOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'isActive_ASC'
+  | 'isActive_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type CuratorGroupUpdateInput = {
   curatorIds?: InputMaybe<Array<Scalars['Int']>>;
@@ -488,7 +483,12 @@ export type CuratorGroupWhereUniqueInput = {
   id: Scalars['ID'];
 };
 
-export type DataObjectType = DataObjectTypeChannelAvatar | DataObjectTypeChannelCoverPhoto | DataObjectTypeUnknown | DataObjectTypeVideoMedia | DataObjectTypeVideoThumbnail;
+export type DataObjectType =
+  | DataObjectTypeChannelAvatar
+  | DataObjectTypeChannelCoverPhoto
+  | DataObjectTypeUnknown
+  | DataObjectTypeVideoMedia
+  | DataObjectTypeVideoThumbnail;
 
 export type DataObjectTypeChannelAvatar = {
   __typename?: 'DataObjectTypeChannelAvatar';
@@ -631,16 +631,15 @@ export type DistributionBucketFamilyGeographicAreaEdge = {
   node: DistributionBucketFamilyGeographicArea;
 };
 
-export enum DistributionBucketFamilyGeographicAreaOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  DistributionBucketFamilyMetadataAsc = 'distributionBucketFamilyMetadata_ASC',
-  DistributionBucketFamilyMetadataDesc = 'distributionBucketFamilyMetadata_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type DistributionBucketFamilyGeographicAreaOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'distributionBucketFamilyMetadata_ASC'
+  | 'distributionBucketFamilyMetadata_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type DistributionBucketFamilyGeographicAreaUpdateInput = {
   area?: InputMaybe<Scalars['JSONObject']>;
@@ -721,18 +720,17 @@ export type DistributionBucketFamilyMetadataEdge = {
   node: DistributionBucketFamilyMetadata;
 };
 
-export enum DistributionBucketFamilyMetadataOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  DescriptionAsc = 'description_ASC',
-  DescriptionDesc = 'description_DESC',
-  RegionAsc = 'region_ASC',
-  RegionDesc = 'region_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type DistributionBucketFamilyMetadataOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'description_ASC'
+  | 'description_DESC'
+  | 'region_ASC'
+  | 'region_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type DistributionBucketFamilyMetadataUpdateInput = {
   description?: InputMaybe<Scalars['String']>;
@@ -792,16 +790,15 @@ export type DistributionBucketFamilyMetadataWhereUniqueInput = {
   id: Scalars['ID'];
 };
 
-export enum DistributionBucketFamilyOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  MetadataAsc = 'metadata_ASC',
-  MetadataDesc = 'metadata_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type DistributionBucketFamilyOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'metadata_ASC'
+  | 'metadata_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type DistributionBucketFamilyUpdateInput = {
   metadata?: InputMaybe<Scalars['ID']>;
@@ -922,20 +919,19 @@ export type DistributionBucketOperatorMetadataEdge = {
   node: DistributionBucketOperatorMetadata;
 };
 
-export enum DistributionBucketOperatorMetadataOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  ExtraAsc = 'extra_ASC',
-  ExtraDesc = 'extra_DESC',
-  NodeEndpointAsc = 'nodeEndpoint_ASC',
-  NodeEndpointDesc = 'nodeEndpoint_DESC',
-  NodeLocationAsc = 'nodeLocation_ASC',
-  NodeLocationDesc = 'nodeLocation_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type DistributionBucketOperatorMetadataOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'extra_ASC'
+  | 'extra_DESC'
+  | 'nodeEndpoint_ASC'
+  | 'nodeEndpoint_DESC'
+  | 'nodeLocation_ASC'
+  | 'nodeLocation_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type DistributionBucketOperatorMetadataUpdateInput = {
   extra?: InputMaybe<Scalars['String']>;
@@ -990,27 +986,23 @@ export type DistributionBucketOperatorMetadataWhereUniqueInput = {
   id: Scalars['ID'];
 };
 
-export enum DistributionBucketOperatorOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  DistributionBucketAsc = 'distributionBucket_ASC',
-  DistributionBucketDesc = 'distributionBucket_DESC',
-  MetadataAsc = 'metadata_ASC',
-  MetadataDesc = 'metadata_DESC',
-  StatusAsc = 'status_ASC',
-  StatusDesc = 'status_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  WorkerIdAsc = 'workerId_ASC',
-  WorkerIdDesc = 'workerId_DESC'
-}
+export type DistributionBucketOperatorOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'distributionBucket_ASC'
+  | 'distributionBucket_DESC'
+  | 'metadata_ASC'
+  | 'metadata_DESC'
+  | 'status_ASC'
+  | 'status_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC'
+  | 'workerId_ASC'
+  | 'workerId_DESC';
 
-export enum DistributionBucketOperatorStatus {
-  Active = 'ACTIVE',
-  Invited = 'INVITED'
-}
+export type DistributionBucketOperatorStatus = 'ACTIVE' | 'INVITED';
 
 export type DistributionBucketOperatorUpdateInput = {
   distributionBucket?: InputMaybe<Scalars['ID']>;
@@ -1062,22 +1054,21 @@ export type DistributionBucketOperatorWhereUniqueInput = {
   id: Scalars['ID'];
 };
 
-export enum DistributionBucketOrderByInput {
-  AcceptingNewBagsAsc = 'acceptingNewBags_ASC',
-  AcceptingNewBagsDesc = 'acceptingNewBags_DESC',
-  BucketIndexAsc = 'bucketIndex_ASC',
-  BucketIndexDesc = 'bucketIndex_DESC',
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  DistributingAsc = 'distributing_ASC',
-  DistributingDesc = 'distributing_DESC',
-  FamilyAsc = 'family_ASC',
-  FamilyDesc = 'family_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type DistributionBucketOrderByInput =
+  | 'acceptingNewBags_ASC'
+  | 'acceptingNewBags_DESC'
+  | 'bucketIndex_ASC'
+  | 'bucketIndex_DESC'
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'distributing_ASC'
+  | 'distributing_DESC'
+  | 'family_ASC'
+  | 'family_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type DistributionBucketUpdateInput = {
   acceptingNewBags?: InputMaybe<Scalars['Boolean']>;
@@ -1187,18 +1178,17 @@ export type GeoCoordinatesEdge = {
   node: GeoCoordinates;
 };
 
-export enum GeoCoordinatesOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  LatitudeAsc = 'latitude_ASC',
-  LatitudeDesc = 'latitude_DESC',
-  LongitudeAsc = 'longitude_ASC',
-  LongitudeDesc = 'longitude_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type GeoCoordinatesOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'latitude_ASC'
+  | 'latitude_DESC'
+  | 'longitude_ASC'
+  | 'longitude_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type GeoCoordinatesUpdateInput = {
   latitude?: InputMaybe<Scalars['Float']>;
@@ -1253,7 +1243,10 @@ export type GeoCoordinatesWhereUniqueInput = {
   id: Scalars['ID'];
 };
 
-export type GeographicalArea = GeographicalAreaContinent | GeographicalAreaCountry | GeographicalAreaSubdivistion;
+export type GeographicalArea =
+  | GeographicalAreaContinent
+  | GeographicalAreaCountry
+  | GeographicalAreaSubdivistion;
 
 export type GeographicalAreaContinent = {
   __typename?: 'GeographicalAreaContinent';
@@ -1350,18 +1343,17 @@ export type LanguageEdge = {
   node: Language;
 };
 
-export enum LanguageOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  CreatedInBlockAsc = 'createdInBlock_ASC',
-  CreatedInBlockDesc = 'createdInBlock_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  IsoAsc = 'iso_ASC',
-  IsoDesc = 'iso_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type LanguageOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'createdInBlock_ASC'
+  | 'createdInBlock_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'iso_ASC'
+  | 'iso_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type LanguageUpdateInput = {
   createdInBlock?: InputMaybe<Scalars['Float']>;
@@ -1456,20 +1448,19 @@ export type LicenseEdge = {
   node: License;
 };
 
-export enum LicenseOrderByInput {
-  AttributionAsc = 'attribution_ASC',
-  AttributionDesc = 'attribution_DESC',
-  CodeAsc = 'code_ASC',
-  CodeDesc = 'code_DESC',
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  CustomTextAsc = 'customText_ASC',
-  CustomTextDesc = 'customText_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type LicenseOrderByInput =
+  | 'attribution_ASC'
+  | 'attribution_DESC'
+  | 'code_ASC'
+  | 'code_DESC'
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'customText_ASC'
+  | 'customText_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type LicenseUpdateInput = {
   attribution?: InputMaybe<Scalars['String']>;
@@ -1594,36 +1585,31 @@ export type MembershipEdge = {
   node: Membership;
 };
 
-export enum MembershipEntryMethod {
-  Genesis = 'GENESIS',
-  Paid = 'PAID',
-  Screening = 'SCREENING'
-}
+export type MembershipEntryMethod = 'GENESIS' | 'PAID' | 'SCREENING';
 
-export enum MembershipOrderByInput {
-  AboutAsc = 'about_ASC',
-  AboutDesc = 'about_DESC',
-  AvatarUriAsc = 'avatarUri_ASC',
-  AvatarUriDesc = 'avatarUri_DESC',
-  ControllerAccountAsc = 'controllerAccount_ASC',
-  ControllerAccountDesc = 'controllerAccount_DESC',
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  CreatedInBlockAsc = 'createdInBlock_ASC',
-  CreatedInBlockDesc = 'createdInBlock_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  EntryAsc = 'entry_ASC',
-  EntryDesc = 'entry_DESC',
-  HandleAsc = 'handle_ASC',
-  HandleDesc = 'handle_DESC',
-  RootAccountAsc = 'rootAccount_ASC',
-  RootAccountDesc = 'rootAccount_DESC',
-  SubscriptionAsc = 'subscription_ASC',
-  SubscriptionDesc = 'subscription_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type MembershipOrderByInput =
+  | 'about_ASC'
+  | 'about_DESC'
+  | 'avatarUri_ASC'
+  | 'avatarUri_DESC'
+  | 'controllerAccount_ASC'
+  | 'controllerAccount_DESC'
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'createdInBlock_ASC'
+  | 'createdInBlock_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'entry_ASC'
+  | 'entry_DESC'
+  | 'handle_ASC'
+  | 'handle_DESC'
+  | 'rootAccount_ASC'
+  | 'rootAccount_DESC'
+  | 'subscription_ASC'
+  | 'subscription_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type MembershipUpdateInput = {
   about?: InputMaybe<Scalars['String']>;
@@ -1727,29 +1713,24 @@ export type Mutation = {
   unfollowChannel: ChannelFollowsInfo;
 };
 
-
 export type MutationAddVideoViewArgs = {
   categoryId?: InputMaybe<Scalars['ID']>;
   channelId: Scalars['ID'];
   videoId: Scalars['ID'];
 };
 
-
 export type MutationFollowChannelArgs = {
   channelId: Scalars['ID'];
 };
-
 
 export type MutationSetCategoryFeaturedVideosArgs = {
   categoryId: Scalars['ID'];
   videos: Array<FeaturedVideoInput>;
 };
 
-
 export type MutationSetVideoHeroArgs = {
   newVideoHero: VideoHeroInput;
 };
-
 
 export type MutationUnfollowChannelArgs = {
   channelId: Scalars['ID'];
@@ -1767,9 +1748,13 @@ export type NodeLocationMetadata = BaseGraphQlObject & {
   createdById: Scalars['String'];
   deletedAt?: Maybe<Scalars['DateTime']>;
   deletedById?: Maybe<Scalars['String']>;
-  distributionbucketoperatormetadatanodeLocation?: Maybe<Array<DistributionBucketOperatorMetadata>>;
+  distributionbucketoperatormetadatanodeLocation?: Maybe<
+    Array<DistributionBucketOperatorMetadata>
+  >;
   id: Scalars['ID'];
-  storagebucketoperatormetadatanodeLocation?: Maybe<Array<StorageBucketOperatorMetadata>>;
+  storagebucketoperatormetadatanodeLocation?: Maybe<
+    Array<StorageBucketOperatorMetadata>
+  >;
   updatedAt?: Maybe<Scalars['DateTime']>;
   updatedById?: Maybe<Scalars['String']>;
   version: Scalars['Int'];
@@ -1794,20 +1779,19 @@ export type NodeLocationMetadataEdge = {
   node: NodeLocationMetadata;
 };
 
-export enum NodeLocationMetadataOrderByInput {
-  CityAsc = 'city_ASC',
-  CityDesc = 'city_DESC',
-  CoordinatesAsc = 'coordinates_ASC',
-  CoordinatesDesc = 'coordinates_DESC',
-  CountryCodeAsc = 'countryCode_ASC',
-  CountryCodeDesc = 'countryCode_DESC',
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type NodeLocationMetadataOrderByInput =
+  | 'city_ASC'
+  | 'city_DESC'
+  | 'coordinates_ASC'
+  | 'coordinates_DESC'
+  | 'countryCode_ASC'
+  | 'countryCode_DESC'
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type NodeLocationMetadataUpdateInput = {
   city?: InputMaybe<Scalars['String']>;
@@ -1989,21 +1973,17 @@ export type Query = {
   workersConnection: WorkerConnection;
 };
 
-
 export type QueryAllCategoriesFeaturedVideosArgs = {
   videosLimit: Scalars['Int'];
 };
-
 
 export type QueryCategoryFeaturedVideosArgs = {
   categoryId: Scalars['ID'];
 };
 
-
 export type QueryChannelByUniqueInputArgs = {
   where: ChannelWhereUniqueInput;
 };
-
 
 export type QueryChannelCategoriesArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2012,14 +1992,12 @@ export type QueryChannelCategoriesArgs = {
   where?: InputMaybe<ChannelCategoryWhereInput>;
 };
 
-
 export type QueryChannelCategoriesByNameArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   skip?: InputMaybe<Scalars['Int']>;
   text: Scalars['String'];
   whereChannelCategory?: InputMaybe<ChannelCategoryWhereInput>;
 };
-
 
 export type QueryChannelCategoriesConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2030,11 +2008,9 @@ export type QueryChannelCategoriesConnectionArgs = {
   where?: InputMaybe<ChannelCategoryWhereInput>;
 };
 
-
 export type QueryChannelCategoryByUniqueInputArgs = {
   where: ChannelCategoryWhereUniqueInput;
 };
-
 
 export type QueryChannelsArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2042,7 +2018,6 @@ export type QueryChannelsArgs = {
   orderBy?: InputMaybe<Array<ChannelOrderByInput>>;
   where?: InputMaybe<ChannelWhereInput>;
 };
-
 
 export type QueryChannelsConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2053,11 +2028,9 @@ export type QueryChannelsConnectionArgs = {
   where?: InputMaybe<ChannelWhereInput>;
 };
 
-
 export type QueryCuratorGroupByUniqueInputArgs = {
   where: CuratorGroupWhereUniqueInput;
 };
-
 
 export type QueryCuratorGroupsArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2065,7 +2038,6 @@ export type QueryCuratorGroupsArgs = {
   orderBy?: InputMaybe<Array<CuratorGroupOrderByInput>>;
   where?: InputMaybe<CuratorGroupWhereInput>;
 };
-
 
 export type QueryCuratorGroupsConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2076,16 +2048,13 @@ export type QueryCuratorGroupsConnectionArgs = {
   where?: InputMaybe<CuratorGroupWhereInput>;
 };
 
-
 export type QueryDiscoverChannelsArgs = {
   where?: InputMaybe<ChannelWhereInput>;
 };
 
-
 export type QueryDistributionBucketByUniqueInputArgs = {
   where: DistributionBucketWhereUniqueInput;
 };
-
 
 export type QueryDistributionBucketFamiliesArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2093,7 +2062,6 @@ export type QueryDistributionBucketFamiliesArgs = {
   orderBy?: InputMaybe<Array<DistributionBucketFamilyOrderByInput>>;
   where?: InputMaybe<DistributionBucketFamilyWhereInput>;
 };
-
 
 export type QueryDistributionBucketFamiliesConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2104,34 +2072,33 @@ export type QueryDistributionBucketFamiliesConnectionArgs = {
   where?: InputMaybe<DistributionBucketFamilyWhereInput>;
 };
 
-
 export type QueryDistributionBucketFamilyByUniqueInputArgs = {
   where: DistributionBucketFamilyWhereUniqueInput;
 };
-
 
 export type QueryDistributionBucketFamilyGeographicAreaByUniqueInputArgs = {
   where: DistributionBucketFamilyGeographicAreaWhereUniqueInput;
 };
 
-
 export type QueryDistributionBucketFamilyGeographicAreasArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
-  orderBy?: InputMaybe<Array<DistributionBucketFamilyGeographicAreaOrderByInput>>;
+  orderBy?: InputMaybe<
+    Array<DistributionBucketFamilyGeographicAreaOrderByInput>
+  >;
   where?: InputMaybe<DistributionBucketFamilyGeographicAreaWhereInput>;
 };
-
 
 export type QueryDistributionBucketFamilyGeographicAreasConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
   before?: InputMaybe<Scalars['String']>;
   first?: InputMaybe<Scalars['Int']>;
   last?: InputMaybe<Scalars['Int']>;
-  orderBy?: InputMaybe<Array<DistributionBucketFamilyGeographicAreaOrderByInput>>;
+  orderBy?: InputMaybe<
+    Array<DistributionBucketFamilyGeographicAreaOrderByInput>
+  >;
   where?: InputMaybe<DistributionBucketFamilyGeographicAreaWhereInput>;
 };
-
 
 export type QueryDistributionBucketFamilyMetadataArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2140,11 +2107,9 @@ export type QueryDistributionBucketFamilyMetadataArgs = {
   where?: InputMaybe<DistributionBucketFamilyMetadataWhereInput>;
 };
 
-
 export type QueryDistributionBucketFamilyMetadataByUniqueInputArgs = {
   where: DistributionBucketFamilyMetadataWhereUniqueInput;
 };
-
 
 export type QueryDistributionBucketFamilyMetadataConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2155,11 +2120,9 @@ export type QueryDistributionBucketFamilyMetadataConnectionArgs = {
   where?: InputMaybe<DistributionBucketFamilyMetadataWhereInput>;
 };
 
-
 export type QueryDistributionBucketOperatorByUniqueInputArgs = {
   where: DistributionBucketOperatorWhereUniqueInput;
 };
-
 
 export type QueryDistributionBucketOperatorMetadataArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2168,11 +2131,9 @@ export type QueryDistributionBucketOperatorMetadataArgs = {
   where?: InputMaybe<DistributionBucketOperatorMetadataWhereInput>;
 };
 
-
 export type QueryDistributionBucketOperatorMetadataByUniqueInputArgs = {
   where: DistributionBucketOperatorMetadataWhereUniqueInput;
 };
-
 
 export type QueryDistributionBucketOperatorMetadataConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2183,14 +2144,12 @@ export type QueryDistributionBucketOperatorMetadataConnectionArgs = {
   where?: InputMaybe<DistributionBucketOperatorMetadataWhereInput>;
 };
 
-
 export type QueryDistributionBucketOperatorsArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   orderBy?: InputMaybe<Array<DistributionBucketOperatorOrderByInput>>;
   where?: InputMaybe<DistributionBucketOperatorWhereInput>;
 };
-
 
 export type QueryDistributionBucketOperatorsConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2201,14 +2160,12 @@ export type QueryDistributionBucketOperatorsConnectionArgs = {
   where?: InputMaybe<DistributionBucketOperatorWhereInput>;
 };
 
-
 export type QueryDistributionBucketsArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   orderBy?: InputMaybe<Array<DistributionBucketOrderByInput>>;
   where?: InputMaybe<DistributionBucketWhereInput>;
 };
-
 
 export type QueryDistributionBucketsConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2219,7 +2176,6 @@ export type QueryDistributionBucketsConnectionArgs = {
   where?: InputMaybe<DistributionBucketWhereInput>;
 };
 
-
 export type QueryGeoCoordinatesArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2227,11 +2183,9 @@ export type QueryGeoCoordinatesArgs = {
   where?: InputMaybe<GeoCoordinatesWhereInput>;
 };
 
-
 export type QueryGeoCoordinatesByUniqueInputArgs = {
   where: GeoCoordinatesWhereUniqueInput;
 };
-
 
 export type QueryGeoCoordinatesConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2242,11 +2196,9 @@ export type QueryGeoCoordinatesConnectionArgs = {
   where?: InputMaybe<GeoCoordinatesWhereInput>;
 };
 
-
 export type QueryLanguageByUniqueInputArgs = {
   where: LanguageWhereUniqueInput;
 };
-
 
 export type QueryLanguagesArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2254,7 +2206,6 @@ export type QueryLanguagesArgs = {
   orderBy?: InputMaybe<Array<LanguageOrderByInput>>;
   where?: InputMaybe<LanguageWhereInput>;
 };
-
 
 export type QueryLanguagesConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2265,11 +2216,9 @@ export type QueryLanguagesConnectionArgs = {
   where?: InputMaybe<LanguageWhereInput>;
 };
 
-
 export type QueryLicenseByUniqueInputArgs = {
   where: LicenseWhereUniqueInput;
 };
-
 
 export type QueryLicensesArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2277,7 +2226,6 @@ export type QueryLicensesArgs = {
   orderBy?: InputMaybe<Array<LicenseOrderByInput>>;
   where?: InputMaybe<LicenseWhereInput>;
 };
-
 
 export type QueryLicensesConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2288,7 +2236,6 @@ export type QueryLicensesConnectionArgs = {
   where?: InputMaybe<LicenseWhereInput>;
 };
 
-
 export type QueryMembersByHandleArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   skip?: InputMaybe<Scalars['Int']>;
@@ -2296,11 +2243,9 @@ export type QueryMembersByHandleArgs = {
   whereMembership?: InputMaybe<MembershipWhereInput>;
 };
 
-
 export type QueryMembershipByUniqueInputArgs = {
   where: MembershipWhereUniqueInput;
 };
-
 
 export type QueryMembershipsArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2308,7 +2253,6 @@ export type QueryMembershipsArgs = {
   orderBy?: InputMaybe<Array<MembershipOrderByInput>>;
   where?: InputMaybe<MembershipWhereInput>;
 };
-
 
 export type QueryMembershipsConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2318,7 +2262,6 @@ export type QueryMembershipsConnectionArgs = {
   orderBy?: InputMaybe<Array<MembershipOrderByInput>>;
   where?: InputMaybe<MembershipWhereInput>;
 };
-
 
 export type QueryMostFollowedChannelsConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2331,17 +2274,14 @@ export type QueryMostFollowedChannelsConnectionArgs = {
   where?: InputMaybe<ChannelWhereInput>;
 };
 
-
 export type QueryMostViewedCategoriesArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   timePeriodDays: Scalars['Int'];
 };
 
-
 export type QueryMostViewedCategoriesAllTimeArgs = {
   limit: Scalars['Int'];
 };
-
 
 export type QueryMostViewedChannelsConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2354,7 +2294,6 @@ export type QueryMostViewedChannelsConnectionArgs = {
   where?: InputMaybe<ChannelWhereInput>;
 };
 
-
 export type QueryMostViewedVideosConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
   before?: InputMaybe<Scalars['String']>;
@@ -2366,7 +2305,6 @@ export type QueryMostViewedVideosConnectionArgs = {
   where?: InputMaybe<VideoWhereInput>;
 };
 
-
 export type QueryNodeLocationMetadataArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2374,11 +2312,9 @@ export type QueryNodeLocationMetadataArgs = {
   where?: InputMaybe<NodeLocationMetadataWhereInput>;
 };
 
-
 export type QueryNodeLocationMetadataByUniqueInputArgs = {
   where: NodeLocationMetadataWhereUniqueInput;
 };
-
 
 export type QueryNodeLocationMetadataConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2389,16 +2325,13 @@ export type QueryNodeLocationMetadataConnectionArgs = {
   where?: InputMaybe<NodeLocationMetadataWhereInput>;
 };
 
-
 export type QueryPopularChannelsArgs = {
   where?: InputMaybe<ChannelWhereInput>;
 };
 
-
 export type QueryPromisingChannelsArgs = {
   where?: InputMaybe<ChannelWhereInput>;
 };
-
 
 export type QuerySearchArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2408,11 +2341,9 @@ export type QuerySearchArgs = {
   whereVideo?: InputMaybe<VideoWhereInput>;
 };
 
-
 export type QueryStorageBagByUniqueInputArgs = {
   where: StorageBagWhereUniqueInput;
 };
-
 
 export type QueryStorageBagsArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2420,7 +2351,6 @@ export type QueryStorageBagsArgs = {
   orderBy?: InputMaybe<Array<StorageBagOrderByInput>>;
   where?: InputMaybe<StorageBagWhereInput>;
 };
-
 
 export type QueryStorageBagsConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2431,11 +2361,9 @@ export type QueryStorageBagsConnectionArgs = {
   where?: InputMaybe<StorageBagWhereInput>;
 };
 
-
 export type QueryStorageBucketByUniqueInputArgs = {
   where: StorageBucketWhereUniqueInput;
 };
-
 
 export type QueryStorageBucketOperatorMetadataArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2444,11 +2372,9 @@ export type QueryStorageBucketOperatorMetadataArgs = {
   where?: InputMaybe<StorageBucketOperatorMetadataWhereInput>;
 };
 
-
 export type QueryStorageBucketOperatorMetadataByUniqueInputArgs = {
   where: StorageBucketOperatorMetadataWhereUniqueInput;
 };
-
 
 export type QueryStorageBucketOperatorMetadataConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2459,14 +2385,12 @@ export type QueryStorageBucketOperatorMetadataConnectionArgs = {
   where?: InputMaybe<StorageBucketOperatorMetadataWhereInput>;
 };
 
-
 export type QueryStorageBucketsArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   orderBy?: InputMaybe<Array<StorageBucketOrderByInput>>;
   where?: InputMaybe<StorageBucketWhereInput>;
 };
-
 
 export type QueryStorageBucketsConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2477,11 +2401,9 @@ export type QueryStorageBucketsConnectionArgs = {
   where?: InputMaybe<StorageBucketWhereInput>;
 };
 
-
 export type QueryStorageDataObjectByUniqueInputArgs = {
   where: StorageDataObjectWhereUniqueInput;
 };
-
 
 export type QueryStorageDataObjectsArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2489,7 +2411,6 @@ export type QueryStorageDataObjectsArgs = {
   orderBy?: InputMaybe<Array<StorageDataObjectOrderByInput>>;
   where?: InputMaybe<StorageDataObjectWhereInput>;
 };
-
 
 export type QueryStorageDataObjectsConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2500,7 +2421,6 @@ export type QueryStorageDataObjectsConnectionArgs = {
   where?: InputMaybe<StorageDataObjectWhereInput>;
 };
 
-
 export type QueryStorageSystemParametersArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2508,11 +2428,9 @@ export type QueryStorageSystemParametersArgs = {
   where?: InputMaybe<StorageSystemParametersWhereInput>;
 };
 
-
 export type QueryStorageSystemParametersByUniqueInputArgs = {
   where: StorageSystemParametersWhereUniqueInput;
 };
-
 
 export type QueryStorageSystemParametersConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2523,26 +2441,21 @@ export type QueryStorageSystemParametersConnectionArgs = {
   where?: InputMaybe<StorageSystemParametersWhereInput>;
 };
 
-
 export type QueryTop10ChannelsArgs = {
   where?: InputMaybe<ChannelWhereInput>;
 };
-
 
 export type QueryTop10VideosThisMonthArgs = {
   where?: InputMaybe<VideoWhereInput>;
 };
 
-
 export type QueryTop10VideosThisWeekArgs = {
   where?: InputMaybe<VideoWhereInput>;
 };
 
-
 export type QueryVideoByUniqueInputArgs = {
   where: VideoWhereUniqueInput;
 };
-
 
 export type QueryVideoCategoriesArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2551,14 +2464,12 @@ export type QueryVideoCategoriesArgs = {
   where?: InputMaybe<VideoCategoryWhereInput>;
 };
 
-
 export type QueryVideoCategoriesByNameArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   skip?: InputMaybe<Scalars['Int']>;
   text: Scalars['String'];
   whereVideoCategory?: InputMaybe<VideoCategoryWhereInput>;
 };
-
 
 export type QueryVideoCategoriesConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2569,16 +2480,13 @@ export type QueryVideoCategoriesConnectionArgs = {
   where?: InputMaybe<VideoCategoryWhereInput>;
 };
 
-
 export type QueryVideoCategoryByUniqueInputArgs = {
   where: VideoCategoryWhereUniqueInput;
 };
 
-
 export type QueryVideoMediaEncodingByUniqueInputArgs = {
   where: VideoMediaEncodingWhereUniqueInput;
 };
-
 
 export type QueryVideoMediaEncodingsArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2586,7 +2494,6 @@ export type QueryVideoMediaEncodingsArgs = {
   orderBy?: InputMaybe<Array<VideoMediaEncodingOrderByInput>>;
   where?: InputMaybe<VideoMediaEncodingWhereInput>;
 };
-
 
 export type QueryVideoMediaEncodingsConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2597,7 +2504,6 @@ export type QueryVideoMediaEncodingsConnectionArgs = {
   where?: InputMaybe<VideoMediaEncodingWhereInput>;
 };
 
-
 export type QueryVideoMediaMetadataArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
@@ -2605,11 +2511,9 @@ export type QueryVideoMediaMetadataArgs = {
   where?: InputMaybe<VideoMediaMetadataWhereInput>;
 };
 
-
 export type QueryVideoMediaMetadataByUniqueInputArgs = {
   where: VideoMediaMetadataWhereUniqueInput;
 };
-
 
 export type QueryVideoMediaMetadataConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2620,14 +2524,12 @@ export type QueryVideoMediaMetadataConnectionArgs = {
   where?: InputMaybe<VideoMediaMetadataWhereInput>;
 };
 
-
 export type QueryVideosArgs = {
   limit?: InputMaybe<Scalars['Int']>;
   offset?: InputMaybe<Scalars['Int']>;
   orderBy?: InputMaybe<Array<VideoOrderByInput>>;
   where?: InputMaybe<VideoWhereInput>;
 };
-
 
 export type QueryVideosConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2638,11 +2540,9 @@ export type QueryVideosConnectionArgs = {
   where?: InputMaybe<VideoWhereInput>;
 };
 
-
 export type QueryWorkerByUniqueInputArgs = {
   where: WorkerWhereUniqueInput;
 };
-
 
 export type QueryWorkersArgs = {
   limit?: InputMaybe<Scalars['Int']>;
@@ -2650,7 +2550,6 @@ export type QueryWorkersArgs = {
   orderBy?: InputMaybe<Array<WorkerOrderByInput>>;
   where?: InputMaybe<WorkerWhereInput>;
 };
-
 
 export type QueryWorkersConnectionArgs = {
   after?: InputMaybe<Scalars['String']>;
@@ -2710,16 +2609,20 @@ export type StorageBagEdge = {
   node: StorageBag;
 };
 
-export enum StorageBagOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type StorageBagOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
-export type StorageBagOwner = StorageBagOwnerChannel | StorageBagOwnerCouncil | StorageBagOwnerDao | StorageBagOwnerMember | StorageBagOwnerWorkingGroup;
+export type StorageBagOwner =
+  | StorageBagOwnerChannel
+  | StorageBagOwnerCouncil
+  | StorageBagOwnerDao
+  | StorageBagOwnerMember
+  | StorageBagOwnerWorkingGroup;
 
 export type StorageBagOwnerChannel = {
   __typename?: 'StorageBagOwnerChannel';
@@ -2881,20 +2784,19 @@ export type StorageBucketOperatorMetadataEdge = {
   node: StorageBucketOperatorMetadata;
 };
 
-export enum StorageBucketOperatorMetadataOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  ExtraAsc = 'extra_ASC',
-  ExtraDesc = 'extra_DESC',
-  NodeEndpointAsc = 'nodeEndpoint_ASC',
-  NodeEndpointDesc = 'nodeEndpoint_DESC',
-  NodeLocationAsc = 'nodeLocation_ASC',
-  NodeLocationDesc = 'nodeLocation_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type StorageBucketOperatorMetadataOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'extra_ASC'
+  | 'extra_DESC'
+  | 'nodeEndpoint_ASC'
+  | 'nodeEndpoint_DESC'
+  | 'nodeLocation_ASC'
+  | 'nodeLocation_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type StorageBucketOperatorMetadataUpdateInput = {
   extra?: InputMaybe<Scalars['String']>;
@@ -2949,7 +2851,10 @@ export type StorageBucketOperatorMetadataWhereUniqueInput = {
   id: Scalars['ID'];
 };
 
-export type StorageBucketOperatorStatus = StorageBucketOperatorStatusActive | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusMissing;
+export type StorageBucketOperatorStatus =
+  | StorageBucketOperatorStatusActive
+  | StorageBucketOperatorStatusInvited
+  | StorageBucketOperatorStatusMissing;
 
 export type StorageBucketOperatorStatusActive = {
   __typename?: 'StorageBucketOperatorStatusActive';
@@ -2967,26 +2872,25 @@ export type StorageBucketOperatorStatusMissing = {
   phantom?: Maybe<Scalars['Int']>;
 };
 
-export enum StorageBucketOrderByInput {
-  AcceptingNewBagsAsc = 'acceptingNewBags_ASC',
-  AcceptingNewBagsDesc = 'acceptingNewBags_DESC',
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DataObjectCountLimitAsc = 'dataObjectCountLimit_ASC',
-  DataObjectCountLimitDesc = 'dataObjectCountLimit_DESC',
-  DataObjectsCountAsc = 'dataObjectsCount_ASC',
-  DataObjectsCountDesc = 'dataObjectsCount_DESC',
-  DataObjectsSizeLimitAsc = 'dataObjectsSizeLimit_ASC',
-  DataObjectsSizeLimitDesc = 'dataObjectsSizeLimit_DESC',
-  DataObjectsSizeAsc = 'dataObjectsSize_ASC',
-  DataObjectsSizeDesc = 'dataObjectsSize_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  OperatorMetadataAsc = 'operatorMetadata_ASC',
-  OperatorMetadataDesc = 'operatorMetadata_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type StorageBucketOrderByInput =
+  | 'acceptingNewBags_ASC'
+  | 'acceptingNewBags_DESC'
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'dataObjectCountLimit_ASC'
+  | 'dataObjectCountLimit_DESC'
+  | 'dataObjectsCount_ASC'
+  | 'dataObjectsCount_DESC'
+  | 'dataObjectsSizeLimit_ASC'
+  | 'dataObjectsSizeLimit_DESC'
+  | 'dataObjectsSize_ASC'
+  | 'dataObjectsSize_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'operatorMetadata_ASC'
+  | 'operatorMetadata_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type StorageBucketUpdateInput = {
   acceptingNewBags?: InputMaybe<Scalars['Boolean']>;
@@ -3115,26 +3019,25 @@ export type StorageDataObjectEdge = {
   node: StorageDataObject;
 };
 
-export enum StorageDataObjectOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  DeletionPrizeAsc = 'deletionPrize_ASC',
-  DeletionPrizeDesc = 'deletionPrize_DESC',
-  IpfsHashAsc = 'ipfsHash_ASC',
-  IpfsHashDesc = 'ipfsHash_DESC',
-  IsAcceptedAsc = 'isAccepted_ASC',
-  IsAcceptedDesc = 'isAccepted_DESC',
-  SizeAsc = 'size_ASC',
-  SizeDesc = 'size_DESC',
-  StorageBagAsc = 'storageBag_ASC',
-  StorageBagDesc = 'storageBag_DESC',
-  UnsetAtAsc = 'unsetAt_ASC',
-  UnsetAtDesc = 'unsetAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type StorageDataObjectOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'deletionPrize_ASC'
+  | 'deletionPrize_DESC'
+  | 'ipfsHash_ASC'
+  | 'ipfsHash_DESC'
+  | 'isAccepted_ASC'
+  | 'isAccepted_DESC'
+  | 'size_ASC'
+  | 'size_DESC'
+  | 'storageBag_ASC'
+  | 'storageBag_DESC'
+  | 'unsetAt_ASC'
+  | 'unsetAt_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type StorageDataObjectUpdateInput = {
   deletionPrize?: InputMaybe<Scalars['String']>;
@@ -3270,28 +3173,27 @@ export type StorageSystemParametersEdge = {
   node: StorageSystemParameters;
 };
 
-export enum StorageSystemParametersOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DataObjectFeePerMbAsc = 'dataObjectFeePerMb_ASC',
-  DataObjectFeePerMbDesc = 'dataObjectFeePerMb_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  DistributionBucketsPerBagLimitAsc = 'distributionBucketsPerBagLimit_ASC',
-  DistributionBucketsPerBagLimitDesc = 'distributionBucketsPerBagLimit_DESC',
-  NextDataObjectIdAsc = 'nextDataObjectId_ASC',
-  NextDataObjectIdDesc = 'nextDataObjectId_DESC',
-  StorageBucketMaxObjectsCountLimitAsc = 'storageBucketMaxObjectsCountLimit_ASC',
-  StorageBucketMaxObjectsCountLimitDesc = 'storageBucketMaxObjectsCountLimit_DESC',
-  StorageBucketMaxObjectsSizeLimitAsc = 'storageBucketMaxObjectsSizeLimit_ASC',
-  StorageBucketMaxObjectsSizeLimitDesc = 'storageBucketMaxObjectsSizeLimit_DESC',
-  StorageBucketsPerBagLimitAsc = 'storageBucketsPerBagLimit_ASC',
-  StorageBucketsPerBagLimitDesc = 'storageBucketsPerBagLimit_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  UploadingBlockedAsc = 'uploadingBlocked_ASC',
-  UploadingBlockedDesc = 'uploadingBlocked_DESC'
-}
+export type StorageSystemParametersOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'dataObjectFeePerMb_ASC'
+  | 'dataObjectFeePerMb_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'distributionBucketsPerBagLimit_ASC'
+  | 'distributionBucketsPerBagLimit_DESC'
+  | 'nextDataObjectId_ASC'
+  | 'nextDataObjectId_DESC'
+  | 'storageBucketMaxObjectsCountLimit_ASC'
+  | 'storageBucketMaxObjectsCountLimit_DESC'
+  | 'storageBucketMaxObjectsSizeLimit_ASC'
+  | 'storageBucketMaxObjectsSizeLimit_DESC'
+  | 'storageBucketsPerBagLimit_ASC'
+  | 'storageBucketsPerBagLimit_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC'
+  | 'uploadingBlocked_ASC'
+  | 'uploadingBlocked_DESC';
 
 export type StorageSystemParametersUpdateInput = {
   blacklist?: InputMaybe<Array<Scalars['String']>>;
@@ -3473,18 +3375,17 @@ export type VideoCategoryEdge = {
   node: VideoCategory;
 };
 
-export enum VideoCategoryOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  CreatedInBlockAsc = 'createdInBlock_ASC',
-  CreatedInBlockDesc = 'createdInBlock_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  NameAsc = 'name_ASC',
-  NameDesc = 'name_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type VideoCategoryOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'createdInBlock_ASC'
+  | 'createdInBlock_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'name_ASC'
+  | 'name_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type VideoCategoryUpdateInput = {
   createdInBlock?: InputMaybe<Scalars['Float']>;
@@ -3625,20 +3526,19 @@ export type VideoMediaEncodingEdge = {
   node: VideoMediaEncoding;
 };
 
-export enum VideoMediaEncodingOrderByInput {
-  CodecNameAsc = 'codecName_ASC',
-  CodecNameDesc = 'codecName_DESC',
-  ContainerAsc = 'container_ASC',
-  ContainerDesc = 'container_DESC',
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  MimeMediaTypeAsc = 'mimeMediaType_ASC',
-  MimeMediaTypeDesc = 'mimeMediaType_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type VideoMediaEncodingOrderByInput =
+  | 'codecName_ASC'
+  | 'codecName_DESC'
+  | 'container_ASC'
+  | 'container_DESC'
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'mimeMediaType_ASC'
+  | 'mimeMediaType_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type VideoMediaEncodingUpdateInput = {
   codecName?: InputMaybe<Scalars['String']>;
@@ -3740,24 +3640,23 @@ export type VideoMediaMetadataEdge = {
   node: VideoMediaMetadata;
 };
 
-export enum VideoMediaMetadataOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  CreatedInBlockAsc = 'createdInBlock_ASC',
-  CreatedInBlockDesc = 'createdInBlock_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  EncodingAsc = 'encoding_ASC',
-  EncodingDesc = 'encoding_DESC',
-  PixelHeightAsc = 'pixelHeight_ASC',
-  PixelHeightDesc = 'pixelHeight_DESC',
-  PixelWidthAsc = 'pixelWidth_ASC',
-  PixelWidthDesc = 'pixelWidth_DESC',
-  SizeAsc = 'size_ASC',
-  SizeDesc = 'size_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type VideoMediaMetadataOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'createdInBlock_ASC'
+  | 'createdInBlock_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'encoding_ASC'
+  | 'encoding_DESC'
+  | 'pixelHeight_ASC'
+  | 'pixelHeight_DESC'
+  | 'pixelWidth_ASC'
+  | 'pixelWidth_DESC'
+  | 'size_ASC'
+  | 'size_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type VideoMediaMetadataUpdateInput = {
   createdInBlock?: InputMaybe<Scalars['Float']>;
@@ -3826,48 +3725,47 @@ export type VideoMediaMetadataWhereUniqueInput = {
   id: Scalars['ID'];
 };
 
-export enum VideoOrderByInput {
-  CategoryAsc = 'category_ASC',
-  CategoryDesc = 'category_DESC',
-  ChannelAsc = 'channel_ASC',
-  ChannelDesc = 'channel_DESC',
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  CreatedInBlockAsc = 'createdInBlock_ASC',
-  CreatedInBlockDesc = 'createdInBlock_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  DescriptionAsc = 'description_ASC',
-  DescriptionDesc = 'description_DESC',
-  DurationAsc = 'duration_ASC',
-  DurationDesc = 'duration_DESC',
-  HasMarketingAsc = 'hasMarketing_ASC',
-  HasMarketingDesc = 'hasMarketing_DESC',
-  IsCensoredAsc = 'isCensored_ASC',
-  IsCensoredDesc = 'isCensored_DESC',
-  IsExplicitAsc = 'isExplicit_ASC',
-  IsExplicitDesc = 'isExplicit_DESC',
-  IsFeaturedAsc = 'isFeatured_ASC',
-  IsFeaturedDesc = 'isFeatured_DESC',
-  IsPublicAsc = 'isPublic_ASC',
-  IsPublicDesc = 'isPublic_DESC',
-  LanguageAsc = 'language_ASC',
-  LanguageDesc = 'language_DESC',
-  LicenseAsc = 'license_ASC',
-  LicenseDesc = 'license_DESC',
-  MediaMetadataAsc = 'mediaMetadata_ASC',
-  MediaMetadataDesc = 'mediaMetadata_DESC',
-  MediaAsc = 'media_ASC',
-  MediaDesc = 'media_DESC',
-  PublishedBeforeJoystreamAsc = 'publishedBeforeJoystream_ASC',
-  PublishedBeforeJoystreamDesc = 'publishedBeforeJoystream_DESC',
-  ThumbnailPhotoAsc = 'thumbnailPhoto_ASC',
-  ThumbnailPhotoDesc = 'thumbnailPhoto_DESC',
-  TitleAsc = 'title_ASC',
-  TitleDesc = 'title_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC'
-}
+export type VideoOrderByInput =
+  | 'category_ASC'
+  | 'category_DESC'
+  | 'channel_ASC'
+  | 'channel_DESC'
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'createdInBlock_ASC'
+  | 'createdInBlock_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'description_ASC'
+  | 'description_DESC'
+  | 'duration_ASC'
+  | 'duration_DESC'
+  | 'hasMarketing_ASC'
+  | 'hasMarketing_DESC'
+  | 'isCensored_ASC'
+  | 'isCensored_DESC'
+  | 'isExplicit_ASC'
+  | 'isExplicit_DESC'
+  | 'isFeatured_ASC'
+  | 'isFeatured_DESC'
+  | 'isPublic_ASC'
+  | 'isPublic_DESC'
+  | 'language_ASC'
+  | 'language_DESC'
+  | 'license_ASC'
+  | 'license_DESC'
+  | 'mediaMetadata_ASC'
+  | 'mediaMetadata_DESC'
+  | 'media_ASC'
+  | 'media_DESC'
+  | 'publishedBeforeJoystream_ASC'
+  | 'publishedBeforeJoystream_DESC'
+  | 'thumbnailPhoto_ASC'
+  | 'thumbnailPhoto_DESC'
+  | 'title_ASC'
+  | 'title_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC';
 
 export type VideoUpdateInput = {
   category?: InputMaybe<Scalars['ID']>;
@@ -4006,27 +3904,23 @@ export type WorkerEdge = {
   node: Worker;
 };
 
-export enum WorkerOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  IsActiveAsc = 'isActive_ASC',
-  IsActiveDesc = 'isActive_DESC',
-  MetadataAsc = 'metadata_ASC',
-  MetadataDesc = 'metadata_DESC',
-  TypeAsc = 'type_ASC',
-  TypeDesc = 'type_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  WorkerIdAsc = 'workerId_ASC',
-  WorkerIdDesc = 'workerId_DESC'
-}
+export type WorkerOrderByInput =
+  | 'createdAt_ASC'
+  | 'createdAt_DESC'
+  | 'deletedAt_ASC'
+  | 'deletedAt_DESC'
+  | 'isActive_ASC'
+  | 'isActive_DESC'
+  | 'metadata_ASC'
+  | 'metadata_DESC'
+  | 'type_ASC'
+  | 'type_DESC'
+  | 'updatedAt_ASC'
+  | 'updatedAt_DESC'
+  | 'workerId_ASC'
+  | 'workerId_DESC';
 
-export enum WorkerType {
-  Gateway = 'GATEWAY',
-  Storage = 'STORAGE'
-}
+export type WorkerType = 'GATEWAY' | 'STORAGE';
 
 export type WorkerUpdateInput = {
   isActive?: InputMaybe<Scalars['Boolean']>;
@@ -4082,37 +3976,191 @@ export type WorkerWhereUniqueInput = {
   id: Scalars['ID'];
 };
 
-export type VideoCategoryFieldsFragment = { __typename?: 'VideoCategory', id: string, name?: string | null };
+export type VideoCategoryFieldsFragment = {
+  __typename?: 'VideoCategory';
+  id: string;
+  name?: string | null;
+};
 
-export type GetVideoCategoriesQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetVideoCategoriesQueryVariables = Exact<{ [key: string]: never }>;
 
+export type GetVideoCategoriesQuery = {
+  __typename?: 'Query';
+  videoCategories: Array<{
+    __typename?: 'VideoCategory';
+    id: string;
+    name?: string | null;
+  }>;
+};
 
-export type GetVideoCategoriesQuery = { __typename?: 'Query', videoCategories: Array<{ __typename?: 'VideoCategory', id: string, name?: string | null }> };
+export type BasicChannelFieldsFragment = {
+  __typename?: 'Channel';
+  id: string;
+  title?: string | null;
+  createdAt: Date;
+  views: number;
+  follows: number;
+  avatarPhoto?: {
+    __typename?: 'StorageDataObject';
+    id: string;
+    createdAt: Date;
+    size: number;
+    isAccepted: boolean;
+    ipfsHash: string;
+    storageBag: { __typename?: 'StorageBag'; id: string };
+    type:
+      | { __typename: 'DataObjectTypeChannelAvatar' }
+      | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+      | { __typename: 'DataObjectTypeUnknown' }
+      | { __typename: 'DataObjectTypeVideoMedia' }
+      | { __typename: 'DataObjectTypeVideoThumbnail' };
+  } | null;
+};
 
-export type BasicChannelFieldsFragment = { __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null };
-
-export type AllChannelFieldsFragment = { __typename?: 'Channel', description?: string | null, isPublic?: boolean | null, isCensored: boolean, id: string, title?: string | null, createdAt: Date, views: number, follows: number, language?: { __typename?: 'Language', id: string, iso: string } | null, ownerMember?: { __typename?: 'Membership', id: string, handle: string, avatarUri?: string | null } | null, coverPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null };
+export type AllChannelFieldsFragment = {
+  __typename?: 'Channel';
+  description?: string | null;
+  isPublic?: boolean | null;
+  isCensored: boolean;
+  id: string;
+  title?: string | null;
+  createdAt: Date;
+  views: number;
+  follows: number;
+  language?: { __typename?: 'Language'; id: string; iso: string } | null;
+  ownerMember?: {
+    __typename?: 'Membership';
+    id: string;
+    handle: string;
+    avatarUri?: string | null;
+  } | null;
+  coverPhoto?: {
+    __typename?: 'StorageDataObject';
+    id: string;
+    createdAt: Date;
+    size: number;
+    isAccepted: boolean;
+    ipfsHash: string;
+    storageBag: { __typename?: 'StorageBag'; id: string };
+    type:
+      | { __typename: 'DataObjectTypeChannelAvatar' }
+      | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+      | { __typename: 'DataObjectTypeUnknown' }
+      | { __typename: 'DataObjectTypeVideoMedia' }
+      | { __typename: 'DataObjectTypeVideoThumbnail' };
+  } | null;
+  avatarPhoto?: {
+    __typename?: 'StorageDataObject';
+    id: string;
+    createdAt: Date;
+    size: number;
+    isAccepted: boolean;
+    ipfsHash: string;
+    storageBag: { __typename?: 'StorageBag'; id: string };
+    type:
+      | { __typename: 'DataObjectTypeChannelAvatar' }
+      | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+      | { __typename: 'DataObjectTypeUnknown' }
+      | { __typename: 'DataObjectTypeVideoMedia' }
+      | { __typename: 'DataObjectTypeVideoThumbnail' };
+  } | null;
+};
 
 export type GetBasicChannelQueryVariables = Exact<{
   where: ChannelWhereUniqueInput;
 }>;
 
-
-export type GetBasicChannelQuery = { __typename?: 'Query', channelByUniqueInput?: { __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null } | null };
+export type GetBasicChannelQuery = {
+  __typename?: 'Query';
+  channelByUniqueInput?: {
+    __typename?: 'Channel';
+    id: string;
+    title?: string | null;
+    createdAt: Date;
+    views: number;
+    follows: number;
+    avatarPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+  } | null;
+};
 
 export type GetChannelQueryVariables = Exact<{
   where: ChannelWhereUniqueInput;
 }>;
 
-
-export type GetChannelQuery = { __typename?: 'Query', channelByUniqueInput?: { __typename?: 'Channel', description?: string | null, isPublic?: boolean | null, isCensored: boolean, id: string, title?: string | null, createdAt: Date, views: number, follows: number, language?: { __typename?: 'Language', id: string, iso: string } | null, ownerMember?: { __typename?: 'Membership', id: string, handle: string, avatarUri?: string | null } | null, coverPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null } | null };
+export type GetChannelQuery = {
+  __typename?: 'Query';
+  channelByUniqueInput?: {
+    __typename?: 'Channel';
+    description?: string | null;
+    isPublic?: boolean | null;
+    isCensored: boolean;
+    id: string;
+    title?: string | null;
+    createdAt: Date;
+    views: number;
+    follows: number;
+    language?: { __typename?: 'Language'; id: string; iso: string } | null;
+    ownerMember?: {
+      __typename?: 'Membership';
+      id: string;
+      handle: string;
+      avatarUri?: string | null;
+    } | null;
+    coverPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+    avatarPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+  } | null;
+};
 
 export type GetVideoCountQueryVariables = Exact<{
   where?: InputMaybe<VideoWhereInput>;
 }>;
 
-
-export type GetVideoCountQuery = { __typename?: 'Query', videosConnection: { __typename?: 'VideoConnection', totalCount: number } };
+export type GetVideoCountQuery = {
+  __typename?: 'Query';
+  videosConnection: { __typename?: 'VideoConnection'; totalCount: number };
+};
 
 export type GetChannelsQueryVariables = Exact<{
   where?: InputMaybe<ChannelWhereInput>;
@@ -4120,8 +4168,57 @@ export type GetChannelsQueryVariables = Exact<{
   orderBy?: InputMaybe<Array<ChannelOrderByInput> | ChannelOrderByInput>;
 }>;
 
-
-export type GetChannelsQuery = { __typename?: 'Query', channels: Array<{ __typename?: 'Channel', description?: string | null, isPublic?: boolean | null, isCensored: boolean, id: string, title?: string | null, createdAt: Date, views: number, follows: number, language?: { __typename?: 'Language', id: string, iso: string } | null, ownerMember?: { __typename?: 'Membership', id: string, handle: string, avatarUri?: string | null } | null, coverPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }> };
+export type GetChannelsQuery = {
+  __typename?: 'Query';
+  channels: Array<{
+    __typename?: 'Channel';
+    description?: string | null;
+    isPublic?: boolean | null;
+    isCensored: boolean;
+    id: string;
+    title?: string | null;
+    createdAt: Date;
+    views: number;
+    follows: number;
+    language?: { __typename?: 'Language'; id: string; iso: string } | null;
+    ownerMember?: {
+      __typename?: 'Membership';
+      id: string;
+      handle: string;
+      avatarUri?: string | null;
+    } | null;
+    coverPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+    avatarPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+  }>;
+};
 
 export type GetChannelsConnectionQueryVariables = Exact<{
   first?: InputMaybe<Scalars['Int']>;
@@ -4130,22 +4227,96 @@ export type GetChannelsConnectionQueryVariables = Exact<{
   orderBy?: InputMaybe<Array<ChannelOrderByInput> | ChannelOrderByInput>;
 }>;
 
-
-export type GetChannelsConnectionQuery = { __typename?: 'Query', channelsConnection: { __typename?: 'ChannelConnection', totalCount: number, edges: Array<{ __typename?: 'ChannelEdge', cursor: string, node: { __typename?: 'Channel', description?: string | null, isPublic?: boolean | null, isCensored: boolean, id: string, title?: string | null, createdAt: Date, views: number, follows: number, language?: { __typename?: 'Language', id: string, iso: string } | null, ownerMember?: { __typename?: 'Membership', id: string, handle: string, avatarUri?: string | null } | null, coverPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null } }>, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null } } };
+export type GetChannelsConnectionQuery = {
+  __typename?: 'Query';
+  channelsConnection: {
+    __typename?: 'ChannelConnection';
+    totalCount: number;
+    edges: Array<{
+      __typename?: 'ChannelEdge';
+      cursor: string;
+      node: {
+        __typename?: 'Channel';
+        description?: string | null;
+        isPublic?: boolean | null;
+        isCensored: boolean;
+        id: string;
+        title?: string | null;
+        createdAt: Date;
+        views: number;
+        follows: number;
+        language?: { __typename?: 'Language'; id: string; iso: string } | null;
+        ownerMember?: {
+          __typename?: 'Membership';
+          id: string;
+          handle: string;
+          avatarUri?: string | null;
+        } | null;
+        coverPhoto?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+        avatarPhoto?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+      };
+    }>;
+    pageInfo: {
+      __typename?: 'PageInfo';
+      hasNextPage: boolean;
+      endCursor?: string | null;
+    };
+  };
+};
 
 export type FollowChannelMutationVariables = Exact<{
   channelId: Scalars['ID'];
 }>;
 
-
-export type FollowChannelMutation = { __typename?: 'Mutation', followChannel: { __typename?: 'ChannelFollowsInfo', id: string, follows: number } };
+export type FollowChannelMutation = {
+  __typename?: 'Mutation';
+  followChannel: {
+    __typename?: 'ChannelFollowsInfo';
+    id: string;
+    follows: number;
+  };
+};
 
 export type UnfollowChannelMutationVariables = Exact<{
   channelId: Scalars['ID'];
 }>;
 
-
-export type UnfollowChannelMutation = { __typename?: 'Mutation', unfollowChannel: { __typename?: 'ChannelFollowsInfo', id: string, follows: number } };
+export type UnfollowChannelMutation = {
+  __typename?: 'Mutation';
+  unfollowChannel: {
+    __typename?: 'ChannelFollowsInfo';
+    id: string;
+    follows: number;
+  };
+};
 
 export type GetMostViewedChannelsConnectionQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -4155,8 +4326,70 @@ export type GetMostViewedChannelsConnectionQueryVariables = Exact<{
   where?: InputMaybe<ChannelWhereInput>;
 }>;
 
-
-export type GetMostViewedChannelsConnectionQuery = { __typename?: 'Query', mostViewedChannelsConnection: { __typename?: 'ChannelConnection', totalCount: number, edges: Array<{ __typename?: 'ChannelEdge', cursor: string, node: { __typename?: 'Channel', description?: string | null, isPublic?: boolean | null, isCensored: boolean, id: string, title?: string | null, createdAt: Date, views: number, follows: number, language?: { __typename?: 'Language', id: string, iso: string } | null, ownerMember?: { __typename?: 'Membership', id: string, handle: string, avatarUri?: string | null } | null, coverPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null } }>, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null } } };
+export type GetMostViewedChannelsConnectionQuery = {
+  __typename?: 'Query';
+  mostViewedChannelsConnection: {
+    __typename?: 'ChannelConnection';
+    totalCount: number;
+    edges: Array<{
+      __typename?: 'ChannelEdge';
+      cursor: string;
+      node: {
+        __typename?: 'Channel';
+        description?: string | null;
+        isPublic?: boolean | null;
+        isCensored: boolean;
+        id: string;
+        title?: string | null;
+        createdAt: Date;
+        views: number;
+        follows: number;
+        language?: { __typename?: 'Language'; id: string; iso: string } | null;
+        ownerMember?: {
+          __typename?: 'Membership';
+          id: string;
+          handle: string;
+          avatarUri?: string | null;
+        } | null;
+        coverPhoto?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+        avatarPhoto?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+      };
+    }>;
+    pageInfo: {
+      __typename?: 'PageInfo';
+      hasNextPage: boolean;
+      endCursor?: string | null;
+    };
+  };
+};
 
 export type GetMostFollowedChannelsConnectionQueryVariables = Exact<{
   limit: Scalars['Int'];
@@ -4166,82 +4399,629 @@ export type GetMostFollowedChannelsConnectionQueryVariables = Exact<{
   where?: InputMaybe<ChannelWhereInput>;
 }>;
 
-
-export type GetMostFollowedChannelsConnectionQuery = { __typename?: 'Query', mostFollowedChannelsConnection: { __typename?: 'ChannelConnection', totalCount: number, edges: Array<{ __typename?: 'ChannelEdge', cursor: string, node: { __typename?: 'Channel', description?: string | null, isPublic?: boolean | null, isCensored: boolean, id: string, title?: string | null, createdAt: Date, views: number, follows: number, language?: { __typename?: 'Language', id: string, iso: string } | null, ownerMember?: { __typename?: 'Membership', id: string, handle: string, avatarUri?: string | null } | null, coverPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null } }>, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null } } };
+export type GetMostFollowedChannelsConnectionQuery = {
+  __typename?: 'Query';
+  mostFollowedChannelsConnection: {
+    __typename?: 'ChannelConnection';
+    totalCount: number;
+    edges: Array<{
+      __typename?: 'ChannelEdge';
+      cursor: string;
+      node: {
+        __typename?: 'Channel';
+        description?: string | null;
+        isPublic?: boolean | null;
+        isCensored: boolean;
+        id: string;
+        title?: string | null;
+        createdAt: Date;
+        views: number;
+        follows: number;
+        language?: { __typename?: 'Language'; id: string; iso: string } | null;
+        ownerMember?: {
+          __typename?: 'Membership';
+          id: string;
+          handle: string;
+          avatarUri?: string | null;
+        } | null;
+        coverPhoto?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+        avatarPhoto?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+      };
+    }>;
+    pageInfo: {
+      __typename?: 'PageInfo';
+      hasNextPage: boolean;
+      endCursor?: string | null;
+    };
+  };
+};
 
 export type GetTop10ChannelsQueryVariables = Exact<{
   where?: InputMaybe<ChannelWhereInput>;
 }>;
 
-
-export type GetTop10ChannelsQuery = { __typename?: 'Query', top10Channels: Array<{ __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }> };
+export type GetTop10ChannelsQuery = {
+  __typename?: 'Query';
+  top10Channels: Array<{
+    __typename?: 'Channel';
+    id: string;
+    title?: string | null;
+    createdAt: Date;
+    views: number;
+    follows: number;
+    avatarPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+  }>;
+};
 
 export type GetPromisingChannelsQueryVariables = Exact<{
   where?: InputMaybe<ChannelWhereInput>;
 }>;
 
-
-export type GetPromisingChannelsQuery = { __typename?: 'Query', promisingChannels: Array<{ __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }> };
+export type GetPromisingChannelsQuery = {
+  __typename?: 'Query';
+  promisingChannels: Array<{
+    __typename?: 'Channel';
+    id: string;
+    title?: string | null;
+    createdAt: Date;
+    views: number;
+    follows: number;
+    avatarPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+  }>;
+};
 
 export type GetDiscoverChannelsQueryVariables = Exact<{
   where?: InputMaybe<ChannelWhereInput>;
 }>;
 
-
-export type GetDiscoverChannelsQuery = { __typename?: 'Query', discoverChannels: Array<{ __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }> };
+export type GetDiscoverChannelsQuery = {
+  __typename?: 'Query';
+  discoverChannels: Array<{
+    __typename?: 'Channel';
+    id: string;
+    title?: string | null;
+    createdAt: Date;
+    views: number;
+    follows: number;
+    avatarPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+  }>;
+};
 
 export type GetPopularChannelsQueryVariables = Exact<{
   where?: InputMaybe<ChannelWhereInput>;
 }>;
 
-
-export type GetPopularChannelsQuery = { __typename?: 'Query', popularChannels: Array<{ __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }> };
+export type GetPopularChannelsQuery = {
+  __typename?: 'Query';
+  popularChannels: Array<{
+    __typename?: 'Channel';
+    id: string;
+    title?: string | null;
+    createdAt: Date;
+    views: number;
+    follows: number;
+    avatarPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+  }>;
+};
 
 export type GetDataObjectAvailabilityQueryVariables = Exact<{
   id_eq?: InputMaybe<Scalars['ID']>;
   id_in?: InputMaybe<Array<Scalars['ID']> | Scalars['ID']>;
 }>;
 
+export type GetDataObjectAvailabilityQuery = {
+  __typename?: 'Query';
+  storageDataObjects: Array<{
+    __typename?: 'StorageDataObject';
+    id: string;
+    isAccepted: boolean;
+  }>;
+};
 
-export type GetDataObjectAvailabilityQuery = { __typename?: 'Query', storageDataObjects: Array<{ __typename?: 'StorageDataObject', id: string, isAccepted: boolean }> };
+export type GetVideoHeroQueryVariables = Exact<{ [key: string]: never }>;
 
-export type GetVideoHeroQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetVideoHeroQuery = {
+  __typename?: 'Query';
+  videoHero: {
+    __typename?: 'VideoHero';
+    videoId: string;
+    heroTitle: string;
+    heroVideoCutUrl: string;
+    heroPosterUrl: string;
+    video: {
+      __typename?: 'Video';
+      id: string;
+      title?: string | null;
+      description?: string | null;
+      views: number;
+      duration?: number | null;
+      createdAt: Date;
+      isPublic?: boolean | null;
+      isExplicit?: boolean | null;
+      isFeatured: boolean;
+      hasMarketing?: boolean | null;
+      isCensored: boolean;
+      publishedBeforeJoystream?: Date | null;
+      category?: { __typename?: 'VideoCategory'; id: string } | null;
+      language?: { __typename?: 'Language'; iso: string } | null;
+      mediaMetadata?: {
+        __typename?: 'VideoMediaMetadata';
+        id: string;
+        pixelHeight?: number | null;
+        pixelWidth?: number | null;
+      } | null;
+      media?: {
+        __typename?: 'StorageDataObject';
+        id: string;
+        createdAt: Date;
+        size: number;
+        isAccepted: boolean;
+        ipfsHash: string;
+        storageBag: { __typename?: 'StorageBag'; id: string };
+        type:
+          | { __typename: 'DataObjectTypeChannelAvatar' }
+          | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+          | { __typename: 'DataObjectTypeUnknown' }
+          | { __typename: 'DataObjectTypeVideoMedia' }
+          | { __typename: 'DataObjectTypeVideoThumbnail' };
+      } | null;
+      thumbnailPhoto?: {
+        __typename?: 'StorageDataObject';
+        id: string;
+        createdAt: Date;
+        size: number;
+        isAccepted: boolean;
+        ipfsHash: string;
+        storageBag: { __typename?: 'StorageBag'; id: string };
+        type:
+          | { __typename: 'DataObjectTypeChannelAvatar' }
+          | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+          | { __typename: 'DataObjectTypeUnknown' }
+          | { __typename: 'DataObjectTypeVideoMedia' }
+          | { __typename: 'DataObjectTypeVideoThumbnail' };
+      } | null;
+      channel: {
+        __typename?: 'Channel';
+        id: string;
+        title?: string | null;
+        createdAt: Date;
+        views: number;
+        follows: number;
+        avatarPhoto?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+      };
+      license?: {
+        __typename?: 'License';
+        id: string;
+        code?: number | null;
+        attribution?: string | null;
+        customText?: string | null;
+      } | null;
+    };
+  };
+};
 
+export type GetAllCategoriesFeaturedVideosQueryVariables = Exact<{
+  [key: string]: never;
+}>;
 
-export type GetVideoHeroQuery = { __typename?: 'Query', videoHero: { __typename?: 'VideoHero', videoId: string, heroTitle: string, heroVideoCutUrl: string, heroPosterUrl: string, video: { __typename?: 'Video', id: string, title?: string | null, description?: string | null, views: number, duration?: number | null, createdAt: Date, isPublic?: boolean | null, isExplicit?: boolean | null, isFeatured: boolean, hasMarketing?: boolean | null, isCensored: boolean, publishedBeforeJoystream?: Date | null, category?: { __typename?: 'VideoCategory', id: string } | null, language?: { __typename?: 'Language', iso: string } | null, mediaMetadata?: { __typename?: 'VideoMediaMetadata', id: string, pixelHeight?: number | null, pixelWidth?: number | null } | null, media?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, thumbnailPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, channel: { __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }, license?: { __typename?: 'License', id: string, code?: number | null, attribution?: string | null, customText?: string | null } | null } } };
-
-export type GetAllCategoriesFeaturedVideosQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GetAllCategoriesFeaturedVideosQuery = { __typename?: 'Query', allCategoriesFeaturedVideos: Array<{ __typename?: 'CategoryFeaturedVideos', categoryId: string, category: { __typename?: 'VideoCategory', name?: string | null }, categoryFeaturedVideos: Array<{ __typename?: 'FeaturedVideo', videoId: string, videoCutUrl?: string | null, video: { __typename?: 'Video', id: string, title?: string | null, description?: string | null, views: number, duration?: number | null, createdAt: Date, isPublic?: boolean | null, isExplicit?: boolean | null, isFeatured: boolean, hasMarketing?: boolean | null, isCensored: boolean, publishedBeforeJoystream?: Date | null, category?: { __typename?: 'VideoCategory', id: string } | null, language?: { __typename?: 'Language', iso: string } | null, mediaMetadata?: { __typename?: 'VideoMediaMetadata', id: string, pixelHeight?: number | null, pixelWidth?: number | null } | null, media?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, thumbnailPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, channel: { __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }, license?: { __typename?: 'License', id: string, code?: number | null, attribution?: string | null, customText?: string | null } | null } }> }> };
+export type GetAllCategoriesFeaturedVideosQuery = {
+  __typename?: 'Query';
+  allCategoriesFeaturedVideos: Array<{
+    __typename?: 'CategoryFeaturedVideos';
+    categoryId: string;
+    category: { __typename?: 'VideoCategory'; name?: string | null };
+    categoryFeaturedVideos: Array<{
+      __typename?: 'FeaturedVideo';
+      videoId: string;
+      videoCutUrl?: string | null;
+      video: {
+        __typename?: 'Video';
+        id: string;
+        title?: string | null;
+        description?: string | null;
+        views: number;
+        duration?: number | null;
+        createdAt: Date;
+        isPublic?: boolean | null;
+        isExplicit?: boolean | null;
+        isFeatured: boolean;
+        hasMarketing?: boolean | null;
+        isCensored: boolean;
+        publishedBeforeJoystream?: Date | null;
+        category?: { __typename?: 'VideoCategory'; id: string } | null;
+        language?: { __typename?: 'Language'; iso: string } | null;
+        mediaMetadata?: {
+          __typename?: 'VideoMediaMetadata';
+          id: string;
+          pixelHeight?: number | null;
+          pixelWidth?: number | null;
+        } | null;
+        media?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+        thumbnailPhoto?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+        channel: {
+          __typename?: 'Channel';
+          id: string;
+          title?: string | null;
+          createdAt: Date;
+          views: number;
+          follows: number;
+          avatarPhoto?: {
+            __typename?: 'StorageDataObject';
+            id: string;
+            createdAt: Date;
+            size: number;
+            isAccepted: boolean;
+            ipfsHash: string;
+            storageBag: { __typename?: 'StorageBag'; id: string };
+            type:
+              | { __typename: 'DataObjectTypeChannelAvatar' }
+              | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+              | { __typename: 'DataObjectTypeUnknown' }
+              | { __typename: 'DataObjectTypeVideoMedia' }
+              | { __typename: 'DataObjectTypeVideoThumbnail' };
+          } | null;
+        };
+        license?: {
+          __typename?: 'License';
+          id: string;
+          code?: number | null;
+          attribution?: string | null;
+          customText?: string | null;
+        } | null;
+      };
+    }>;
+  }>;
+};
 
 export type GetCategoriesFeaturedVideosQueryVariables = Exact<{
   categoryId: Scalars['ID'];
 }>;
 
+export type GetCategoriesFeaturedVideosQuery = {
+  __typename?: 'Query';
+  categoryFeaturedVideos: Array<{
+    __typename?: 'FeaturedVideo';
+    videoId: string;
+    videoCutUrl?: string | null;
+    video: {
+      __typename?: 'Video';
+      id: string;
+      title?: string | null;
+      description?: string | null;
+      views: number;
+      duration?: number | null;
+      createdAt: Date;
+      isPublic?: boolean | null;
+      isExplicit?: boolean | null;
+      isFeatured: boolean;
+      hasMarketing?: boolean | null;
+      isCensored: boolean;
+      publishedBeforeJoystream?: Date | null;
+      category?: { __typename?: 'VideoCategory'; id: string } | null;
+      language?: { __typename?: 'Language'; iso: string } | null;
+      mediaMetadata?: {
+        __typename?: 'VideoMediaMetadata';
+        id: string;
+        pixelHeight?: number | null;
+        pixelWidth?: number | null;
+      } | null;
+      media?: {
+        __typename?: 'StorageDataObject';
+        id: string;
+        createdAt: Date;
+        size: number;
+        isAccepted: boolean;
+        ipfsHash: string;
+        storageBag: { __typename?: 'StorageBag'; id: string };
+        type:
+          | { __typename: 'DataObjectTypeChannelAvatar' }
+          | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+          | { __typename: 'DataObjectTypeUnknown' }
+          | { __typename: 'DataObjectTypeVideoMedia' }
+          | { __typename: 'DataObjectTypeVideoThumbnail' };
+      } | null;
+      thumbnailPhoto?: {
+        __typename?: 'StorageDataObject';
+        id: string;
+        createdAt: Date;
+        size: number;
+        isAccepted: boolean;
+        ipfsHash: string;
+        storageBag: { __typename?: 'StorageBag'; id: string };
+        type:
+          | { __typename: 'DataObjectTypeChannelAvatar' }
+          | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+          | { __typename: 'DataObjectTypeUnknown' }
+          | { __typename: 'DataObjectTypeVideoMedia' }
+          | { __typename: 'DataObjectTypeVideoThumbnail' };
+      } | null;
+      channel: {
+        __typename?: 'Channel';
+        id: string;
+        title?: string | null;
+        createdAt: Date;
+        views: number;
+        follows: number;
+        avatarPhoto?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+      };
+      license?: {
+        __typename?: 'License';
+        id: string;
+        code?: number | null;
+        attribution?: string | null;
+        customText?: string | null;
+      } | null;
+    };
+  }>;
+};
 
-export type GetCategoriesFeaturedVideosQuery = { __typename?: 'Query', categoryFeaturedVideos: Array<{ __typename?: 'FeaturedVideo', videoId: string, videoCutUrl?: string | null, video: { __typename?: 'Video', id: string, title?: string | null, description?: string | null, views: number, duration?: number | null, createdAt: Date, isPublic?: boolean | null, isExplicit?: boolean | null, isFeatured: boolean, hasMarketing?: boolean | null, isCensored: boolean, publishedBeforeJoystream?: Date | null, category?: { __typename?: 'VideoCategory', id: string } | null, language?: { __typename?: 'Language', iso: string } | null, mediaMetadata?: { __typename?: 'VideoMediaMetadata', id: string, pixelHeight?: number | null, pixelWidth?: number | null } | null, media?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, thumbnailPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, channel: { __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }, license?: { __typename?: 'License', id: string, code?: number | null, attribution?: string | null, customText?: string | null } | null } }> };
-
-export type BasicMembershipFieldsFragment = { __typename?: 'Membership', id: string, handle: string, avatarUri?: string | null, about?: string | null, controllerAccount: string, createdAt: Date, channels: Array<{ __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }> };
+export type BasicMembershipFieldsFragment = {
+  __typename?: 'Membership';
+  id: string;
+  handle: string;
+  avatarUri?: string | null;
+  about?: string | null;
+  controllerAccount: string;
+  createdAt: Date;
+  channels: Array<{
+    __typename?: 'Channel';
+    id: string;
+    title?: string | null;
+    createdAt: Date;
+    views: number;
+    follows: number;
+    avatarPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+  }>;
+};
 
 export type GetMembershipQueryVariables = Exact<{
   where: MembershipWhereUniqueInput;
 }>;
 
-
-export type GetMembershipQuery = { __typename?: 'Query', membershipByUniqueInput?: { __typename?: 'Membership', id: string, handle: string, avatarUri?: string | null, about?: string | null, controllerAccount: string, createdAt: Date, channels: Array<{ __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }> } | null };
+export type GetMembershipQuery = {
+  __typename?: 'Query';
+  membershipByUniqueInput?: {
+    __typename?: 'Membership';
+    id: string;
+    handle: string;
+    avatarUri?: string | null;
+    about?: string | null;
+    controllerAccount: string;
+    createdAt: Date;
+    channels: Array<{
+      __typename?: 'Channel';
+      id: string;
+      title?: string | null;
+      createdAt: Date;
+      views: number;
+      follows: number;
+      avatarPhoto?: {
+        __typename?: 'StorageDataObject';
+        id: string;
+        createdAt: Date;
+        size: number;
+        isAccepted: boolean;
+        ipfsHash: string;
+        storageBag: { __typename?: 'StorageBag'; id: string };
+        type:
+          | { __typename: 'DataObjectTypeChannelAvatar' }
+          | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+          | { __typename: 'DataObjectTypeUnknown' }
+          | { __typename: 'DataObjectTypeVideoMedia' }
+          | { __typename: 'DataObjectTypeVideoThumbnail' };
+      } | null;
+    }>;
+  } | null;
+};
 
 export type GetMembershipsQueryVariables = Exact<{
   where: MembershipWhereInput;
 }>;
 
+export type GetMembershipsQuery = {
+  __typename?: 'Query';
+  memberships: Array<{
+    __typename?: 'Membership';
+    id: string;
+    handle: string;
+    avatarUri?: string | null;
+    about?: string | null;
+    controllerAccount: string;
+    createdAt: Date;
+    channels: Array<{
+      __typename?: 'Channel';
+      id: string;
+      title?: string | null;
+      createdAt: Date;
+      views: number;
+      follows: number;
+      avatarPhoto?: {
+        __typename?: 'StorageDataObject';
+        id: string;
+        createdAt: Date;
+        size: number;
+        isAccepted: boolean;
+        ipfsHash: string;
+        storageBag: { __typename?: 'StorageBag'; id: string };
+        type:
+          | { __typename: 'DataObjectTypeChannelAvatar' }
+          | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+          | { __typename: 'DataObjectTypeUnknown' }
+          | { __typename: 'DataObjectTypeVideoMedia' }
+          | { __typename: 'DataObjectTypeVideoThumbnail' };
+      } | null;
+    }>;
+  }>;
+};
 
-export type GetMembershipsQuery = { __typename?: 'Query', memberships: Array<{ __typename?: 'Membership', id: string, handle: string, avatarUri?: string | null, about?: string | null, controllerAccount: string, createdAt: Date, channels: Array<{ __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }> }> };
+export type GetQueryNodeStateSubscriptionVariables = Exact<{
+  [key: string]: never;
+}>;
 
-export type GetQueryNodeStateSubscriptionVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GetQueryNodeStateSubscription = { __typename?: 'Subscription', stateSubscription: { __typename?: 'ProcessorState', chainHead: number, indexerHead: number, lastCompleteBlock: number, lastProcessedEvent: string } };
+export type GetQueryNodeStateSubscription = {
+  __typename?: 'Subscription';
+  stateSubscription: {
+    __typename?: 'ProcessorState';
+    chainHead: number;
+    indexerHead: number;
+    lastCompleteBlock: number;
+    lastProcessedEvent: string;
+  };
+};
 
 export type SearchQueryVariables = Exact<{
   text: Scalars['String'];
@@ -4250,37 +5030,423 @@ export type SearchQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
 }>;
 
+export type SearchQuery = {
+  __typename?: 'Query';
+  search: Array<{
+    __typename?: 'SearchFTSOutput';
+    item:
+      | {
+          __typename?: 'Channel';
+          description?: string | null;
+          isPublic?: boolean | null;
+          isCensored: boolean;
+          id: string;
+          title?: string | null;
+          createdAt: Date;
+          views: number;
+          follows: number;
+          language?: {
+            __typename?: 'Language';
+            id: string;
+            iso: string;
+          } | null;
+          ownerMember?: {
+            __typename?: 'Membership';
+            id: string;
+            handle: string;
+            avatarUri?: string | null;
+          } | null;
+          coverPhoto?: {
+            __typename?: 'StorageDataObject';
+            id: string;
+            createdAt: Date;
+            size: number;
+            isAccepted: boolean;
+            ipfsHash: string;
+            storageBag: { __typename?: 'StorageBag'; id: string };
+            type:
+              | { __typename: 'DataObjectTypeChannelAvatar' }
+              | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+              | { __typename: 'DataObjectTypeUnknown' }
+              | { __typename: 'DataObjectTypeVideoMedia' }
+              | { __typename: 'DataObjectTypeVideoThumbnail' };
+          } | null;
+          avatarPhoto?: {
+            __typename?: 'StorageDataObject';
+            id: string;
+            createdAt: Date;
+            size: number;
+            isAccepted: boolean;
+            ipfsHash: string;
+            storageBag: { __typename?: 'StorageBag'; id: string };
+            type:
+              | { __typename: 'DataObjectTypeChannelAvatar' }
+              | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+              | { __typename: 'DataObjectTypeUnknown' }
+              | { __typename: 'DataObjectTypeVideoMedia' }
+              | { __typename: 'DataObjectTypeVideoThumbnail' };
+          } | null;
+        }
+      | {
+          __typename?: 'Video';
+          id: string;
+          title?: string | null;
+          description?: string | null;
+          views: number;
+          duration?: number | null;
+          createdAt: Date;
+          isPublic?: boolean | null;
+          isExplicit?: boolean | null;
+          isFeatured: boolean;
+          hasMarketing?: boolean | null;
+          isCensored: boolean;
+          publishedBeforeJoystream?: Date | null;
+          category?: { __typename?: 'VideoCategory'; id: string } | null;
+          language?: { __typename?: 'Language'; iso: string } | null;
+          mediaMetadata?: {
+            __typename?: 'VideoMediaMetadata';
+            id: string;
+            pixelHeight?: number | null;
+            pixelWidth?: number | null;
+          } | null;
+          media?: {
+            __typename?: 'StorageDataObject';
+            id: string;
+            createdAt: Date;
+            size: number;
+            isAccepted: boolean;
+            ipfsHash: string;
+            storageBag: { __typename?: 'StorageBag'; id: string };
+            type:
+              | { __typename: 'DataObjectTypeChannelAvatar' }
+              | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+              | { __typename: 'DataObjectTypeUnknown' }
+              | { __typename: 'DataObjectTypeVideoMedia' }
+              | { __typename: 'DataObjectTypeVideoThumbnail' };
+          } | null;
+          thumbnailPhoto?: {
+            __typename?: 'StorageDataObject';
+            id: string;
+            createdAt: Date;
+            size: number;
+            isAccepted: boolean;
+            ipfsHash: string;
+            storageBag: { __typename?: 'StorageBag'; id: string };
+            type:
+              | { __typename: 'DataObjectTypeChannelAvatar' }
+              | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+              | { __typename: 'DataObjectTypeUnknown' }
+              | { __typename: 'DataObjectTypeVideoMedia' }
+              | { __typename: 'DataObjectTypeVideoThumbnail' };
+          } | null;
+          channel: {
+            __typename?: 'Channel';
+            id: string;
+            title?: string | null;
+            createdAt: Date;
+            views: number;
+            follows: number;
+            avatarPhoto?: {
+              __typename?: 'StorageDataObject';
+              id: string;
+              createdAt: Date;
+              size: number;
+              isAccepted: boolean;
+              ipfsHash: string;
+              storageBag: { __typename?: 'StorageBag'; id: string };
+              type:
+                | { __typename: 'DataObjectTypeChannelAvatar' }
+                | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+                | { __typename: 'DataObjectTypeUnknown' }
+                | { __typename: 'DataObjectTypeVideoMedia' }
+                | { __typename: 'DataObjectTypeVideoThumbnail' };
+            } | null;
+          };
+          license?: {
+            __typename?: 'License';
+            id: string;
+            code?: number | null;
+            attribution?: string | null;
+            customText?: string | null;
+          } | null;
+        };
+  }>;
+};
 
-export type SearchQuery = { __typename?: 'Query', search: Array<{ __typename?: 'SearchFTSOutput', item: { __typename?: 'Channel', description?: string | null, isPublic?: boolean | null, isCensored: boolean, id: string, title?: string | null, createdAt: Date, views: number, follows: number, language?: { __typename?: 'Language', id: string, iso: string } | null, ownerMember?: { __typename?: 'Membership', id: string, handle: string, avatarUri?: string | null } | null, coverPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null } | { __typename?: 'Video', id: string, title?: string | null, description?: string | null, views: number, duration?: number | null, createdAt: Date, isPublic?: boolean | null, isExplicit?: boolean | null, isFeatured: boolean, hasMarketing?: boolean | null, isCensored: boolean, publishedBeforeJoystream?: Date | null, category?: { __typename?: 'VideoCategory', id: string } | null, language?: { __typename?: 'Language', iso: string } | null, mediaMetadata?: { __typename?: 'VideoMediaMetadata', id: string, pixelHeight?: number | null, pixelWidth?: number | null } | null, media?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, thumbnailPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, channel: { __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }, license?: { __typename?: 'License', id: string, code?: number | null, attribution?: string | null, customText?: string | null } | null } }> };
+export type StorageDataObjectFieldsFragment = {
+  __typename?: 'StorageDataObject';
+  id: string;
+  createdAt: Date;
+  size: number;
+  isAccepted: boolean;
+  ipfsHash: string;
+  storageBag: { __typename?: 'StorageBag'; id: string };
+  type:
+    | { __typename: 'DataObjectTypeChannelAvatar' }
+    | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+    | { __typename: 'DataObjectTypeUnknown' }
+    | { __typename: 'DataObjectTypeVideoMedia' }
+    | { __typename: 'DataObjectTypeVideoThumbnail' };
+};
 
-export type StorageDataObjectFieldsFragment = { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } };
+export type DistributionBucketOperatorFieldFragment = {
+  __typename?: 'DistributionBucketOperator';
+  id: string;
+  status: DistributionBucketOperatorStatus;
+  metadata?: {
+    __typename?: 'DistributionBucketOperatorMetadata';
+    nodeEndpoint?: string | null;
+  } | null;
+};
 
-export type DistributionBucketOperatorFieldFragment = { __typename?: 'DistributionBucketOperator', id: string, status: DistributionBucketOperatorStatus, metadata?: { __typename?: 'DistributionBucketOperatorMetadata', nodeEndpoint?: string | null } | null };
+export type GetDistributionBucketsWithOperatorsQueryVariables = Exact<{
+  [key: string]: never;
+}>;
 
-export type GetDistributionBucketsWithOperatorsQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetDistributionBucketsWithOperatorsQuery = {
+  __typename?: 'Query';
+  distributionBuckets: Array<{
+    __typename?: 'DistributionBucket';
+    id: string;
+    bags: Array<{ __typename?: 'StorageBag'; id: string }>;
+    operators: Array<{
+      __typename?: 'DistributionBucketOperator';
+      id: string;
+      status: DistributionBucketOperatorStatus;
+      metadata?: {
+        __typename?: 'DistributionBucketOperatorMetadata';
+        nodeEndpoint?: string | null;
+      } | null;
+    }>;
+  }>;
+};
 
+export type GetStorageBucketsQueryVariables = Exact<{ [key: string]: never }>;
 
-export type GetDistributionBucketsWithOperatorsQuery = { __typename?: 'Query', distributionBuckets: Array<{ __typename?: 'DistributionBucket', id: string, bags: Array<{ __typename?: 'StorageBag', id: string }>, operators: Array<{ __typename?: 'DistributionBucketOperator', id: string, status: DistributionBucketOperatorStatus, metadata?: { __typename?: 'DistributionBucketOperatorMetadata', nodeEndpoint?: string | null } | null }> }> };
+export type GetStorageBucketsQuery = {
+  __typename?: 'Query';
+  storageBuckets: Array<{
+    __typename?: 'StorageBucket';
+    id: string;
+    operatorMetadata?: {
+      __typename?: 'StorageBucketOperatorMetadata';
+      nodeEndpoint?: string | null;
+    } | null;
+    bags: Array<{ __typename?: 'StorageBag'; id: string }>;
+  }>;
+};
 
-export type GetStorageBucketsQueryVariables = Exact<{ [key: string]: never; }>;
+export type VideoMediaMetadataFieldsFragment = {
+  __typename?: 'VideoMediaMetadata';
+  id: string;
+  pixelHeight?: number | null;
+  pixelWidth?: number | null;
+};
 
+export type LicenseFieldsFragment = {
+  __typename?: 'License';
+  id: string;
+  code?: number | null;
+  attribution?: string | null;
+  customText?: string | null;
+};
 
-export type GetStorageBucketsQuery = { __typename?: 'Query', storageBuckets: Array<{ __typename?: 'StorageBucket', id: string, operatorMetadata?: { __typename?: 'StorageBucketOperatorMetadata', nodeEndpoint?: string | null } | null, bags: Array<{ __typename?: 'StorageBag', id: string }> }> };
+export type BasicVideoFieldsFragment = {
+  __typename?: 'Video';
+  id: string;
+  title?: string | null;
+  channel: { __typename?: 'Channel'; id: string };
+  thumbnailPhoto?: {
+    __typename?: 'StorageDataObject';
+    id: string;
+    createdAt: Date;
+    size: number;
+    isAccepted: boolean;
+    ipfsHash: string;
+    storageBag: { __typename?: 'StorageBag'; id: string };
+    type:
+      | { __typename: 'DataObjectTypeChannelAvatar' }
+      | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+      | { __typename: 'DataObjectTypeUnknown' }
+      | { __typename: 'DataObjectTypeVideoMedia' }
+      | { __typename: 'DataObjectTypeVideoThumbnail' };
+  } | null;
+};
 
-export type VideoMediaMetadataFieldsFragment = { __typename?: 'VideoMediaMetadata', id: string, pixelHeight?: number | null, pixelWidth?: number | null };
-
-export type LicenseFieldsFragment = { __typename?: 'License', id: string, code?: number | null, attribution?: string | null, customText?: string | null };
-
-export type BasicVideoFieldsFragment = { __typename?: 'Video', id: string, title?: string | null, channel: { __typename?: 'Channel', id: string }, thumbnailPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null };
-
-export type VideoFieldsFragment = { __typename?: 'Video', id: string, title?: string | null, description?: string | null, views: number, duration?: number | null, createdAt: Date, isPublic?: boolean | null, isExplicit?: boolean | null, isFeatured: boolean, hasMarketing?: boolean | null, isCensored: boolean, publishedBeforeJoystream?: Date | null, category?: { __typename?: 'VideoCategory', id: string } | null, language?: { __typename?: 'Language', iso: string } | null, mediaMetadata?: { __typename?: 'VideoMediaMetadata', id: string, pixelHeight?: number | null, pixelWidth?: number | null } | null, media?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, thumbnailPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, channel: { __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }, license?: { __typename?: 'License', id: string, code?: number | null, attribution?: string | null, customText?: string | null } | null };
+export type VideoFieldsFragment = {
+  __typename?: 'Video';
+  id: string;
+  title?: string | null;
+  description?: string | null;
+  views: number;
+  duration?: number | null;
+  createdAt: Date;
+  isPublic?: boolean | null;
+  isExplicit?: boolean | null;
+  isFeatured: boolean;
+  hasMarketing?: boolean | null;
+  isCensored: boolean;
+  publishedBeforeJoystream?: Date | null;
+  category?: { __typename?: 'VideoCategory'; id: string } | null;
+  language?: { __typename?: 'Language'; iso: string } | null;
+  mediaMetadata?: {
+    __typename?: 'VideoMediaMetadata';
+    id: string;
+    pixelHeight?: number | null;
+    pixelWidth?: number | null;
+  } | null;
+  media?: {
+    __typename?: 'StorageDataObject';
+    id: string;
+    createdAt: Date;
+    size: number;
+    isAccepted: boolean;
+    ipfsHash: string;
+    storageBag: { __typename?: 'StorageBag'; id: string };
+    type:
+      | { __typename: 'DataObjectTypeChannelAvatar' }
+      | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+      | { __typename: 'DataObjectTypeUnknown' }
+      | { __typename: 'DataObjectTypeVideoMedia' }
+      | { __typename: 'DataObjectTypeVideoThumbnail' };
+  } | null;
+  thumbnailPhoto?: {
+    __typename?: 'StorageDataObject';
+    id: string;
+    createdAt: Date;
+    size: number;
+    isAccepted: boolean;
+    ipfsHash: string;
+    storageBag: { __typename?: 'StorageBag'; id: string };
+    type:
+      | { __typename: 'DataObjectTypeChannelAvatar' }
+      | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+      | { __typename: 'DataObjectTypeUnknown' }
+      | { __typename: 'DataObjectTypeVideoMedia' }
+      | { __typename: 'DataObjectTypeVideoThumbnail' };
+  } | null;
+  channel: {
+    __typename?: 'Channel';
+    id: string;
+    title?: string | null;
+    createdAt: Date;
+    views: number;
+    follows: number;
+    avatarPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+  };
+  license?: {
+    __typename?: 'License';
+    id: string;
+    code?: number | null;
+    attribution?: string | null;
+    customText?: string | null;
+  } | null;
+};
 
 export type GetVideoQueryVariables = Exact<{
   where: VideoWhereUniqueInput;
 }>;
 
-
-export type GetVideoQuery = { __typename?: 'Query', videoByUniqueInput?: { __typename?: 'Video', id: string, title?: string | null, description?: string | null, views: number, duration?: number | null, createdAt: Date, isPublic?: boolean | null, isExplicit?: boolean | null, isFeatured: boolean, hasMarketing?: boolean | null, isCensored: boolean, publishedBeforeJoystream?: Date | null, category?: { __typename?: 'VideoCategory', id: string } | null, language?: { __typename?: 'Language', iso: string } | null, mediaMetadata?: { __typename?: 'VideoMediaMetadata', id: string, pixelHeight?: number | null, pixelWidth?: number | null } | null, media?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, thumbnailPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, channel: { __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }, license?: { __typename?: 'License', id: string, code?: number | null, attribution?: string | null, customText?: string | null } | null } | null };
+export type GetVideoQuery = {
+  __typename?: 'Query';
+  videoByUniqueInput?: {
+    __typename?: 'Video';
+    id: string;
+    title?: string | null;
+    description?: string | null;
+    views: number;
+    duration?: number | null;
+    createdAt: Date;
+    isPublic?: boolean | null;
+    isExplicit?: boolean | null;
+    isFeatured: boolean;
+    hasMarketing?: boolean | null;
+    isCensored: boolean;
+    publishedBeforeJoystream?: Date | null;
+    category?: { __typename?: 'VideoCategory'; id: string } | null;
+    language?: { __typename?: 'Language'; iso: string } | null;
+    mediaMetadata?: {
+      __typename?: 'VideoMediaMetadata';
+      id: string;
+      pixelHeight?: number | null;
+      pixelWidth?: number | null;
+    } | null;
+    media?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+    thumbnailPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+    channel: {
+      __typename?: 'Channel';
+      id: string;
+      title?: string | null;
+      createdAt: Date;
+      views: number;
+      follows: number;
+      avatarPhoto?: {
+        __typename?: 'StorageDataObject';
+        id: string;
+        createdAt: Date;
+        size: number;
+        isAccepted: boolean;
+        ipfsHash: string;
+        storageBag: { __typename?: 'StorageBag'; id: string };
+        type:
+          | { __typename: 'DataObjectTypeChannelAvatar' }
+          | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+          | { __typename: 'DataObjectTypeUnknown' }
+          | { __typename: 'DataObjectTypeVideoMedia' }
+          | { __typename: 'DataObjectTypeVideoThumbnail' };
+      } | null;
+    };
+    license?: {
+      __typename?: 'License';
+      id: string;
+      code?: number | null;
+      attribution?: string | null;
+      customText?: string | null;
+    } | null;
+  } | null;
+};
 
 export type GetVideosConnectionQueryVariables = Exact<{
   first?: InputMaybe<Scalars['Int']>;
@@ -4289,8 +5455,105 @@ export type GetVideosConnectionQueryVariables = Exact<{
   where?: InputMaybe<VideoWhereInput>;
 }>;
 
-
-export type GetVideosConnectionQuery = { __typename?: 'Query', videosConnection: { __typename?: 'VideoConnection', totalCount: number, edges: Array<{ __typename?: 'VideoEdge', cursor: string, node: { __typename?: 'Video', id: string, title?: string | null, description?: string | null, views: number, duration?: number | null, createdAt: Date, isPublic?: boolean | null, isExplicit?: boolean | null, isFeatured: boolean, hasMarketing?: boolean | null, isCensored: boolean, publishedBeforeJoystream?: Date | null, category?: { __typename?: 'VideoCategory', id: string } | null, language?: { __typename?: 'Language', iso: string } | null, mediaMetadata?: { __typename?: 'VideoMediaMetadata', id: string, pixelHeight?: number | null, pixelWidth?: number | null } | null, media?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, thumbnailPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, channel: { __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }, license?: { __typename?: 'License', id: string, code?: number | null, attribution?: string | null, customText?: string | null } | null } }>, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null } } };
+export type GetVideosConnectionQuery = {
+  __typename?: 'Query';
+  videosConnection: {
+    __typename?: 'VideoConnection';
+    totalCount: number;
+    edges: Array<{
+      __typename?: 'VideoEdge';
+      cursor: string;
+      node: {
+        __typename?: 'Video';
+        id: string;
+        title?: string | null;
+        description?: string | null;
+        views: number;
+        duration?: number | null;
+        createdAt: Date;
+        isPublic?: boolean | null;
+        isExplicit?: boolean | null;
+        isFeatured: boolean;
+        hasMarketing?: boolean | null;
+        isCensored: boolean;
+        publishedBeforeJoystream?: Date | null;
+        category?: { __typename?: 'VideoCategory'; id: string } | null;
+        language?: { __typename?: 'Language'; iso: string } | null;
+        mediaMetadata?: {
+          __typename?: 'VideoMediaMetadata';
+          id: string;
+          pixelHeight?: number | null;
+          pixelWidth?: number | null;
+        } | null;
+        media?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+        thumbnailPhoto?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+        channel: {
+          __typename?: 'Channel';
+          id: string;
+          title?: string | null;
+          createdAt: Date;
+          views: number;
+          follows: number;
+          avatarPhoto?: {
+            __typename?: 'StorageDataObject';
+            id: string;
+            createdAt: Date;
+            size: number;
+            isAccepted: boolean;
+            ipfsHash: string;
+            storageBag: { __typename?: 'StorageBag'; id: string };
+            type:
+              | { __typename: 'DataObjectTypeChannelAvatar' }
+              | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+              | { __typename: 'DataObjectTypeUnknown' }
+              | { __typename: 'DataObjectTypeVideoMedia' }
+              | { __typename: 'DataObjectTypeVideoThumbnail' };
+          } | null;
+        };
+        license?: {
+          __typename?: 'License';
+          id: string;
+          code?: number | null;
+          attribution?: string | null;
+          customText?: string | null;
+        } | null;
+      };
+    }>;
+    pageInfo: {
+      __typename?: 'PageInfo';
+      hasNextPage: boolean;
+      endCursor?: string | null;
+    };
+  };
+};
 
 export type GetVideosQueryVariables = Exact<{
   offset?: InputMaybe<Scalars['Int']>;
@@ -4299,15 +5562,121 @@ export type GetVideosQueryVariables = Exact<{
   orderBy?: VideoOrderByInput;
 }>;
 
-
-export type GetVideosQuery = { __typename?: 'Query', videos: Array<{ __typename?: 'Video', id: string, title?: string | null, description?: string | null, views: number, duration?: number | null, createdAt: Date, isPublic?: boolean | null, isExplicit?: boolean | null, isFeatured: boolean, hasMarketing?: boolean | null, isCensored: boolean, publishedBeforeJoystream?: Date | null, category?: { __typename?: 'VideoCategory', id: string } | null, language?: { __typename?: 'Language', iso: string } | null, mediaMetadata?: { __typename?: 'VideoMediaMetadata', id: string, pixelHeight?: number | null, pixelWidth?: number | null } | null, media?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, thumbnailPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, channel: { __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }, license?: { __typename?: 'License', id: string, code?: number | null, attribution?: string | null, customText?: string | null } | null }> };
+export type GetVideosQuery = {
+  __typename?: 'Query';
+  videos: Array<{
+    __typename?: 'Video';
+    id: string;
+    title?: string | null;
+    description?: string | null;
+    views: number;
+    duration?: number | null;
+    createdAt: Date;
+    isPublic?: boolean | null;
+    isExplicit?: boolean | null;
+    isFeatured: boolean;
+    hasMarketing?: boolean | null;
+    isCensored: boolean;
+    publishedBeforeJoystream?: Date | null;
+    category?: { __typename?: 'VideoCategory'; id: string } | null;
+    language?: { __typename?: 'Language'; iso: string } | null;
+    mediaMetadata?: {
+      __typename?: 'VideoMediaMetadata';
+      id: string;
+      pixelHeight?: number | null;
+      pixelWidth?: number | null;
+    } | null;
+    media?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+    thumbnailPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+    channel: {
+      __typename?: 'Channel';
+      id: string;
+      title?: string | null;
+      createdAt: Date;
+      views: number;
+      follows: number;
+      avatarPhoto?: {
+        __typename?: 'StorageDataObject';
+        id: string;
+        createdAt: Date;
+        size: number;
+        isAccepted: boolean;
+        ipfsHash: string;
+        storageBag: { __typename?: 'StorageBag'; id: string };
+        type:
+          | { __typename: 'DataObjectTypeChannelAvatar' }
+          | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+          | { __typename: 'DataObjectTypeUnknown' }
+          | { __typename: 'DataObjectTypeVideoMedia' }
+          | { __typename: 'DataObjectTypeVideoThumbnail' };
+      } | null;
+    };
+    license?: {
+      __typename?: 'License';
+      id: string;
+      code?: number | null;
+      attribution?: string | null;
+      customText?: string | null;
+    } | null;
+  }>;
+};
 
 export type GetBasicVideosQueryVariables = Exact<{
   where?: InputMaybe<VideoWhereInput>;
 }>;
 
-
-export type GetBasicVideosQuery = { __typename?: 'Query', videos: Array<{ __typename?: 'Video', id: string, title?: string | null, channel: { __typename?: 'Channel', id: string }, thumbnailPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }> };
+export type GetBasicVideosQuery = {
+  __typename?: 'Query';
+  videos: Array<{
+    __typename?: 'Video';
+    id: string;
+    title?: string | null;
+    channel: { __typename?: 'Channel'; id: string };
+    thumbnailPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+  }>;
+};
 
 export type GetMostViewedVideosConnectionQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -4318,22 +5687,287 @@ export type GetMostViewedVideosConnectionQueryVariables = Exact<{
   where?: InputMaybe<VideoWhereInput>;
 }>;
 
-
-export type GetMostViewedVideosConnectionQuery = { __typename?: 'Query', mostViewedVideosConnection: { __typename?: 'VideoConnection', totalCount: number, edges: Array<{ __typename?: 'VideoEdge', cursor: string, node: { __typename?: 'Video', id: string, title?: string | null, description?: string | null, views: number, duration?: number | null, createdAt: Date, isPublic?: boolean | null, isExplicit?: boolean | null, isFeatured: boolean, hasMarketing?: boolean | null, isCensored: boolean, publishedBeforeJoystream?: Date | null, category?: { __typename?: 'VideoCategory', id: string } | null, language?: { __typename?: 'Language', iso: string } | null, mediaMetadata?: { __typename?: 'VideoMediaMetadata', id: string, pixelHeight?: number | null, pixelWidth?: number | null } | null, media?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, thumbnailPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, channel: { __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }, license?: { __typename?: 'License', id: string, code?: number | null, attribution?: string | null, customText?: string | null } | null } }>, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null } } };
+export type GetMostViewedVideosConnectionQuery = {
+  __typename?: 'Query';
+  mostViewedVideosConnection: {
+    __typename?: 'VideoConnection';
+    totalCount: number;
+    edges: Array<{
+      __typename?: 'VideoEdge';
+      cursor: string;
+      node: {
+        __typename?: 'Video';
+        id: string;
+        title?: string | null;
+        description?: string | null;
+        views: number;
+        duration?: number | null;
+        createdAt: Date;
+        isPublic?: boolean | null;
+        isExplicit?: boolean | null;
+        isFeatured: boolean;
+        hasMarketing?: boolean | null;
+        isCensored: boolean;
+        publishedBeforeJoystream?: Date | null;
+        category?: { __typename?: 'VideoCategory'; id: string } | null;
+        language?: { __typename?: 'Language'; iso: string } | null;
+        mediaMetadata?: {
+          __typename?: 'VideoMediaMetadata';
+          id: string;
+          pixelHeight?: number | null;
+          pixelWidth?: number | null;
+        } | null;
+        media?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+        thumbnailPhoto?: {
+          __typename?: 'StorageDataObject';
+          id: string;
+          createdAt: Date;
+          size: number;
+          isAccepted: boolean;
+          ipfsHash: string;
+          storageBag: { __typename?: 'StorageBag'; id: string };
+          type:
+            | { __typename: 'DataObjectTypeChannelAvatar' }
+            | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+            | { __typename: 'DataObjectTypeUnknown' }
+            | { __typename: 'DataObjectTypeVideoMedia' }
+            | { __typename: 'DataObjectTypeVideoThumbnail' };
+        } | null;
+        channel: {
+          __typename?: 'Channel';
+          id: string;
+          title?: string | null;
+          createdAt: Date;
+          views: number;
+          follows: number;
+          avatarPhoto?: {
+            __typename?: 'StorageDataObject';
+            id: string;
+            createdAt: Date;
+            size: number;
+            isAccepted: boolean;
+            ipfsHash: string;
+            storageBag: { __typename?: 'StorageBag'; id: string };
+            type:
+              | { __typename: 'DataObjectTypeChannelAvatar' }
+              | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+              | { __typename: 'DataObjectTypeUnknown' }
+              | { __typename: 'DataObjectTypeVideoMedia' }
+              | { __typename: 'DataObjectTypeVideoThumbnail' };
+          } | null;
+        };
+        license?: {
+          __typename?: 'License';
+          id: string;
+          code?: number | null;
+          attribution?: string | null;
+          customText?: string | null;
+        } | null;
+      };
+    }>;
+    pageInfo: {
+      __typename?: 'PageInfo';
+      hasNextPage: boolean;
+      endCursor?: string | null;
+    };
+  };
+};
 
 export type GetTop10VideosThisWeekQueryVariables = Exact<{
   where?: InputMaybe<VideoWhereInput>;
 }>;
 
-
-export type GetTop10VideosThisWeekQuery = { __typename?: 'Query', top10VideosThisWeek: Array<{ __typename?: 'Video', id: string, title?: string | null, description?: string | null, views: number, duration?: number | null, createdAt: Date, isPublic?: boolean | null, isExplicit?: boolean | null, isFeatured: boolean, hasMarketing?: boolean | null, isCensored: boolean, publishedBeforeJoystream?: Date | null, category?: { __typename?: 'VideoCategory', id: string } | null, language?: { __typename?: 'Language', iso: string } | null, mediaMetadata?: { __typename?: 'VideoMediaMetadata', id: string, pixelHeight?: number | null, pixelWidth?: number | null } | null, media?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, thumbnailPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, channel: { __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }, license?: { __typename?: 'License', id: string, code?: number | null, attribution?: string | null, customText?: string | null } | null }> };
+export type GetTop10VideosThisWeekQuery = {
+  __typename?: 'Query';
+  top10VideosThisWeek: Array<{
+    __typename?: 'Video';
+    id: string;
+    title?: string | null;
+    description?: string | null;
+    views: number;
+    duration?: number | null;
+    createdAt: Date;
+    isPublic?: boolean | null;
+    isExplicit?: boolean | null;
+    isFeatured: boolean;
+    hasMarketing?: boolean | null;
+    isCensored: boolean;
+    publishedBeforeJoystream?: Date | null;
+    category?: { __typename?: 'VideoCategory'; id: string } | null;
+    language?: { __typename?: 'Language'; iso: string } | null;
+    mediaMetadata?: {
+      __typename?: 'VideoMediaMetadata';
+      id: string;
+      pixelHeight?: number | null;
+      pixelWidth?: number | null;
+    } | null;
+    media?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+    thumbnailPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+    channel: {
+      __typename?: 'Channel';
+      id: string;
+      title?: string | null;
+      createdAt: Date;
+      views: number;
+      follows: number;
+      avatarPhoto?: {
+        __typename?: 'StorageDataObject';
+        id: string;
+        createdAt: Date;
+        size: number;
+        isAccepted: boolean;
+        ipfsHash: string;
+        storageBag: { __typename?: 'StorageBag'; id: string };
+        type:
+          | { __typename: 'DataObjectTypeChannelAvatar' }
+          | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+          | { __typename: 'DataObjectTypeUnknown' }
+          | { __typename: 'DataObjectTypeVideoMedia' }
+          | { __typename: 'DataObjectTypeVideoThumbnail' };
+      } | null;
+    };
+    license?: {
+      __typename?: 'License';
+      id: string;
+      code?: number | null;
+      attribution?: string | null;
+      customText?: string | null;
+    } | null;
+  }>;
+};
 
 export type GetTop10VideosThisMonthQueryVariables = Exact<{
   where?: InputMaybe<VideoWhereInput>;
 }>;
 
-
-export type GetTop10VideosThisMonthQuery = { __typename?: 'Query', top10VideosThisMonth: Array<{ __typename?: 'Video', id: string, title?: string | null, description?: string | null, views: number, duration?: number | null, createdAt: Date, isPublic?: boolean | null, isExplicit?: boolean | null, isFeatured: boolean, hasMarketing?: boolean | null, isCensored: boolean, publishedBeforeJoystream?: Date | null, category?: { __typename?: 'VideoCategory', id: string } | null, language?: { __typename?: 'Language', iso: string } | null, mediaMetadata?: { __typename?: 'VideoMediaMetadata', id: string, pixelHeight?: number | null, pixelWidth?: number | null } | null, media?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, thumbnailPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null, channel: { __typename?: 'Channel', id: string, title?: string | null, createdAt: Date, views: number, follows: number, avatarPhoto?: { __typename?: 'StorageDataObject', id: string, createdAt: Date, size: number, isAccepted: boolean, ipfsHash: string, storageBag: { __typename?: 'StorageBag', id: string }, type: { __typename: 'DataObjectTypeChannelAvatar' } | { __typename: 'DataObjectTypeChannelCoverPhoto' } | { __typename: 'DataObjectTypeUnknown' } | { __typename: 'DataObjectTypeVideoMedia' } | { __typename: 'DataObjectTypeVideoThumbnail' } } | null }, license?: { __typename?: 'License', id: string, code?: number | null, attribution?: string | null, customText?: string | null } | null }> };
+export type GetTop10VideosThisMonthQuery = {
+  __typename?: 'Query';
+  top10VideosThisMonth: Array<{
+    __typename?: 'Video';
+    id: string;
+    title?: string | null;
+    description?: string | null;
+    views: number;
+    duration?: number | null;
+    createdAt: Date;
+    isPublic?: boolean | null;
+    isExplicit?: boolean | null;
+    isFeatured: boolean;
+    hasMarketing?: boolean | null;
+    isCensored: boolean;
+    publishedBeforeJoystream?: Date | null;
+    category?: { __typename?: 'VideoCategory'; id: string } | null;
+    language?: { __typename?: 'Language'; iso: string } | null;
+    mediaMetadata?: {
+      __typename?: 'VideoMediaMetadata';
+      id: string;
+      pixelHeight?: number | null;
+      pixelWidth?: number | null;
+    } | null;
+    media?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+    thumbnailPhoto?: {
+      __typename?: 'StorageDataObject';
+      id: string;
+      createdAt: Date;
+      size: number;
+      isAccepted: boolean;
+      ipfsHash: string;
+      storageBag: { __typename?: 'StorageBag'; id: string };
+      type:
+        | { __typename: 'DataObjectTypeChannelAvatar' }
+        | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+        | { __typename: 'DataObjectTypeUnknown' }
+        | { __typename: 'DataObjectTypeVideoMedia' }
+        | { __typename: 'DataObjectTypeVideoThumbnail' };
+    } | null;
+    channel: {
+      __typename?: 'Channel';
+      id: string;
+      title?: string | null;
+      createdAt: Date;
+      views: number;
+      follows: number;
+      avatarPhoto?: {
+        __typename?: 'StorageDataObject';
+        id: string;
+        createdAt: Date;
+        size: number;
+        isAccepted: boolean;
+        ipfsHash: string;
+        storageBag: { __typename?: 'StorageBag'; id: string };
+        type:
+          | { __typename: 'DataObjectTypeChannelAvatar' }
+          | { __typename: 'DataObjectTypeChannelCoverPhoto' }
+          | { __typename: 'DataObjectTypeUnknown' }
+          | { __typename: 'DataObjectTypeVideoMedia' }
+          | { __typename: 'DataObjectTypeVideoThumbnail' };
+      } | null;
+    };
+    license?: {
+      __typename?: 'License';
+      id: string;
+      code?: number | null;
+      attribution?: string | null;
+      customText?: string | null;
+    } | null;
+  }>;
+};
 
 export type AddVideoViewMutationVariables = Exact<{
   videoId: Scalars['ID'];
@@ -4341,17 +5975,35 @@ export type AddVideoViewMutationVariables = Exact<{
   categoryId?: InputMaybe<Scalars['ID']>;
 }>;
 
+export type AddVideoViewMutation = {
+  __typename?: 'Mutation';
+  addVideoView: { __typename?: 'EntityViewsInfo'; id: string; views: number };
+};
 
-export type AddVideoViewMutation = { __typename?: 'Mutation', addVideoView: { __typename?: 'EntityViewsInfo', id: string, views: number } };
-
-export type BasicWorkerFieldsFragment = { __typename?: 'Worker', id: string, workerId: string, metadata?: string | null, isActive: boolean, type: WorkerType };
+export type BasicWorkerFieldsFragment = {
+  __typename?: 'Worker';
+  id: string;
+  workerId: string;
+  metadata?: string | null;
+  isActive: boolean;
+  type: WorkerType;
+};
 
 export type GetWorkerQueryVariables = Exact<{
   where: WorkerWhereUniqueInput;
 }>;
 
-
-export type GetWorkerQuery = { __typename?: 'Query', workerByUniqueInput?: { __typename?: 'Worker', id: string, workerId: string, metadata?: string | null, isActive: boolean, type: WorkerType } | null };
+export type GetWorkerQuery = {
+  __typename?: 'Query';
+  workerByUniqueInput?: {
+    __typename?: 'Worker';
+    id: string;
+    workerId: string;
+    metadata?: string | null;
+    isActive: boolean;
+    type: WorkerType;
+  } | null;
+};
 
 export type GetWorkersQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']>;
@@ -4359,5 +6011,18 @@ export type GetWorkersQueryVariables = Exact<{
   where?: InputMaybe<WorkerWhereInput>;
 }>;
 
+export type GetWorkersQuery = {
+  __typename?: 'Query';
+  workers: Array<{
+    __typename?: 'Worker';
+    id: string;
+    workerId: string;
+    metadata?: string | null;
+    isActive: boolean;
+    type: WorkerType;
+  }>;
+};
 
-export type GetWorkersQuery = { __typename?: 'Query', workers: Array<{ __typename?: 'Worker', id: string, workerId: string, metadata?: string | null, isActive: boolean, type: WorkerType }> };
+export type BigInt = Scalars['BigInt'];
+export type DateTime = Scalars['DateTime'];
+export type JsonObject = Scalars['JSONObject'];

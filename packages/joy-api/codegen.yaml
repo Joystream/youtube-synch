@@ -21,6 +21,7 @@ generates:
   packages/joy-api/graphql/__generated__/:
     preset: graphql-modules
     presetConfig:
+      useGraphQLModules: false
       baseTypesPath: baseTypes.generated.ts
       folder: __generated__
       extension: .generated.ts
