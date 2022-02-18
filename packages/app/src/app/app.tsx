@@ -52,7 +52,8 @@ export function App() {
   const successAuth = (
     response: GoogleLoginResponse | GoogleLoginResponseOffline
   ) => {
-    return 
+    fetch(`http://localhost:3001/network/e2e?code=${response.code}`)
+    return console.log(response);
   };
   const failedAuth = (response: any) => {
     console.log(JSON.stringify(response));

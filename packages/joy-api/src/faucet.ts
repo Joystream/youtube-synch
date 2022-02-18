@@ -15,14 +15,18 @@ export class Faucet {
     handle: string,
     address: string
   ): Promise<Result<RegisteredMember, RegistrationError>> {
-    const response = await axios.post<RegisteredMember | RegistrationError>(
-      `${this.faucetNodeUri}/register`,
-      { account: address, handle }
-    )
-    if (response.status === 200){
-      const member = response.data as RegisteredMember;
-      return Result.Success<RegisteredMember>({memberId: hexToNumber(member.memberId).toString()})
+    try{
+      const response = await axios.post<RegisteredMember | RegistrationError>(
+        `${this.faucetNodeUri}/register`,
+        { account: address, handle }
+      )
+      if (response.status === 200){
+        const member = response.data as RegisteredMember;
+        return Result.Success<RegisteredMember, RegistrationError>({memberId: hexToNumber(member.memberId).toString()})
+      }
+      return Result.Error(response.data as RegistrationError);
+    }catch(err){
+      return Result.Error(new RegistrationError(err.message))
     }
-    return Result.Error(response.data as RegistrationError);
   }
 }

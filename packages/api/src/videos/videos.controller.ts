@@ -1,19 +1,24 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, HttpException, Param } from '@nestjs/common';
 import { ChannelsService } from '../channels/channels.service';
-import { VideosService } from './videos.service';
+import R from 'ramda'
+import { Result } from '@youtube-sync/domain';
+import { VideosRepository } from '@joystream/ytube';
 
 @Controller({ path: 'users/:userId/videos' })
 export class VideosController {
+  private videosRepository: VideosRepository = new VideosRepository()
   constructor(
-    private videosService: VideosService,
     private channelsService: ChannelsService
   ) {}
 
   @Get()
   async get(@Param('userId') userId: string) {
-    const channels = await this.channelsService.getAll(userId);
-    const promises = channels.map((c) => this.videosService.getVideos(c));
-    const results = await Promise.all(promises);
-    return results.flat();
+    const result = await R.pipe(
+      this.channelsService.getAll,
+      R.andThen(ch => Result.bindAsync(ch, channels => this.videosRepository.scan({}, s => s.attribute('channelId').in(channels.map(c => c.id)))))
+    )(userId)
+    if(result.isSuccess)
+      return result.value
+    throw new HttpException(result.error, 500)
   }
 }

@@ -34,6 +34,7 @@ import {
 } from './types'
 import { DomainError, Result } from '@youtube-sync/domain'
 import { KeyringPair } from '@polkadot/keyring/types'
+import { InstancePublicPorts } from '@pulumi/aws/lightsail'
 
 export class JoystreamLibExtrinsics {
   readonly api: PolkadotApi

@@ -7,66 +7,63 @@ import {
   Video,
   VideoEvent,
   ChannelSpotted,
+  Result,
+  DomainError,
 } from '@youtube-sync/domain';
 import {
-  channelRepository,
+  ChannelsRepository,
   statsRepository,
-  videoRepository,
+  VideosRepository,
 } from './database';
 import {
   IUploadService,
   mapTo,
   MessageBus,
-  userRepository,
+  createUserModel,
   IYoutubeClient,
+  UsersRepository,
 } from '..';
 import { S3UploadService } from './uploadService';
-import { getMatchingFrequencies, Frequency } from './frequency';
+import { Frequency } from './frequency';
+import R from 'ramda'
 const DailtyQuota = 10000
 export class SyncService {
   private _uploader: IUploadService;
+  private channelsRepository: ChannelsRepository;
+  private usersRepository: UsersRepository;
+  private videosRepository: VideosRepository
   constructor(private youtube: IYoutubeClient, private bus: MessageBus) {
     this._uploader = new S3UploadService(youtube);
+    this.channelsRepository = new ChannelsRepository();
+    this.usersRepository = new UsersRepository();
+    this.videosRepository = new VideosRepository()
   }
-  async startIngestionFor(frequencies: Frequency[]): Promise<Channel[]> {
-    const rawChannels = await channelRepository()
-      .scan('frequency')
-      .in(frequencies)
-      .filter('shouldBeInjested')
-      .eq(true)
-      .exec();
-    const channels = rawChannels.map((ch) => mapTo<Channel>(ch));
-    console.log('Found channels', channels);
-    await this.bus.publishAll(
-      channels.map((ch) => new IngestChannel(ch, Date.now())),
-      'channelEvents'
-    );
-    return channels;
+  async startIngestionFor(frequencies: Frequency[]){
+    return await R.pipe(
+      () => this.channelsRepository.scan('frequency', s => s.in(frequencies).filter('shouldBeInjested').eq(true)),
+      R.andThen(ch => Result.map(ch, channels => channels.map((ch) => new IngestChannel(ch, Date.now())))),
+      R.andThen(ch => Result.bindAsync(ch, events => this.bus.publishAll(events, 'channelEvents')))
+    )()
   }
-  async ingestChannels(user: User): Promise<ChannelSpotted[]> {
+  async ingestChannels(user: User){
     if (!(await this.canCallYoutube())) return [];
 
-    return this.youtube
-      .getChannels(user)
-      .then((channels) => {
-        channelRepository().batchPut(channels);
-        userRepository().update({ ...user, channelsCount: channels.length });
-        return channels;
-      })
-      .then((channels) =>
-        channels.map((ch) => new ChannelSpotted(ch, Date.now()))
-      )
-      .then((events) => this.bus.publishAll(events, 'channelEvents'));
+    return R.pipe(
+      this.youtube.getChannels,
+      R.andThen(ch => Result.bindAsync(ch, channels => this.channelsRepository.upsertAll(channels))),
+      R.andThen(ch => Result.checkAsync(ch, channels => this.usersRepository.save({...user, channelsCount: channels.length}, 'users'))),
+      R.andThen(ch => Result.map(ch, channels => channels.map((ch) => new ChannelSpotted(ch, Date.now())))),
+      R.andThen(ev => Result.bindAsync(ev, events => this.bus.publishAll(events, 'channelEvents')))
+    )(user);
   }
   async ingestAllVideos(channel: Channel, top: number) {
     if (!(await this.canCallYoutube())) return [];
-    return await this.youtube
-      .getAllVideos(channel, top)
-      .then((videos) => this.onlyNewVideos(channel, videos))
-      .then((videos) =>
-        videos.map((v) => new VideoEvent('new', v.id, v.channelId, Date.now()))
-      )
-      .then((events) => this.bus.publishAll(events, 'videoEvents'));
+    return R.pipe(
+      this.youtube.getAllVideos,
+      R.andThen(v => Result.bindAsync(v, allVideos => this.onlyNewVideos(channel, allVideos))),
+      R.andThen(v => Result.map(v, newVideos => newVideos.map((v) => new VideoEvent('new', v.id, v.channelId, Date.now())))),
+      R.andThen(ev => Result.bindAsync(ev, events => this.bus.publishAll(events, 'videoEvents')))
+    )(channel, top)
   }
 
   async uploadVideo(channelId: string, videoId: string) {
@@ -76,15 +73,12 @@ export class SyncService {
   private async onlyNewVideos(
     channel: Channel,
     videos: Video[]
-  ): Promise<Video[]> {
-    const existingVideos: Set<string> = await videoRepository()
-      .query({ channelId: channel.id })
-      .filter('id')
-      .in(videos.map((v) => v.id))
-      .exec()
-      .then(videos => videos.map(v => mapTo<Video>(v)))
-      .then(videos => new Set(videos.map(v => v.id)));
-    return videos.filter((v) => !existingVideos.has(v.id));
+  ): Promise<Result<Video[], DomainError>> {
+    return R.pipe(
+      () => this.videosRepository.query({channelId : channel.id}, q => q.filter('id').in(videos.map((v) => v.id))),
+      R.andThen(v => Result.map(v, existingVideos => new Set(existingVideos.map(v => v.id)))),
+      R.andThen(v => Result.map(v, set => videos.filter(vid => !set.has(vid.id))))
+    )()
   }
   private async canCallYoutube(): Promise<boolean> {
     const today = new Date();
