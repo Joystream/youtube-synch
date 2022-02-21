@@ -41,7 +41,7 @@ export class JoystreamClient{
         )(member);
         return result;
     }
-    uploadVideo = async (member: Membership, channel: Channel, video: Video): Promise<Result<VideoUploadResponse, DomainError>> => {
+    uploadVideo = async (member: Membership, channel: Channel, video: Video){
         const videoInputMetadata : VideoInputMetadata = {
             title: video.title,
             description: video.description,
@@ -54,7 +54,9 @@ export class JoystreamClient{
         const result = await videoCreateResult
             .map(value => value.videoId)
             .pipeAsync(id => this.uploader.upload(id, channel, video))
-        return result.onFailure(err => console.log(err))
+        return result
+        .map(v => [v.id, video] as [string, Video])
+        .onFailure(err => console.log(err))
     }
     private async ensureApi() : Promise<Result<boolean,DomainError>>{
         await this.lib.connect();

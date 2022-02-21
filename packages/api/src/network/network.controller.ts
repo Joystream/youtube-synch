@@ -2,14 +2,15 @@ import { ApolloClient, gql, NormalizedCacheObject } from '@apollo/client';
 import { ChannelsRepository, UsersRepository, VideosRepository } from '@joystream/ytube';
 import { Body, Controller, Get, HttpException, Inject, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Channel, DomainError, Result } from '@youtube-sync/domain';
+import { Channel, DomainError, Result, Video, User } from '@youtube-sync/domain';
 import { JoystreamClient } from '@youtube-sync/joy-api';
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { GetMembershipsQuery, GetMembershipsQueryVariables, GetStorageBucketsQuery, GetStorageBucketsQueryVariables } from 'packages/joy-api/graphql';
 import R from 'ramda'
-import {groupBy, flatten, uniqBy} from 'lodash'
-import { ChannelDto, UserDto } from '../dtos';
+import {groupBy, flatten, uniqBy, result} from 'lodash'
+import { ChannelDto, UserDto, VideoDto } from '../dtos';
 import { OperatorInfo } from 'packages/joy-api/storage/uploader';
+;
 
 export class CreateMembershipDto{
    @ApiProperty() userId: string
@@ -18,8 +19,10 @@ export class CreateJoystreamChannelDto{
     @ApiProperty() channelId: string
     @ApiProperty() userId: string
 }
-export class CreateChannelDto{
+export class CreateJoystreamVideoDto{
     @ApiProperty() channelId: string
+    @ApiProperty() userId: string
+    @ApiProperty() videoId: string
 }
 
 export class UploadVideoDto{
@@ -60,6 +63,20 @@ export class NetworkController {
         )(body.userId, body.channelId)
         if(finalResult.isSuccess)
             return new ChannelDto(finalResult.value)
+        throw new HttpException(`Failed to create membership ${finalResult.error}`, 500)
+    }
+    @Post('videos')
+    async createVideo(@Body() body: CreateJoystreamVideoDto) : Promise<VideoDto>{
+        const finalResult = await R.pipe(
+            (userId: string, channelId: string) => this.channelsRepository.get(userId, channelId),
+            R.andThen(c => Result.concat(c, c => this.usersRepository.get('users', c.userId))),
+            R.andThen(c => Result.concat(c, ([channel, user]) => this.videosRepository.get(channel.id, body.videoId))),
+            R.andThen(r => r.map(([[c, u], v]) => [c, u, v] as [Channel, User, Video])),
+            R.andThen(result => Result.bindAsync(result, ([c, u, v]) => this.joystreamClient.uploadVideo(u.membership, c, v))),
+            R.andThen(result => Result.bindAsync(result, r => this.videosRepository.save({...r[1], state: 'uploadToJoystreamSucceded'}, body.channelId)))
+        )(body.userId, body.channelId)
+        if(finalResult.isSuccess)
+            return finalResult.value;
         throw new HttpException(`Failed to create membership ${finalResult.error}`, 500)
     }
     @Get('buckets')

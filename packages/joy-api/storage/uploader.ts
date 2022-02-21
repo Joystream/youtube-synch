@@ -7,7 +7,7 @@ import { createGraphqlClient, GetStorageBucketsQuery, GetStorageBucketsQueryVari
 import axios from "axios";
 export type OperatorInfo = {id: string, endpoint: string}
 export type OperatorsMapping = Record<string, OperatorInfo>
-export type VideoUploadResponse = {id: string}
+export type VideoUploadResponse = {id: string, video: Video}
 export class Uploader {
     private client: ApolloClient<NormalizedCacheObject>
     constructor(nodeUrl: string, orionUrl: string) {
