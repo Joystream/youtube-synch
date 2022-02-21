@@ -56,8 +56,7 @@ export class Uploader {
             fetchPolicy: 'network-only'
         });
         const bags = response.data.storageBuckets.map(bucket => bucket.bags.map(bag => ({id: bag.id, info: {id: bucket.id, endpoint: bucket.operatorMetadata.nodeEndpoint} as OperatorInfo})));
-        const deduplicated = uniqBy(flatten(bags), b => b.info.id);
-        return groupBy(deduplicated, b => b.id);
+        return groupBy(flatten(bags), b => b.id);
     }
 }
 const getRandomIntInclusive = (min: number, max: number) => {

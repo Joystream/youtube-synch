@@ -7,6 +7,8 @@ import { VideosController } from './videos/videos.controller';
 import { NetworkController } from './network/network.controller';
 import { JoystreamClient } from '@youtube-sync/joy-api';
 import { ChannelsRepository, UsersRepository, VideosRepository } from '@joystream/ytube';
+import { ApolloClient, NormalizedCacheObject } from '@apollo/client';
+import { createGraphqlClient } from 'packages/joy-api/graphql';
 
 @Module({
   imports: [ConfigModule.forRoot()],
@@ -37,6 +39,13 @@ import { ChannelsRepository, UsersRepository, VideosRepository } from '@joystrea
   {
     provide: VideosRepository,
     useClass: VideosRepository
+  },
+  {
+    provide: 'orion',
+    useFactory: (config: ConfigService) => {
+      return createGraphqlClient(config.get<string>('JOYSTREAM_QUERY_NODE'),config.get<string>("JOYSTREAM_ORION_URL"))
+    },
+    inject:[ConfigService]
   }],
 })
 export class AppModule {}

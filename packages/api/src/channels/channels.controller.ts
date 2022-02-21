@@ -4,31 +4,14 @@ import {
   Get,
   HttpException,
   Param,
-  Post,
   Put,
 } from '@nestjs/common';
 import { ChannelsService } from './channels.service';
-import { Channel, Result, Video, VideoState } from '@youtube-sync/domain';
+import { Result } from '@youtube-sync/domain';
 import { VideosRepository } from '@joystream/ytube';
-import { ApiBody, ApiOperation, ApiProperty, ApiResponse, ApiTags, PickType } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import R from 'ramda';
-import { ChannelDto, ThumbnailsDto } from '../users/users.controller';
-
-class VideoDto extends Video{
-  @ApiProperty() url: string;
-  @ApiProperty() title: string;
-  @ApiProperty() description: string;
-  @ApiProperty() id: string;
-  @ApiProperty() playlistId: string;
-  @ApiProperty() resourceId: string;
-  @ApiProperty() channelId: string;
-  @ApiProperty() thumbnails: ThumbnailsDto;
-  @ApiProperty() state: VideoState;
-  @ApiProperty() destinationUrl: string;
-}
-class UpdateChannelDto extends PickType(Channel, ['shouldBeInjested']){
-  @ApiProperty() shouldBeInjested: boolean;
-}
+import { ChannelDto, UpdateChannelDto, VideoDto } from '../dtos';
 @Controller({ path: 'users/:userId/channels' })
 @ApiTags('channels')
 export class ChannelsController {

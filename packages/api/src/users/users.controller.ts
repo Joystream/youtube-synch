@@ -4,81 +4,9 @@ import R from 'ramda'
 import { ChannelsRepository, IYoutubeClient, UsersRepository, YtClient } from '@joystream/ytube';
 import { ConfigService } from '@nestjs/config';
 import { JoystreamClient } from '@youtube-sync/joy-api';
-import { ApiBody, ApiOperation, ApiProperty, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { UserCreateRequest, UserCreateResponse, UserDto, ChannelDto } from '../dtos';
 
-export class MembershipDto{
-  @ApiProperty() memberId: string
-  @ApiProperty() address: string
-}
-export class ThumbnailsDto{
-  @ApiProperty() default: string;
-  @ApiProperty() medium: string;
-  @ApiProperty() high: string;
-  @ApiProperty() maxRes: string;
-  @ApiProperty() standard: string;
-}
-export class ChannelDto{
-  /**
-   *
-   */
-  constructor(channel: Channel) {
-    this.title = channel.title;
-    this.description = channel.description;
-    this.joystreamId = channel.chainMetadata?.id
-    this.shouldBeInjested = channel.shouldBeInjested;
-    this.uploadsPlaylistId = channel.uploadsPlaylistId;
-    this.aggregatedStats = channel.aggregatedStats;
-    this.thumbnails = channel.thumbnails
-  }
-  @ApiProperty()
-  title: string
-  @ApiProperty()
-  description: string
-  @ApiProperty()
-  aggregatedStats: number;
-  @ApiProperty()
-  uploadsPlaylistId: string;
-  @ApiProperty()
-  shouldBeInjested: boolean;
-  @ApiProperty()
-  joystreamId: string
-  @ApiProperty()
-  thumbnails: ThumbnailsDto
-}
-export class UserDto {
-  /**
-   *
-   */
-  constructor(user: User) {
-    this.id = user.id
-    this.email = user.email
-    this.avatarUrl = user.avatarUrl
-    this.channelsCount = user.channelsCount
-    this.membership = user.membership
-  }
-  @ApiProperty() id: string
-  @ApiProperty() email:string
-  @ApiProperty() avatarUrl: string
-  @ApiProperty() channelsCount: number
-  @ApiProperty() membership: MembershipDto
-}
-class UserCreateRequest {
-  @ApiProperty({required: true})
-  authorizationCode: string;
-}
-class UserCreateResponse{
-  /**
-   *
-   */
-  constructor(user: UserDto, channels: ChannelDto[]) {
-    this.user = user;
-    this.channels = channels;
-  }
-  @ApiProperty()
-  user: UserDto
-  @ApiProperty({type: ChannelDto, isArray: true})
-  channels: ChannelDto[]
-}
 @Controller('users')
 @ApiTags('channels')
 export class UsersController {

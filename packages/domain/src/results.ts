@@ -41,6 +41,13 @@ export class Result<T, TE extends DomainError>{
       const nextResult = await f(res.value);
       return nextResult.map(nextValue => [res.value, nextValue] as [T, K]);
     }
+    static ensure<T, TE extends DomainError>(res: Result<T, TE>, f: (value: T) => boolean, fe: (value: T) => TE) : Result<T, TE>{
+      if(res.isSuccess && f(res.value))
+        return res; 
+      if(res.isFailure)
+        return res;
+      return Result.Error<T, TE>(fe(res.value))
+    }
     static tryBind<T,K, TE extends DomainError>(
       res: Result<T, TE>, 
       f: (value: T) => Promise<K>,

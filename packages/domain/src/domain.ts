@@ -22,7 +22,7 @@ export class Channel {
   userAccessToken: string;
   userRefreshToken: string;
   uploadsPlaylistId: string;
-  shouldBeInjested: boolean;
+  shouldBeIngested: boolean;
   chainMetadata: ChannelChainMetadata
 }
 
@@ -78,7 +78,8 @@ export class VideoEvent implements IEvent {
 export type Membership = {
   memberId: string,
   address: string,
-  secret: string
+  secret: string,
+  suri: string
 }
 export class User {
   /**

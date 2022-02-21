@@ -1,11 +1,6 @@
-import { Channel, User, Result, DomainError, Video } from "@youtube-sync/domain";
+import { Channel, User, Result, DomainError, Video, Membership } from "@youtube-sync/domain";
 import { Account, AccountsUtil, ChannelInputAssets, ChannelInputMetadata, Faucet, JoystreamLib, RegisteredMember, VideoInputAssets, VideoInputMetadata } from ".";
 import { Uploader, VideoUploadResponse } from "../storage/uploader";
-export type Membership = {
-    memberId: string,
-    address: string,
-    secret: string
-}
 export class JoystreamClient{
     private faucet: Faucet;
     private lib: JoystreamLib
@@ -18,14 +13,15 @@ export class JoystreamClient{
     }
     createMembership = async(user: User) : Promise<Result<Membership, DomainError>> => {
         await this.ensureApi();
+        const accKey = `${user.googleId}-youtube-sync`;
         const result = await this.accounts
-            .createAccount(user.googleId)
+            .createAccount(accKey)
             .pipeAsync(account => this.faucet
                 .register(user.googleId, account.address)
                 .then(member => member.map(m => [account, m] as [Account, RegisteredMember]))
             )
         return result
-            .map(([account, member]) => ({address: account.address, secret: account.secret, memberId: member.memberId}))
+            .map(([account, member]) => ({address: account.address, secret: account.secret, memberId: member.memberId, suri: `${account.secret}//${accKey}`}))
             .onFailure(err => console.log(err))
     }
     createChannel = async (member: Membership, channel: Channel) => {

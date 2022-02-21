@@ -119,7 +119,7 @@ class YoutubeClient implements IYoutubeClient {
           uploadsPlaylistId: item.contentDetails?.relatedPlaylists?.uploads,
           frequency: 0,
           createdAt: Date.now(),
-          shouldBeInjested: false
+          shouldBeIngested: false
         }
     )
   }

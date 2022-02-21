@@ -1,58 +1,97 @@
-import { ChannelsRepository, IYoutubeClient, UsersRepository, YtClient } from '@joystream/ytube';
-import { Controller, Get, Query } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Channel, Result, User } from '@youtube-sync/domain';
+import { ApolloClient, gql, NormalizedCacheObject } from '@apollo/client';
+import { ChannelsRepository, UsersRepository, VideosRepository } from '@joystream/ytube';
+import { Body, Controller, Get, HttpException, Inject, Post, Query } from '@nestjs/common';
+import { ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Channel, DomainError, Result } from '@youtube-sync/domain';
 import { JoystreamClient } from '@youtube-sync/joy-api';
+// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
+import { GetMembershipsQuery, GetMembershipsQueryVariables, GetStorageBucketsQuery, GetStorageBucketsQueryVariables } from 'packages/joy-api/graphql';
 import R from 'ramda'
+import {groupBy, flatten, uniqBy} from 'lodash'
+import { UserDto } from '../dtos';
+import { OperatorInfo } from 'packages/joy-api/storage/uploader';
+
+export class CreateMembershipDto{
+   @ApiProperty() userId: string
+}
+export class CreateChannelDto{
+    @ApiProperty() channelId: string
+}
+
+export class UploadVideoDto{
+    @ApiProperty() videoId: string
+}
 @Controller('network')
+@ApiTags('network')
 export class NetworkController {
-    private jClient: JoystreamClient
-    private ytClient: IYoutubeClient
-    private usersRepo: UsersRepository = new UsersRepository();
-    private channelsRepo: ChannelsRepository = new ChannelsRepository()
     constructor(
-        private configService: ConfigService) {
-        const nodeUrl = this.configService.get<string>('JOYSTREAM_WEBSOCKET_RPC');
-        const faucetUrl = this.configService.get<string>('JOYSTREAM_FAUCET_URL');
-        const orionUrl = this.configService.get<string>('JOYSTREAM_ORION_URL')
-        const rootAccount = this.configService.get<string>('JOYSTREAM_ROOT_ACCOUNT');
-        this.jClient = new JoystreamClient(faucetUrl, nodeUrl, orionUrl, rootAccount);
-        this.ytClient = YtClient.create(
-            configService.get<string>('YOUTUBE_CLIENT_ID'),
-            configService.get<string>('YOUTUBE_CLIENT_SECRET'),
-            configService.get<string>('YOUTUBE_REDIRECT_URI')
-          );
+        private usersRepository: UsersRepository,
+        private channelsRepository: ChannelsRepository,
+        private videosRepository: VideosRepository,
+        private joystreamClient: JoystreamClient,
+        @Inject('orion') private orionClient: ApolloClient<NormalizedCacheObject> ) {
     }
-    @Get('e2e')
-    async e2eTest(@Query('code') code: string){
-        /**
-         * 1. Create user from auth code 
-         * 2. Ingest user channels
-         * 3. Create membership
-         * 4. Create channels in joystream
-         * 5. Save user and channel in db
-         */
-
-        const userAndChannelInitResult = await R.pipe(
-            this.ytClient.getUserFromCode,
-            R.andThen(user => Result.concat(user, u => this.ytClient.getChannels(u))),
-            R.andThen(userAndChannels => userAndChannels.map(([user, channels]) => [user, channels[0]] as [User, Channel])),
-            R.andThen(userAndChannels => Result.concat(userAndChannels, ([user, channel]) => this.jClient.createMembership(user))),
-            R.andThen(ucm => ucm.map(([[user, channel], membership]) => [{...user, membership}, channel] as [User, Channel])),
-            R.andThen(ucm => Result.concat(ucm, ([user, channel]) => this.jClient.createChannel(user.membership, channel))),
-            R.andThen(ucm => ucm.map(([[user, channel], joyChannel]) => [user, {...channel, chainMetadata: {id: joyChannel.channelId}}] as [User, Channel]))
-        )
-
-        return R.pipe(
-            userAndChannelInitResult,
-            R.andThen(result => Result.bindAsync(result, ([user, channel]) => this.saveUserAndChannel(user, channel)))
-        )(code)
+    @ApiOperation({description: 'Create joystream network membership for existing user in the system'})
+    @ApiResponse({type: UserDto})
+    @Post('memberships')
+    async createMembership(@Body() body: CreateMembershipDto){
+        const result = await R.pipe(
+            (id: string) => this.usersRepository.get('users', id),
+            R.andThen(user => Result.ensure(user, u => !u.membership, u => new DomainError('User already has assigned memberhip'))),
+            R.andThen(user => Result.concat(user, u => this.joystreamClient.createMembership(u))),
+            R.andThen(userAndMembership => Result.bindAsync(userAndMembership, ([user, membership]) => this.usersRepository.save({...user, membership: membership}, 'users')))
+        )(body.userId)
+        if(result.isSuccess)
+            return new UserDto(result.value)
+        throw new HttpException(`Failed to create membership ${result.error}`, 500)
+    }
+    @Get('buckets')
+    async getBuckets(){
+        const response = await this.orionClient.query<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>({
+            query: gql`
+                query GetStorageBuckets {
+                    storageBuckets(
+                    limit: 50
+                    where: {
+                        operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
+                        operatorMetadata: { nodeEndpoint_contains: "http" }
+                    }
+                    ) {
+                    id
+                    operatorMetadata {
+                        nodeEndpoint
+                    }
+                    bags {
+                        id
+                    }
+                    }
+                }
+            `,
+            fetchPolicy: 'network-only'
+        });
+        const bags = response.data.storageBuckets.map(bucket => bucket.bags.map(bag => ({id: bag.id, info: {id: bucket.id, endpoint: bucket.operatorMetadata.nodeEndpoint} as OperatorInfo})));
+        return groupBy(flatten(bags), b => b.id);
+    }
+    @Get('memberships')
+    async getMemberships(){
+        const response = await this.orionClient.query<GetMembershipsQuery, GetMembershipsQueryVariables>({
+            query: gql`
+                query GetMembershipsQuery {
+                    memberships(
+                    limit: 50
+                    ) {
+                        id,
+                        handle,
+                        avatarUri,
+                        controllerAccount,
+                        rootAccount,
+                        createdAt
+                    }
+                }
+            `,
+            fetchPolicy: 'network-only'
+        });
+        return [response.data];
     }
 
-    private async saveUserAndChannel(user: User, channel: Channel){
-        return R.pipe(
-            () => this.usersRepo.save(user, 'users'),
-            R.andThen(u => Result.concat(u, u => this.channelsRepo.save(channel, u.id)))
-        )()
-    }
 }

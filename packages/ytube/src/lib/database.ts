@@ -231,7 +231,7 @@ export class ChannelsRepository implements IRepository<Channel>{
     return Result.Success(mapTo<Channel>(result));
   }
   async save(model: Channel, partition: string): Promise<Result<Channel, DomainError>> {
-    const result = await this.model.update({...model, userId: partition});
+    const result = await this.model.update({userId: partition, id: model.id}, {shouldBeIngested: model.shouldBeIngested});
     return Result.Success(mapTo<Channel>(result));
   }
   async delete(partition: string, id: string): Promise<Result<void, DomainError>> {
