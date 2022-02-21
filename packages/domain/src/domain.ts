@@ -1,4 +1,4 @@
-export interface Channel {
+export class Channel {
   id: string;
   title: string;
   frequency: number;
@@ -102,7 +102,7 @@ export type VideoState =
   | 'uploadToJoystreamStarted'
   | 'uploadToJoystreamFailed'
   | 'uploadToJoystreamSucceded';
-export interface Video {
+export class Video {
   url: string;
   title: string;
   description: string;
