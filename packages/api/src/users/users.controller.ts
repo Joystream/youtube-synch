@@ -54,7 +54,7 @@ export class UsersController {
         R.andThen(userAndChannels => Result.concat(userAndChannels, ([user]) => this.jClient.createMembership(user))),
         R.andThen(ucm => ucm.map(([[user, channel], membership]) => [{...user, membership}, channel] as [User, Channel[]])),
         R.andThen(ucm => Result.concat(ucm, ([user, channel]) => this.jClient.createChannel(user.membership, channel[0]))),
-        R.andThen(ucm => ucm.map(([[user, channel], joyChannel]) => [user, {...channel[0], chainMetadata: {id: joyChannel.channelId}}] as [User, Channel]))
+        R.andThen(ucm => ucm.map(([[user, channel], joyChannel]) => [user, {...channel[0], chainMetadata: {id: joyChannel[0]}}] as [User, Channel]))
     )
 
     const result = await R.pipe(

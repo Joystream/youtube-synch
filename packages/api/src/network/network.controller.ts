@@ -8,11 +8,15 @@ import { JoystreamClient } from '@youtube-sync/joy-api';
 import { GetMembershipsQuery, GetMembershipsQueryVariables, GetStorageBucketsQuery, GetStorageBucketsQueryVariables } from 'packages/joy-api/graphql';
 import R from 'ramda'
 import {groupBy, flatten, uniqBy} from 'lodash'
-import { UserDto } from '../dtos';
+import { ChannelDto, UserDto } from '../dtos';
 import { OperatorInfo } from 'packages/joy-api/storage/uploader';
 
 export class CreateMembershipDto{
    @ApiProperty() userId: string
+}
+export class CreateJoystreamChannelDto{
+    @ApiProperty() channelId: string
+    @ApiProperty() userId: string
 }
 export class CreateChannelDto{
     @ApiProperty() channelId: string
@@ -44,6 +48,19 @@ export class NetworkController {
         if(result.isSuccess)
             return new UserDto(result.value)
         throw new HttpException(`Failed to create membership ${result.error}`, 500)
+    }
+
+    @Post('channels')
+    async createChannel(@Body() body: CreateJoystreamChannelDto){
+        const finalResult = await R.pipe(
+            (userId: string, channelId: string) => this.channelsRepository.get(userId, channelId),
+            R.andThen(c => Result.concat(c, c => this.usersRepository.get('users', c.userId))),
+            R.andThen(result => Result.bindAsync(result, ([c, u]) => this.joystreamClient.createChannel(u.membership, c))),
+            R.andThen(result => Result.bindAsync(result, ([networkId, channel]) => this.channelsRepository.save({...channel, chainMetadata: {id: networkId}}, body.userId)))
+        )(body.userId, body.channelId)
+        if(finalResult.isSuccess)
+            return new ChannelDto(finalResult.value)
+        throw new HttpException(`Failed to create membership ${finalResult.error}`, 500)
     }
     @Get('buckets')
     async getBuckets(){

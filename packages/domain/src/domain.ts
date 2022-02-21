@@ -85,7 +85,8 @@ export class User {
   /**
    *
    */
-  constructor(public id: string,
+  constructor(
+    public id: string,
     public email: string,
     public youtubeUsername: string,
     public googleId: string,
@@ -95,6 +96,7 @@ export class User {
     public channelsCount: number) {
   }
 
+  partition = 'users'
   membership: Membership
 }
 

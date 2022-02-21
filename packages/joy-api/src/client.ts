@@ -1,4 +1,5 @@
 import { Channel, User, Result, DomainError, Video, Membership } from "@youtube-sync/domain";
+import R from "ramda";
 import { Account, AccountsUtil, ChannelInputAssets, ChannelInputMetadata, Faucet, JoystreamLib, RegisteredMember, VideoInputAssets, VideoInputMetadata } from ".";
 import { Uploader, VideoUploadResponse } from "../storage/uploader";
 export class JoystreamClient{
@@ -10,6 +11,7 @@ export class JoystreamClient{
         this.faucet = new Faucet(faucetUri);
         this.lib = new JoystreamLib(this.nodeUri);
         this.uploader = new Uploader(nodeUri, orionUrl)
+        this.accounts = new AccountsUtil()
     }
     createMembership = async(user: User) : Promise<Result<Membership, DomainError>> => {
         await this.ensureApi();
@@ -17,7 +19,7 @@ export class JoystreamClient{
         const result = await this.accounts
             .createAccount(accKey)
             .pipeAsync(account => this.faucet
-                .register(user.googleId, account.address)
+                .register(randomHandle(), account.address)
                 .then(member => member.map(m => [account, m] as [Account, RegisteredMember]))
             )
         return result
@@ -31,10 +33,13 @@ export class JoystreamClient{
             isPublic: true
         }
         const assets: ChannelInputAssets = {}
-        const result = await this.accounts
-            .getOrAddPair(member.address, member.secret)
-            .pipeAsync(pair => this.lib.extrinsics.createChannel(pair, member.memberId, input, assets));
-        return result.onFailure(err => console.log(err));
+        const result = await R.pipe(
+            (m: Membership) => this.accounts.getOrAddPair(m.address, m.secret),
+            pair => Result.bindAsync(pair, p => this.lib.extrinsics.createChannel(p, member.memberId, input, assets)),
+            R.andThen(res => res.onFailure(err => console.log(err))),
+            R.andThen(res => res.map(c => [c.channelId, channel] as [string, Channel]))
+        )(member);
+        return result;
     }
     uploadVideo = async (member: Membership, channel: Channel, video: Video): Promise<Result<VideoUploadResponse, DomainError>> => {
         const videoInputMetadata : VideoInputMetadata = {
@@ -57,4 +62,8 @@ export class JoystreamClient{
         const result = this.accounts.addKnownAccount(this.rootAccount);
         return result.map(_ => true);
     }
+}
+
+function randomHandle() {
+    return Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)
 }

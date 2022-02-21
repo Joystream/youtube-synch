@@ -4,6 +4,7 @@ import { ConditionInitalizer } from 'dynamoose/dist/Condition';
 import { AnyDocument } from 'dynamoose/dist/Document';
 import { Query, Scan } from 'dynamoose/dist/DocumentRetriever';
 import { ModelType } from 'dynamoose/dist/General';
+import { omit } from 'ramda';
 
 export function createChannelModel() {
   const channelSchema = new dynamoose.Schema({
@@ -52,7 +53,7 @@ export function createChannelModel() {
       type: Boolean,
       default: true,
     },
-  });
+  }, {saveUnknown: true});
   return dynamoose.model('channels', channelSchema, {create: false});
 }
 export function createUserModel() {
@@ -75,6 +76,7 @@ export function createUserModel() {
       channelsCount: Number,
     },
     {
+      saveUnknown: true,
       timestamps: {
         createdAt: 'createdAt',
         updatedAt: 'updatedAt',
@@ -120,6 +122,7 @@ export function videoRepository() {
       },
     },
     {
+      saveUnknown: true,
       timestamps: {
         createdAt: 'createdAt',
         updatedAt: 'updatedAt',
@@ -199,7 +202,8 @@ export class UsersRepository implements IRepository<User>{
     return Result.Success(mapTo<User>(result));
   }
   async save(model: User, partition: string): Promise<Result<User, DomainError>> {
-    const result = await this.model.update({...model, partition});
+    const update = omit(['id', 'partition', 'updatedAt', 'createdAt'], model)
+    const result = await this.model.update({partition, id: model.id}, update);
     return Result.Success(mapTo<User>(result));
   }
   async delete(partition: string, id: string): Promise<Result<void, DomainError>> {
@@ -231,7 +235,7 @@ export class ChannelsRepository implements IRepository<Channel>{
     return Result.Success(mapTo<Channel>(result));
   }
   async save(model: Channel, partition: string): Promise<Result<Channel, DomainError>> {
-    const result = await this.model.update({userId: partition, id: model.id}, {shouldBeIngested: model.shouldBeIngested});
+    const result = await this.model.update({userId: partition, id: model.id}, {shouldBeIngested: model.shouldBeIngested, chainMetadata: model.chainMetadata});
     return Result.Success(mapTo<Channel>(result));
   }
   async delete(partition: string, id: string): Promise<Result<void, DomainError>> {
@@ -264,7 +268,8 @@ export class VideosRepository implements IRepository<Video>{
     return Result.Success(mapTo<Video>(result));
   }
   async save(model: Video, partition: string): Promise<Result<Video, DomainError>> {
-    const result = await this.model.update(model);
+    const upd = omit(['id', 'channelId', 'createdAt', 'updatedAt'], model)
+    const result = await this.model.update({channelId: model.channelId, id: model.id}, upd);
     return Result.Success(mapTo<Video>(result));
   }
   async delete(partition: string, id: string): Promise<Result<void, DomainError>> {
