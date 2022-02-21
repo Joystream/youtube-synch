@@ -17,20 +17,14 @@ export interface IYoutubeClient {
   downloadVideo(videoUrl: string): Readable;
 }
 class YoutubeClient implements IYoutubeClient {
-  private readonly _auth: OAuth2Client;
-  constructor(clientId: string, clientSecret: string, redirectUri: string) {
-    this._auth = new OAuth2Client({
-      clientId,
-      clientSecret,
-      redirectUri,
-    });
+  constructor(private clientId: string, private clientSecret: string, private redirectUri: string) {
   }
   async getUserFromCode(code: string) {
       const createUserFlow = R.pipe(
-        (code: string) => Result.tryAsync(() => this._auth.getToken(code), new YoutubeAuthorizationFailed('Failed to retrieve token using code')),
+        (code: string) => Result.tryAsync(() => this.getAuth().getToken(code), new YoutubeAuthorizationFailed('Failed to retrieve token using code')),
         R.andThen(r => Result.tryBind(
           r,
-          tokenResponse => this._auth.getTokenInfo(tokenResponse.tokens.access_token).then(tokenInfo => [tokenInfo, tokenResponse] as [TokenInfo, GetTokenResponse]), 
+          tokenResponse => this.getAuth().getTokenInfo(tokenResponse.tokens.access_token).then(tokenInfo => [tokenInfo, tokenResponse] as [TokenInfo, GetTokenResponse]), 
           new YoutubeAuthorizationFailed("Failed to get token info"))),
         R.andThen(tokensResult => tokensResult.map(([tokenInfo, tokenResponse]) => new User(
           tokenInfo.sub, tokenInfo.email, tokenInfo.email, tokenInfo.sub, tokenResponse.tokens.access_token, tokenResponse.tokens.refresh_token, '', 0))),
@@ -39,38 +33,30 @@ class YoutubeClient implements IYoutubeClient {
       return createUserFlow(code);
   }
 
-  async getChannels(user: User){
-    const setCreds = (u: User) => {
-      this._auth.setCredentials(
-        {
-          access_token: u.accessToken,
-          refresh_token: u.refreshToken,
-        }
-      );
-      return new youtube_v3.Youtube({ auth: this._auth });
-    }
-    return R.pipe(
-      setCreds,
+  getChannels = async (user: User) => {
+    const result = await R.pipe(
+      (u: User) => this.getYoutube(u.accessToken, u.refreshToken),
       yt => Result.tryAsync(() => yt.channels.list({
         part: ['snippet', 'contentDetails', 'statistics'],
         mine: true,
       }), new DomainError('Failed to retrieve channels list for')),
       R.andThen(channelsResult => channelsResult.map(c => this.mapChannels(user, c.data.items ?? []))),
     )(user)
+    return result;
   }
-  async getVideos(channel: Channel, top: number) {
+  getVideos = (channel: Channel, top: number) => {
     return R.pipe(
       () => this.getYoutube(channel.userAccessToken, channel.userRefreshToken),
       yt => Result.tryAsync(() => this.iterateVideos(yt, channel, top), new DomainError(`Failed to fetch videos for channel ${channel.title}`)),
     )()
   }
-  async getAllVideos(channel: Channel, max = 500){
+  getAllVideos = (channel: Channel, max = 500) => {
     return R.pipe(
       () => this.getYoutube(channel.userAccessToken, channel.userRefreshToken),
       yt => Result.tryAsync(() => this.iterateVideos(yt, channel, max), new DomainError(`Failed to fetch videos for channel ${channel.title}`))
     )()
   }
-  downloadVideo(videoUrl: string): Readable {
+  downloadVideo = (videoUrl: string): Readable => {
     return ytdl(videoUrl);
   }
   private async iterateVideos(youtube: youtube_v3.Youtube, channel: Channel, max: number){
@@ -89,13 +75,21 @@ class YoutubeClient implements IYoutubeClient {
     return videos;
   }
   private getYoutube (accessToken: string, refreshToken: string) {
-    this._auth.setCredentials(
+    const auth = this.getAuth();
+    auth.setCredentials(
       {
         access_token: accessToken,
         refresh_token: refreshToken,
       }
     );
-    return new youtube_v3.Youtube({ auth: this._auth });
+    return new youtube_v3.Youtube({ auth });
+  }
+  private getAuth(){
+    return new OAuth2Client({
+      clientId: this.clientId,
+      clientSecret: this.clientSecret,
+      redirectUri: this.redirectUri,
+    })
   }
   private mapChannels(user: User, channels: Schema$Channel[]){
     return channels.map<Channel>(

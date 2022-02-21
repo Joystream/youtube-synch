@@ -250,7 +250,7 @@ export class VideosRepository implements IRepository<Video>{
    */
   private model: ModelType<AnyDocument>
   constructor() {
-    this.model = createUserModel();
+    this.model = videoRepository();
   }
   upsertAll(items: Video[]): Promise<Result<Video[], DomainError>> {
     throw new Error('Method not implemented.');

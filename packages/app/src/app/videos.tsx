@@ -8,13 +8,13 @@ import { User } from "./usersList"
 
 
 export function Videos({channel, user}: {channel: Channel, user: User}){
-    const {isLoading, error, data} = useQuery('channels', ({signal}) => axios
+    const {isLoading, error, data} = useQuery('videos', ({signal}) => axios
         .get<Video[]>(`http://localhost:3001/users/${user.id}/channels/${channel.id}/videos`, {signal})
         .then(resp => resp.data))
     return <Grid container spacing={4} direction={'row'}
      justifyContent={'flex-start'}
      alignItems={'flex-start'}
-     sx={{py: 1, maxHeight:'100%', overflow: 'scroll'}}>
+     sx={{py: 1, height:'100%', overflow: 'auto'}}>
         {isLoading ? "Loading..." : data?.map(video => <Grid item>
             <VideoCard video={video}></VideoCard>
         </Grid>)}
@@ -28,6 +28,7 @@ function VideoCard({video}: {video: Video}){
             <Typography variant="h5" component="div">{video.title}</Typography>
             <Typography variant="body2" color="text.secondary">
                 {video.description}
+                {video.state}
             </Typography>
         </CardContent>
     </Card>

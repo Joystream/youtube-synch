@@ -16,7 +16,7 @@ export class JoystreamClient{
         this.lib = new JoystreamLib(this.nodeUri);
         this.uploader = new Uploader(nodeUri, orionUrl)
     }
-    async createMembership(user: User) : Promise<Result<Membership, DomainError>>{
+    createMembership = async(user: User) : Promise<Result<Membership, DomainError>> => {
         await this.ensureApi();
         const result = await this.accounts
             .createAccount(user.googleId)
@@ -28,7 +28,7 @@ export class JoystreamClient{
             .map(([account, member]) => ({address: account.address, secret: account.secret, memberId: member.memberId}))
             .onFailure(err => console.log(err))
     }
-    async createChannel(member: Membership, channel: Channel){
+    createChannel = async (member: Membership, channel: Channel) => {
         const input: ChannelInputMetadata = {
             title: channel.title,
             description: channel.description,
@@ -40,7 +40,7 @@ export class JoystreamClient{
             .pipeAsync(pair => this.lib.extrinsics.createChannel(pair, member.memberId, input, assets));
         return result.onFailure(err => console.log(err));
     }
-    async uploadVideo(member: Membership, channel: Channel, video: Video): Promise<Result<VideoUploadResponse, DomainError>>{
+    uploadVideo = async (member: Membership, channel: Channel, video: Video): Promise<Result<VideoUploadResponse, DomainError>> => {
         const videoInputMetadata : VideoInputMetadata = {
             title: video.title,
             description: video.description,

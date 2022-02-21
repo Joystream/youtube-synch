@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Videos } from './videos';
 import {GoogleLogin, GoogleLoginResponse, GoogleLoginResponseOffline} from 'react-google-login'
 import {QueryClient, QueryClientProvider} from 'react-query'
+import axios from 'axios';
 
 const StyledApp = styled.div`
 `;
@@ -52,7 +53,9 @@ export function App() {
   const successAuth = (
     response: GoogleLoginResponse | GoogleLoginResponseOffline
   ) => {
-    fetch(`http://localhost:3001/network/e2e?code=${response.code}`)
+    if(!response.code)
+      return;
+    axios.post(`http://localhost:3001/users`, {authorizationCode: response.code})
     return console.log(response);
   };
   const failedAuth = (response: any) => {
@@ -82,6 +85,7 @@ export function App() {
                     onFailure={failedAuth}
                     isSignedIn={true}
                     cookiePolicy="single_host_origin"
+                    prompt='consent'
                     scope="https://www.googleapis.com/auth/youtube.readonly"
                     render={props => <IconButton onClick={props.onClick} disabled={props.disabled}>
                       <Add/>
