@@ -9,6 +9,7 @@ import { GetMembershipsQuery, GetMembershipsQueryVariables, GetStorageBucketsQue
 import R from 'ramda'
 import {groupBy, flatten, uniqBy, result} from 'lodash'
 import { ChannelDto, UserDto, VideoDto } from '../dtos';
+// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { OperatorInfo } from 'packages/joy-api/storage/uploader';
 ;
 

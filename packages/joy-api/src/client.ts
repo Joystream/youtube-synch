@@ -41,7 +41,7 @@ export class JoystreamClient{
         )(member);
         return result;
     }
-    uploadVideo = async (member: Membership, channel: Channel, video: Video){
+    uploadVideo = async (member: Membership, channel: Channel, video: Video) => {
         const videoInputMetadata : VideoInputMetadata = {
             title: video.title,
             description: video.description,
