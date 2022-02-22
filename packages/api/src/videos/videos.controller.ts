@@ -14,7 +14,7 @@ export class VideosController {
   @Get()
   async get(@Param('userId') userId: string) {
     const result = await R.pipe(
-      this.channelsService.getAll,
+      (userId:string) => this.channelsService.getAll(userId),
       R.andThen(ch => Result.bindAsync(ch, channels => this.videosRepository.scan({}, s => s.attribute('channelId').in(channels.map(c => c.id)))))
     )(userId)
     if(result.isSuccess)

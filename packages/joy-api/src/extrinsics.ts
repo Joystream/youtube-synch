@@ -121,7 +121,6 @@ export class JoystreamLibExtrinsics {
     inputAssets: VideoInputAssets,
   ): Promise<Result<VideoExtrinsicResult, DomainError>> {
     await this.ensureApi()
-
     const [videoMetadata, videoAssets] = await parseVideoExtrinsicInput(this.api, inputMetadata, inputAssets)
     const creationParameters = new VideoCreationParameters(this.api.registry, {
       meta: videoMetadata,

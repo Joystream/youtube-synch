@@ -3,7 +3,6 @@
   "projects": {
     "api": "packages/api",
     "app": "packages/app",
-    "app-e2e": "packages/app-e2e",
     "domain": "packages/domain",
     "infrastructure": "packages/infrastructure",
     "joy-api": "packages/joy-api",

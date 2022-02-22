@@ -10,7 +10,7 @@ import R from 'ramda'
 import {groupBy, flatten, uniqBy, result} from 'lodash'
 import { ChannelDto, UserDto, VideoDto } from '../dtos';
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { OperatorInfo } from 'packages/joy-api/storage/uploader';
+import { OperatorInfo, Uploader } from 'packages/joy-api/storage/uploader';
 ;
 
 export class CreateMembershipDto{
@@ -37,7 +37,8 @@ export class NetworkController {
         private channelsRepository: ChannelsRepository,
         private videosRepository: VideosRepository,
         private joystreamClient: JoystreamClient,
-        @Inject('orion') private orionClient: ApolloClient<NormalizedCacheObject> ) {
+        @Inject('orion') private orionClient: ApolloClient<NormalizedCacheObject>,
+        private uploader: Uploader) {
     }
     @ApiOperation({description: 'Create joystream network membership for existing user in the system'})
     @ApiResponse({type: UserDto})
@@ -80,6 +81,7 @@ export class NetworkController {
             return finalResult.value;
         throw new HttpException(`Failed to create membership ${finalResult.error}`, 500)
     }
+
     @Get('buckets')
     async getBuckets(){
         const response = await this.orionClient.query<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>({

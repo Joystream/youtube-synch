@@ -1,6 +1,6 @@
 import { Channel, DomainError, Result, Video } from "@youtube-sync/domain";
 import ytdl  from 'ytdl-core'
-import {groupBy, flatten, uniqBy} from 'lodash'
+import {groupBy, flatten} from 'lodash'
 import FormData from 'form-data'
 import {ApolloClient, NormalizedCacheObject, gql} from '@apollo/client'
 import { createGraphqlClient, GetStorageBucketsQuery, GetStorageBucketsQueryVariables } from "../graphql";
@@ -10,21 +10,28 @@ export type OperatorsMapping = Record<string, OperatorInfo>
 export type VideoUploadResponse = {id: string, video: Video}
 export class Uploader {
     private client: ApolloClient<NormalizedCacheObject>
-    constructor(nodeUrl: string, orionUrl: string) {
-        this.client = createGraphqlClient(nodeUrl, orionUrl)
+    constructor(orionUrl: string) {
+        this.client = createGraphqlClient(orionUrl)
     }
     async upload(dataObjectId: string, channel: Channel, video: Video) : Promise<Result<VideoUploadResponse, DomainError>>{
         const bag = `dynamic:channel:${channel.chainMetadata.id}`
         const operator = await this.getRandomOperator(bag);
+        const videoInfo = await ytdl.getBasicInfo(video.url);
+        console.log(videoInfo)
         const formData = new FormData()
         formData.append('dataObjectId', dataObjectId)
         formData.append('storageBucketId', operator.info.id);
         formData.append('bagId', bag)
-        formData.append('file', ytdl(video.url, {quality: 'highest'}))
-        const response = await axios.post<VideoUploadResponse>(`${operator.info.endpoint}/api/v1/files`, formData, {
+        formData.append('file', ytdl(video.url, {quality: 'highest'}), 'video.mp4')
+        const response = await axios.post<VideoUploadResponse>(`${operator.info.endpoint}api/v1/files`, formData, {
             headers: formData.getHeaders()
-        }).then(resp => resp.data)
-        return Result.Success(response)
+        })
+            .then(resp => Result.Success(resp.data))
+            .catch(err => {
+                console.log(err);
+                return Result.Error<VideoUploadResponse, DomainError>(new DomainError(err.message));
+            })
+        return response;
     }
     async getRandomOperator(bagId: string){
         const bags = await this.getBags();

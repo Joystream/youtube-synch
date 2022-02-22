@@ -5,13 +5,7 @@ export class Channel {
   description: string;
   userId: string;
   createdAt: number;
-  thumbnails: {
-    default: string;
-    medium: string;
-    high: string;
-    maxRes: string;
-    standard: string;
-  };
+  thumbnails: Thumbnails;
   statistics: {
     viewCount: number;
     commentCount: number;
@@ -100,6 +94,13 @@ export class User {
   membership: Membership
 }
 
+export type Thumbnails = {
+  default: string;
+  medium: string;
+  high: string;
+  maxRes: string;
+  standard: string;
+}
 export type VideoState =
   | 'new'
   | 'uploadToJoystreamStarted'
@@ -113,13 +114,7 @@ export class Video {
   playlistId: string;
   resourceId: string;
   channelId: string;
-  thumbnails: {
-    default: string;
-    medium: string;
-    high: string;
-    maxRes: string;
-    standard: string;
-  };
+  thumbnails: Thumbnails;
   state: VideoState;
   destinationUrl: string;
   createdAt: number;

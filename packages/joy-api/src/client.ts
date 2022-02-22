@@ -1,7 +1,10 @@
-import { Channel, User, Result, DomainError, Video, Membership } from "@youtube-sync/domain";
+import { Channel, User, Result, DomainError, Video, Membership, Thumbnails } from "@youtube-sync/domain";
+import axios from "axios";
 import R from "ramda";
-import { Account, AccountsUtil, ChannelInputAssets, ChannelInputMetadata, Faucet, JoystreamLib, RegisteredMember, VideoInputAssets, VideoInputMetadata } from ".";
-import { Uploader, VideoUploadResponse } from "../storage/uploader";
+import ytdl from "ytdl-core";
+import { Account, AccountsUtil, ChannelInputAssets, ChannelInputMetadata, DataObjectMetadata, Faucet, JoystreamLib, RegisteredMember, VideoInputAssets, VideoInputMetadata } from ".";
+import { Uploader } from "../storage/uploader";
+import { computeFileHashAndSize } from "./hasher";
 export class JoystreamClient{
     private faucet: Faucet;
     private lib: JoystreamLib
@@ -10,7 +13,7 @@ export class JoystreamClient{
     constructor(faucetUri: string, private nodeUri: string, private orionUrl:string, private rootAccount: string) {
         this.faucet = new Faucet(faucetUri);
         this.lib = new JoystreamLib(this.nodeUri);
-        this.uploader = new Uploader(nodeUri, orionUrl)
+        this.uploader = new Uploader(orionUrl)
         this.accounts = new AccountsUtil()
     }
     createMembership = async(user: User) : Promise<Result<Membership, DomainError>> => {
@@ -42,28 +45,46 @@ export class JoystreamClient{
         return result;
     }
     uploadVideo = async (member: Membership, channel: Channel, video: Video) => {
-        const videoInputMetadata : VideoInputMetadata = {
-            title: video.title,
-            description: video.description,
-            isPublic: true
-        }
-        const assets: VideoInputAssets = {}
-        const videoCreateResult = await this.accounts
-            .getOrAddPair(member.address, member.secret)
-            .pipeAsync(pair => this.lib.extrinsics.createVideo(pair,member.memberId,channel.chainMetadata.id, videoInputMetadata, assets));
-        const result = await videoCreateResult
-            .map(value => value.videoId)
-            .pipeAsync(id => this.uploader.upload(id, channel, video))
-        return result
-        .map(v => [v.id, video] as [string, Video])
-        .onFailure(err => console.log(err))
+        const result = await R.pipe(
+            (member: Membership) => this.accounts.getOrAddPair(member.address, member.secret),
+            pair => Result.concat(pair, _ => parseVideoInputs(video)),
+            R.andThen(pairAndInput => Result.bindAsync(pairAndInput, ([pair, inputs]) => this.lib.extrinsics.createVideo(pair, member.memberId, channel.chainMetadata.id, inputs[0], inputs[1]))),
+            R.andThen(vid => Result.bindAsync(vid, v => this.uploader.upload(v.assetsIds.media, channel, video))),
+            R.andThen(up => up.map(v => [v.id, video] as [string, Video])),
+            R.andThen(r => r.onFailure(err => console.log(err)))
+        )(member);
+        return result;
     }
-    private async ensureApi() : Promise<Result<boolean,DomainError>>{
+    private async ensureApi() : Promise<Result<boolean, DomainError>>{
         await this.lib.connect();
         this.accounts = new AccountsUtil();
         const result = this.accounts.addKnownAccount(this.rootAccount);
         return result.map(_ => true);
     }
+}
+
+async function parseVideoInputs(video:  Video) : Promise<Result<[VideoInputMetadata, VideoInputAssets], DomainError>>{
+    const videoInputMetadata : VideoInputMetadata = {
+        title: video.title,
+        description: video.description,
+        isPublic: true,
+    }
+    const assets : VideoInputAssets = {}
+    const readable = ytdl(video.url, {quality: 'highest'});
+    const {hash,size} = await computeFileHashAndSize(readable)
+    console.log(`Hash ${hash}, size: ${size}`)
+    const metadata : DataObjectMetadata = {
+        ipfsHash: hash,
+        size: size,
+    };
+    assets.media = metadata;
+    return Result.Success<[VideoInputMetadata, VideoInputAssets], DomainError>([videoInputMetadata, assets]);
+}
+
+async function getThumbnailAsset(thumbnails: Thumbnails) {
+    const candidates = [thumbnails.maxRes, thumbnails.high, thumbnails.medium, thumbnails.standard, thumbnails.default];
+    const selectedThumb = R.reduce((acc, next) => acc = acc ? acc : next ,'', candidates);
+    axios.get(selectedThumb, {responseType: 'arraybuffer'})
 }
 
 function randomHandle() {
