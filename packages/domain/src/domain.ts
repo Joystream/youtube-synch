@@ -1,31 +1,32 @@
 export class Channel {
-  id: string;
-  title: string;
-  frequency: number;
-  description: string;
-  userId: string;
-  createdAt: number;
-  thumbnails: Thumbnails;
+  id: string
+  title: string
+  frequency: number
+  description: string
+  userId: string
+  createdAt: number
+  thumbnails: Thumbnails
   statistics: {
-    viewCount: number;
-    commentCount: number;
-    subscriberCount: number;
-    videoCount: number;
-  };
-  aggregatedStats: number;
-  userAccessToken: string;
-  userRefreshToken: string;
-  uploadsPlaylistId: string;
-  shouldBeIngested: boolean;
+    viewCount: number
+    commentCount: number
+    subscriberCount: number
+    videoCount: number
+  }
+  aggregatedStats: number
+  userAccessToken: string
+  userRefreshToken: string
+  uploadsPlaylistId: string
+  shouldBeIngested: boolean
   chainMetadata: ChannelChainMetadata
 }
 
 export class ChannelChainMetadata {
   id: string
 }
+
 export interface IEvent {
-  timestamp: number;
-  subject: string;
+  timestamp: number
+  subject: string
 }
 
 export class ChannelSpotted implements IEvent {
@@ -33,30 +34,33 @@ export class ChannelSpotted implements IEvent {
    *
    */
   constructor(public channel: Channel, public timestamp: number) {}
-  subject = 'channelSpotted';
+  subject = 'channelSpotted'
 }
+
 export class IngestChannel implements IEvent {
   constructor(public channel: Channel, public timestamp: number) {
-    this.channel = channel;
-    this.timestamp = timestamp;
+    this.channel = channel
+    this.timestamp = timestamp
   }
-  subject = 'ingestChannel';
+  subject = 'ingestChannel'
 }
+
 export class UserCreated implements IEvent {
   constructor(public user: User, public timestamp: number) {
-    this.user = user;
-    this.timestamp = timestamp;
+    this.user = user
+    this.timestamp = timestamp
   }
-  subject = 'userCreated';
+  subject = 'userCreated'
 }
 
 export class UserIngestionTriggered implements IEvent {
   constructor(public user: User, public timestamp: number) {
-    this.user = user;
-    this.timestamp = timestamp;
+    this.user = user
+    this.timestamp = timestamp
   }
-  subject = 'userIngestionTriggered';
+  subject = 'userIngestionTriggered'
 }
+
 export class VideoEvent implements IEvent {
   constructor(
     public state: VideoState,
@@ -64,17 +68,18 @@ export class VideoEvent implements IEvent {
     public channelId: string,
     public timestamp: number
   ) {
-    this.subject = state;
+    this.subject = state
   }
-  subject: string;
+  subject: string
 }
 
 export type Membership = {
-  memberId: string,
-  address: string,
-  secret: string,
+  memberId: string
+  address: string
+  secret: string
   suri: string
 }
+
 export class User {
   /**
    *
@@ -87,37 +92,39 @@ export class User {
     public accessToken: string,
     public refreshToken: string,
     public avatarUrl: string,
-    public channelsCount: number) {
-  }
+    public channelsCount: number
+  ) {}
 
   partition = 'users'
   membership: Membership
 }
 
 export type Thumbnails = {
-  default: string;
-  medium: string;
-  high: string;
-  maxRes: string;
-  standard: string;
+  default: string
+  medium: string
+  high: string
+  maxRes: string
+  standard: string
 }
+
 export type VideoState =
   | 'new'
   | 'uploadToJoystreamStarted'
   | 'uploadToJoystreamFailed'
-  | 'uploadToJoystreamSucceded';
+  | 'uploadToJoystreamSucceded'
+
 export class Video {
-  url: string;
-  title: string;
-  description: string;
-  id: string;
-  playlistId: string;
-  resourceId: string;
-  channelId: string;
-  thumbnails: Thumbnails;
-  state: VideoState;
-  destinationUrl: string;
-  createdAt: number;
+  url: string
+  title: string
+  description: string
+  id: string
+  playlistId: string
+  resourceId: string
+  channelId: string
+  thumbnails: Thumbnails
+  state: VideoState
+  destinationUrl: string
+  createdAt: number
 }
 
 export class Stats {
@@ -135,4 +142,5 @@ export const getImages = (channel: Channel) => {
     ...urlAsArray(channel.thumbnails.standard),
   ]
 }
-const urlAsArray = (url:string) => url ? [url] : []
+
+const urlAsArray = (url: string) => (url ? [url] : [])

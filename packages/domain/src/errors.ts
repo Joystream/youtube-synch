@@ -1,9 +1,8 @@
-export class DomainError{
-    /**
-     *
-     */
-    constructor(public message: string) {
-    }
+export class DomainError {
+  /**
+   *
+   */
+  constructor(public message: string) {}
 }
 
-export class YoutubeAuthorizationFailed extends DomainError{}
+export class YoutubeAuthorizationFailed extends DomainError {}

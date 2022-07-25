@@ -30,7 +30,10 @@ export const parseVideoExtrinsicInput = async (
     ...(inputAssets.media ? [inputAssets.media] : []),
     ...(inputAssets.thumbnailPhoto ? [inputAssets.thumbnailPhoto] : []),
   ]
-  const videoStorageAssets = await prepareAssetsForExtrinsic(api, videoDataObjectsMetadata)
+  const videoStorageAssets = await prepareAssetsForExtrinsic(
+    api,
+    videoDataObjectsMetadata
+  )
   if (inputAssets.media) {
     videoMetadata.setVideo(0)
   }
@@ -92,16 +95,26 @@ export const parseVideoExtrinsicInput = async (
   if (inputMetadata.publishedBeforeJoystream != null) {
     const protoPublishedBeforeJoystream = new PublishedBeforeJoystream()
     protoPublishedBeforeJoystream.setIsPublished(true)
-    protoPublishedBeforeJoystream.setDate(inputMetadata.publishedBeforeJoystream)
+    protoPublishedBeforeJoystream.setDate(
+      inputMetadata.publishedBeforeJoystream
+    )
     videoMetadata.setPublishedBeforeJoystream(protoPublishedBeforeJoystream)
   }
 
   const serializedVideoMetadata = videoMetadata.serializeBinary()
   const videoMetadataRaw = new Raw(api.registry, serializedVideoMetadata)
   const videoMetadataBytes = new Bytes(api.registry, videoMetadataRaw)
-  const optionalVideoMetadataBytes = new Option(api.registry, Bytes, videoMetadataBytes)
+  const optionalVideoMetadataBytes = new Option(
+    api.registry,
+    Bytes,
+    videoMetadataBytes
+  )
 
-  const optionalVideoStorageAssets = new Option(api.registry, StorageAssets, videoStorageAssets)
+  const optionalVideoStorageAssets = new Option(
+    api.registry,
+    StorageAssets,
+    videoStorageAssets
+  )
 
   return [optionalVideoMetadataBytes, optionalVideoStorageAssets] as const
 }
@@ -118,7 +131,10 @@ export const parseChannelExtrinsicInput = async (
     ...(inputAssets.avatarPhoto ? [inputAssets.avatarPhoto] : []),
     ...(inputAssets.coverPhoto ? [inputAssets.coverPhoto] : []),
   ]
-  const channelStorageAssets = await prepareAssetsForExtrinsic(api, channelDataObjectsMetadata)
+  const channelStorageAssets = await prepareAssetsForExtrinsic(
+    api,
+    channelDataObjectsMetadata
+  )
   if (inputAssets.avatarPhoto) {
     channelMetadata.setAvatarPhoto(0)
   }
@@ -142,9 +158,17 @@ export const parseChannelExtrinsicInput = async (
   const serializedChannelMetadata = channelMetadata.serializeBinary()
   const channelMetadataRaw = new Raw(api.registry, serializedChannelMetadata)
   const channelMetadataBytes = new Bytes(api.registry, channelMetadataRaw)
-  const optionalChannelMetadataBytes = new Option(api.registry, Bytes, channelMetadataBytes)
+  const optionalChannelMetadataBytes = new Option(
+    api.registry,
+    Bytes,
+    channelMetadataBytes
+  )
 
-  const optionalChannelStorageAssets = new Option(api.registry, StorageAssets, channelStorageAssets)
+  const optionalChannelStorageAssets = new Option(
+    api.registry,
+    StorageAssets,
+    channelStorageAssets
+  )
 
   return [optionalChannelMetadataBytes, optionalChannelStorageAssets] as const
 }

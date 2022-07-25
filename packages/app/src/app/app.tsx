@@ -78,7 +78,7 @@ export function App() {
                     Youtube Sync
                   </Typography>
                   <GoogleLogin
-                    clientId="79131856482-fo4akvhmeokn24dvfo83v61g03c6k7o0.apps.googleusercontent.com"
+                    clientId={process.env['YOUTUBE_CLIENT_ID']!}
                     onSuccess={successAuth}
                     accessType="offline"
                     responseType="code"

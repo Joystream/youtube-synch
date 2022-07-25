@@ -30,7 +30,7 @@ export class JoystreamLib {
     })
 
     this.api = new ApiPromise({ provider, types })
-    this.extrinsics = new JoystreamLibExtrinsics(this.api);
+    this.extrinsics = new JoystreamLibExtrinsics(this.api)
   }
 
   destroy() {
@@ -50,9 +50,11 @@ export class JoystreamLib {
   private async logConnectionData(endpoint: string) {
     await this.ensureApi()
     const chain = await this.api.rpc.system.chain()
-    ConsoleLogger.log(`[JoystreamLib] Connected to chain "${chain}" via "${endpoint}"`)
+    ConsoleLogger.log(
+      `[JoystreamLib] Connected to chain "${chain}" via "${endpoint}"`
+    )
   }
-  async connect(){
+  async connect() {
     await this.ensureApi()
   }
   async getAccountBalance(accountId: AccountId): Promise<number> {
