@@ -1,10 +1,6 @@
 import { ApiPromise as PolkadotApi } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import {
-  BTreeSet,
-  Option,
-  GenericAccountId as RuntimeAccountId,
-} from '@polkadot/types'
+import { BTreeSet, Option, GenericAccountId as RuntimeAccountId } from '@polkadot/types'
 
 import { ConsoleLogger } from './logger'
 
@@ -15,10 +11,7 @@ import {
   getInputDataObjectsIds,
   sendExtrinsicAndParseEvents,
 } from './helpers'
-import {
-  parseChannelExtrinsicInput,
-  parseVideoExtrinsicInput,
-} from './metadata'
+import { parseChannelExtrinsicInput, parseVideoExtrinsicInput } from './metadata'
 import {
   ChannelExtrinsicResult,
   ChannelInputAssets,
@@ -42,30 +35,19 @@ export class JoystreamLibExtrinsics {
     this.api = api
   }
 
-  private async sendExtrinsic(
-    account: KeyringPair,
-    tx: SubmittableExtrinsic<'promise'>
-  ): Promise<SendExtrinsicResult> {
+  private async sendExtrinsic(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SendExtrinsicResult> {
     try {
-      const { events, blockHash } = await sendExtrinsicAndParseEvents(
-        tx,
-        account,
-        this.api.registry
-      )
+      const { events, blockHash } = await sendExtrinsicAndParseEvents(tx, account, this.api.registry)
 
       const blockHeader = await this.api.rpc.chain.getHeader(blockHash)
 
       const getEventData: GetEventDataFn = (section, method) => {
-        const event = events.find(
-          (event) => event.section === section && event.method === method
-        )
+        const event = events.find((event) => event.section === section && event.method === method)
 
         if (!event) {
           throw new JoystreamLibError({
             name: 'MissingRequiredEventError',
-            message: `Required event ${section}.${String(
-              method
-            )} not found in extrinsic`,
+            message: `Required event ${section}.${String(method)} not found in extrinsic`,
           })
         }
 
@@ -97,23 +79,16 @@ export class JoystreamLibExtrinsics {
     inputAssets: ChannelInputAssets
   ): Promise<Result<ChannelExtrinsicResult, DomainError>> {
     await this.ensureApi()
-    const [channelMetadata, channelAssets] = await parseChannelExtrinsicInput(
-      this.api,
-      inputMetadata,
-      inputAssets
-    )
-    const creationParameters = createType(
-      'PalletContentChannelCreationParametersRecord',
-      {
-        meta: channelMetadata,
-        assets: channelAssets,
-        collaborators: [],
-        storageBuckets: [],
-        distributionBuckets: [],
-        expectedChannelStateBloatBond: 0,
-        expectedDataObjectStateBloatBond: 0,
-      }
-    )
+    const [channelMetadata, channelAssets] = await parseChannelExtrinsicInput(this.api, inputMetadata, inputAssets)
+    const creationParameters = createType('PalletContentChannelCreationParametersRecord', {
+      meta: channelMetadata,
+      assets: channelAssets,
+      collaborators: [],
+      storageBuckets: [],
+      distributionBuckets: [],
+      expectedChannelStateBloatBond: 0,
+      expectedDataObjectStateBloatBond: 0,
+    })
 
     const tx = this.api.tx.content.createChannel(
       {
@@ -140,27 +115,16 @@ export class JoystreamLibExtrinsics {
     inputAssets: VideoInputAssets
   ): Promise<Result<VideoExtrinsicResult, DomainError>> {
     await this.ensureApi()
-    const [videoMetadata, videoAssets] = await parseVideoExtrinsicInput(
-      this.api,
-      inputMetadata,
-      inputAssets
-    )
-    const creationParameters = createType(
-      'PalletContentVideoCreationParametersRecord',
-      {
-        meta: videoMetadata,
-        assets: videoAssets,
-        expectedDataObjectStateBloatBond: 0,
-        expectedVideoStateBloatBond: 0,
-        autoIssueNft: null,
-      }
-    )
+    const [videoMetadata, videoAssets] = await parseVideoExtrinsicInput(this.api, inputMetadata, inputAssets)
+    const creationParameters = createType('PalletContentVideoCreationParametersRecord', {
+      meta: videoMetadata,
+      assets: videoAssets,
+      expectedDataObjectStateBloatBond: 0,
+      expectedVideoStateBloatBond: 0,
+      autoIssueNft: null,
+    })
 
-    const tx = this.api.tx.content.createVideo(
-      { Member: memberId },
-      channelId,
-      creationParameters
-    )
+    const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, creationParameters)
     const { block, getEventData } = await this.sendExtrinsic(accountId, tx)
 
     const videoId = getEventData('content', 'VideoCreated')[2]

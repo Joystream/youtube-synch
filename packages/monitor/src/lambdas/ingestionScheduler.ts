@@ -1,10 +1,5 @@
 import { EventRuleEvent } from '@pulumi/aws/cloudwatch'
-import {
-  MessageBus,
-  getMatchingFrequenciesForDate,
-  SyncService,
-  YtClient,
-} from '@joystream/ytube'
+import { MessageBus, getMatchingFrequenciesForDate, SyncService, YtClient } from '@joystream/ytube'
 
 export async function ingestionScheduler(event: EventRuleEvent) {
   const youtubeClient = YtClient.create(
@@ -15,8 +10,5 @@ export async function ingestionScheduler(event: EventRuleEvent) {
   const date = new Date(event.time)
   const frequencies = getMatchingFrequenciesForDate(date)
   if (frequencies.length === 0) return
-  await new SyncService(
-    youtubeClient,
-    new MessageBus('eu-west-1')
-  ).startIngestionFor(frequencies)
+  await new SyncService(youtubeClient, new MessageBus('eu-west-1')).startIngestionFor(frequencies)
 }

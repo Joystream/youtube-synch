@@ -16,14 +16,9 @@ export class AccountsUtil {
 
   getPair(accountId: string): Result<KeyringPair, DomainError> {
     const pair = this.keyring.getPairs().find((p) => p.address == accountId)
-    return pair
-      ? Result.Success(pair)
-      : Result.Error(new DomainError('Pair not found'))
+    return pair ? Result.Success(pair) : Result.Error(new DomainError('Pair not found'))
   }
-  getOrAddPair(
-    address: string,
-    secret: string
-  ): Result<KeyringPair, DomainError> {
+  getOrAddPair(address: string, secret: string): Result<KeyringPair, DomainError> {
     let pair = this.keyring.getPairs().find((p) => p.address == address)
     if (!pair) pair = this.keyring.addFromUri(secret)
     return Result.Success(pair)

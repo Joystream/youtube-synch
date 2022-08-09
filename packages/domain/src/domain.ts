@@ -64,12 +64,7 @@ export class UserIngestionTriggered implements IEvent {
 }
 
 export class VideoEvent implements IEvent {
-  constructor(
-    public state: VideoState,
-    public videoId: string,
-    public channelId: string,
-    public timestamp: number
-  ) {
+  constructor(public state: VideoState, public videoId: string, public channelId: string, public timestamp: number) {
     this.subject = state
   }
   subject: string
@@ -109,11 +104,7 @@ export type Thumbnails = {
   standard: string
 }
 
-export type VideoState =
-  | 'new'
-  | 'uploadToJoystreamStarted'
-  | 'uploadToJoystreamFailed'
-  | 'uploadToJoystreamSucceded'
+export type VideoState = 'new' | 'uploadToJoystreamStarted' | 'uploadToJoystreamFailed' | 'uploadToJoystreamSucceded'
 
 export class Video {
   url: string

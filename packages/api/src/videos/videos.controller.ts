@@ -15,9 +15,7 @@ export class VideosController {
       (userId: string) => this.channelsService.getAll(userId),
       R.andThen((ch) =>
         Result.bindAsync(ch, (channels) =>
-          this.videosRepository.scan({}, (s) =>
-            s.attribute('channelId').in(channels.map((c) => c.id))
-          )
+          this.videosRepository.scan({}, (s) => s.attribute('channelId').in(channels.map((c) => c.id)))
         )
       )
     )(userId)

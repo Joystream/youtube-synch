@@ -17,10 +17,7 @@ export class Result<T, TE extends DomainError> {
     return new Result(<T>undefined, error)
   }
 
-  static bind<T, K, TE extends DomainError>(
-    res: Result<T, TE>,
-    f: (value: T) => Result<K, TE>
-  ): Result<K, TE> {
+  static bind<T, K, TE extends DomainError>(res: Result<T, TE>, f: (value: T) => Result<K, TE>): Result<K, TE> {
     if (res.isFailure) return Result.Error<K, TE>(res.error)
     return f(res.value)
   }
@@ -81,10 +78,7 @@ export class Result<T, TE extends DomainError> {
     }
   }
 
-  static async tryAsync<T, TE extends DomainError>(
-    f: () => Promise<T>,
-    error: TE
-  ) {
+  static async tryAsync<T, TE extends DomainError>(f: () => Promise<T>, error: TE) {
     try {
       const result = await f()
       return Result.Success<T, TE>(result)
@@ -93,10 +87,7 @@ export class Result<T, TE extends DomainError> {
     }
   }
 
-  static map<T, K, TE extends DomainError>(
-    result: Result<T, TE>,
-    f: (v: T) => K
-  ) {
+  static map<T, K, TE extends DomainError>(result: Result<T, TE>, f: (v: T) => K) {
     return result.map((value) => f(value))
   }
 
@@ -125,9 +116,7 @@ export class Result<T, TE extends DomainError> {
     return Result.Error(this.error)
   }
 
-  pipeAsync<K>(
-    mapper: (value: T) => Promise<Result<K, DomainError>>
-  ): Promise<Result<K, DomainError>> {
+  pipeAsync<K>(mapper: (value: T) => Promise<Result<K, DomainError>>): Promise<Result<K, DomainError>> {
     if (this.isSuccess) return mapper(this.value)
     return Promise.resolve(Result.Error<K, DomainError>(this.error))
   }

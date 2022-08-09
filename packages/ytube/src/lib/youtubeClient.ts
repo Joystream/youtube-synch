@@ -3,14 +3,7 @@ import { OAuth2Client, TokenInfo } from 'google-auth-library'
 import ytdl from 'ytdl-core'
 import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
 import Schema$Channel = youtube_v3.Schema$Channel
-import {
-  Channel,
-  DomainError,
-  Result,
-  User,
-  Video,
-  YoutubeAuthorizationFailed,
-} from '@youtube-sync/domain'
+import { Channel, DomainError, Result, User, Video, YoutubeAuthorizationFailed } from '@youtube-sync/domain'
 import { Readable } from 'stream'
 import { statsRepository } from '..'
 import R from 'ramda'
@@ -19,22 +12,12 @@ import { GetTokenResponse } from 'google-auth-library/build/src/auth/oauth2clien
 export interface IYoutubeClient {
   getUserFromCode(code: string): Promise<Result<User, DomainError>>
   getChannels(user: User): Promise<Result<Channel[], DomainError>>
-  getVideos(
-    channel: Channel,
-    top: number
-  ): Promise<Result<Video[], DomainError>>
-  getAllVideos(
-    channel: Channel,
-    max: number
-  ): Promise<Result<Video[], DomainError>>
+  getVideos(channel: Channel, top: number): Promise<Result<Video[], DomainError>>
+  getAllVideos(channel: Channel, max: number): Promise<Result<Video[], DomainError>>
   downloadVideo(videoUrl: string): Readable
 }
 class YoutubeClient implements IYoutubeClient {
-  constructor(
-    private clientId: string,
-    private clientSecret: string,
-    private redirectUri: string
-  ) {}
+  constructor(private clientId: string, private clientSecret: string, private redirectUri: string) {}
   async getUserFromCode(code: string) {
     const createUserFlow = R.pipe(
       (code: string) =>
@@ -48,10 +31,7 @@ class YoutubeClient implements IYoutubeClient {
           (tokenResponse) =>
             this.getAuth()
               .getTokenInfo(tokenResponse.tokens.access_token)
-              .then(
-                (tokenInfo) =>
-                  [tokenInfo, tokenResponse] as [TokenInfo, GetTokenResponse]
-              ),
+              .then((tokenInfo) => [tokenInfo, tokenResponse] as [TokenInfo, GetTokenResponse]),
           new YoutubeAuthorizationFailed('Failed to get token info')
         )
       ),
@@ -70,11 +50,7 @@ class YoutubeClient implements IYoutubeClient {
             )
         )
       ),
-      R.otherwise((err) =>
-        Result.Error<User, DomainError>(
-          new YoutubeAuthorizationFailed(err.message)
-        )
-      )
+      R.otherwise((err) => Result.Error<User, DomainError>(new YoutubeAuthorizationFailed(err.message)))
     )
     return createUserFlow(code)
   }
@@ -91,9 +67,7 @@ class YoutubeClient implements IYoutubeClient {
             }),
           new DomainError('Failed to retrieve channels list for')
         ),
-      R.andThen((channelsResult) =>
-        channelsResult.map((c) => this.mapChannels(user, c.data.items ?? []))
-      )
+      R.andThen((channelsResult) => channelsResult.map((c) => this.mapChannels(user, c.data.items ?? [])))
     )(user)
     return result
   }
@@ -120,11 +94,7 @@ class YoutubeClient implements IYoutubeClient {
   downloadVideo = (videoUrl: string): Readable => {
     return ytdl(videoUrl)
   }
-  private async iterateVideos(
-    youtube: youtube_v3.Youtube,
-    channel: Channel,
-    max: number
-  ) {
+  private async iterateVideos(youtube: youtube_v3.Youtube, channel: Channel, max: number) {
     let videos: Video[] = []
     let continuation: string
     do {
@@ -220,31 +190,19 @@ class QuotaTrackingClient implements IYoutubeClient {
   getChannels(user: User) {
     return R.pipe(
       this.decorated.getChannels,
-      R.andThen((res) =>
-        res.tapAsync((channels) =>
-          this.increaseUsedQuota(channels, channels.length % 50)
-        )
-      )
+      R.andThen((res) => res.tapAsync((channels) => this.increaseUsedQuota(channels, channels.length % 50)))
     )(user)
   }
   getVideos(channel: Channel, top: number) {
     return R.pipe(
       this.decorated.getVideos,
-      R.andThen((res) =>
-        res.tapAsync((videos) =>
-          this.increaseUsedQuota(videos, videos.length % 50)
-        )
-      )
+      R.andThen((res) => res.tapAsync((videos) => this.increaseUsedQuota(videos, videos.length % 50)))
     )(channel, top)
   }
   getAllVideos(channel: Channel, max: number) {
     return R.pipe(
       this.decorated.getAllVideos,
-      R.andThen((res) =>
-        res.tapAsync((videos) =>
-          this.increaseUsedQuota(videos, videos.length % 50)
-        )
-      )
+      R.andThen((res) => res.tapAsync((videos) => this.increaseUsedQuota(videos, videos.length % 50)))
     )(channel, max)
   }
   downloadVideo(videoUrl: string): Readable {
@@ -254,22 +212,13 @@ class QuotaTrackingClient implements IYoutubeClient {
   private async increaseUsedQuota<TValue>(result: TValue, increment: number) {
     const today = new Date()
     const timestamp = today.setUTCHours(0, 0, 0, 0)
-    await this._statsRepo.update(
-      { partition: 'stats', date: timestamp },
-      { $ADD: { quotaUsed: increment } }
-    )
+    await this._statsRepo.update({ partition: 'stats', date: timestamp }, { $ADD: { quotaUsed: increment } })
     return result
   }
 }
 
 export const YtClient = {
-  create(
-    clientId: string,
-    clientSecret: string,
-    redirectUri: string
-  ): IYoutubeClient {
-    return new QuotaTrackingClient(
-      new YoutubeClient(clientId, clientSecret, redirectUri)
-    )
+  create(clientId: string, clientSecret: string, redirectUri: string): IYoutubeClient {
+    return new QuotaTrackingClient(new YoutubeClient(clientId, clientSecret, redirectUri))
   },
 }

@@ -8,10 +8,6 @@ export async function userCreatedHandler(event: TopicEvent) {
     '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',
     'http://localhost:3000'
   )
-  const userEvent = <UserCreated | UserIngestionTriggered>(
-    JSON.parse(event.Records[0].Sns.Message)
-  )
-  await new SyncService(client, new MessageBus('eu-west-1')).ingestChannels(
-    userEvent.user
-  )
+  const userEvent = <UserCreated | UserIngestionTriggered>JSON.parse(event.Records[0].Sns.Message)
+  await new SyncService(client, new MessageBus('eu-west-1')).ingestChannels(userEvent.user)
 }

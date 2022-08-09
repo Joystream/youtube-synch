@@ -12,9 +12,6 @@ export async function ingestChannelHandler(event: TopicEvent) {
   const message: IngestChannel = JSON.parse(event.Records[0].Sns.Message)
   console.log(message)
   console.log('Got message: ', message)
-  const events = await new SyncService(
-    youtubeClient,
-    new MessageBus('eu-west-1')
-  ).ingestAllVideos(message.channel, 100)
+  const events = await new SyncService(youtubeClient, new MessageBus('eu-west-1')).ingestAllVideos(message.channel, 100)
   console.log('Video events', events)
 }

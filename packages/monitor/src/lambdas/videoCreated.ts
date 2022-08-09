@@ -1,10 +1,5 @@
 import { TopicEvent } from '@pulumi/aws/sns'
-import {
-  YtClient,
-  videoStateRepository,
-  SyncService,
-  MessageBus,
-} from '@joystream/ytube'
+import { YtClient, videoStateRepository, SyncService, MessageBus } from '@joystream/ytube'
 import { VideoEvent } from '@youtube-sync/domain'
 
 export async function videoCreatedHandler(event: TopicEvent) {
@@ -18,10 +13,7 @@ export async function videoCreatedHandler(event: TopicEvent) {
     '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',
     'http://localhost:3000'
   )
-  await new SyncService(youtube, new MessageBus('eu-west-1')).uploadVideo(
-    videoCreated.channelId,
-    videoCreated.videoId
-  )
+  await new SyncService(youtube, new MessageBus('eu-west-1')).uploadVideo(videoCreated.channelId, videoCreated.videoId)
 }
 
 export async function videoStateLogger(event: TopicEvent) {

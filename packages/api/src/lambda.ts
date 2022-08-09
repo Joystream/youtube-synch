@@ -33,18 +33,12 @@ async function bootstrapServerless() {
 
 let cachedHandler: Handler
 
-export const handler: Handler = async (
-  event: any,
-  context: Context,
-  callback: Callback
-) => {
+export const handler: Handler = async (event: any, context: Context, callback: Callback) => {
   console.log(event)
   if (event.path === '/api') {
     event.path = '/api/'
   }
-  event.path = event.path.includes('swagger-ui')
-    ? `/api${event.path}`
-    : event.path
+  event.path = event.path.includes('swagger-ui') ? `/api${event.path}` : event.path
   const server = cachedHandler ?? (await bootstrapServerless())
   console.log(server)
   return server(event, context, callback)

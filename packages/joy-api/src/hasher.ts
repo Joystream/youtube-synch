@@ -5,9 +5,7 @@ import { finished } from 'stream/promises'
 
 type FileMetadata = { size: number; hash: string }
 
-export async function computeFileHashAndSize(
-  file: Readable
-): Promise<FileMetadata> {
+export async function computeFileHashAndSize(file: Readable): Promise<FileMetadata> {
   const hash = createHash()
   let finalSize = 0
   let digest

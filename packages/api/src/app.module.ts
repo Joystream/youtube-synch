@@ -7,24 +7,14 @@ import { UsersController } from './users/users.controller'
 import { VideosController } from './videos/videos.controller'
 import { NetworkController } from './network/network.controller'
 import { JoystreamClient } from '@youtube-sync/joy-api'
-import {
-  ChannelsRepository,
-  UsersRepository,
-  VideosRepository,
-  YtClient,
-} from '@joystream/ytube'
+import { ChannelsRepository, UsersRepository, VideosRepository, YtClient } from '@joystream/ytube'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { createGraphqlClient } from 'packages/joy-api/graphql'
 import { Uploader } from 'packages/joy-api/storage/uploader'
 
 @Module({
   imports: [ConfigModule.forRoot()],
-  controllers: [
-    VideosController,
-    ChannelsController,
-    UsersController,
-    NetworkController,
-  ],
+  controllers: [VideosController, ChannelsController, UsersController, NetworkController],
   providers: [
     ChannelsService,
     {

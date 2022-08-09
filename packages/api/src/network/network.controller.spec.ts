@@ -1,18 +1,18 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { NetworkController } from './network.controller';
+import { Test, TestingModule } from '@nestjs/testing'
+import { NetworkController } from './network.controller'
 
 describe('NetworkController', () => {
-  let controller: NetworkController;
+  let controller: NetworkController
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [NetworkController],
-    }).compile();
+    }).compile()
 
-    controller = module.get<NetworkController>(NetworkController);
-  });
+    controller = module.get<NetworkController>(NetworkController)
+  })
 
   it('should be defined', () => {
-    expect(controller).toBeDefined();
-  });
-});
+    expect(controller).toBeDefined()
+  })
+})

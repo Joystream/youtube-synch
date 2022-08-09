@@ -3,11 +3,7 @@ import ytdl from 'ytdl-core'
 import { groupBy, flatten } from 'lodash'
 import FormData from 'form-data'
 import { ApolloClient, NormalizedCacheObject, gql } from '@apollo/client'
-import {
-  createGraphqlClient,
-  GetStorageBucketsQuery,
-  GetStorageBucketsQueryVariables,
-} from '../graphql'
+import { createGraphqlClient, GetStorageBucketsQuery, GetStorageBucketsQueryVariables } from '../graphql'
 import axios from 'axios'
 
 export type OperatorInfo = { id: string; endpoint: string }
@@ -33,25 +29,15 @@ export class Uploader {
     formData.append('dataObjectId', dataObjectId)
     formData.append('storageBucketId', operator.info.id)
     formData.append('bagId', bag)
-    formData.append(
-      'file',
-      ytdl(video.url, { quality: 'highest' }),
-      'video.mp4'
-    )
+    formData.append('file', ytdl(video.url, { quality: 'highest' }), 'video.mp4')
     const response = await axios
-      .post<VideoUploadResponse>(
-        `${operator.info.endpoint}api/v1/files`,
-        formData,
-        {
-          headers: formData.getHeaders(),
-        }
-      )
+      .post<VideoUploadResponse>(`${operator.info.endpoint}api/v1/files`, formData, {
+        headers: formData.getHeaders(),
+      })
       .then((resp) => Result.Success(resp.data))
       .catch((err) => {
         console.log(err)
-        return Result.Error<VideoUploadResponse, DomainError>(
-          new DomainError(err.message)
-        )
+        return Result.Error<VideoUploadResponse, DomainError>(new DomainError(err.message))
       })
     return response
   }
@@ -63,18 +49,13 @@ export class Uploader {
   }
 
   private async getBags() {
-    const response = await this.client.query<
-      GetStorageBucketsQuery,
-      GetStorageBucketsQueryVariables
-    >({
+    const response = await this.client.query<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>({
       query: gql`
         query GetStorageBuckets {
           storageBuckets(
             limit: 50
             where: {
-              operatorStatus_json: {
-                isTypeOf_eq: "StorageBucketOperatorStatusActive"
-              }
+              operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
               operatorMetadata: { nodeEndpoint_contains: "http" }
             }
           ) {

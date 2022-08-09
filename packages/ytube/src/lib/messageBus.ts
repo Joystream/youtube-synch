@@ -17,10 +17,7 @@ export class MessageBus {
     this._sns = new SNS(this._config)
   }
 
-  async publish<TEvent extends IEvent>(
-    event: TEvent,
-    topic: AvailableTopic
-  ): Promise<Result<TEvent, DomainError>> {
+  async publish<TEvent extends IEvent>(event: TEvent, topic: AvailableTopic): Promise<Result<TEvent, DomainError>> {
     return Result.tryAsync(async () => {
       const tpc = await this.getTopic(topic)
       this._sns.publish({
