@@ -6,7 +6,7 @@ import { JoystreamLibError } from './errors'
 import { ConsoleLogger } from './logger'
 
 import { JoystreamLibExtrinsics } from './extrinsics'
-import { AccountId } from './types'
+import { AccountId } from '@polkadot/types/interfaces'
 
 export class JoystreamLib {
   readonly api: ApiPromise
@@ -29,7 +29,7 @@ export class JoystreamLib {
       this.onNodeConnectionUpdate?.(false)
     })
 
-    this.api = new ApiPromise({ provider, types })
+    this.api = new ApiPromise({ provider })
     this.extrinsics = new JoystreamLibExtrinsics(this.api)
   }
 
@@ -50,9 +50,7 @@ export class JoystreamLib {
   private async logConnectionData(endpoint: string) {
     await this.ensureApi()
     const chain = await this.api.rpc.system.chain()
-    ConsoleLogger.log(
-      `[JoystreamLib] Connected to chain "${chain}" via "${endpoint}"`
-    )
+    ConsoleLogger.log(`[JoystreamLib] Connected to chain "${chain}" via "${endpoint}"`)
   }
   async connect() {
     await this.ensureApi()

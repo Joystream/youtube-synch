@@ -2,7 +2,7 @@ import Keyring from '@polkadot/keyring'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { DomainError, Result } from '@youtube-sync/domain'
 import { mnemonicGenerate } from '@polkadot/util-crypto'
-import { AccountId } from '.'
+import { AccountId } from '@polkadot/types/interfaces'
 
 export type Account = {
   address: string
@@ -36,6 +36,6 @@ export class AccountsUtil {
   }
   addKnownAccount(uri: string): Result<AccountId, DomainError> {
     const pair = this.keyring.addFromUri(uri)
-    return Result.Success(pair.address)
+    return Result.Success(pair.address as unknown as AccountId)
   }
 }

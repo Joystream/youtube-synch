@@ -1,3 +1,5 @@
+import { ChannelId, MemberId } from '@joystream/types/primitives'
+
 export class Channel {
   id: string
   title: string
@@ -21,7 +23,7 @@ export class Channel {
 }
 
 export class ChannelChainMetadata {
-  id: string
+  id: ChannelId
 }
 
 export interface IEvent {
@@ -74,7 +76,7 @@ export class VideoEvent implements IEvent {
 }
 
 export type Membership = {
-  memberId: string
+  memberId: MemberId
   address: string
   secret: string
   suri: string

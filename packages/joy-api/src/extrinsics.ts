@@ -1,11 +1,3 @@
-import {
-  ChannelCreationParameters,
-  ChannelUpdateParameters,
-  ContentActor,
-  VideoCreationParameters,
-} from '@joystream/types/content'
-import { MemberId as RuntimeMemberId } from '@joystream/types/members'
-import { DataObjectId } from '@joystream/types/storage'
 import { ApiPromise as PolkadotApi } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import {
@@ -29,11 +21,9 @@ import {
 } from './metadata'
 import {
   ChannelExtrinsicResult,
-  ChannelId,
   ChannelInputAssets,
   ChannelInputMetadata,
   GetEventDataFn,
-  MemberId,
   SendExtrinsicResult,
   VideoExtrinsicResult,
   VideoInputAssets,
@@ -42,6 +32,8 @@ import {
 import { DomainError, Result } from '@youtube-sync/domain'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { InstancePublicPorts } from '@pulumi/aws/lightsail'
+import { createType } from '@joystream/types'
+import { ChannelId, MemberId } from '@joystream/types/primitives'
 
 export class JoystreamLibExtrinsics {
   readonly api: PolkadotApi
@@ -71,7 +63,9 @@ export class JoystreamLibExtrinsics {
         if (!event) {
           throw new JoystreamLibError({
             name: 'MissingRequiredEventError',
-            message: `Required event ${section}.${method} not found in extrinsic`,
+            message: `Required event ${section}.${String(
+              method
+            )} not found in extrinsic`,
           })
         }
 
@@ -108,32 +102,31 @@ export class JoystreamLibExtrinsics {
       inputMetadata,
       inputAssets
     )
-    const creationParameters = new ChannelCreationParameters(
-      this.api.registry,
+    const creationParameters = createType(
+      'PalletContentChannelCreationParametersRecord',
       {
         meta: channelMetadata,
         assets: channelAssets,
-        collaborators: new BTreeSet(this.api.registry, RuntimeMemberId),
-        reward_account: new Option<RuntimeAccountId>(
-          this.api.registry,
-          RuntimeAccountId
-        ),
+        collaborators: [],
+        storageBuckets: [],
+        distributionBuckets: [],
+        expectedChannelStateBloatBond: 0,
+        expectedDataObjectStateBloatBond: 0,
       }
     )
 
-    const contentActor = new ContentActor(this.api.registry, {
-      member: memberId,
-    })
     const tx = this.api.tx.content.createChannel(
-      contentActor,
+      {
+        Member: memberId,
+      },
       creationParameters
     )
     const { block, getEventData } = await this.sendExtrinsic(accountId, tx)
 
-    const channelId = getEventData('content', 'ChannelCreated')[1]
+    const channelId = getEventData('content', 'ChannelCreated')[0]
 
     return Result.Success({
-      channelId: channelId.toString(),
+      channelId,
       block,
       assetsIds: extractChannelResultAssetsIds(inputAssets, getEventData),
     })
@@ -152,16 +145,19 @@ export class JoystreamLibExtrinsics {
       inputMetadata,
       inputAssets
     )
-    const creationParameters = new VideoCreationParameters(this.api.registry, {
-      meta: videoMetadata,
-      assets: videoAssets,
-    })
+    const creationParameters = createType(
+      'PalletContentVideoCreationParametersRecord',
+      {
+        meta: videoMetadata,
+        assets: videoAssets,
+        expectedDataObjectStateBloatBond: 0,
+        expectedVideoStateBloatBond: 0,
+        autoIssueNft: null,
+      }
+    )
 
-    const contentActor = new ContentActor(this.api.registry, {
-      member: memberId,
-    })
     const tx = this.api.tx.content.createVideo(
-      contentActor,
+      { Member: memberId },
       channelId,
       creationParameters
     )
@@ -170,7 +166,7 @@ export class JoystreamLibExtrinsics {
     const videoId = getEventData('content', 'VideoCreated')[2]
 
     return Result.Success({
-      videoId: videoId.toString(),
+      videoId,
       block,
       assetsIds: extractVideoResultAssetsIds(inputAssets, getEventData),
     })

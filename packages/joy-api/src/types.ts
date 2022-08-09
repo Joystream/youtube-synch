@@ -1,14 +1,12 @@
 import {
   ChannelMetadata,
+  IChannelMetadata,
   VideoMetadata,
-} from '@joystream/content-metadata-protobuf'
+  IVideoMetadata,
+} from '@joystream/metadata-protobuf'
+import { ChannelId, MemberId } from '@joystream/types/primitives'
 import { AugmentedEvent, AugmentedEvents } from '@polkadot/api/types/events'
 import { GenericEvent } from '@polkadot/types'
-
-export type AccountId = string
-export type MemberId = string
-export type ChannelId = string
-export type VideoId = string
 
 export type DataObjectMetadata = {
   size: number
@@ -49,7 +47,7 @@ export type ExtrinsicResult<T = undefined> = T extends undefined
   : { block: number } & T
 
 export type VideoInputMetadata = Omit<
-  VideoMetadata.AsObject,
+  IVideoMetadata,
   | 'thumbnailPhoto'
   | 'video'
   | 'personsList'
@@ -60,7 +58,7 @@ export type VideoInputMetadata = Omit<
   mimeMediaType?: string
 }
 export type ChannelInputMetadata = Omit<
-  ChannelMetadata.AsObject,
+  IChannelMetadata,
   'coverPhoto' | 'avatarPhoto' | 'category'
 >
 
@@ -91,7 +89,7 @@ export type SendExtrinsicResult = ExtrinsicResult<{
   getEventData: GetEventDataFn
 }>
 export type ChannelExtrinsicResult = ExtrinsicResult<{
-  channelId: ChannelId
+  channelId: MemberId
   assetsIds: ChannelAssetsIds
 }>
 export type VideoExtrinsicResult = ExtrinsicResult<{

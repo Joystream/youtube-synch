@@ -1,8 +1,9 @@
+import { MemberId } from '@joystream/types/primitives'
 import { ApiProperty, PickType } from '@nestjs/swagger'
 import { User, Channel, Video, VideoState } from '@youtube-sync/domain'
 
 export class MembershipDto {
-  @ApiProperty() memberId: string
+  @ApiProperty() memberId: MemberId
   @ApiProperty() address: string
 }
 
@@ -21,7 +22,7 @@ export class ChannelDto {
   constructor(channel: Channel) {
     this.title = channel.title
     this.description = channel.description
-    this.joystreamId = channel.chainMetadata?.id
+    this.joystreamId = channel.chainMetadata?.id.toNumber()
     this.shouldBeInjested = channel.shouldBeIngested
     this.uploadsPlaylistId = channel.uploadsPlaylistId
     this.aggregatedStats = channel.aggregatedStats
@@ -39,7 +40,7 @@ export class ChannelDto {
   @ApiProperty()
   shouldBeInjested: boolean
   @ApiProperty()
-  joystreamId: string
+  joystreamId: number
   @ApiProperty()
   thumbnails: ThumbnailsDto
 }

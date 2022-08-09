@@ -1,4 +1,4 @@
-var IgnorePlugin = require('webpack').IgnorePlugin;
+var IgnorePlugin = require('webpack').IgnorePlugin
 
 module.exports = (config, context) => {
   // extend, mutate, create a new config (whatever you want)
@@ -8,29 +8,36 @@ module.exports = (config, context) => {
     new IgnorePlugin({
       checkResource(resource) {
         const lazyImports = [
-            "@nestjs/microservices",
-            "@nestjs/platform-express",
-            "cache-manager",
-            "class-validator",
-            "class-transformer",
-            "@nestjs/websockets/socket-module",
-            "@nestjs/microservices/microservices-module",
-            "class-transformer/storage",
-            "fastify-swagger",
-        ];
+          '@nestjs/microservices',
+          '@nestjs/platform-express',
+          'cache-manager',
+          'class-validator',
+          'class-transformer',
+          '@nestjs/websockets/socket-module',
+          '@nestjs/microservices/microservices-module',
+          'class-transformer/storage',
+          'fastify-swagger',
+        ]
         if (!lazyImports.includes(resource)) {
-          return false;
+          return false
         }
         try {
-          require.resolve(resource);
+          require.resolve(resource)
         } catch (err) {
-          return true;
+          return true
         }
-        return false;
+        return false
       },
     }),
-  ];
-  config.output.libraryTarget = 'commonjs2'
+  ]
 
-  return config;
-};
+  config.resolve = {
+    ...config.resolve,
+    alias: {
+      'blake3': 'node_modules/blake3/esm/browser/',
+    },
+  }
+
+  config.output.libraryTarget = 'commonjs2'
+  return config
+}

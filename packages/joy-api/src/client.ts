@@ -1,3 +1,4 @@
+import { ChannelId } from '@joystream/types/primitives'
 import {
   Channel,
   User,
@@ -80,7 +81,7 @@ export class JoystreamClient {
         ),
       R.andThen((res) => res.onFailure((err) => console.log(err))),
       R.andThen((res) =>
-        res.map((c) => [c.channelId, channel] as [string, Channel])
+        res.map((c) => [c.channelId, channel] as [ChannelId, Channel])
       )
     )(member)
     return result

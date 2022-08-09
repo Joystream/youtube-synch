@@ -1,16 +1,10 @@
-import { DataObjectId } from '@joystream/types/augment-codec/all'
-import { Hash } from '@joystream/types/common'
-import { StorageAssets } from '@joystream/types/content'
-import { DataObjectCreationParameters } from '@joystream/types/storage'
+import { DataObjectId } from '@joystream/types/primitives'
+import { Hash } from '@polkadot/types/interfaces'
 import { ApiPromise as PolkadotApi } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Bytes, GenericEvent, Vec, u128 } from '@polkadot/types'
-import {
-  DispatchError,
-  Event,
-  EventRecord,
-} from '@polkadot/types/interfaces/system'
+import { DispatchError, Event, EventRecord } from '@polkadot/types/interfaces/system'
 import { Registry } from '@polkadot/types/types'
 import {
   ChannelAssets,
@@ -27,11 +21,9 @@ import {
 } from './'
 import { JoystreamLibError } from './errors'
 import { ConsoleLogger } from './logger'
+import { createType } from '@joystream/types'
 
-export const prepareAssetsForExtrinsic = async (
-  api: PolkadotApi,
-  dataObjectsMetadata: DataObjectMetadata[]
-) => {
+export const prepareAssetsForExtrinsic = async (api: PolkadotApi, dataObjectsMetadata: DataObjectMetadata[]) => {
   if (!dataObjectsMetadata.length) {
     return null
   }
@@ -39,26 +31,18 @@ export const prepareAssetsForExtrinsic = async (
   const feePerMB = await api.query.storage.dataObjectPerMegabyteFee()
   const feePerMBUint = new u128(api.registry, feePerMB)
 
-  const mappedDataObjectMetadata = dataObjectsMetadata.map((metadata) => ({
-    size: metadata.size,
+  const objectCreationList = dataObjectsMetadata.map((metadata) => ({
+    size_: metadata.size,
     ipfsContentId: new Bytes(api.registry, metadata.ipfsHash),
   }))
-  const dataObjectsVec = new Vec(
-    api.registry,
-    DataObjectCreationParameters,
-    mappedDataObjectMetadata
-  )
 
-  return new StorageAssets(api.registry, {
-    expected_data_size_fee: feePerMBUint,
-    object_creation_list: dataObjectsVec,
+  return createType('PalletContentStorageAssetsRecord', {
+    expectedDataSizeFee: feePerMBUint,
+    objectCreationList: objectCreationList,
   })
 }
 
-export const parseExtrinsicEvents = (
-  registry: Registry,
-  eventRecords: EventRecord[]
-): Event[] => {
+export const parseExtrinsicEvents = (registry: Registry, eventRecords: EventRecord[]): Event[] => {
   const events = eventRecords.map((record) => record.event)
   const systemEvents = events.filter((event) => event.section === 'system')
 
@@ -156,14 +140,9 @@ export const sendExtrinsicAndParseEvents = (
       })
   })
 
-export const getInputDataObjectsIds = (
-  assets: VideoInputAssets | ChannelInputAssets
-) =>
+export const getInputDataObjectsIds = (assets: VideoInputAssets | ChannelInputAssets) =>
   Object.values(assets)
-    .filter(
-      (asset): asset is Required<DataObjectMetadata> =>
-        !!asset.replacedDataObjectId
-    )
+    .filter((asset): asset is Required<DataObjectMetadata> => !!asset.replacedDataObjectId)
     .map((asset) => asset.replacedDataObjectId)
 
 const getResultVideoDataObjectsIds = (
@@ -196,40 +175,28 @@ const getResultChannelDataObjectsIds = (
   }
 }
 
-export const extractChannelResultAssetsIds: ExtractChannelResultsAssetsIdsFn = (
-  inputAssets,
-  getEventData
-) => {
+export const extractChannelResultAssetsIds: ExtractChannelResultsAssetsIdsFn = (inputAssets, getEventData) => {
   const anyAssetsChanged = !!Object.values(inputAssets).find((asset) => !!asset)
   try {
     const [dataObjectsIds] = getEventData('storage', 'DataObjectsUploaded')
     return getResultChannelDataObjectsIds(inputAssets, dataObjectsIds)
   } catch (error) {
     // If no assets were changed as part of this extrinsic, let's catch the missing error and ignore it. In any other case, we re-throw
-    if (
-      (error as JoystreamLibError).name === 'MissingRequiredEventError' &&
-      !anyAssetsChanged
-    ) {
+    if ((error as JoystreamLibError).name === 'MissingRequiredEventError' && !anyAssetsChanged) {
       return {}
     }
     throw error
   }
 }
 
-export const extractVideoResultAssetsIds: ExtractVideoResultsAssetsIdsFn = (
-  inputAssets,
-  getEventData
-) => {
+export const extractVideoResultAssetsIds: ExtractVideoResultsAssetsIdsFn = (inputAssets, getEventData) => {
   const anyAssetsChanged = !!Object.values(inputAssets).find((asset) => !!asset)
   try {
     const [dataObjectsIds] = getEventData('storage', 'DataObjectsUploaded')
     return getResultVideoDataObjectsIds(inputAssets, dataObjectsIds)
   } catch (error) {
     // If no assets were changed as part of this extrinsic, let's catch the missing error and ignore it. In any other case, we re-throw
-    if (
-      (error as JoystreamLibError).name === 'MissingRequiredEventError' &&
-      !anyAssetsChanged
-    ) {
+    if ((error as JoystreamLibError).name === 'MissingRequiredEventError' && !anyAssetsChanged) {
       return {}
     }
     throw error

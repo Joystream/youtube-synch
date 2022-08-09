@@ -3,8 +3,8 @@
   "sourceRoot": "packages/joy-api/src",
   "projectType": "library",
   "targets": {
-    "generate":{
-      "executor":"@nrwl/workspace:run-commands",
+    "generate": {
+      "executor": "@nrwl/workspace:run-commands",
       "options": {
         "commands": [
           {
