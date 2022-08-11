@@ -183,9 +183,11 @@ export class UsersRepository implements IRepository<User> {
   constructor() {
     this.model = createUserModel()
   }
+
   upsertAll(items: User[]): Promise<Result<User[], DomainError>> {
     throw new Error('Method not implemented.')
   }
+
   async scan(
     init: ConditionInitalizer,
     f: (q: Scan<AnyDocument>) => Scan<AnyDocument>
@@ -193,19 +195,23 @@ export class UsersRepository implements IRepository<User> {
     const results = await f(this.model.scan(init)).exec()
     return Result.Success(results.map((r) => mapTo<User>(r)))
   }
+
   async get(partition: string, id: string): Promise<Result<User, DomainError>> {
     const result = await this.model.get({ partition, id })
     return Result.Success(mapTo<User>(result))
   }
+
   async save(model: User, partition: string): Promise<Result<User, DomainError>> {
     const update = omit(['id', 'partition', 'updatedAt', 'createdAt'], model)
     const result = await this.model.update({ partition, id: model.id }, update)
     return Result.Success(mapTo<User>(result))
   }
+
   async delete(partition: string, id: string): Promise<Result<void, DomainError>> {
     await this.model.delete({ partition, id })
     return
   }
+
   async query(init: ConditionInitalizer, f: (q: Query<AnyDocument>) => Query<AnyDocument>) {
     const results = await f(this.model.query(init)).exec()
     return Result.Success(results.map((r) => mapTo<User>(r)))
@@ -219,9 +225,13 @@ export class ChannelsRepository implements IRepository<Channel> {
   constructor() {
     this.model = createChannelModel()
   }
-  upsertAll(items: Channel[]): Promise<Result<Channel[], DomainError>> {
-    throw new Error('Method not implemented.')
+
+  async upsertAll(channels: Channel[]): Promise<Result<Channel[], DomainError>> {
+    const results = await Promise.all(channels.map(async (channel) => this.save(channel, channel.id)))
+    console.log('results: ', channels, results)
+    return Result.Success(results.map((r) => r.value))
   }
+
   async scan(
     init: ConditionInitalizer,
     f: (q: Scan<AnyDocument>) => Scan<AnyDocument>
@@ -229,24 +239,28 @@ export class ChannelsRepository implements IRepository<Channel> {
     const results = await f(this.model.scan(init)).exec()
     return Result.Success(results.map((r) => mapTo<Channel>(r)))
   }
+
   async get(partition: string, id: string): Promise<Result<Channel, DomainError>> {
     const result = await this.model.get({ userId: partition, id })
     return Result.Success(mapTo<Channel>(result))
   }
-  async save(model: Channel, partition: string): Promise<Result<Channel, DomainError>> {
+
+  async save(channel: Channel, partition: string): Promise<Result<Channel, DomainError>> {
     const result = await this.model.update(
-      { userId: partition, id: model.id },
+      { userId: partition, id: channel.id },
       {
-        shouldBeIngested: model.shouldBeIngested,
-        chainMetadata: model.chainMetadata,
+        shouldBeIngested: channel.shouldBeIngested,
+        chainMetadata: channel.chainMetadata,
       }
     )
     return Result.Success(mapTo<Channel>(result))
   }
+
   async delete(partition: string, id: string): Promise<Result<void, DomainError>> {
     await this.model.delete({ userId: partition, id })
     return
   }
+
   async query(init: ConditionInitalizer, f: (q: Query<AnyDocument>) => Query<AnyDocument>) {
     const results = await f(this.model.query(init)).exec()
     return Result.Success(results.map((r) => mapTo<Channel>(r)))
@@ -261,9 +275,11 @@ export class VideosRepository implements IRepository<Video> {
   constructor() {
     this.model = videoRepository()
   }
+
   upsertAll(items: Video[]): Promise<Result<Video[], DomainError>> {
     throw new Error('Method not implemented.')
   }
+
   async scan(
     init: ConditionInitalizer,
     f: (q: Scan<AnyDocument>) => Scan<AnyDocument>
@@ -271,19 +287,23 @@ export class VideosRepository implements IRepository<Video> {
     const results = await f(this.model.scan(init)).exec()
     return Result.Success(results.map((r) => mapTo<Video>(r)))
   }
+
   async get(partition: string, id: string): Promise<Result<Video, DomainError>> {
     const result = await this.model.get({ channelId: partition, id })
     return Result.Success(mapTo<Video>(result))
   }
+
   async save(model: Video, partition: string): Promise<Result<Video, DomainError>> {
     const upd = omit(['id', 'channelId', 'createdAt', 'updatedAt'], model)
     const result = await this.model.update({ channelId: model.channelId, id: model.id }, upd)
     return Result.Success(mapTo<Video>(result))
   }
+
   async delete(partition: string, id: string): Promise<Result<void, DomainError>> {
     await this.model.delete({ id, channelId: partition })
     return
   }
+
   async query(init: ConditionInitalizer, f: (q: Query<AnyDocument>) => Query<AnyDocument>) {
     const results = await f(this.model.query(init)).exec()
     return Result.Success(results.map((r) => mapTo<Video>(r)))

@@ -6,7 +6,8 @@ import { VideosRepository } from '@joystream/ytube'
 
 @Controller({ path: 'users/:userId/videos' })
 export class VideosController {
-  private videosRepository: VideosRepository = new VideosRepository()
+  private videosRepository = new VideosRepository()
+
   constructor(private channelsService: ChannelsService) {}
 
   @Get()

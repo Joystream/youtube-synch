@@ -71,6 +71,7 @@ class YoutubeClient implements IYoutubeClient {
     )(user)
     return result
   }
+
   getVideos = (channel: Channel, top: number) => {
     return R.pipe(
       () => this.getYoutube(channel.userAccessToken, channel.userRefreshToken),
@@ -81,6 +82,7 @@ class YoutubeClient implements IYoutubeClient {
         )
     )()
   }
+
   getAllVideos = (channel: Channel, max = 500) => {
     return R.pipe(
       () => this.getYoutube(channel.userAccessToken, channel.userRefreshToken),
@@ -91,9 +93,11 @@ class YoutubeClient implements IYoutubeClient {
         )
     )()
   }
+
   downloadVideo = (videoUrl: string): Readable => {
     return ytdl(videoUrl)
   }
+
   private async iterateVideos(youtube: youtube_v3.Youtube, channel: Channel, max: number) {
     let videos: Video[] = []
     let continuation: string
@@ -154,6 +158,7 @@ class YoutubeClient implements IYoutubeClient {
         }
     )
   }
+
   private mapVideos(items: Schema$PlaylistItem[]) {
     return items.map(
       (item) =>
@@ -181,30 +186,36 @@ class YoutubeClient implements IYoutubeClient {
 
 class QuotaTrackingClient implements IYoutubeClient {
   private _statsRepo
+
   constructor(private decorated: IYoutubeClient) {
     this._statsRepo = statsRepository()
   }
+
   getUserFromCode(code: string) {
     return this.decorated.getUserFromCode(code)
   }
+
   getChannels(user: User) {
     return R.pipe(
       this.decorated.getChannels,
       R.andThen((res) => res.tapAsync((channels) => this.increaseUsedQuota(channels, channels.length % 50)))
     )(user)
   }
+
   getVideos(channel: Channel, top: number) {
     return R.pipe(
       this.decorated.getVideos,
       R.andThen((res) => res.tapAsync((videos) => this.increaseUsedQuota(videos, videos.length % 50)))
     )(channel, top)
   }
+
   getAllVideos(channel: Channel, max: number) {
     return R.pipe(
       this.decorated.getAllVideos,
       R.andThen((res) => res.tapAsync((videos) => this.increaseUsedQuota(videos, videos.length % 50)))
     )(channel, max)
   }
+
   downloadVideo(videoUrl: string): Readable {
     return this.decorated.downloadVideo(videoUrl)
   }

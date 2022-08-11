@@ -63,6 +63,7 @@ export class S3UploadService implements IUploadService {
       })
       .then((doc) => doc.toJSON() as Video)
   }
+
   private async bucketExists(s3: S3, channelId: string) {
     try {
       await s3

@@ -29,20 +29,13 @@ export class ChannelDto {
     this.thumbnails = channel.thumbnails
   }
 
-  @ApiProperty()
-  title: string
-  @ApiProperty()
-  description: string
-  @ApiProperty()
-  aggregatedStats: number
-  @ApiProperty()
-  uploadsPlaylistId: string
-  @ApiProperty()
-  shouldBeInjested: boolean
-  @ApiProperty()
-  joystreamId: number
-  @ApiProperty()
-  thumbnails: ThumbnailsDto
+  @ApiProperty() title: string
+  @ApiProperty() description: string
+  @ApiProperty() aggregatedStats: number
+  @ApiProperty() uploadsPlaylistId: string
+  @ApiProperty() shouldBeInjested: boolean
+  @ApiProperty() joystreamId: number
+  @ApiProperty() thumbnails: ThumbnailsDto
 }
 export class UserDto {
   /**
@@ -76,8 +69,8 @@ export class UserCreateResponse {
     this.user = user
     this.channels = channels
   }
-  @ApiProperty()
-  user: UserDto
+
+  @ApiProperty() user: UserDto
   @ApiProperty({ type: ChannelDto, isArray: true })
   channels: ChannelDto[]
 }

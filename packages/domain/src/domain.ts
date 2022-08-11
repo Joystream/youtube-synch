@@ -14,6 +14,7 @@ export class Channel {
     subscriberCount: number
     videoCount: number
   }
+
   aggregatedStats: number
   userAccessToken: string
   userRefreshToken: string
@@ -44,6 +45,7 @@ export class IngestChannel implements IEvent {
     this.channel = channel
     this.timestamp = timestamp
   }
+
   subject = 'ingestChannel'
 }
 
@@ -52,6 +54,7 @@ export class UserCreated implements IEvent {
     this.user = user
     this.timestamp = timestamp
   }
+
   subject = 'userCreated'
 }
 
@@ -60,6 +63,7 @@ export class UserIngestionTriggered implements IEvent {
     this.user = user
     this.timestamp = timestamp
   }
+
   subject = 'userIngestionTriggered'
 }
 
@@ -67,6 +71,7 @@ export class VideoEvent implements IEvent {
   constructor(public state: VideoState, public videoId: string, public channelId: string, public timestamp: number) {
     this.subject = state
   }
+  
   subject: string
 }
 

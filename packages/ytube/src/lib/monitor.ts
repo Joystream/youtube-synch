@@ -21,12 +21,14 @@ export class SyncService {
   private channelsRepository: ChannelsRepository
   private usersRepository: UsersRepository
   private videosRepository: VideosRepository
+
   constructor(private youtube: IYoutubeClient, private bus: MessageBus) {
     this._uploader = new S3UploadService(youtube)
     this.channelsRepository = new ChannelsRepository()
     this.usersRepository = new UsersRepository()
     this.videosRepository = new VideosRepository()
   }
+
   async startIngestionFor(frequencies: Frequency[]) {
     return await R.pipe(
       () => this.channelsRepository.scan('frequency', (s) => s.in(frequencies).filter('shouldBeInjested').eq(true)),
@@ -34,6 +36,7 @@ export class SyncService {
       R.andThen((ch) => Result.bindAsync(ch, (events) => this.bus.publishAll(events, 'channelEvents')))
     )()
   }
+
   async ingestChannels(user: User) {
     if (!(await this.canCallYoutube())) return []
 
@@ -49,6 +52,7 @@ export class SyncService {
       R.andThen((ev) => Result.bindAsync(ev, (events) => this.bus.publishAll(events, 'channelEvents')))
     )(user)
   }
+
   async ingestAllVideos(channel: Channel, top: number) {
     if (!(await this.canCallYoutube())) return []
     return R.pipe(
@@ -72,6 +76,7 @@ export class SyncService {
       R.andThen((v) => Result.map(v, (set) => videos.filter((vid) => !set.has(vid.id))))
     )()
   }
+
   private async canCallYoutube(): Promise<boolean> {
     const today = new Date()
     today.setUTCHours(0, 0, 0, 0)

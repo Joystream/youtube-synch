@@ -28,6 +28,7 @@ export class MessageBus {
       return event
     }, new DomainError('Failed to publish event'))
   }
+
   async publishAll<TEvent extends IEvent>(
     events: TEvent[],
     topic: AvailableTopic
@@ -55,6 +56,7 @@ export class MessageBus {
       return topics.find((t) => t.TopicArn!.includes(name))!
     })
   }
+
   private async getOrInitTopics() {
     if (this._topics) return this._topics
     const topics = await this._sns.listTopics().promise()
