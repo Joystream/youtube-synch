@@ -71,7 +71,7 @@ export class VideoEvent implements IEvent {
   constructor(public state: VideoState, public videoId: string, public channelId: string, public timestamp: number) {
     this.subject = state
   }
-  
+
   subject: string
 }
 

@@ -6,7 +6,7 @@ import { Query, Scan } from 'dynamoose/dist/DocumentRetriever'
 import { ModelType } from 'dynamoose/dist/General'
 import { omit } from 'ramda'
 
-export function createChannelModel() {
+export function createChannelModel(): ModelType<AnyDocument> {
   const channelSchema = new dynamoose.Schema(
     {
       id: {
@@ -288,6 +288,12 @@ export class VideosRepository implements IRepository<Video> {
     return Result.Success(results.map((r) => mapTo<Video>(r)))
   }
 
+  /**
+   *
+   * @param partition
+   * @param id
+   * @returns
+   */
   async get(partition: string, id: string): Promise<Result<Video, DomainError>> {
     const result = await this.model.get({ channelId: partition, id })
     return Result.Success(mapTo<Video>(result))

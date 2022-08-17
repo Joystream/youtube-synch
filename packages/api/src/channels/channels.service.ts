@@ -11,6 +11,10 @@ export class ChannelsService {
     return result.map((c) => c[0])
   }
 
+  /**
+   * @param userId
+   * @returns List of Channels for given user
+   */
   async getAll(userId: string): Promise<Result<Channel[], DomainError>> {
     return await this.channelsRepo.query({ userId }, (q) => q)
   }

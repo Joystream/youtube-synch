@@ -1,21 +1,10 @@
 import styled from '@emotion/styled'
-import {
-  Box,
-  ThemeProvider,
-  AppBar,
-  IconButton,
-  Typography,
-  createTheme,
-  Toolbar,
-  Container,
-  Grid,
-} from '@mui/material'
-import { Add } from '@mui/icons-material'
+import { Box, ThemeProvider, AppBar, Typography, createTheme, Toolbar, Grid, Button } from '@mui/material'
 import { UsersList, User } from './usersList'
 import { ChannelsList } from './channelsList'
 import { useState } from 'react'
 import { Videos } from './videos'
-import { GoogleLogin, GoogleLoginResponse, GoogleLoginResponseOffline } from 'react-google-login'
+import { useGoogleLogin } from '@react-oauth/google'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 

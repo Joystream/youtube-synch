@@ -1,7 +1,7 @@
 import { Readable } from 'stream'
 import { createHash } from 'blake3'
 import { encode as encodeHash, toB58String } from 'multihashes'
-import { finished } from 'stream/promises'
+import { promises } from 'stream'
 
 type FileMetadata = { size: number; hash: string }
 
@@ -9,7 +9,7 @@ export async function computeFileHashAndSize(file: Readable): Promise<FileMetada
   const hash = createHash()
   let finalSize = 0
   let digest
-  await finished(
+  await promises.finished(
     file
       .on('data', (chunk) => (finalSize += chunk.length))
       .pipe(hash)

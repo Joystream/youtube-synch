@@ -54,22 +54,27 @@ export type GetEventDataFn = <TSection extends keyof JoystreamEvents, TMethod ex
   section: TSection,
   method: TMethod
 ) => JoystreamEventData<JoystreamEvents[TSection][TMethod]>
+
 export type ExtractChannelResultsAssetsIdsFn = (
   inputAssets: ChannelInputAssets,
   getEventData: GetEventDataFn
 ) => ChannelAssetsIds
+
 export type ExtractVideoResultsAssetsIdsFn = (
   inputAssets: VideoInputAssets,
   getEventData: GetEventDataFn
 ) => VideoAssetsIds
+
 export type SendExtrinsicResult = ExtrinsicResult<{
   events: GenericEvent[]
   getEventData: GetEventDataFn
 }>
+
 export type ChannelExtrinsicResult = ExtrinsicResult<{
   channelId: MemberId
   assetsIds: ChannelAssetsIds
 }>
+
 export type VideoExtrinsicResult = ExtrinsicResult<{
   videoId: ChannelId
   assetsIds: VideoAssetsIds

@@ -78,12 +78,12 @@ export class Result<T, TE extends DomainError> {
     }
   }
 
-  static async tryAsync<T, TE extends DomainError>(f: () => Promise<T>, error: TE) {
+  static async tryAsync<Value, Error extends DomainError>(f: () => Promise<Value>, error: Error) {
     try {
       const result = await f()
-      return Result.Success<T, TE>(result)
+      return Result.Success<Value, Error>(result)
     } catch (err) {
-      return Result.Error<T, TE>(error)
+      return Result.Error<Value, Error>(error)
     }
   }
 

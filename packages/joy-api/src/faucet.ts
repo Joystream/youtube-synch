@@ -10,6 +10,7 @@ export type RegistrationResponse = RegisteredMember | RegistrationError
 
 export class Faucet {
   constructor(private faucetNodeUri: string) {}
+
   async register(handle: string, address: string): Promise<Result<RegisteredMember, RegistrationError>> {
     try {
       const response = await axios.post<RegisteredMember | RegistrationError>(`${this.faucetNodeUri}/register`, {

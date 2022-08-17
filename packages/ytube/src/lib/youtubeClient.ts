@@ -18,9 +18,27 @@ export interface IYoutubeClient {
 }
 class YoutubeClient implements IYoutubeClient {
   constructor(private clientId: string, private clientSecret: string, private redirectUri: string) {}
+
+  private getYoutube(accessToken: string, refreshToken: string) {
+    const auth = this.getAuth()
+    auth.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    })
+    return new youtube_v3.Youtube({ auth })
+  }
+
+  private getAuth() {
+    return new OAuth2Client({
+      clientId: this.clientId,
+      clientSecret: this.clientSecret,
+      redirectUri: this.redirectUri,
+    })
+  }
+
   async getUserFromCode(code: string) {
     const createUserFlow = R.pipe(
-      (code: string) =>
+      (code) =>
         Result.tryAsync(
           () => this.getAuth().getToken(code),
           new YoutubeAuthorizationFailed('Failed to retrieve token using code')
@@ -113,21 +131,7 @@ class YoutubeClient implements IYoutubeClient {
     } while (continuation && videos.length < max)
     return videos
   }
-  private getYoutube(accessToken: string, refreshToken: string) {
-    const auth = this.getAuth()
-    auth.setCredentials({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    })
-    return new youtube_v3.Youtube({ auth })
-  }
-  private getAuth() {
-    return new OAuth2Client({
-      clientId: this.clientId,
-      clientSecret: this.clientSecret,
-      redirectUri: this.redirectUri,
-    })
-  }
+
   private mapChannels(user: User, channels: Schema$Channel[]) {
     return channels.map<Channel>(
       (item) =>

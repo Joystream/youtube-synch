@@ -11,11 +11,13 @@ import {
   DomainError,
 } from '@youtube-sync/domain'
 import { ChannelsRepository, statsRepository, VideosRepository } from './database'
-import { IUploadService, mapTo, MessageBus, createUserModel, IYoutubeClient, UsersRepository } from '..'
+import { IUploadService, mapTo, MessageBus, IYoutubeClient, UsersRepository } from '..'
 import { S3UploadService } from './uploadService'
 import { Frequency } from './frequency'
 import R from 'ramda'
+
 const DailtyQuota = 10000
+
 export class SyncService {
   private _uploader: IUploadService
   private channelsRepository: ChannelsRepository

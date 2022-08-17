@@ -1,8 +1,7 @@
-import { Body, Controller, Get, HttpException, Param, Post, Query } from '@nestjs/common'
+import { Body, Controller, Get, HttpException, Inject, Param, Post, Query } from '@nestjs/common'
 import { Channel, Result, User } from '@youtube-sync/domain'
 import R from 'ramda'
-import { ChannelsRepository, IYoutubeClient, UsersRepository, YtClient } from '@joystream/ytube'
-import { ConfigService } from '@nestjs/config'
+import { ChannelsRepository, IYoutubeClient, UsersRepository } from '@joystream/ytube'
 import { JoystreamClient } from '@youtube-sync/joy-api'
 import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { UserCreateRequest, UserCreateResponse, UserDto, ChannelDto } from '../dtos'
@@ -10,19 +9,12 @@ import { UserCreateRequest, UserCreateResponse, UserDto, ChannelDto } from '../d
 @Controller('users')
 @ApiTags('channels')
 export class UsersController {
-  private youtube: IYoutubeClient
   constructor(
-    private configService: ConfigService,
+    @Inject('youtube') private youtube: IYoutubeClient,
     private jClient: JoystreamClient,
     private usersRespository: UsersRepository,
     private channelsRespository: ChannelsRepository
-  ) {
-    this.youtube = YtClient.create(
-      configService.get<string>('YOUTUBE_CLIENT_ID'),
-      configService.get<string>('YOUTUBE_CLIENT_SECRET'),
-      configService.get<string>('YOUTUBE_REDIRECT_URI')
-    )
-  }
+  ) {}
 
   @ApiOperation({
     description:
@@ -38,6 +30,7 @@ export class UsersController {
       R.andThen((userAndChannels) => userAndChannels.map(([user, channels]) => [user, channels] as [User, Channel[]])),
       R.andThen((userAndChannel) => Result.bindAsync(userAndChannel, (ucm) => this.saveUserAndChannel(ucm[0], ucm[1])))
     )(request.authorizationCode)
+
     if (result.isSuccess) {
       const [user, channels] = result.value
       return new UserCreateResponse(

@@ -9,8 +9,7 @@
       "options": {
         "outputPath": "dist/packages/api",
         "main": "packages/api/src/main.ts",
-        "tsConfig": "packages/api/tsconfig.app.json",
-        "assets": ["packages/api/src/assets"]
+        "tsConfig": "packages/api/tsconfig.app.json"
       },
       "configurations": {
         "production": {
@@ -37,7 +36,6 @@
         "outputPath": "dist/packages/api-lambda",
         "main": "packages/api/src/lambda.ts",
         "tsConfig": "packages/api/tsconfig.app.json",
-        "assets": ["packages/api/src/assets"],
         "optimization": true,
         "extractLicenses": true,
         "inspect": false,

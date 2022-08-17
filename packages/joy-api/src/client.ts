@@ -17,6 +17,7 @@ import {
 } from '.'
 import { Uploader } from '../storage/uploader'
 import { computeFileHashAndSize } from './hasher'
+
 export class JoystreamClient {
   private faucet: Faucet
   private lib: JoystreamLib
