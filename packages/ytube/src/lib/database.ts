@@ -9,11 +9,55 @@ import { omit } from 'ramda'
 export function createChannelModel(): ModelType<AnyDocument> {
   const channelSchema = new dynamoose.Schema(
     {
+      // ID of the Youtube channel
       id: {
         type: String,
         rangeKey: true,
       },
+
+      // ID of the user that owns the channel
+      userId: {
+        hashKey: true,
+        type: String,
+      },
+
+      // ID of the corresponding Joystream Channel
+      joystreamChannelId: Number,
+
+      // Referrer Joystream Channel ID
+      referrerJoystreamChannelId: Number,
+
+      // Channel's title
       title: String,
+
+      // Descripton of the channel
+      description: String,
+
+      // Channel's creation date
+      createdAt: Number,
+
+      // Whether this YT channels is verified by parther program or not
+      isVerified: Boolean,
+
+      // Channel's statistics
+      statistics: {
+        type: Object,
+        schema: {
+          // Total views
+          viewCount: Number,
+
+          // Total comments
+          commentCount: Number,
+
+          // Total subscribers
+          subscriberCount: Number,
+
+          // Total videos
+          videoCount: Number,
+        },
+      },
+
+      // Channel Ingestion frequency
       frequency: {
         type: Number,
         index: {
@@ -22,12 +66,7 @@ export function createChannelModel(): ModelType<AnyDocument> {
           name: 'frequency-id-index',
         },
       },
-      description: String,
-      userId: {
-        hashKey: true,
-        type: String,
-      },
-      createdAt: Number,
+
       thumbnails: {
         type: Object,
         schema: {
@@ -38,27 +77,27 @@ export function createChannelModel(): ModelType<AnyDocument> {
           standard: String,
         },
       },
-      statistics: {
-        type: Object,
-        schema: {
-          viewCount: Number,
-          commentCount: Number,
-          subscriberCount: Number,
-          videoCount: Number,
-        },
-      },
+
+      // user access token obtained from authorization code after successful authentication
       userAccessToken: String,
+
+      // user refresh token that will be used to get new access token after expiration
       userRefreshToken: String,
+
       uploadsPlaylistId: String,
+
+      // Should this channel be ingested for automated Youtube/Joystream syncing?
       shouldBeIngested: {
         type: Boolean,
         default: true,
       },
     },
+
     { saveUnknown: true }
   )
   return dynamoose.model('channels', channelSchema, { create: false })
 }
+
 export function createUserModel() {
   const userSchema = new dynamoose.Schema(
     {
@@ -66,16 +105,31 @@ export function createUserModel() {
         type: String,
         rangeKey: true,
       },
+
       partition: {
         type: String,
         hashKey: true,
       },
+
+      // User email
       email: String,
+
+      // User youtube username
       youtubeUsername: String,
+
+      // User Google ID
       googleId: String,
+
+      // user access token obtained from authorization code after successful authentication
       accessToken: String,
+
+      // user refresh token that will be used to get new access token after expiration
       refreshToken: String,
+
+      // User avatar url
       avatarUrl: String,
+
+      // User Youtube channels count
       channelsCount: Number,
     },
     {
@@ -88,21 +142,34 @@ export function createUserModel() {
   )
   return dynamoose.model('users', userSchema, { create: false })
 }
+
 export function videoRepository() {
   const videoSchema = new dynamoose.Schema(
     {
-      url: String,
-      title: String,
-      description: String,
-      channelId: {
-        type: String,
-        hashKey: true,
-      },
+      // ID of the video
       id: {
         type: String,
         rangeKey: true,
       },
+
+      // Channel ID of the associated video
+      channelId: {
+        type: String,
+        hashKey: true,
+      },
+
+      // Video's url
+      url: String,
+
+      // Video's title
+      title: String,
+
+      // Video's description
+      description: String,
+
+      // Video's playlist ID
       playlistId: String,
+
       resourceId: String,
       thumbnails: {
         type: Object,
@@ -114,9 +181,22 @@ export function videoRepository() {
           standard: String,
         },
       },
+
+      //
       state: {
         type: String,
-        enum: ['new', 'uploadToJoystreamStarted', 'uploadToJoystreamFailed', 'uploadToJoystreamSucceded'],
+        enum: [
+          // Newly created youtube video
+          'New',
+          // Video is being uploaded to Joystream
+          'UploadStarted',
+          // Video upload to Joystream failed
+          'uploadFailed',
+          // Video upload to Joystream succeeded
+          'uploadSucceded',
+          // Video was deleted from joystream, so it should not be synced again
+          'NotToBeSyncedAgain',
+        ],
       },
     },
     {
@@ -129,6 +209,7 @@ export function videoRepository() {
   )
   return dynamoose.model('videos', videoSchema)
 }
+
 export function videoStateRepository() {
   const videoStateSchema = new dynamoose.Schema(
     {
@@ -137,7 +218,18 @@ export function videoStateRepository() {
       reason: String,
       state: {
         type: String,
-        enum: ['new', 'uploadToJoystreamStarted', 'uploadToJoystreamFailed', 'uploadToJoystreamSucceded'],
+        enum: [
+          // Newly created youtube video
+          'New',
+          // Video is being uploaded to Joystream
+          'UploadStarted',
+          // Video upload to Joystream failed
+          'uploadFailed',
+          // Video upload to Joystream succeeded
+          'uploadSucceded',
+          // Video was deleted from joystream, so it should not be synced again
+          'NotToBeSyncedAgain',
+        ],
       },
     },
     {
@@ -148,6 +240,7 @@ export function videoStateRepository() {
   )
   return dynamoose.model('videoLogs', videoStateSchema, { create: false })
 }
+
 export function statsRepository() {
   const schema = new dynamoose.Schema({
     partition: {
@@ -162,6 +255,7 @@ export function statsRepository() {
   })
   return dynamoose.model('stats', schema, { create: false })
 }
+
 export function mapTo<TEntity>(doc: AnyDocument) {
   return doc.toJSON() as TEntity
 }

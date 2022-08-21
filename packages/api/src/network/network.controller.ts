@@ -12,7 +12,7 @@ import {
   GetStorageBucketsQueryVariables,
 } from 'packages/joy-api/graphql'
 import R from 'ramda'
-import { groupBy, flatten, uniqBy, result } from 'lodash'
+import { groupBy, flatten } from 'lodash'
 import { ChannelDto, UserDto, VideoDto } from '../dtos'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { OperatorInfo, Uploader } from 'packages/joy-api/storage/uploader'
@@ -48,11 +48,9 @@ export class NetworkController {
     private uploader: Uploader
   ) {}
 
-  @ApiOperation({
-    description: 'Create joystream network membership for existing user in the system',
-  })
-  @ApiResponse({ type: UserDto })
   @Post('memberships')
+  @ApiResponse({ type: UserDto })
+  @ApiOperation({ description: `Create joystream network membership for existing user in the system` })
   async createMembership(@Body() body: CreateMembershipDto) {
     const result = await R.pipe(
       (id: string) => this.usersRepository.get('users', id),

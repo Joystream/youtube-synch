@@ -4,7 +4,7 @@ import R from 'ramda'
 import { Result } from '@youtube-sync/domain'
 import { VideosRepository } from '@joystream/ytube'
 
-@Controller({ path: 'users/:userId/videos' })
+@Controller('users/:userId/videos')
 export class VideosController {
   private videosRepository = new VideosRepository()
 

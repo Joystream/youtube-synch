@@ -63,7 +63,7 @@
       "put": {
         "operationId": "ChannelsController_updateChannel",
         "summary": "",
-        "description": "Updates given channel. Note: only `shouldBeInjested` is available for update at the moment",
+        "description": "Updates given channel. Note: only 'shouldBeInjested' is available for update at the moment",
         "parameters": [
           {
             "name": "userId",
@@ -231,7 +231,7 @@
       "post": {
         "operationId": "UsersController_createUserWithChannels",
         "summary": "",
-        "description": "Creates user from the supplied google authorization code and fetches and stores list of user`s channels",
+        "description": "Creates user from the supplied google authorization code and fetches and stores list of user's channels",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -262,7 +262,7 @@
       "get": {
         "operationId": "UsersController_find",
         "summary": "",
-        "description": "Searches users added to the system. Use optional `search` param to filter the results by email.",
+        "description": "Searches users added to the system. Use optional 'search' param to filter the results by email.",
         "parameters": [
           {
             "name": "search",
@@ -297,7 +297,7 @@
       "post": {
         "operationId": "UsersController_create",
         "summary": "",
-        "description": "Creates user from the supplied google authorization code and fetches and stores list of user`s channels. This action will also create membership and channels in joystream network instantly",
+        "description": "Creates user from the supplied google authorization code and fetches and stores list of user's channels. This action will also create membership and channels in joystream network instantly",
         "parameters": [],
         "requestBody": {
           "required": true,

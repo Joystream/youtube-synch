@@ -17,8 +17,7 @@ export class UsersController {
   ) {}
 
   @ApiOperation({
-    description:
-      'Creates user from the supplied google authorization code and fetches and stores list of user`s channels',
+    description: `Creates user from the supplied google authorization code and fetches and stores list of user's channels`,
   })
   @ApiBody({ type: UserCreateRequest })
   @ApiResponse({ type: UserCreateResponse })
@@ -43,8 +42,7 @@ export class UsersController {
   }
 
   @ApiOperation({
-    description:
-      'Creates user from the supplied google authorization code and fetches and stores list of user`s channels. This action will also create membership and channels in joystream network instantly',
+    description: `Creates user from the supplied google authorization code and fetches and stores list of user's channels. This action will also create membership and channels in joystream network instantly`,
   })
   @ApiBody({ type: UserCreateRequest })
   @ApiResponse({ type: UserCreateResponse })
@@ -97,7 +95,7 @@ export class UsersController {
   @Get()
   @ApiQuery({ type: String, required: false, name: 'search' })
   @ApiOperation({
-    description: 'Searches users added to the system. Use optional `search` param to filter the results by email.',
+    description: `Searches users added to the system. Use optional 'search' param to filter the results by email.`,
   })
   @ApiResponse({ type: UserDto, isArray: true })
   async find(@Query('search') search: string): Promise<UserDto[]> {

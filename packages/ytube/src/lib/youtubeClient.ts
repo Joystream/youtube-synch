@@ -37,7 +37,7 @@ class YoutubeClient implements IYoutubeClient {
   }
 
   async getUserFromCode(code: string) {
-    const createUserFlow = R.pipe(
+    return R.pipe(
       (code) =>
         Result.tryAsync(
           () => this.getAuth().getToken(code),
@@ -46,10 +46,11 @@ class YoutubeClient implements IYoutubeClient {
       R.andThen((r) =>
         Result.tryBind(
           r,
-          (tokenResponse) =>
-            this.getAuth()
-              .getTokenInfo(tokenResponse.tokens.access_token)
-              .then((tokenInfo) => [tokenInfo, tokenResponse] as [TokenInfo, GetTokenResponse]),
+          async (tokenResponse) => {
+            const tokenInfo = await this.getAuth().getTokenInfo(tokenResponse.tokens.access_token)
+            console.log('tokenInfo: ', tokenInfo)
+            return [tokenInfo, tokenResponse] as const
+          },
           new YoutubeAuthorizationFailed('Failed to get token info')
         )
       ),
@@ -69,8 +70,7 @@ class YoutubeClient implements IYoutubeClient {
         )
       ),
       R.otherwise((err) => Result.Error<User, DomainError>(new YoutubeAuthorizationFailed(err.message)))
-    )
-    return createUserFlow(code)
+    )(code)
   }
 
   getChannels = async (user: User) => {
@@ -87,6 +87,8 @@ class YoutubeClient implements IYoutubeClient {
         ),
       R.andThen((channelsResult) => channelsResult.map((c) => this.mapChannels(user, c.data.items ?? [])))
     )(user)
+    console.log('User: ', user)
+    console.log('Channels: ', result)
     return result
   }
 

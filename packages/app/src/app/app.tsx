@@ -42,17 +42,22 @@ export interface Video {
 }
 
 const queryClient = new QueryClient()
+
 export function App() {
   const [selectedUser, setSelectedUser] = useState<User>()
   const [selectedChannel, setSelectedChannel] = useState<Channel>()
-  const successAuth = (response: GoogleLoginResponse | GoogleLoginResponseOffline) => {
-    if (!response.code) return
-    axios.post(`http://localhost:3001/users`, { authorizationCode: response.code })
-    return console.log(response)
-  }
-  const failedAuth = (response: any) => {
-    console.log(JSON.stringify(response))
-  }
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: ({ code, scope }) => {
+      axios.post(`http://localhost:3001/users`, {
+        authorizationCode: code,
+      })
+    },
+    flow: 'auth-code',
+    //
+    scope: 'https://www.googleapis.com/auth/youtube.readonly',
+  })
+
   return (
     <QueryClientProvider client={queryClient}>
       <StyledApp>
@@ -69,22 +74,7 @@ export function App() {
                 <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                   Youtube Sync
                 </Typography>
-                <GoogleLogin
-                  clientId={process.env['YOUTUBE_CLIENT_ID']!}
-                  onSuccess={successAuth}
-                  accessType="offline"
-                  responseType="code"
-                  onFailure={failedAuth}
-                  isSignedIn={true}
-                  cookiePolicy="single_host_origin"
-                  prompt="consent"
-                  scope="https://www.googleapis.com/auth/youtube.readonly"
-                  render={(props) => (
-                    <IconButton onClick={props.onClick} disabled={props.disabled}>
-                      <Add />
-                    </IconButton>
-                  )}
-                />
+                <Button onClick={() => googleLogin()}>Verify your Youtube Channel</Button>
               </Toolbar>
             </AppBar>
             <Grid container direction={'row'} spacing={2} height={'100%'} sx={{ marginTop: 0 }}>
