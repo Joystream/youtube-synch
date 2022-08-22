@@ -1,6 +1,9 @@
 import { MemberId } from '@joystream/types/primitives'
 import { ApiProperty, PickType } from '@nestjs/swagger'
 import { User, Channel, Video, VideoState } from '@youtube-sync/domain'
+import { IsEmail } from 'class-validator'
+
+// NestJS Data Transfer Objects (DTO)s
 
 export class MembershipDto {
   @ApiProperty() memberId: MemberId
@@ -16,9 +19,14 @@ export class ThumbnailsDto {
 }
 
 export class ChannelDto {
-  /**
-   *
-   */
+  @ApiProperty() title: string
+  @ApiProperty() description: string
+  @ApiProperty() aggregatedStats: number
+  @ApiProperty() uploadsPlaylistId: string
+  @ApiProperty() shouldBeInjested: boolean
+  @ApiProperty() joystreamId: number
+  @ApiProperty() thumbnails: ThumbnailsDto
+
   constructor(channel: Channel) {
     this.title = channel.title
     this.description = channel.description
@@ -28,19 +36,14 @@ export class ChannelDto {
     this.aggregatedStats = channel.aggregatedStats
     this.thumbnails = channel.thumbnails
   }
-
-  @ApiProperty() title: string
-  @ApiProperty() description: string
-  @ApiProperty() aggregatedStats: number
-  @ApiProperty() uploadsPlaylistId: string
-  @ApiProperty() shouldBeInjested: boolean
-  @ApiProperty() joystreamId: number
-  @ApiProperty() thumbnails: ThumbnailsDto
 }
 export class UserDto {
-  /**
-   *
-   */
+  @ApiProperty() id: string
+  @ApiProperty() email: string
+  @ApiProperty() avatarUrl: string
+  @ApiProperty() channelsCount: number
+  @ApiProperty() membership: MembershipDto
+
   constructor(user: User) {
     this.id = user.id
     this.email = user.email
@@ -48,31 +51,31 @@ export class UserDto {
     this.channelsCount = user.channelsCount
     this.membership = user.membership
   }
-
-  @ApiProperty() id: string
-  @ApiProperty() email: string
-  @ApiProperty() avatarUrl: string
-  @ApiProperty() channelsCount: number
-  @ApiProperty() membership: MembershipDto
 }
 
-export class UserCreateRequest {
-  @ApiProperty({ required: true })
-  authorizationCode: string
+// Dto for verifying Youtube channel given the authorization code
+export class VerifyChannelRequest {
+  // Authorization code send to the backend after user O-auth verification
+  @ApiProperty({ required: true }) authorizationCode: string
+
+  // Email of the user
+  @IsEmail() @ApiProperty({ required: true }) email: string
+
+  // Joystream Channel ID of the user verifying his Youtube Channel for YPP
+  @ApiProperty({ required: true }) joystreamChannelId: string
+
+  // Member ID of the referrer
+  @ApiProperty({ required: true }) referrerId: string
 }
 
-export class UserCreateResponse {
-  /**
-   *
-   */
-  constructor(user: UserDto, channels: ChannelDto[]) {
-    this.user = user
-    this.channels = channels
-  }
-
+export class VerifyChannelResponse {
   @ApiProperty() user: UserDto
-  @ApiProperty({ type: ChannelDto, isArray: true })
-  channels: ChannelDto[]
+  @ApiProperty({ type: ChannelDto }) channel: ChannelDto
+
+  constructor(user: UserDto, channel: ChannelDto) {
+    this.user = user
+    this.channel = channel
+  }
 }
 
 export class VideoDto extends Video {
