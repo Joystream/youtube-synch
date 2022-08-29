@@ -49,7 +49,7 @@ export class S3UploadService implements IUploadService {
         repo.update({
           id: video.id,
           channelId: video.channelId,
-          state: 'uploadToJoystreamSucceded',
+          state: 'uploadToJoystreamSucceeded',
           destinationUrl: up.Location,
         })
       )

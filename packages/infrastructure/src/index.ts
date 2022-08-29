@@ -9,15 +9,10 @@ const nameof = <T>(name: keyof T) => <string>name
 
 const userTable = new aws.dynamodb.Table('users', {
   name: 'users',
-  hashKey: 'partition', // we'll have a single partition for users
-  rangeKey: nameof<User>('id'),
+  hashKey: nameof<User>('id'),
   attributes: [
     {
       name: nameof<User>('id'),
-      type: 'S',
-    },
-    {
-      name: 'partition',
       type: 'S',
     },
   ],

@@ -1,21 +1,25 @@
 import { youtube_v3 } from '@googleapis/youtube'
-import { OAuth2Client, TokenInfo } from 'google-auth-library'
+import { OAuth2Client } from 'google-auth-library'
 import ytdl from 'ytdl-core'
-import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
+import Schema$Video = youtube_v3.Schema$Video
 import Schema$Channel = youtube_v3.Schema$Channel
-import { Channel, DomainError, Result, User, Video, YoutubeAuthorizationFailed } from '@youtube-sync/domain'
+import { Channel, User, Video } from '@youtube-sync/domain'
 import { Readable } from 'stream'
 import { statsRepository } from '..'
-import R from 'ramda'
-import { GetTokenResponse } from 'google-auth-library/build/src/auth/oauth2client'
+
+// YPP induction criteria, each channel should meet following criteria
+const MINIMUM_SUBSCRIBERS_COUNT = 100
+const MINiMUM_VIDEO_COUNT = 100
 
 export interface IYoutubeClient {
-  getUserFromCode(code: string): Promise<Result<User, DomainError>>
-  getChannels(user: User): Promise<Result<Channel[], DomainError>>
-  getVideos(channel: Channel, top: number): Promise<Result<Video[], DomainError>>
-  getAllVideos(channel: Channel, max: number): Promise<Result<Video[], DomainError>>
+  getUserFromCode(code: string): Promise<User>
+  getChannels(user: User): Promise<Channel[]>
+  verifyChannel(channel: Channel): Channel
+  getVideos(channel: Channel, top: number): Promise<Video[]>
+  getAllVideos(channel: Channel, max: number): Promise<Video[]>
   downloadVideo(videoUrl: string): Readable
 }
+
 class YoutubeClient implements IYoutubeClient {
   constructor(private clientId: string, private clientSecret: string, private redirectUri: string) {}
 
@@ -28,6 +32,14 @@ class YoutubeClient implements IYoutubeClient {
     return new youtube_v3.Youtube({ auth })
   }
 
+  private async getAccessToken(code: string) {
+    try {
+      return await this.getAuth().getToken(code)
+    } catch (error) {
+      throw new Error(`Could not get User's access token using authorization code ${error}`)
+    }
+  }
+
   private getAuth() {
     return new OAuth2Client({
       clientId: this.clientId,
@@ -37,82 +49,76 @@ class YoutubeClient implements IYoutubeClient {
   }
 
   async getUserFromCode(code: string) {
-    const createUserFlow = R.pipe(
-      (code) =>
-        Result.tryAsync(
-          () => this.getAuth().getToken(code),
-          new YoutubeAuthorizationFailed('Failed to retrieve token using code')
-        ),
-      R.andThen((r) =>
-        Result.tryBind(
-          r,
-          (tokenResponse) =>
-            this.getAuth()
-              .getTokenInfo(tokenResponse.tokens.access_token)
-              .then((tokenInfo) => [tokenInfo, tokenResponse] as [TokenInfo, GetTokenResponse]),
-          new YoutubeAuthorizationFailed('Failed to get token info')
-        )
-      ),
-      R.andThen((tokensResult) =>
-        tokensResult.map(
-          ([tokenInfo, tokenResponse]) =>
-            new User(
-              tokenInfo.sub,
-              tokenInfo.email,
-              tokenInfo.email,
-              tokenInfo.sub,
-              tokenResponse.tokens.access_token,
-              tokenResponse.tokens.refresh_token,
-              '',
-              0
-            )
-        )
-      ),
-      R.otherwise((err) => Result.Error<User, DomainError>(new YoutubeAuthorizationFailed(err.message)))
+    const tokenResponse = await this.getAccessToken(code)
+    const tokenInfo = await this.getAuth().getTokenInfo(tokenResponse.tokens.access_token)
+
+    const user = new User(
+      tokenInfo.sub,
+      tokenInfo.email,
+      tokenResponse.tokens.access_token,
+      tokenResponse.tokens.refresh_token
     )
-    return createUserFlow(code)
+    return user
   }
 
-  getChannels = async (user: User) => {
-    const result = await R.pipe(
-      (u: User) => this.getYoutube(u.accessToken, u.refreshToken),
-      (yt) =>
-        Result.tryAsync(
-          () =>
-            yt.channels.list({
-              part: ['snippet', 'contentDetails', 'statistics'],
-              mine: true,
-            }),
-          new DomainError('Failed to retrieve channels list for')
-        ),
-      R.andThen((channelsResult) => channelsResult.map((c) => this.mapChannels(user, c.data.items ?? [])))
-    )(user)
-    return result
+  async getChannels(user: User) {
+    const yt = this.getYoutube(user.accessToken, user.refreshToken)
+
+    const channelResponse = await yt.channels.list({
+      part: ['snippet', 'contentDetails', 'statistics'],
+      mine: true,
+    })
+    const channels = this.mapChannels(user, channelResponse.data.items ?? [])
+
+    return channels
   }
 
-  getVideos = (channel: Channel, top: number) => {
-    return R.pipe(
-      () => this.getYoutube(channel.userAccessToken, channel.userRefreshToken),
-      (yt) =>
-        Result.tryAsync(
-          () => this.iterateVideos(yt, channel, top),
-          new DomainError(`Failed to fetch videos for channel ${channel.title}`)
-        )
-    )()
+  verifyChannel(channel: Channel): Channel {
+    if (channel.statistics.subscriberCount < MINIMUM_SUBSCRIBERS_COUNT) {
+      throw new Error(
+        `Channel ${channel.id} with ${channel.statistics.subscriberCount} subscribers does not 
+          meet Youtube Partner Program requirement of ${MINIMUM_SUBSCRIBERS_COUNT} subscribers`
+      )
+    }
+
+    if (channel.statistics.videoCount < MINiMUM_VIDEO_COUNT) {
+      throw new Error(
+        `Channel ${channel.id} with ${channel.statistics.videoCount} videos does not 
+          meet Youtube Partner Program requirement of ${MINiMUM_VIDEO_COUNT} videos`
+      )
+    }
+
+    // Channel should be at least 3 months old
+    const threeMonthsAgo = new Date()
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+    if (new Date(channel.publishedAt) > threeMonthsAgo) {
+      throw new Error(
+        `Channel ${channel.id} with creation time of ${channel.createdAt} does not 
+          meet Youtube Partner Program requirement of channel being at least 3 months old`
+      )
+    }
+    return channel
   }
 
-  getAllVideos = (channel: Channel, max = 500) => {
-    return R.pipe(
-      () => this.getYoutube(channel.userAccessToken, channel.userRefreshToken),
-      (yt) =>
-        Result.tryAsync(
-          () => this.iterateVideos(yt, channel, max),
-          new DomainError(`Failed to fetch videos for channel ${channel.title}`)
-        )
-    )()
+  async getVideos(channel: Channel, top: number) {
+    const yt = this.getYoutube(channel.userAccessToken, channel.userRefreshToken)
+    try {
+      return await this.iterateVideos(yt, channel, top)
+    } catch (error) {
+      throw new Error(`Failed to fetch videos for channel ${channel.title}. Error: ${error}`)
+    }
   }
 
-  downloadVideo = (videoUrl: string): Readable => {
+  async getAllVideos(channel: Channel, max = 500) {
+    const yt = this.getYoutube(channel.userAccessToken, channel.userRefreshToken)
+    try {
+      return await this.iterateVideos(yt, channel, max)
+    } catch (error) {
+      throw new Error(`Failed to fetch videos for channel ${channel.title}. Error: ${error}`)
+    }
+  }
+
+  downloadVideo(videoUrl: string): Readable {
     return ytdl(videoUrl)
   }
 
@@ -120,9 +126,9 @@ class YoutubeClient implements IYoutubeClient {
     let videos: Video[] = []
     let continuation: string
     do {
-      const nextPage = await youtube.playlistItems.list({
+      const nextPage = await youtube.videos.list({
         part: ['contentDetails', 'snippet', 'id', 'status'],
-        playlistId: channel.uploadsPlaylistId,
+        // playlistId: channel.uploadsPlaylistId,
         maxResults: 50,
       })
       continuation = nextPage.data.nextPageToken ?? ''
@@ -134,53 +140,61 @@ class YoutubeClient implements IYoutubeClient {
 
   private mapChannels(user: User, channels: Schema$Channel[]) {
     return channels.map<Channel>(
-      (item) =>
+      (channel) =>
         <Channel>{
-          id: item.id,
-          description: item.snippet?.description,
-          title: item.snippet?.title,
+          id: channel.id,
+          description: channel.snippet?.description,
+          title: channel.snippet?.title,
           userId: user.id,
           userAccessToken: user.accessToken,
           userRefreshToken: user.refreshToken,
           thumbnails: {
-            default: item.snippet?.thumbnails?.default?.url,
-            medium: item.snippet?.thumbnails?.medium?.url,
-            high: item.snippet?.thumbnails?.high?.url,
-            maxRes: item.snippet?.thumbnails?.maxres?.url,
-            standard: item.snippet?.thumbnails?.standard?.url,
+            default: channel.snippet?.thumbnails?.default?.url,
+            medium: channel.snippet?.thumbnails?.medium?.url,
+            high: channel.snippet?.thumbnails?.high?.url,
+            maxRes: channel.snippet?.thumbnails?.maxres?.url,
+            standard: channel.snippet?.thumbnails?.standard?.url,
           },
+
           statistics: {
-            viewCount: parseInt(item.statistics?.viewCount ?? '0'),
-            subscriberCount: parseInt(item.statistics?.subscriberCount ?? '0'),
-            videoCount: parseInt(item.statistics?.videoCount ?? '0'),
-            commentCount: parseInt(item.statistics?.commentCount ?? '0'),
+            viewCount: parseInt(channel.statistics?.viewCount ?? '0'),
+            subscriberCount: parseInt(channel.statistics?.subscriberCount ?? '0'),
+            videoCount: parseInt(channel.statistics?.videoCount ?? '0'),
+            commentCount: parseInt(channel.statistics?.commentCount ?? '0'),
           },
-          uploadsPlaylistId: item.contentDetails?.relatedPlaylists?.uploads,
+          tier:
+            parseInt(channel.statistics?.subscriberCount || '0') <= 10_000
+              ? 1
+              : parseInt(channel.statistics?.subscriberCount || '0') <= 100_000
+              ? 2
+              : 3,
+          uploadsPlaylistId: channel.contentDetails?.relatedPlaylists?.uploads,
           frequency: 0,
           createdAt: Date.now(),
+          publishedAt: channel.snippet?.publishedAt,
           shouldBeIngested: false,
         }
     )
   }
 
-  private mapVideos(items: Schema$PlaylistItem[]) {
-    return items.map(
-      (item) =>
+  private mapVideos(videos: Schema$Video[]) {
+    return videos.map(
+      (video) =>
         <Video>{
-          id: item.id,
-          description: item.snippet?.description,
-          title: item.snippet?.title,
-          channelId: item.snippet?.channelId,
+          id: video.id,
+          description: video.snippet?.description,
+          title: video.snippet?.title,
+          channelId: video.snippet?.channelId,
           thumbnails: {
-            high: item.snippet?.thumbnails?.high?.url,
-            medium: item.snippet?.thumbnails?.medium?.url,
-            maxRes: item.snippet?.thumbnails?.maxres?.url,
-            standard: item.snippet?.thumbnails?.standard?.url,
-            default: item.snippet?.thumbnails?.default?.url,
+            high: video.snippet?.thumbnails?.high?.url,
+            medium: video.snippet?.thumbnails?.medium?.url,
+            maxRes: video.snippet?.thumbnails?.maxres?.url,
+            standard: video.snippet?.thumbnails?.standard?.url,
+            default: video.snippet?.thumbnails?.default?.url,
           },
-          playlistId: item.snippet?.playlistId,
-          url: `https://youtube.com/watch?v=${item.snippet?.resourceId?.videoId}`,
-          resourceId: item.snippet?.resourceId?.videoId,
+          url: `https://youtube.com/watch?v=${video.id}`,
+          resourceId: video.id,
+          publishedAt: video.snippet?.publishedAt,
           createdAt: Date.now(),
           state: 'new',
         }
@@ -188,6 +202,7 @@ class YoutubeClient implements IYoutubeClient {
   }
 }
 
+// TODO: check if have remaining quota, set time to next poll
 class QuotaTrackingClient implements IYoutubeClient {
   private _statsRepo
 
@@ -199,36 +214,48 @@ class QuotaTrackingClient implements IYoutubeClient {
     return this.decorated.getUserFromCode(code)
   }
 
-  getChannels(user: User) {
-    return R.pipe(
-      this.decorated.getChannels,
-      R.andThen((res) => res.tapAsync((channels) => this.increaseUsedQuota(channels, channels.length % 50)))
-    )(user)
+  verifyChannel(channel: Channel) {
+    return this.decorated.verifyChannel(channel)
   }
 
-  getVideos(channel: Channel, top: number) {
-    return R.pipe(
-      this.decorated.getVideos,
-      R.andThen((res) => res.tapAsync((videos) => this.increaseUsedQuota(videos, videos.length % 50)))
-    )(channel, top)
+  async getChannels(user: User) {
+    // get channels from api
+    const channels = await this.decorated.getChannels(user)
+
+    // increase used quota count
+    this.increaseUsedQuota(channels.length % 50)
+
+    return channels
   }
 
-  getAllVideos(channel: Channel, max: number) {
-    return R.pipe(
-      this.decorated.getAllVideos,
-      R.andThen((res) => res.tapAsync((videos) => this.increaseUsedQuota(videos, videos.length % 50)))
-    )(channel, max)
+  async getVideos(channel: Channel, top: number) {
+    // get videos from api
+    const videos = await this.decorated.getVideos(channel, top)
+
+    // increase used quota count
+    this.increaseUsedQuota(videos.length % 50)
+
+    return videos
+  }
+
+  async getAllVideos(channel: Channel, max: number) {
+    // get videos from api
+    const videos = await this.decorated.getVideos(channel, max)
+
+    // increase used quota count
+    this.increaseUsedQuota(videos.length % 50)
+
+    return videos
   }
 
   downloadVideo(videoUrl: string): Readable {
     return this.decorated.downloadVideo(videoUrl)
   }
 
-  private async increaseUsedQuota<TValue>(result: TValue, increment: number) {
+  private async increaseUsedQuota(increment: number) {
     const today = new Date()
     const timestamp = today.setUTCHours(0, 0, 0, 0)
     await this._statsRepo.update({ partition: 'stats', date: timestamp }, { $ADD: { quotaUsed: increment } })
-    return result
   }
 }
 

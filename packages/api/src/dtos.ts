@@ -22,17 +22,17 @@ export class ChannelDto {
   @ApiProperty() title: string
   @ApiProperty() description: string
   @ApiProperty() aggregatedStats: number
-  @ApiProperty() uploadsPlaylistId: string
-  @ApiProperty() shouldBeInjested: boolean
-  @ApiProperty() joystreamId: number
+  @ApiProperty() shouldBeIngested: boolean
+  @ApiProperty() joystreamChannelId: number
   @ApiProperty() thumbnails: ThumbnailsDto
+  @ApiProperty() tier: number
 
   constructor(channel: Channel) {
     this.title = channel.title
     this.description = channel.description
-    this.joystreamId = channel.chainMetadata?.id.toNumber()
-    this.shouldBeInjested = channel.shouldBeIngested
-    this.uploadsPlaylistId = channel.uploadsPlaylistId
+    this.tier = channel.tier
+    this.joystreamChannelId = channel.joystreamChannelId
+    this.shouldBeIngested = channel.shouldBeIngested
     this.aggregatedStats = channel.aggregatedStats
     this.thumbnails = channel.thumbnails
   }
@@ -40,35 +40,45 @@ export class ChannelDto {
 export class UserDto {
   @ApiProperty() id: string
   @ApiProperty() email: string
-  @ApiProperty() avatarUrl: string
-  @ApiProperty() channelsCount: number
-  @ApiProperty() membership: MembershipDto
 
   constructor(user: User) {
     this.id = user.id
     this.email = user.email
-    this.avatarUrl = user.avatarUrl
-    this.channelsCount = user.channelsCount
-    this.membership = user.membership
   }
 }
 
 // Dto for verifying Youtube channel given the authorization code
 export class VerifyChannelRequest {
-  // Authorization code send to the backend after user O-auth verification
+  // Authorization code send to the backend after user o-auth verification
   @ApiProperty({ required: true }) authorizationCode: string
+}
+
+// Dto for verified Youtube channel response
+export class VerifyChannelResponse {
+  // Email of the verified user
+  @IsEmail() @ApiProperty({ required: true }) email: string
+
+  // ID of the verified user
+  @IsEmail() @ApiProperty({ required: true }) userId: string
+}
+
+// Dto for saving the verified Youtube channel
+export class SaveChannelRequest {
+  // Authorization code send to the backend after user O-auth verification
+  @ApiProperty({ required: true }) userId: string
 
   // Email of the user
   @IsEmail() @ApiProperty({ required: true }) email: string
 
   // Joystream Channel ID of the user verifying his Youtube Channel for YPP
-  @ApiProperty({ required: true }) joystreamChannelId: string
+  @ApiProperty({ required: true }) joystreamChannelId: number
 
   // Member ID of the referrer
-  @ApiProperty({ required: true }) referrerId: string
+  @ApiProperty({ required: false }) referrerId: number
 }
 
-export class VerifyChannelResponse {
+// Dto for save channel response
+export class SaveChannelResponse {
   @ApiProperty() user: UserDto
   @ApiProperty({ type: ChannelDto }) channel: ChannelDto
 

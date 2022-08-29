@@ -3,6 +3,7 @@ import * as awsx from '@pulumi/awsx'
 import * as pulumi from '@pulumi/pulumi'
 
 function lambdaFunction(name: string, handler: string, source: string) {
+  // IAM role
   const role = new aws.iam.Role(`${name}Role`, {
     assumeRolePolicy: {
       Version: '2012-10-17',
@@ -18,6 +19,8 @@ function lambdaFunction(name: string, handler: string, source: string) {
       ],
     },
   })
+
+  // IAM policy attachments
   new aws.iam.RolePolicyAttachment(`${name}Attach`, {
     role: role,
     policyArn: aws.iam.ManagedPolicies.AWSLambdaExecute,

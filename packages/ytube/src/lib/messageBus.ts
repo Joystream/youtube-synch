@@ -5,9 +5,6 @@ import { DomainError, IEvent, Result } from '@youtube-sync/domain'
 
 export type AvailableTopic = 'userEvents' | 'channelEvents' | 'videoEvents'
 export class MessageBus {
-  /**
-   *
-   */
   private _sns: SNS
   private _config: Config
   private _topics: SNS.Topic[] = []
@@ -17,8 +14,8 @@ export class MessageBus {
     this._sns = new SNS(this._config)
   }
 
-  async publish<TEvent extends IEvent>(event: TEvent, topic: AvailableTopic): Promise<Result<TEvent, DomainError>> {
-    return Result.tryAsync(async () => {
+  async publish<TEvent extends IEvent>(event: TEvent, topic: AvailableTopic): Promise<TEvent> {
+    try {
       const tpc = await this.getTopic(topic)
       this._sns.publish({
         Message: JSON.stringify(event),
@@ -26,28 +23,29 @@ export class MessageBus {
         Subject: event.subject,
       })
       return event
-    }, new DomainError('Failed to publish event'))
+    } catch (error) {
+      throw new Error(`Failed to publish event. Error ${error}`)
+    }
   }
 
-  async publishAll<TEvent extends IEvent>(
-    events: TEvent[],
-    topic: AvailableTopic
-  ): Promise<Result<TEvent[], DomainError>> {
-    return Result.tryAsync(async () => {
+  async publishAll<TEvent extends IEvent>(events: TEvent[], topic: AvailableTopic): Promise<TEvent[]> {
+    try {
       const tpc = await this.getTopic(topic)
       const promises = events
         .map(
-          (evt) =>
+          (event) =>
             <SNS.PublishInput>{
-              Message: JSON.stringify(evt),
+              Message: JSON.stringify(event),
               TopicArn: tpc.TopicArn,
-              Subject: evt.subject,
+              Subject: event.subject,
             }
         )
         .map((input) => this._sns.publish(input).promise())
       await Promise.all(promises)
       return events
-    }, new DomainError('Failed to publish events'))
+    } catch (error) {
+      new DomainError(`Failed to publish events, Error: ${error}`)
+    }
   }
 
   private async getTopic(name: AvailableTopic): Promise<Topic> {

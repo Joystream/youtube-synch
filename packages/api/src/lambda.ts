@@ -7,8 +7,8 @@ import serverlessExpress from '@vendia/serverless-express'
 
 function setupSwagger(app: INestApplication) {
   const config = new DocumentBuilder()
-    .setTitle('Joystream Youtube Sync API')
-    .setDescription('Youtube Sync API')
+    .setTitle('Joystream Youtube Partner Program (YPP) API')
+    .setDescription('Joystream Youtube Partner Program (YPP) API')
     .setVersion('1.0')
     .build()
   const document = SwaggerModule.createDocument(app, config)

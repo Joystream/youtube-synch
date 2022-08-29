@@ -1,122 +1,131 @@
-import { Body, Controller, Get, HttpException, Inject, Param, Post, Query } from '@nestjs/common'
-import { Channel, Result, User } from '@youtube-sync/domain'
-import R from 'ramda'
 import { ChannelsRepository, IYoutubeClient, UsersRepository } from '@joystream/ytube'
-import { JoystreamClient } from '@youtube-sync/joy-api'
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Inject,
+  NotFoundException,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common'
+import { Channel, User } from '@youtube-sync/domain'
 import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
-import { UserCreateRequest, UserCreateResponse, UserDto, ChannelDto } from '../dtos'
+import {
+  ChannelDto,
+  SaveChannelRequest,
+  SaveChannelResponse,
+  UserDto,
+  VerifyChannelRequest,
+  VerifyChannelResponse,
+} from '../dtos'
 
 @Controller('users')
 @ApiTags('channels')
 export class UsersController {
   constructor(
     @Inject('youtube') private youtube: IYoutubeClient,
-    private jClient: JoystreamClient,
-    private usersRespository: UsersRepository,
-    private channelsRespository: ChannelsRepository
+    private usersRepository: UsersRepository,
+    private channelsRepository: ChannelsRepository
   ) {}
 
   @ApiOperation({
-    description:
-      'Creates user from the supplied google authorization code and fetches and stores list of user`s channels',
+    description: `fetches user's channel from the supplied google authorization code, and verifies if it satisfies YPP induction criteria`,
   })
-  @ApiBody({ type: UserCreateRequest })
-  @ApiResponse({ type: UserCreateResponse })
-  @Post()
-  async createUserWithChannels(@Body() request: UserCreateRequest): Promise<UserCreateResponse> {
-    const result = await R.pipe(
-      (code: string) => this.youtube.getUserFromCode(code),
-      R.andThen((user) => Result.concat(user, (u) => this.youtube.getChannels(u))),
-      R.andThen((userAndChannels) => userAndChannels.map(([user, channels]) => [user, channels] as [User, Channel[]])),
-      R.andThen((userAndChannel) => Result.bindAsync(userAndChannel, (ucm) => this.saveUserAndChannel(ucm[0], ucm[1])))
-    )(request.authorizationCode)
+  @ApiBody({ type: VerifyChannelRequest })
+  @ApiResponse({ type: VerifyChannelResponse })
+  @Post('/verify')
+  async verifyUserAndChannel(@Body() { authorizationCode }: VerifyChannelRequest): Promise<VerifyChannelResponse> {
+    try {
+      // get user from  authorization code
+      const user = await this.youtube.getUserFromCode(authorizationCode)
 
-    if (result.isSuccess) {
-      const [user, channels] = result.value
-      return new UserCreateResponse(
-        new UserDto(user),
-        channels.map((c) => new ChannelDto(c))
-      )
+      // TODO: ensure that is only be one channel for one user
+      // get channel from user
+      const [channel] = await this.youtube.getChannels(user)
+
+      // verify channel
+      this.youtube.verifyChannel(channel)
+
+      // save user
+      await this.usersRepository.save(user)
+
+      // return verified user
+      return { email: user.email, userId: user.id }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new BadRequestException(message)
     }
-
-    throw new HttpException(result.error, 500)
   }
 
   @ApiOperation({
-    description:
-      'Creates user from the supplied google authorization code and fetches and stores list of user`s channels. This action will also create membership and channels in joystream network instantly',
+    description: `Creates user from the supplied google authorization code and fetches
+     user's channel and if it satisfies YPP induction criteria it saves the record`,
   })
-  @ApiBody({ type: UserCreateRequest })
-  @ApiResponse({ type: UserCreateResponse })
-  @Post('/ingest')
-  async create(@Body() request: UserCreateRequest): Promise<UserCreateResponse> {
-    const userAndChannelInitResult = await R.pipe(
-      (code: string) => this.youtube.getUserFromCode(code),
-      R.andThen((user) => Result.concat(user, (u) => this.youtube.getChannels(u))),
-      R.andThen((userAndChannels) => Result.concat(userAndChannels, ([user]) => this.jClient.createMembership(user))),
-      R.andThen((ucm) =>
-        ucm.map(([[user, channel], membership]) => [{ ...user, membership }, channel] as [User, Channel[]])
-      ),
-      R.andThen((ucm) =>
-        Result.concat(ucm, ([user, channel]) => this.jClient.createChannel(user.membership, channel[0]))
-      ),
-      R.andThen((ucm) =>
-        ucm.map(
-          ([[user, channel], joyChannel]) =>
-            [user, { ...channel[0], chainMetadata: { id: joyChannel[0] } }] as [User, Channel]
-        )
-      )
-    )
+  @ApiBody({ type: SaveChannelRequest })
+  @ApiResponse({ type: SaveChannelResponse })
+  @Post('/verify-and-save')
+  async addVerifiedChannel(
+    @Body() { userId, joystreamChannelId, referrerId }: SaveChannelRequest
+  ): Promise<SaveChannelResponse> {
+    try {
+      // get user from  authorization code
+      const user = await this.usersRepository.get(userId)
 
-    const result = await R.pipe(
-      userAndChannelInitResult,
-      R.andThen((result) => Result.bindAsync(result, ([user, channel]) => this.saveUserAndChannel(user, channel[0]))),
-      R.andThen((result) =>
-        result.map(
-          ([user, channels]) =>
-            new UserCreateResponse(
-              user,
-              channels.map((c) => new ChannelDto(c))
-            )
-        )
-      )
-    )(request.authorizationCode)
+      // get channel from user
+      const [channel] = await this.youtube.getChannels(user)
 
-    return result.value
+      // save user and channel
+      await this.saveUserAndChannel(user, { ...channel, joystreamChannelId, referrerId })
+
+      // return user and channel
+      return new SaveChannelResponse(new UserDto(user), new ChannelDto(channel))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new BadRequestException(message)
+    }
   }
 
-  @ApiOperation({ description: 'Retrieves user by id' })
+  @ApiOperation({ description: 'Retrieves authenticated user by id' })
   @ApiResponse({ type: UserDto })
   @Get(':id')
   async get(@Param('id') id: string): Promise<UserDto> {
-    const result = await this.usersRespository.get('users', id)
-    if (result.isSuccess) return new UserDto(result.value)
-    throw new HttpException(result.error, 500)
+    try {
+      // Get user with given id
+      const result = await this.usersRepository.get(id)
+
+      // prepare & return user response
+      return new UserDto(result)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
   }
 
   @Get()
   @ApiQuery({ type: String, required: false, name: 'search' })
   @ApiOperation({
-    description: 'Searches users added to the system. Use optional `search` param to filter the results by email.',
+    description: `Searches users added to the system. Use optional 'search' param to filter the results by email.`,
   })
   @ApiResponse({ type: UserDto, isArray: true })
   async find(@Query('search') search: string): Promise<UserDto[]> {
-    const result = await R.pipe(
-      (searchString: string) =>
-        this.usersRespository.query({ partition: 'users' }, (q) =>
-          search ? q.and().attribute('email').contains(searchString) : q
-        ),
-      R.andThen((users) => users.map((u) => u.map((user) => new UserDto(user))))
-    )(search)
-    if (result.isSuccess) return result.value
-    throw new HttpException(result.error, 500)
+    // find users with given email
+    const users = await this.usersRepository.query({ partition: 'users' }, (q) =>
+      search ? q.and().attribute('email').contains(search) : q
+    )
+
+    // prepare response
+    const result = users.map((user) => new UserDto(user))
+
+    return result
   }
 
-  private async saveUserAndChannel(user: User, channels: Channel[]) {
-    const r = await R.pipe(
-      () => this.usersRespository.save(user, 'users'),
-      R.andThen((u) => Result.concat(u, (u) => this.channelsRespository.upsertAll(channels)))
-    )()
-    return r
+  private async saveUserAndChannel(user: User, channel: Channel) {
+    // save user
+    await this.usersRepository.save(user)
+
+    // save channel
+    return await this.channelsRepository.save(channel)
   }
 }

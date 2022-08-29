@@ -4,6 +4,8 @@
     "/users/{userId}/videos": {
       "get": {
         "operationId": "VideosController_get",
+        "summary": "",
+        "description": "Get videos across all channels owned by the user",
         "parameters": [
           {
             "name": "userId",
@@ -18,23 +20,18 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "channels"
+        ]
       }
     },
-    "/users/{userId}/channels/{id}": {
+    "/channels/{id}": {
       "get": {
         "operationId": "ChannelsController_get",
         "summary": "",
         "description": "Retrieves channel by id",
         "parameters": [
-          {
-            "name": "userId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -63,16 +60,8 @@
       "put": {
         "operationId": "ChannelsController_updateChannel",
         "summary": "",
-        "description": "Updates given channel. Note: only `shouldBeInjested` is available for update at the moment",
+        "description": "Updates given channel. Note: only 'shouldBeIngested' is available for update at the moment",
         "parameters": [
-          {
-            "name": "userId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -109,42 +98,7 @@
         ]
       }
     },
-    "/users/{userId}/channels": {
-      "get": {
-        "operationId": "ChannelsController_getAll",
-        "summary": "",
-        "description": "Retrieves all channels of particular user",
-        "parameters": [
-          {
-            "name": "userId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ChannelDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "channels"
-        ]
-      }
-    },
-    "/users/{userId}/channels/{id}/videos": {
+    "/channels/{id}/videos": {
       "get": {
         "operationId": "ChannelsController_getVideos",
         "summary": "",
@@ -187,7 +141,7 @@
         ]
       }
     },
-    "/users/{userId}/channels/{id}/videos/{videoId}": {
+    "/channels/{id}/videos/{videoId}": {
       "get": {
         "operationId": "ChannelsController_getVideo",
         "summary": "",
@@ -227,18 +181,18 @@
         ]
       }
     },
-    "/users": {
+    "/users/verify": {
       "post": {
-        "operationId": "UsersController_createUserWithChannels",
+        "operationId": "UsersController_verifyUserAndChannel",
         "summary": "",
-        "description": "Creates user from the supplied google authorization code and fetches and stores list of user`s channels",
+        "description": "fetches user's channel from the supplied google authorization code, and verifies if it satisfies YPP induction criteria",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UserCreateRequest"
+                "$ref": "#/components/schemas/VerifyChannelRequest"
               }
             }
           }
@@ -249,7 +203,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserCreateResponse"
+                  "$ref": "#/components/schemas/VerifyChannelResponse"
                 }
               }
             }
@@ -258,11 +212,78 @@
         "tags": [
           "channels"
         ]
-      },
+      }
+    },
+    "/users/verify-and-save": {
+      "post": {
+        "operationId": "UsersController_addVerifiedChannel",
+        "summary": "",
+        "description": "Creates user from the supplied google authorization code and fetches\n     user's channel and if it satisfies YPP induction criteria it saves the record",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveChannelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveChannelResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "operationId": "UsersController_get",
+        "summary": "",
+        "description": "Retrieves authenticated user by id",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
+    "/users": {
       "get": {
         "operationId": "UsersController_find",
         "summary": "",
-        "description": "Searches users added to the system. Use optional `search` param to filter the results by email.",
+        "description": "Searches users added to the system. Use optional 'search' param to filter the results by email.",
         "parameters": [
           {
             "name": "search",
@@ -293,105 +314,9 @@
         ]
       }
     },
-    "/users/ingest": {
-      "post": {
-        "operationId": "UsersController_create",
-        "summary": "",
-        "description": "Creates user from the supplied google authorization code and fetches and stores list of user`s channels. This action will also create membership and channels in joystream network instantly",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserCreateRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserCreateResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "channels"
-        ]
-      }
-    },
-    "/users/{id}": {
+    "/network/buckets": {
       "get": {
-        "operationId": "UsersController_get",
-        "summary": "",
-        "description": "Retrieves user by id",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "channels"
-        ]
-      }
-    },
-    "/network/memberships": {
-      "post": {
-        "operationId": "NetworkController_createMembership",
-        "summary": "",
-        "description": "Create joystream network membership for existing user in the system",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateMembershipDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "network"
-        ]
-      },
-      "get": {
-        "operationId": "NetworkController_getMemberships",
+        "operationId": "NetworkController_getBuckets",
         "parameters": [],
         "responses": {
           "200": {
@@ -403,57 +328,9 @@
         ]
       }
     },
-    "/network/channels": {
-      "post": {
-        "operationId": "NetworkController_createChannel",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateJoystreamChannelDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "network"
-        ]
-      }
-    },
-    "/network/videos": {
-      "post": {
-        "operationId": "NetworkController_createVideo",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateJoystreamVideoDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "network"
-        ]
-      }
-    },
-    "/network/buckets": {
+    "/network/memberships": {
       "get": {
-        "operationId": "NetworkController_getBuckets",
+        "operationId": "NetworkController_getMemberships",
         "parameters": [],
         "responses": {
           "200": {
@@ -515,27 +392,27 @@
           "aggregatedStats": {
             "type": "number"
           },
-          "uploadsPlaylistId": {
-            "type": "string"
-          },
-          "shouldBeInjested": {
+          "shouldBeIngested": {
             "type": "boolean"
           },
-          "joystreamId": {
+          "joystreamChannelId": {
             "type": "number"
           },
           "thumbnails": {
             "$ref": "#/components/schemas/ThumbnailsDto"
+          },
+          "tier": {
+            "type": "number"
           }
         },
         "required": [
           "title",
           "description",
           "aggregatedStats",
-          "uploadsPlaylistId",
-          "shouldBeInjested",
-          "joystreamId",
-          "thumbnails"
+          "shouldBeIngested",
+          "joystreamChannelId",
+          "thumbnails",
+          "tier"
         ]
       },
       "UpdateChannelDto": {
@@ -596,7 +473,7 @@
           "destinationUrl"
         ]
       },
-      "UserCreateRequest": {
+      "VerifyChannelRequest": {
         "type": "object",
         "properties": {
           "authorizationCode": {
@@ -607,19 +484,41 @@
           "authorizationCode"
         ]
       },
-      "MembershipDto": {
+      "VerifyChannelResponse": {
         "type": "object",
         "properties": {
-          "memberId": {
-            "type": "object"
+          "email": {
+            "type": "string"
           },
-          "address": {
+          "userId": {
             "type": "string"
           }
         },
         "required": [
-          "memberId",
-          "address"
+          "email",
+          "userId"
+        ]
+      },
+      "SaveChannelRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "joystreamChannelId": {
+            "type": "number"
+          },
+          "referrerId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "userId",
+          "email",
+          "joystreamChannelId"
         ]
       },
       "UserDto": {
@@ -630,86 +529,26 @@
           },
           "email": {
             "type": "string"
-          },
-          "avatarUrl": {
-            "type": "string"
-          },
-          "channelsCount": {
-            "type": "number"
-          },
-          "membership": {
-            "$ref": "#/components/schemas/MembershipDto"
           }
         },
         "required": [
           "id",
-          "email",
-          "avatarUrl",
-          "channelsCount",
-          "membership"
+          "email"
         ]
       },
-      "UserCreateResponse": {
+      "SaveChannelResponse": {
         "type": "object",
         "properties": {
           "user": {
             "$ref": "#/components/schemas/UserDto"
           },
-          "channels": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChannelDto"
-            }
+          "channel": {
+            "$ref": "#/components/schemas/ChannelDto"
           }
         },
         "required": [
           "user",
-          "channels"
-        ]
-      },
-      "CreateMembershipDto": {
-        "type": "object",
-        "properties": {
-          "userId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "userId"
-        ]
-      },
-      "CreateJoystreamChannelDto": {
-        "type": "object",
-        "properties": {
-          "channelId": {
-            "type": "string"
-          },
-          "userId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "channelId",
-          "userId"
-        ]
-      },
-      "CreateJoystreamVideoDto": {
-        "type": "object",
-        "properties": {
-          "channelId": {
-            "type": "string"
-          },
-          "userId": {
-            "type": "string"
-          },
-          "videoId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "channelId",
-          "userId",
-          "videoId"
+          "channel"
         ]
       }
     }

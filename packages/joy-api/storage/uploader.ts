@@ -21,7 +21,7 @@ export class Uploader {
     channel: Channel,
     video: Video
   ): Promise<Result<VideoUploadResponse, DomainError>> {
-    const bag = `dynamic:channel:${channel.chainMetadata.id}`
+    const bag = `dynamic:channel:${channel.joystreamChannelId}`
     const operator = await this.getRandomOperator(bag)
     const videoInfo = await ytdl.getBasicInfo(video.url)
     console.log(videoInfo)

@@ -1,5 +1,6 @@
 import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
+
 export function lambda(name: string, handler: string, source: string) {
   const role = new aws.iam.Role(`${name}Role`, {
     assumeRolePolicy: {

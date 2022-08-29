@@ -32,7 +32,7 @@ export class JoystreamClient {
 
   createMembership = async (user: User): Promise<Result<Membership, DomainError>> => {
     await this.ensureApi()
-    const accKey = `${user.googleId}-youtube-sync`
+    const accKey = `${user.id}-youtube-sync`
     const result = await this.accounts
       .createAccount(accKey)
       .pipeAsync((account) =>
@@ -72,7 +72,13 @@ export class JoystreamClient {
       (pair) => Result.concat(pair, (_) => parseVideoInputs(video)),
       R.andThen((pairAndInput) =>
         Result.bindAsync(pairAndInput, ([pair, inputs]) =>
-          this.lib.extrinsics.createVideo(pair, member.memberId, channel.chainMetadata.id, inputs[0], inputs[1])
+          this.lib.extrinsics.createVideo(
+            pair,
+            member.memberId,
+            channel.joystreamChannelId as unknown as ChannelId,
+            inputs[0],
+            inputs[1]
+          )
         )
       ),
       R.andThen((vid) => Result.bindAsync(vid, (v) => this.uploader.upload(v.assetsIds.media, channel, video))),

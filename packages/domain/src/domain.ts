@@ -1,30 +1,68 @@
-import { ChannelId, MemberId } from '@joystream/types/primitives'
+import { MemberId } from '@joystream/types/primitives'
+import { AnyDocument } from 'dynamoose/dist/Document'
 
 export class Channel {
+  // Channel ID
   id: string
-  title: string
-  frequency: number
-  description: string
+
+  // ID of the user that owns the channel
   userId: string
+
+  // user provided email
+  providedEmail: string
+
+  // ID of the corresponding Joystream Channel
+  joystreamChannelId: number
+
+  // referrer ID
+  referrerId: number
+
+  // Channel title
+  title: string
+
+  frequency: number
+
+  // Channel description
+  description: string
+
+  // Youtube channel creation date
+  publishedAt: string
+
+  // record creation date
   createdAt: number
+
+  // channel thumbnails
   thumbnails: Thumbnails
+
+  // Channel statistics
   statistics: {
+    // Total views
     viewCount: number
+
+    // Total comments
     commentCount: number
+
+    // Total subscribers
     subscriberCount: number
+
+    // Total videos
     videoCount: number
   }
 
+  // Tier of Channel based on its subscriber's count
+  tier: 1 | 2 | 3
+
   aggregatedStats: number
+
+  // Channel owner's access token
   userAccessToken: string
+
+  // Channel owner's refresh token
   userRefreshToken: string
   uploadsPlaylistId: string
-  shouldBeIngested: boolean
-  chainMetadata: ChannelChainMetadata
-}
 
-export class ChannelChainMetadata {
-  id: ChannelId
+  //
+  shouldBeIngested: boolean
 }
 
 export interface IEvent {
@@ -83,21 +121,20 @@ export type Membership = {
 }
 
 export class User {
-  /**
-   *
-   */
   constructor(
+    // Youtube user ID
     public id: string,
+
+    // Youtube User email
     public email: string,
-    public youtubeUsername: string,
-    public googleId: string,
+
+    // User access token
     public accessToken: string,
-    public refreshToken: string,
-    public avatarUrl: string,
-    public channelsCount: number
+
+    // User refresh token
+    public refreshToken: string
   ) {}
 
-  partition = 'users'
   membership: Membership
 }
 
@@ -109,19 +146,43 @@ export type Thumbnails = {
   standard: string
 }
 
-export type VideoState = 'new' | 'uploadToJoystreamStarted' | 'uploadToJoystreamFailed' | 'uploadToJoystreamSucceded'
+export type VideoState = 'new' | 'uploadToJoystreamStarted' | 'uploadToJoystreamFailed' | 'uploadToJoystreamSucceeded'
 
 export class Video {
-  url: string
-  title: string
-  description: string
+  // Video ID
   id: string
+
+  // Video URL
+  url: string
+
+  // Video title
+  title: string
+
+  // Video description
+  description: string
+
+  // Video's playlist ID
   playlistId: string
+
   resourceId: string
+
+  // Video's channel ID
   channelId: string
+
+  // Video thumbnails
   thumbnails: Thumbnails
+
+  //
   state: VideoState
   destinationUrl: string
+
+  // Video duration
+  duration: string
+
+  // Youtube video creation date
+  publishedAt: string
+
+  // record creation date
   createdAt: number
 }
 
