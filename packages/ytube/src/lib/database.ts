@@ -23,13 +23,13 @@ export function createChannelModel(): ModelType<AnyDocument> {
       // ID of the Youtube channel
       id: {
         type: String,
-        hashKey: true,
+        rangeKey: true,
       },
 
       // ID of the user that owns the channel
       userId: {
         type: String,
-        rangeKey: true,
+        hashKey: true,
       },
 
       // user provided email
@@ -333,6 +333,7 @@ export class UsersRepository implements IRepository<User> {
     return results.map((r) => mapTo<User>(r))
   }
 }
+
 export class ChannelsRepository implements IRepository<Channel> {
   private model: ModelType<AnyDocument>
   constructor() {
@@ -392,8 +393,8 @@ export class VideosRepository implements IRepository<Video> {
 
   /**
    *
-   * @param partition
-   * @param id
+   * @param partition channel id to get videos for
+   * @param id ID of the video
    * @returns
    */
   async get(partition: string, id: string): Promise<Video> {

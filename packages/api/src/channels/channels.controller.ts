@@ -1,5 +1,5 @@
 import { VideosRepository } from '@joystream/ytube'
-import { Body, Controller, Get, Param, Put } from '@nestjs/common'
+import { Body, Controller, Get, NotFoundException, Param, Put } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ChannelDto, UpdateChannelDto, VideoDto } from '../dtos'
 import { ChannelsService } from './channels.service'
@@ -9,21 +9,26 @@ import { ChannelsService } from './channels.service'
 export class ChannelsController {
   constructor(private channelsService: ChannelsService, private videosRepository: VideosRepository) {}
 
-  @Get(':id')
-  @ApiOperation({ description: 'Retrieves channel by id' })
+  @Get(':joystreamChannelId')
+  @ApiOperation({ description: 'Retrieves channel by joystreamChannelId' })
   @ApiResponse({ type: ChannelDto })
-  async get(@Param('id') id: string) {
-    const channel = await this.channelsService.get(id)
-    return new ChannelDto(channel)
+  async get(@Param('joystreamChannelId') id: string) {
+    try {
+      const channel = await this.channelsService.get(id)
+      return new ChannelDto(channel)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
   }
 
-  @Put(':id')
+  @Put(':joystreamChannelId')
   @ApiBody({ type: UpdateChannelDto })
   @ApiResponse({ type: ChannelDto })
   @ApiOperation({
     description: `Updates given channel. Note: only 'shouldBeIngested' is available for update at the moment`,
   })
-  async updateChannel(@Param('id') id: string, @Body() body: UpdateChannelDto) {
+  async updateChannel(@Param('joystreamChannelId') id: string, @Body() body: UpdateChannelDto) {
     const channel = await this.channelsService.get(id)
 
     this.channelsService.update({ ...channel, ...body })

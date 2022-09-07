@@ -1,20 +1,20 @@
 import { youtube_v3 } from '@googleapis/youtube'
 import { OAuth2Client } from 'google-auth-library'
 import ytdl from 'ytdl-core'
-import Schema$Video = youtube_v3.Schema$Video
+import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
 import Schema$Channel = youtube_v3.Schema$Channel
-import { Channel, User, Video } from '@youtube-sync/domain'
+import { Channel, ChannelVerificationFailed, ExitCodes, User, Video } from '@youtube-sync/domain'
 import { Readable } from 'stream'
 import { statsRepository } from '..'
 
 // YPP induction criteria, each channel should meet following criteria
-const MINIMUM_SUBSCRIBERS_COUNT = 100
-const MINiMUM_VIDEO_COUNT = 100
+const MINIMUM_SUBSCRIBERS_COUNT = 50
+const MINiMUM_VIDEO_COUNT = 10
 
 export interface IYoutubeClient {
   getUserFromCode(code: string): Promise<User>
   getChannels(user: User): Promise<Channel[]>
-  verifyChannel(channel: Channel): Channel
+  verifyChannel(channel: Channel): Promise<Channel>
   getVideos(channel: Channel, top: number): Promise<Video[]>
   getAllVideos(channel: Channel, max: number): Promise<Video[]>
   downloadVideo(videoUrl: string): Readable
@@ -73,29 +73,54 @@ class YoutubeClient implements IYoutubeClient {
     return channels
   }
 
-  verifyChannel(channel: Channel): Channel {
+  async verifyChannel(channel: Channel): Promise<Channel> {
+    const errors: ChannelVerificationFailed[] = []
     if (channel.statistics.subscriberCount < MINIMUM_SUBSCRIBERS_COUNT) {
-      throw new Error(
-        `Channel ${channel.id} with ${channel.statistics.subscriberCount} subscribers does not 
-          meet Youtube Partner Program requirement of ${MINIMUM_SUBSCRIBERS_COUNT} subscribers`
-      )
+      errors.push({
+        errorCode: ExitCodes.CHANNEL_CRITERIA_UNMET_SUBSCRIBERS,
+        message:
+          `Channel ${channel.id} with ${channel.statistics.subscriberCount} subscribers does not ` +
+          `meet Youtube Partner Program requirement of ${MINIMUM_SUBSCRIBERS_COUNT} subscribers`,
+        result: channel.statistics.subscriberCount,
+        expected: MINIMUM_SUBSCRIBERS_COUNT,
+      })
     }
 
-    if (channel.statistics.videoCount < MINiMUM_VIDEO_COUNT) {
-      throw new Error(
-        `Channel ${channel.id} with ${channel.statistics.videoCount} videos does not 
-          meet Youtube Partner Program requirement of ${MINiMUM_VIDEO_COUNT} videos`
-      )
+    // at least MINiMUM_VIDEO_COUNT videos should be one month old
+    const oneMonthsAgo = new Date()
+    oneMonthsAgo.setMonth(oneMonthsAgo.getMonth() - 3)
+
+    // filter all videos that are older than one month
+    const videos = (await this.getVideos(channel, MINiMUM_VIDEO_COUNT)).filter(
+      (v) => new Date(v.publishedAt) < oneMonthsAgo
+    )
+    if (videos.length < MINiMUM_VIDEO_COUNT) {
+      errors.push({
+        errorCode: ExitCodes.CHANNEL_CRITERIA_UNMET_VIDEOS,
+        message:
+          `Channel ${channel.id} with ${channel.statistics.videoCount} videos does not meet Youtube ` +
+          `Partner Program requirement of at least ${MINiMUM_VIDEO_COUNT} videos, each 1 month old`,
+        result: channel.statistics.videoCount,
+        expected: MINiMUM_VIDEO_COUNT,
+      })
     }
 
     // Channel should be at least 3 months old
     const threeMonthsAgo = new Date()
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
     if (new Date(channel.publishedAt) > threeMonthsAgo) {
-      throw new Error(
-        `Channel ${channel.id} with creation time of ${channel.createdAt} does not 
-          meet Youtube Partner Program requirement of channel being at least 3 months old`
-      )
+      errors.push({
+        errorCode: ExitCodes.CHANNEL_CRITERIA_UNMET_CREATION_DATE,
+        message:
+          `Channel ${channel.id} with creation time of ${channel.publishedAt} does not ` +
+          `meet Youtube Partner Program requirement of channel being at least 3 months old`,
+        result: channel.publishedAt,
+        expected: threeMonthsAgo,
+      })
+    }
+
+    if (errors.length > 0) {
+      throw errors
     }
     return channel
   }
@@ -125,10 +150,11 @@ class YoutubeClient implements IYoutubeClient {
   private async iterateVideos(youtube: youtube_v3.Youtube, channel: Channel, max: number) {
     let videos: Video[] = []
     let continuation: string
+
     do {
-      const nextPage = await youtube.videos.list({
+      const nextPage = await youtube.playlistItems.list({
         part: ['contentDetails', 'snippet', 'id', 'status'],
-        // playlistId: channel.uploadsPlaylistId,
+        playlistId: channel.uploadsPlaylistId,
         maxResults: 50,
       })
       continuation = nextPage.data.nextPageToken ?? ''
@@ -177,7 +203,7 @@ class YoutubeClient implements IYoutubeClient {
     )
   }
 
-  private mapVideos(videos: Schema$Video[]) {
+  private mapVideos(videos: Schema$PlaylistItem[]) {
     return videos.map(
       (video) =>
         <Video>{
@@ -214,8 +240,9 @@ class QuotaTrackingClient implements IYoutubeClient {
     return this.decorated.getUserFromCode(code)
   }
 
-  verifyChannel(channel: Channel) {
-    return this.decorated.verifyChannel(channel)
+  async verifyChannel(channel: Channel) {
+    const verifiedChannel = await this.decorated.verifyChannel(channel)
+    return verifiedChannel
   }
 
   async getChannels(user: User) {

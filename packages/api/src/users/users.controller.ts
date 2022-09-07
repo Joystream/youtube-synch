@@ -46,7 +46,7 @@ export class UsersController {
       const [channel] = await this.youtube.getChannels(user)
 
       // verify channel
-      this.youtube.verifyChannel(channel)
+      await this.youtube.verifyChannel(channel)
 
       // save user
       await this.usersRepository.save(user)
@@ -110,15 +110,20 @@ export class UsersController {
   })
   @ApiResponse({ type: UserDto, isArray: true })
   async find(@Query('search') search: string): Promise<UserDto[]> {
-    // find users with given email
-    const users = await this.usersRepository.query({ partition: 'users' }, (q) =>
-      search ? q.and().attribute('email').contains(search) : q
-    )
+    try {
+      // find users with given email
+      const users = await this.usersRepository.scan('id', (q) =>
+        search ? q.and().attribute('email').contains(search) : q
+      )
 
-    // prepare response
-    const result = users.map((user) => new UserDto(user))
+      // prepare response
+      const result = users.map((user) => new UserDto(user))
 
-    return result
+      return result
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
   }
 
   private async saveUserAndChannel(user: User, channel: Channel) {

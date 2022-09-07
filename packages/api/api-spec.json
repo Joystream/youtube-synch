@@ -17,8 +17,18 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": ""
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Video"
+                  }
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -26,14 +36,14 @@
         ]
       }
     },
-    "/channels/{id}": {
+    "/channels/{joystreamChannelId}": {
       "get": {
         "operationId": "ChannelsController_get",
         "summary": "",
-        "description": "Retrieves channel by id",
+        "description": "Retrieves channel by joystreamChannelId",
         "parameters": [
           {
-            "name": "id",
+            "name": "joystreamChannelId",
             "required": true,
             "in": "path",
             "schema": {
@@ -63,7 +73,7 @@
         "description": "Updates given channel. Note: only 'shouldBeIngested' is available for update at the moment",
         "parameters": [
           {
-            "name": "id",
+            "name": "joystreamChannelId",
             "required": true,
             "in": "path",
             "schema": {
@@ -353,6 +363,10 @@
   "servers": [],
   "components": {
     "schemas": {
+      "Video": {
+        "type": "object",
+        "properties": {}
+      },
       "ThumbnailsDto": {
         "type": "object",
         "properties": {
