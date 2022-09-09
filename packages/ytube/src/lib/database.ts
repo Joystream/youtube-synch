@@ -33,13 +33,13 @@ export function createChannelModel(): ModelType<AnyDocument> {
       },
 
       // user provided email
-      providedEmail: String,
+      email: String,
 
       // ID of the corresponding Joystream Channel
       joystreamChannelId: Number,
 
       // Referrer's Joystream Channel ID
-      referrerId: Number,
+      referrerChannelId: Number,
 
       // Channel's title
       title: String,

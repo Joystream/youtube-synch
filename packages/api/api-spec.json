@@ -516,6 +516,9 @@
       "SaveChannelRequest": {
         "type": "object",
         "properties": {
+          "authorizationCode": {
+            "type": "string"
+          },
           "userId": {
             "type": "string"
           },
@@ -525,11 +528,12 @@
           "joystreamChannelId": {
             "type": "number"
           },
-          "referrerId": {
+          "referrerChannelId": {
             "type": "number"
           }
         },
         "required": [
+          "authorizationCode",
           "userId",
           "email",
           "joystreamChannelId"

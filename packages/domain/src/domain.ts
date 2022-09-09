@@ -1,5 +1,4 @@
 import { MemberId } from '@joystream/types/primitives'
-import { AnyDocument } from 'dynamoose/dist/Document'
 
 export class Channel {
   // Channel ID
@@ -9,13 +8,13 @@ export class Channel {
   userId: string
 
   // user provided email
-  providedEmail: string
+  email: string
 
   // ID of the corresponding Joystream Channel
   joystreamChannelId: number
 
-  // referrer ID
-  referrerId: number
+  // Referrer Joystream Channel ID
+  referrerChannelId: number
 
   // Channel title
   title: string

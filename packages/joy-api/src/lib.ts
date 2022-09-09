@@ -28,6 +28,7 @@ export class JoystreamLib {
     })
 
     this.api = new ApiPromise({ provider })
+    this.api.isReadyOrError.catch((error) => error)
     this.extrinsics = new JoystreamLibExtrinsics(this.api)
   }
 

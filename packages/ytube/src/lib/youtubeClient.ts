@@ -10,6 +10,8 @@ import { statsRepository } from '..'
 // YPP induction criteria, each channel should meet following criteria
 const MINIMUM_SUBSCRIBERS_COUNT = 50
 const MINiMUM_VIDEO_COUNT = 10
+const MINIMUM_VIDEO_AGE_MONTHS = 1
+const MINIMUM_CHANNEL_AGE_MONTHS = 3
 
 export interface IYoutubeClient {
   getUserFromCode(code: string): Promise<User>
@@ -89,7 +91,7 @@ class YoutubeClient implements IYoutubeClient {
 
     // at least MINiMUM_VIDEO_COUNT videos should be one month old
     const oneMonthsAgo = new Date()
-    oneMonthsAgo.setMonth(oneMonthsAgo.getMonth() - 3)
+    oneMonthsAgo.setMonth(oneMonthsAgo.getMonth() - MINIMUM_VIDEO_AGE_MONTHS)
 
     // filter all videos that are older than one month
     const videos = (await this.getVideos(channel, MINiMUM_VIDEO_COUNT)).filter(
@@ -108,7 +110,7 @@ class YoutubeClient implements IYoutubeClient {
 
     // Channel should be at least 3 months old
     const threeMonthsAgo = new Date()
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - MINIMUM_CHANNEL_AGE_MONTHS)
     if (new Date(channel.publishedAt) > threeMonthsAgo) {
       errors.push({
         errorCode: ExitCodes.CHANNEL_CRITERIA_UNMET_CREATION_DATE,

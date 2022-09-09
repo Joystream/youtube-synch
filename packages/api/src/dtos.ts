@@ -76,8 +76,8 @@ export class SaveChannelRequest {
   // Joystream Channel ID of the user verifying his Youtube Channel for YPP
   @ApiProperty({ required: true }) joystreamChannelId: number
 
-  // Member ID of the referrer
-  @ApiProperty({ required: false }) referrerId: number
+  // referrer Channel ID
+  @ApiProperty({ required: false }) referrerChannelId: number
 }
 
 // Dto for save channel response

@@ -67,7 +67,7 @@ export class UsersController {
   @ApiResponse({ type: SaveChannelResponse })
   @Post('/verify-and-save')
   async addVerifiedChannel(
-    @Body() { authorizationCode, userId, joystreamChannelId, referrerId }: SaveChannelRequest
+    @Body() { authorizationCode, userId, joystreamChannelId, referrerChannelId, email }: SaveChannelRequest
   ): Promise<SaveChannelResponse> {
     try {
       // get user from userId
@@ -82,7 +82,7 @@ export class UsersController {
       const [channel] = await this.youtube.getChannels(user)
 
       // save user and channel
-      await this.saveUserAndChannel(user, { ...channel, joystreamChannelId, referrerId })
+      await this.saveUserAndChannel(user, { ...channel, joystreamChannelId, referrerChannelId, email })
 
       // return user and channel
       return new SaveChannelResponse(new UserDto(user), new ChannelDto(channel))
