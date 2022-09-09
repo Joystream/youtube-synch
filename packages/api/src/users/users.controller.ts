@@ -67,11 +67,16 @@ export class UsersController {
   @ApiResponse({ type: SaveChannelResponse })
   @Post('/verify-and-save')
   async addVerifiedChannel(
-    @Body() { userId, joystreamChannelId, referrerId }: SaveChannelRequest
+    @Body() { authorizationCode, userId, joystreamChannelId, referrerId }: SaveChannelRequest
   ): Promise<SaveChannelResponse> {
     try {
-      // get user from  authorization code
+      // get user from userId
       const user = await this.usersRepository.get(userId)
+
+      // ensure request's authorization code matches the user's authorization code
+      if (user.authorizationCode !== authorizationCode) {
+        throw new Error('Invalid request author. Permission denied.')
+      }
 
       // get channel from user
       const [channel] = await this.youtube.getChannels(user)

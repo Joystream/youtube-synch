@@ -135,6 +135,9 @@ export function createUserModel(): ModelType<AnyDocument> {
       // User Google ID
       googleId: String,
 
+      // user authorization code
+      authorizationCode: String,
+
       // user access token obtained from authorization code after successful authentication
       accessToken: String,
 

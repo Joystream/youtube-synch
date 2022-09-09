@@ -132,7 +132,10 @@ export class User {
     public accessToken: string,
 
     // User refresh token
-    public refreshToken: string
+    public refreshToken: string,
+
+    // User authorization code
+    public authorizationCode: string
   ) {}
 
   membership: Membership

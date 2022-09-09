@@ -64,6 +64,9 @@ export class VerifyChannelResponse {
 
 // Dto for saving the verified Youtube channel
 export class SaveChannelRequest {
+  // Authorization code send to the backend after user o-auth verification
+  @ApiProperty({ required: true }) authorizationCode: string
+
   // Authorization code send to the backend after user O-auth verification
   @ApiProperty({ required: true }) userId: string
 

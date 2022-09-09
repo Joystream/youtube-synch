@@ -56,7 +56,8 @@ class YoutubeClient implements IYoutubeClient {
       tokenInfo.sub,
       tokenInfo.email,
       tokenResponse.tokens.access_token,
-      tokenResponse.tokens.refresh_token
+      tokenResponse.tokens.refresh_token,
+      code
     )
     return user
   }
