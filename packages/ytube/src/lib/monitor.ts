@@ -1,5 +1,5 @@
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { User, Channel, IngestChannel, Stats, Video, VideoEvent, ChannelSpotted, Result } from '@youtube-sync/domain'
+import { User, Channel, IngestChannel, Stats, Video, VideoEvent, ChannelSpotted } from '@youtube-sync/domain'
 import { ChannelsRepository, statsRepository, VideosRepository } from './database'
 import { IUploadService, mapTo, MessageBus, IYoutubeClient, UsersRepository } from '..'
 import { S3UploadService } from './uploadService'

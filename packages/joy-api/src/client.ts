@@ -23,10 +23,10 @@ export class JoystreamClient {
   private lib: JoystreamLib
   private accounts: AccountsUtil
   private uploader: Uploader
-  constructor(faucetUri: string, private nodeUri: string, private orionUrl: string, private rootAccount: string) {
+  constructor(faucetUri: string, private nodeUri: string, private queryNodeUrl: string, private rootAccount: string) {
     this.faucet = new Faucet(faucetUri)
     this.lib = new JoystreamLib(this.nodeUri)
-    this.uploader = new Uploader(orionUrl)
+    this.uploader = new Uploader(queryNodeUrl)
     this.accounts = new AccountsUtil()
   }
 

@@ -9,9 +9,9 @@ export async function videoCreatedHandler(event: TopicEvent) {
     return
   console.log('New video', videoCreated)
   const youtube = YtClient.create(
-    '79131856482-fo4akvhmeokn24dvfo83v61g03c6k7o0.apps.googleusercontent.com',
-    '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',
-    'http://localhost:3000'
+    process.env.YOUTUBE_CLIENT_ID,
+    process.env.YOUTUBE_CLIENT_SECRET,
+    process.env.YOUTUBE_REDIRECT_URI
   )
   await new SyncService(youtube, new MessageBus('eu-west-1')).uploadVideo(videoCreated.channelId, videoCreated.videoId)
 }

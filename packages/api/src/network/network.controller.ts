@@ -1,5 +1,4 @@
 import { ApolloClient, gql, NormalizedCacheObject } from '@apollo/client'
-import { ChannelsRepository, UsersRepository, VideosRepository } from '@joystream/ytube'
 import { Controller, Get, Inject } from '@nestjs/common'
 import { ApiProperty, ApiTags } from '@nestjs/swagger'
 import { flatten, groupBy } from 'lodash'
@@ -34,12 +33,12 @@ export class UploadVideoDto {
 @ApiTags('network')
 export class NetworkController {
   constructor(
-    @Inject('orion') private orionClient: ApolloClient<NormalizedCacheObject> // private uploader: Uploader
+    @Inject('queryNode') private queryNode: ApolloClient<NormalizedCacheObject> // private uploader: Uploader
   ) {}
 
   @Get('buckets')
   async getBuckets() {
-    const response = await this.orionClient.query<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>({
+    const response = await this.queryNode.query<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>({
       query: gql`
         query GetStorageBuckets {
           storageBuckets(
@@ -75,7 +74,7 @@ export class NetworkController {
 
   @Get('memberships')
   async getMemberships() {
-    const response = await this.orionClient.query<GetMembershipsQuery, GetMembershipsQueryVariables>({
+    const response = await this.queryNode.query<GetMembershipsQuery, GetMembershipsQueryVariables>({
       query: gql`
         query GetMembershipsQuery {
           memberships(limit: 50) {

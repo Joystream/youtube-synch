@@ -44,14 +44,14 @@ import { Uploader } from 'packages/joy-api/storage/uploader'
     {
       provide: Uploader,
       useFactory: (config: ConfigService) => {
-        return new Uploader(config.get<string>('JOYSTREAM_ORION_URL'))
+        return new Uploader(config.get<string>('JOYSTREAM_QUERY_NODE_URL'))
       },
       inject: [ConfigService],
     },
     {
-      provide: 'orion',
+      provide: 'queryNode',
       useFactory: (config: ConfigService) => {
-        return createGraphqlClient(config.get<string>('JOYSTREAM_ORION_URL'))
+        return createGraphqlClient(config.get<string>('JOYSTREAM_QUERY_NODE_URL'))
       },
       inject: [ConfigService],
     },

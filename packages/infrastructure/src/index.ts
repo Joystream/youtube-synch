@@ -106,8 +106,8 @@ const statsTable = new aws.dynamodb.Table('stats', {
 })
 
 const userEventsTopic = new aws.sns.Topic(<AvailableTopic>'userEvents', {
-  displayName: 'Users events',
   name: <AvailableTopic>'userEvents',
+  displayName: 'Users events',
 })
 
 const channelEventsTopic = new aws.sns.Topic(<AvailableTopic>'channelEvents', {

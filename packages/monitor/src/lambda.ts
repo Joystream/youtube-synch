@@ -2,6 +2,7 @@ import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
 
 export function lambda(name: string, handler: string, source: string) {
+  // IAM role
   const role = new aws.iam.Role(`${name}Role`, {
     assumeRolePolicy: {
       Version: '2012-10-17',
@@ -17,6 +18,8 @@ export function lambda(name: string, handler: string, source: string) {
       ],
     },
   })
+
+  // IAM policy attachments
   new aws.iam.RolePolicyAttachment(`${name}Attach`, {
     role: role,
     policyArn: aws.iam.ManagedPolicies.AWSLambdaExecute,
@@ -36,6 +39,15 @@ export function lambda(name: string, handler: string, source: string) {
     role: role.arn,
     handler: handler,
     name: name,
+    environment: {
+      variables: {
+        YOUTUBE_CLIENT_ID: process.env.YOUTUBE_CLIENT_ID,
+        YOUTUBE_CLIENT_SECRET: process.env.YOUTUBE_CLIENT_SECRET,
+        YOUTUBE_REDIRECT_URI: process.env.YOUTUBE_REDIRECT_URI,
+        AWS_ENDPOINT: process.env.AWS_ENDPOINT,
+        AWS_REGION: process.env.AWS_REGION,
+      },
+    },
   })
   return func
 }

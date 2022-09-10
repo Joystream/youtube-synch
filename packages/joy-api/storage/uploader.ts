@@ -12,8 +12,8 @@ export type VideoUploadResponse = { id: string; video: Video }
 
 export class Uploader {
   private client: ApolloClient<NormalizedCacheObject>
-  constructor(orionUrl: string) {
-    this.client = createGraphqlClient(orionUrl)
+  constructor(queryNodeUrl: string) {
+    this.client = createGraphqlClient(queryNodeUrl)
   }
 
   async upload(

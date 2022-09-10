@@ -5,9 +5,9 @@ import { IngestChannel } from '@youtube-sync/domain'
 export async function ingestChannelHandler(event: TopicEvent) {
   console.log(event)
   const youtubeClient = YtClient.create(
-    '79131856482-fo4akvhmeokn24dvfo83v61g03c6k7o0.apps.googleusercontent.com',
-    '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',
-    'http://localhost:3000'
+    process.env.YOUTUBE_CLIENT_ID,
+    process.env.YOUTUBE_CLIENT_SECRET,
+    process.env.YOUTUBE_REDIRECT_URI
   )
   const message: IngestChannel = JSON.parse(event.Records[0].Sns.Message)
   console.log(message)
