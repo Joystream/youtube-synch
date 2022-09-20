@@ -221,11 +221,11 @@ class YoutubeClient implements IYoutubeClient {
             standard: video.snippet?.thumbnails?.standard?.url,
             default: video.snippet?.thumbnails?.default?.url,
           },
-          url: `https://youtube.com/watch?v=${video.id}`,
-          resourceId: video.id,
-          publishedAt: video.snippet?.publishedAt,
+          url: `https://youtube.com/watch?v=${video.snippet?.resourceId?.videoId}`,
+          resourceId: video.snippet?.resourceId?.videoId,
+          publishedAt: video.contentDetails.videoPublishedAt,
           createdAt: Date.now(),
-          state: 'new',
+          state: 'New',
         }
     )
   }

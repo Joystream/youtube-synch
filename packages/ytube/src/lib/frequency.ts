@@ -1,4 +1,4 @@
-export const allFrequencies = [1, 10, 30, 60, 120, 180, 240, 360, 720, 1440] as const
+export const allFrequencies = [0, 1, 10, 30, 60, 120, 180, 240, 360, 720, 1440] as const
 export type Frequency = typeof allFrequencies[number]
 
 export function getMatchingFrequenciesForDate(date: Date): Frequency[] {
