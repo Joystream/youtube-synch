@@ -323,34 +323,6 @@
           "channels"
         ]
       }
-    },
-    "/network/buckets": {
-      "get": {
-        "operationId": "NetworkController_getBuckets",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "network"
-        ]
-      }
-    },
-    "/network/memberships": {
-      "get": {
-        "operationId": "NetworkController_getMemberships",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "network"
-        ]
-      }
     }
   },
   "info": {

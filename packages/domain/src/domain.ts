@@ -109,14 +109,14 @@ export class VideoEvent implements IEvent {
     this.subject = state
   }
 
-  subject: string
+  subject: VideoState
 }
 
 export type Membership = {
-  memberId: MemberId
-  address: string
+  memberId: number
+  address?: string
   secret: string
-  suri: string
+  suri?: string
 }
 
 export class User {
@@ -148,7 +148,22 @@ export type Thumbnails = {
   standard: string
 }
 
-export type VideoState = 'new' | 'uploadToJoystreamStarted' | 'uploadToJoystreamFailed' | 'uploadToJoystreamSucceeded'
+const readOnlyVideoStates = [
+  // Newly created youtube video
+  'New',
+  // Video is being uploaded to Joystream
+  'UploadStarted',
+  // Video upload to Joystream failed
+  'UploadFailed',
+  // Video upload to Joystream succeeded
+  'UploadSucceeded',
+  // Video was deleted from joystream, so it should not be synced again
+  'NotToBeSyncedAgain',
+] as const
+
+export const videoStates = readOnlyVideoStates as unknown as string[]
+
+export type VideoState = typeof readOnlyVideoStates[number]
 
 export class Video {
   // Video ID
@@ -174,8 +189,9 @@ export class Video {
   // Video thumbnails
   thumbnails: Thumbnails
 
-  //
+  // current state of the video
   state: VideoState
+
   destinationUrl: string
 
   // Video duration

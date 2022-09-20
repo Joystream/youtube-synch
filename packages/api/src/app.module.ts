@@ -5,26 +5,23 @@ import { ChannelsController } from './channels/channels.controller'
 import { ChannelsService } from './channels/channels.service'
 import { UsersController } from './users/users.controller'
 import { VideosController } from './videos/videos.controller'
-import { NetworkController } from './network/network.controller'
 import { JoystreamClient } from '@youtube-sync/joy-api'
 import { ChannelsRepository, UsersRepository, VideosRepository, YtClient } from '@joystream/ytube'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { createGraphqlClient } from 'packages/joy-api/graphql'
+// import { createGraphqlClient } from 'packages/joy-api/graphql'
 import { Uploader } from 'packages/joy-api/storage/uploader'
 
 @Module({
   imports: [ConfigModule.forRoot()],
-  controllers: [VideosController, ChannelsController, UsersController, NetworkController],
+  controllers: [VideosController, ChannelsController, UsersController],
   providers: [
     ChannelsService,
     {
       provide: JoystreamClient,
       useFactory: (config: ConfigService) => {
         return new JoystreamClient(
-          config.get<string>('JOYSTREAM_FAUCET_URL'),
           config.get<string>('JOYSTREAM_WEBSOCKET_RPC'),
-          config.get<string>('JOYSTREAM_ORION_URL'),
-          config.get<string>('JOYSTREAM_ROOT_ACCOUNT')
+          config.get<string>('JOYSTREAM_ORION_URL')
         )
       },
       inject: [ConfigService],
@@ -48,13 +45,13 @@ import { Uploader } from 'packages/joy-api/storage/uploader'
       },
       inject: [ConfigService],
     },
-    {
-      provide: 'queryNode',
-      useFactory: (config: ConfigService) => {
-        return createGraphqlClient(config.get<string>('JOYSTREAM_QUERY_NODE_URL'))
-      },
-      inject: [ConfigService],
-    },
+    // {
+    //   provide: 'queryNode',
+    //   useFactory: (config: ConfigService) => {
+    //     return createGraphqlClient(config.get<string>('JOYSTREAM_QUERY_NODE_URL'))
+    //   },
+    //   inject: [ConfigService],
+    // },
     {
       provide: 'youtube',
       useFactory: (config: ConfigService) => {
