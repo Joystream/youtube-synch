@@ -1,32 +1,21 @@
 import { ApiPromise as PolkadotApi } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { BTreeSet, Option, GenericAccountId as RuntimeAccountId } from '@polkadot/types'
 
 import { ConsoleLogger } from './logger'
 
+import { createType } from '@joystream/types'
+import { ChannelId, MemberId } from '@joystream/types/primitives'
+import { KeyringPair } from '@polkadot/keyring/types'
 import { JoystreamLibError } from './errors'
+import { extractVideoResultAssetsIds, sendExtrinsicAndParseEvents } from './helpers'
+import { parseVideoExtrinsicInput } from './metadata'
 import {
-  extractChannelResultAssetsIds,
-  extractVideoResultAssetsIds,
-  getInputDataObjectsIds,
-  sendExtrinsicAndParseEvents,
-} from './helpers'
-import { parseChannelExtrinsicInput, parseVideoExtrinsicInput } from './metadata'
-import {
-  ChannelExtrinsicResult,
-  ChannelInputAssets,
-  ChannelInputMetadata,
   GetEventDataFn,
   SendExtrinsicResult,
   VideoExtrinsicResult,
   VideoInputAssets,
   VideoInputMetadata,
 } from './types'
-import { DomainError, Result } from '@youtube-sync/domain'
-import { KeyringPair } from '@polkadot/keyring/types'
-import { InstancePublicPorts } from '@pulumi/aws/lightsail'
-import { createType } from '@joystream/types'
-import { ChannelId, MemberId } from '@joystream/types/primitives'
 
 export class JoystreamLibExtrinsics {
   readonly api: PolkadotApi
@@ -72,55 +61,20 @@ export class JoystreamLibExtrinsics {
     }
   }
 
-  async createChannel(
-    accountId: KeyringPair,
-    memberId: MemberId,
-    inputMetadata: ChannelInputMetadata,
-    inputAssets: ChannelInputAssets
-  ): Promise<Result<ChannelExtrinsicResult, DomainError>> {
-    await this.ensureApi()
-    const [channelMetadata, channelAssets] = await parseChannelExtrinsicInput(this.api, inputMetadata, inputAssets)
-    const creationParameters = createType('PalletContentChannelCreationParametersRecord', {
-      meta: channelMetadata,
-      assets: channelAssets,
-      collaborators: [],
-      storageBuckets: [],
-      distributionBuckets: [],
-      expectedChannelStateBloatBond: 0,
-      expectedDataObjectStateBloatBond: 0,
-    })
-
-    const tx = this.api.tx.content.createChannel(
-      {
-        Member: memberId,
-      },
-      creationParameters
-    )
-    const { block, getEventData } = await this.sendExtrinsic(accountId, tx)
-
-    const channelId = getEventData('content', 'ChannelCreated')[0]
-
-    return Result.Success({
-      channelId,
-      block,
-      assetsIds: extractChannelResultAssetsIds(inputAssets, getEventData),
-    })
-  }
-
   async createVideo(
     accountId: KeyringPair,
-    memberId: MemberId,
+    memberId: number,
     channelId: ChannelId,
     inputMetadata: VideoInputMetadata,
     inputAssets: VideoInputAssets
-  ): Promise<Result<VideoExtrinsicResult, DomainError>> {
+  ): Promise<VideoExtrinsicResult> {
     await this.ensureApi()
     const [videoMetadata, videoAssets] = await parseVideoExtrinsicInput(this.api, inputMetadata, inputAssets)
     const creationParameters = createType('PalletContentVideoCreationParametersRecord', {
       meta: videoMetadata,
       assets: videoAssets,
-      expectedDataObjectStateBloatBond: 0,
-      expectedVideoStateBloatBond: 0,
+      expectedDataObjectStateBloatBond: await this.api.query.storage.dataObjectStateBloatBondValue(),
+      expectedVideoStateBloatBond: await this.api.query.content.videoStateBloatBondValue(),
       autoIssueNft: null,
     })
 
@@ -129,10 +83,10 @@ export class JoystreamLibExtrinsics {
 
     const videoId = getEventData('content', 'VideoCreated')[2]
 
-    return Result.Success({
+    return {
       videoId,
       block,
       assetsIds: extractVideoResultAssetsIds(inputAssets, getEventData),
-    })
+    }
   }
 }

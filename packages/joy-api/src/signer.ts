@@ -20,10 +20,12 @@ export class AccountsUtil {
     return pair ? Result.Success(pair) : Result.Error(new DomainError('Pair not found'))
   }
 
-  getOrAddPair(address: string, secret: string): Result<KeyringPair, DomainError> {
+  getOrAddPair(secret: string, address?: string): KeyringPair {
     let pair = this.keyring.getPairs().find((p) => p.address == address)
-    if (!pair) pair = this.keyring.addFromUri(secret)
-    return Result.Success(pair)
+    if (!pair) {
+      pair = this.keyring.addFromUri(secret)
+    }
+    return pair
   }
 
   createAccount(key: string): Result<Account, DomainError> {
