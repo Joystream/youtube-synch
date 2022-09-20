@@ -7,5 +7,5 @@ export async function orphanUsersChecker(event: EventRuleEvent) {
   const users = await createUserModel().query({ partition: 'users' }).filter('channelsCount').eq(0).exec()
   console.log(users)
   const events = users.map((u) => mapTo<User>(u)).map((u) => new UserIngestionTriggered(u, Date.now()))
-  await new MessageBus('eu-west-1').publishAll(events, 'userEvents')
+  await new MessageBus(process.env.AWS_REGION).publishAll(events, 'userEvents')
 }
