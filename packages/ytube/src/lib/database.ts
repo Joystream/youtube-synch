@@ -1,21 +1,15 @@
-import { Channel, User, Video } from '@youtube-sync/domain'
+import { Channel, User, Video, videoStates } from '@youtube-sync/domain'
 import * as dynamoose from 'dynamoose'
 import { ConditionInitalizer as ConditionInitializer } from 'dynamoose/dist/Condition'
 import { AnyDocument } from 'dynamoose/dist/Document'
 import { Query, Scan } from 'dynamoose/dist/DocumentRetriever'
-import { ModelType } from 'dynamoose/dist/General'
+import { DeepPartial, ModelType } from 'dynamoose/dist/General'
+import { ModelOptions } from 'dynamoose/dist/Model'
 import { omit } from 'ramda'
 
-// Payments table
-
-// Joystream ChannelID
-// Channel Reward Account
-// Youtube Channel Title
-// Youtube Channel ID
-// Block Executed (timestamp)
-// Action
-// Amount
-// Rationale/ Reason (optional)
+// Schemas defined here are only for modeling purpose and not for creating tables itself,
+// as Pulumi is responsible all sort of infrastructure provisioning and deployment.
+const DYNAMO_MODEL_OPTIONS: DeepPartial<ModelOptions> = { create: false }
 
 export function createChannelModel(): ModelType<AnyDocument> {
   const channelSchema = new dynamoose.Schema(
@@ -115,7 +109,7 @@ export function createChannelModel(): ModelType<AnyDocument> {
 
     { saveUnknown: true }
   )
-  return dynamoose.model('channels', channelSchema, { create: false })
+  return dynamoose.model('channels', channelSchema, DYNAMO_MODEL_OPTIONS)
 }
 
 export function createUserModel(): ModelType<AnyDocument> {
@@ -158,7 +152,7 @@ export function createUserModel(): ModelType<AnyDocument> {
       },
     }
   )
-  return dynamoose.model('users', userSchema, { create: false })
+  return dynamoose.model('users', userSchema, DYNAMO_MODEL_OPTIONS)
 }
 
 export function videoRepository() {
@@ -203,18 +197,7 @@ export function videoRepository() {
       //
       state: {
         type: String,
-        enum: [
-          // Newly created youtube video
-          'New',
-          // Video is being uploaded to Joystream
-          'UploadStarted',
-          // Video upload to Joystream failed
-          'uploadFailed',
-          // Video upload to Joystream succeeded
-          'uploadSucceded',
-          // Video was deleted from joystream, so it should not be synced again
-          'NotToBeSyncedAgain',
-        ],
+        enum: videoStates,
       },
     },
     {
@@ -225,7 +208,7 @@ export function videoRepository() {
       },
     }
   )
-  return dynamoose.model('videos', videoSchema)
+  return dynamoose.model('videos', videoSchema, DYNAMO_MODEL_OPTIONS)
 }
 
 export function videoStateRepository(): ModelType<AnyDocument> {
@@ -242,18 +225,7 @@ export function videoStateRepository(): ModelType<AnyDocument> {
       // Video current state
       state: {
         type: String,
-        enum: [
-          // Newly created youtube video
-          'New',
-          // Video is being uploaded to Joystream
-          'UploadStarted',
-          // Video upload to Joystream failed
-          'uploadFailed',
-          // Video upload to Joystream succeeded
-          'uploadSucceded',
-          // Video was deleted from joystream, so it should not be synced again
-          'NotToBeSyncedAgain',
-        ],
+        enum: videoStates,
       },
 
       expectedSyncTime: Date,
@@ -265,7 +237,7 @@ export function videoStateRepository(): ModelType<AnyDocument> {
       },
     }
   )
-  return dynamoose.model('videoLogs', videoStateSchema, { create: false })
+  return dynamoose.model('videoLogs', videoStateSchema, DYNAMO_MODEL_OPTIONS)
 }
 
 export function statsRepository(): ModelType<AnyDocument> {
@@ -280,7 +252,7 @@ export function statsRepository(): ModelType<AnyDocument> {
     },
     quotaUsed: Number,
   })
-  return dynamoose.model('stats', schema, { create: false })
+  return dynamoose.model('stats', schema, DYNAMO_MODEL_OPTIONS)
 }
 
 export function mapTo<TEntity>(doc: AnyDocument) {
@@ -354,7 +326,7 @@ export class ChannelsRepository implements IRepository<Channel> {
   }
 
   async get(id: string): Promise<Channel> {
-    const result = await this.model.get({ id })
+    const result = await this.model.query({ id }).using('id-index').exec()
     return mapTo<Channel>(result)
   }
 

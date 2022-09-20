@@ -49,6 +49,13 @@ const channelsTable = new aws.dynamodb.Table('channels', {
       readCapacity: 1,
       writeCapacity: 1,
     },
+    {
+      hashKey: nameof<Channel>('id'),
+      name: 'id-index',
+      projectionType: 'ALL',
+      readCapacity: 1,
+      writeCapacity: 1,
+    },
   ],
   readCapacity: 1,
   writeCapacity: 1,
