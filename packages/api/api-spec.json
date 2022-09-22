@@ -36,6 +36,39 @@
         ]
       }
     },
+    "/channels/verify-and-save": {
+      "post": {
+        "operationId": "ChannelsController_addVerifiedChannel",
+        "summary": "",
+        "description": "Creates user from the supplied google authorization code and fetches\n     user's channel and if it satisfies YPP induction criteria it saves the record",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveChannelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveChannelResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
     "/channels/{joystreamChannelId}": {
       "get": {
         "operationId": "ChannelsController_get",
@@ -224,39 +257,6 @@
         ]
       }
     },
-    "/users/verify-and-save": {
-      "post": {
-        "operationId": "UsersController_addVerifiedChannel",
-        "summary": "",
-        "description": "Creates user from the supplied google authorization code and fetches\n     user's channel and if it satisfies YPP induction criteria it saves the record",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SaveChannelRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SaveChannelResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "channels"
-        ]
-      }
-    },
     "/users/{id}": {
       "get": {
         "operationId": "UsersController_get",
@@ -367,6 +367,47 @@
         "type": "object",
         "properties": {}
       },
+      "SaveChannelRequest": {
+        "type": "object",
+        "properties": {
+          "authorizationCode": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "joystreamChannelId": {
+            "type": "number"
+          },
+          "referrerChannelId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "authorizationCode",
+          "userId",
+          "email",
+          "joystreamChannelId"
+        ]
+      },
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email"
+        ]
+      },
       "ThumbnailsDto": {
         "type": "object",
         "properties": {
@@ -427,6 +468,21 @@
           "joystreamChannelId",
           "thumbnails",
           "tier"
+        ]
+      },
+      "SaveChannelResponse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/ChannelDto"
+          }
+        },
+        "required": [
+          "user",
+          "channel"
         ]
       },
       "UpdateChannelDto": {
@@ -511,62 +567,6 @@
         "required": [
           "email",
           "userId"
-        ]
-      },
-      "SaveChannelRequest": {
-        "type": "object",
-        "properties": {
-          "authorizationCode": {
-            "type": "string"
-          },
-          "userId": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "joystreamChannelId": {
-            "type": "number"
-          },
-          "referrerChannelId": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "authorizationCode",
-          "userId",
-          "email",
-          "joystreamChannelId"
-        ]
-      },
-      "UserDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "email"
-        ]
-      },
-      "SaveChannelResponse": {
-        "type": "object",
-        "properties": {
-          "user": {
-            "$ref": "#/components/schemas/UserDto"
-          },
-          "channel": {
-            "$ref": "#/components/schemas/ChannelDto"
-          }
-        },
-        "required": [
-          "user",
-          "channel"
         ]
       }
     }
