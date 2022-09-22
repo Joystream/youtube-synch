@@ -1,4 +1,4 @@
-import { DomainError } from "@youtube-sync/domain"
+import { DomainError } from '@youtube-sync/domain'
 
 export type JoystreamLibErrorType =
   | 'ApiNotConnectedError'

@@ -1,12 +1,10 @@
-import { types } from '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import '@polkadot/api/augment'
 
 import { JoystreamLibError } from './errors'
 import { ConsoleLogger } from './logger'
 
 import { JoystreamLibExtrinsics } from './extrinsics'
-import { AccountId } from './types'
+import { AccountId } from '@polkadot/types/interfaces'
 
 export class JoystreamLib {
   readonly api: ApiPromise
@@ -29,8 +27,9 @@ export class JoystreamLib {
       this.onNodeConnectionUpdate?.(false)
     })
 
-    this.api = new ApiPromise({ provider, types })
-    this.extrinsics = new JoystreamLibExtrinsics(this.api);
+    this.api = new ApiPromise({ provider })
+    this.api.isReadyOrError.catch((error) => error)
+    this.extrinsics = new JoystreamLibExtrinsics(this.api)
   }
 
   destroy() {
@@ -52,9 +51,11 @@ export class JoystreamLib {
     const chain = await this.api.rpc.system.chain()
     ConsoleLogger.log(`[JoystreamLib] Connected to chain "${chain}" via "${endpoint}"`)
   }
-  async connect(){
+
+  async connect() {
     await this.ensureApi()
   }
+
   async getAccountBalance(accountId: AccountId): Promise<number> {
     await this.ensureApi()
 

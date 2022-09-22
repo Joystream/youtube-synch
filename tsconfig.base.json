@@ -21,9 +21,7 @@
       "@youtube-sync/domain": ["packages/domain/src/index.ts"],
       "@youtube-sync/infrastructure": ["packages/infrastructure/src/index.ts"],
       "@youtube-sync/joy-api": ["packages/joy-api/src/index.ts"],
-      "@youtube-sync/monitor": ["packages/monitor/index.ts"],
-      "@polkadot/types/augment": ["node_modules/@joystream/types/augment-codec/augment-types.ts"],
-      "@polkadot/api/augment": ["node_modules/@joystream/types/augment-codec/augment-api.ts"]
+      "@youtube-sync/monitor": ["packages/monitor/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

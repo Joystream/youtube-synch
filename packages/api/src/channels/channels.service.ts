@@ -1,28 +1,55 @@
-import { Injectable } from '@nestjs/common';
-import {  Channel, DomainError, Result } from '@youtube-sync/domain' 
-import {
-  ChannelsRepository,
-} from '@joystream/ytube';
+import { ChannelsRepository } from '@joystream/ytube'
+import { Injectable } from '@nestjs/common'
+import { Channel } from '@youtube-sync/domain'
 
 @Injectable()
 export class ChannelsService {
-  constructor(private channelsRepo: ChannelsRepository) {
+  constructor(private channelsRepository: ChannelsRepository) {}
+
+  /**
+   * @param joystreamChannelId
+   * @returns Returns channel by joystreamChannelId
+   */
+  async get(joystreamChannelId: string): Promise<Channel> {
+    const [result] = await this.channelsRepository.scan('id', (q) =>
+      q.filter('joystreamChannelId').eq(Number(joystreamChannelId))
+    )
+    if (!result) {
+      throw new Error(`Could not find channel with id ${joystreamChannelId}`)
+    }
+    return result
   }
 
-  async get(userId: string, id: string): Promise<Result<Channel, DomainError>> {
-    const result = await this.channelsRepo.query('userId', q => q.eq(userId)
-      .and()
-      .filter('id')
-      .eq(id))
-    return result.map(c => c[0])
+  /**
+   * @param userId
+   * @returns Returns channel by userId
+   */
+  async getByUserId(userId: string): Promise<Channel> {
+    const [result] = await this.channelsRepository.query('userId', (q) => q.eq(userId))
+    if (!result) {
+      throw new Error(`Could not find user with id ${userId}`)
+    }
+    return result
   }
-  async getAll(userId: string): Promise<Result<Channel[], DomainError>> {
-    return await this.channelsRepo.query({userId}, q => q)
+
+  /**
+   * @param userId
+   * @returns List of Channels for given user
+   */
+  async getAll(userId: string): Promise<Channel[]> {
+    return await this.channelsRepository.query({ userId }, (q) => q)
   }
-  async getAllWithFrequency(frequency: number): Promise<Result<Channel[], DomainError>> {
-    return  await this.channelsRepo.scan('frequency', s => s.in([frequency]))
+
+  async getAllWithFrequency(frequency: number): Promise<Channel[]> {
+    return await this.channelsRepository.scan('frequency', (s) => s.in([frequency]))
   }
-  async update(channel: Channel): Promise<Result<Channel, DomainError>> {
-    return await this.channelsRepo.save(channel, channel.userId)
+
+  /**
+   *
+   * @param channel
+   * @returns Updated channel
+   */
+  async update(channel: Channel): Promise<Channel> {
+    return await this.channelsRepository.save(channel)
   }
 }

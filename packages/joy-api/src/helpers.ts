@@ -1,15 +1,11 @@
-import { DataObjectId } from '@joystream/types/augment-codec/all'
-import { Hash } from '@joystream/types/common'
-import { StorageAssets } from '@joystream/types/content'
-import { DataObjectCreationParameters } from '@joystream/types/storage'
+import { DataObjectId } from '@joystream/types/primitives'
+import { Hash } from '@polkadot/types/interfaces'
 import { ApiPromise as PolkadotApi } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Bytes, GenericEvent, Vec, u128 } from '@polkadot/types'
 import { DispatchError, Event, EventRecord } from '@polkadot/types/interfaces/system'
 import { Registry } from '@polkadot/types/types'
-
-
 import {
   ChannelAssets,
   ChannelAssetsIds,
@@ -25,6 +21,7 @@ import {
 } from './'
 import { JoystreamLibError } from './errors'
 import { ConsoleLogger } from './logger'
+import { createType } from '@joystream/types'
 
 export const prepareAssetsForExtrinsic = async (api: PolkadotApi, dataObjectsMetadata: DataObjectMetadata[]) => {
   if (!dataObjectsMetadata.length) {
@@ -34,15 +31,14 @@ export const prepareAssetsForExtrinsic = async (api: PolkadotApi, dataObjectsMet
   const feePerMB = await api.query.storage.dataObjectPerMegabyteFee()
   const feePerMBUint = new u128(api.registry, feePerMB)
 
-  const mappedDataObjectMetadata = dataObjectsMetadata.map((metadata) => ({
-    size: metadata.size,
+  const objectCreationList = dataObjectsMetadata.map((metadata) => ({
+    size_: metadata.size,
     ipfsContentId: new Bytes(api.registry, metadata.ipfsHash),
   }))
-  const dataObjectsVec = new Vec(api.registry, DataObjectCreationParameters, mappedDataObjectMetadata)
 
-  return new StorageAssets(api.registry, {
-    expected_data_size_fee: feePerMBUint,
-    object_creation_list: dataObjectsVec,
+  return createType('PalletContentStorageAssetsRecord', {
+    expectedDataSizeFee: feePerMBUint,
+    objectCreationList: objectCreationList,
   })
 }
 
@@ -114,7 +110,12 @@ export const sendExtrinsicAndParseEvents = (
       if (isError) {
         unsub()
 
-        reject(new JoystreamLibError({ name: 'UnknownError', message: 'Unknown extrinsic error!' }))
+        reject(
+          new JoystreamLibError({
+            name: 'UnknownError',
+            message: 'Unknown extrinsic error!',
+          })
+        )
         return
       }
 

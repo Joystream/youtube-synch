@@ -1,8 +1,8 @@
 const getLogArgs = (message: string, details?: unknown) => {
-    if (details) {
-      return [message, details]
-    }
-    return [message]
+  if (details) {
+    return [message, details]
+  }
+  return [message]
 }
 
 type LogFn = (message: string, details?: unknown) => void

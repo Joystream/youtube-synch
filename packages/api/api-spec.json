@@ -1,0 +1,572 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/users/{userId}/videos": {
+      "get": {
+        "operationId": "VideosController_get",
+        "summary": "",
+        "description": "Get videos across all channels owned by the user",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Video"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
+    "/channels": {
+      "post": {
+        "operationId": "ChannelsController_addVerifiedChannel",
+        "summary": "",
+        "description": "Creates user from the supplied google authorization code and fetches\n     user's channel and if it satisfies YPP induction criteria it saves the record",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveChannelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveChannelResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
+    "/channels/{joystreamChannelId}": {
+      "get": {
+        "operationId": "ChannelsController_get",
+        "summary": "",
+        "description": "Retrieves channel by joystreamChannelId",
+        "parameters": [
+          {
+            "name": "joystreamChannelId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      },
+      "put": {
+        "operationId": "ChannelsController_updateChannel",
+        "summary": "",
+        "description": "Updates given channel. Note: only 'shouldBeIngested' is available for update at the moment",
+        "parameters": [
+          {
+            "name": "joystreamChannelId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChannelDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
+    "/channels/{id}/videos": {
+      "get": {
+        "operationId": "ChannelsController_getVideos",
+        "summary": "",
+        "description": "Retrieves already ingested(spotted on youtube and saved to the database) videos for a given channel.",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VideoDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
+    "/channels/{id}/videos/{videoId}": {
+      "get": {
+        "operationId": "ChannelsController_getVideo",
+        "summary": "",
+        "description": "Retrieves particular video by it`s id",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "videoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
+    "/users": {
+      "post": {
+        "operationId": "UsersController_verifyUserAndChannel",
+        "summary": "",
+        "description": "fetches user's channel from the supplied google authorization code, and verifies if it satisfies YPP induction criteria",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyChannelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyChannelResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      },
+      "get": {
+        "operationId": "UsersController_find",
+        "summary": "",
+        "description": "Searches users added to the system. Use optional 'search' param to filter the results by email.",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "operationId": "UsersController_get",
+        "summary": "",
+        "description": "Retrieves authenticated user by id",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
+    "/network/buckets": {
+      "get": {
+        "operationId": "NetworkController_getBuckets",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "network"
+        ]
+      }
+    },
+    "/network/memberships": {
+      "get": {
+        "operationId": "NetworkController_getMemberships",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "network"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Joystream Youtube Sync API",
+    "description": "Youtube Sync API",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "Video": {
+        "type": "object",
+        "properties": {}
+      },
+      "SaveChannelRequest": {
+        "type": "object",
+        "properties": {
+          "authorizationCode": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "joystreamChannelId": {
+            "type": "number"
+          },
+          "referrerChannelId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "authorizationCode",
+          "userId",
+          "email",
+          "joystreamChannelId"
+        ]
+      },
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email"
+        ]
+      },
+      "ThumbnailsDto": {
+        "type": "object",
+        "properties": {
+          "default": {
+            "type": "string"
+          },
+          "medium": {
+            "type": "string"
+          },
+          "high": {
+            "type": "string"
+          },
+          "maxRes": {
+            "type": "string"
+          },
+          "standard": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "default",
+          "medium",
+          "high",
+          "maxRes",
+          "standard"
+        ]
+      },
+      "ChannelDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "aggregatedStats": {
+            "type": "number"
+          },
+          "shouldBeIngested": {
+            "type": "boolean"
+          },
+          "joystreamChannelId": {
+            "type": "number"
+          },
+          "thumbnails": {
+            "$ref": "#/components/schemas/ThumbnailsDto"
+          },
+          "tier": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "aggregatedStats",
+          "shouldBeIngested",
+          "joystreamChannelId",
+          "thumbnails",
+          "tier"
+        ]
+      },
+      "SaveChannelResponse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/ChannelDto"
+          }
+        },
+        "required": [
+          "user",
+          "channel"
+        ]
+      },
+      "UpdateChannelDto": {
+        "type": "object",
+        "properties": {
+          "shouldBeIngested": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "shouldBeIngested"
+        ]
+      },
+      "VideoDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "playlistId": {
+            "type": "string"
+          },
+          "resourceId": {
+            "type": "string"
+          },
+          "channelId": {
+            "type": "string"
+          },
+          "thumbnails": {
+            "$ref": "#/components/schemas/ThumbnailsDto"
+          },
+          "state": {
+            "type": "object"
+          },
+          "destinationUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "title",
+          "description",
+          "id",
+          "playlistId",
+          "resourceId",
+          "channelId",
+          "thumbnails",
+          "state",
+          "destinationUrl"
+        ]
+      },
+      "VerifyChannelRequest": {
+        "type": "object",
+        "properties": {
+          "authorizationCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "authorizationCode"
+        ]
+      },
+      "VerifyChannelResponse": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "userId"
+        ]
+      }
+    }
+  }
+}
