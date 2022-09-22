@@ -36,7 +36,7 @@
         ]
       }
     },
-    "/channels/verify-and-save": {
+    "/channels": {
       "post": {
         "operationId": "ChannelsController_addVerifiedChannel",
         "summary": "",
@@ -224,7 +224,7 @@
         ]
       }
     },
-    "/users/verify": {
+    "/users": {
       "post": {
         "operationId": "UsersController_verifyUserAndChannel",
         "summary": "",
@@ -247,6 +247,39 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VerifyChannelResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      },
+      "get": {
+        "operationId": "UsersController_find",
+        "summary": "",
+        "description": "Searches users added to the system. Use optional 'search' param to filter the results by email.",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserDto"
+                  }
                 }
               }
             }
@@ -279,41 +312,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "channels"
-        ]
-      }
-    },
-    "/users": {
-      "get": {
-        "operationId": "UsersController_find",
-        "summary": "",
-        "description": "Searches users added to the system. Use optional 'search' param to filter the results by email.",
-        "parameters": [
-          {
-            "name": "search",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/UserDto"
-                  }
                 }
               }
             }

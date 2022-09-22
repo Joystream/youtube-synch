@@ -22,7 +22,7 @@ export class ChannelsController {
   })
   @ApiBody({ type: SaveChannelRequest })
   @ApiResponse({ type: SaveChannelResponse })
-  @Post('/verify-and-save')
+  @Post()
   async addVerifiedChannel(
     @Body() { authorizationCode, userId, joystreamChannelId, referrerChannelId, email }: SaveChannelRequest
   ): Promise<SaveChannelResponse> {
@@ -38,11 +38,14 @@ export class ChannelsController {
       // get channel from user
       const [channel] = await this.youtube.getChannels(user)
 
+      const updatedUser: User = { ...user, email }
+      const updatedChannel: Channel = { ...channel, joystreamChannelId, referrerChannelId, email }
+
       // save user and channel
-      await this.saveUserAndChannel({ ...user, email }, { ...channel, joystreamChannelId, referrerChannelId, email })
+      await this.saveUserAndChannel(updatedUser, updatedChannel)
 
       // return user and channel
-      return new SaveChannelResponse(new UserDto(user), new ChannelDto(channel))
+      return new SaveChannelResponse(new UserDto(updatedUser), new ChannelDto(updatedChannel))
     } catch (error) {
       const message = error instanceof Error ? error.message : error
       throw new BadRequestException(message)

@@ -23,7 +23,7 @@ export class UsersController {
   })
   @ApiBody({ type: VerifyChannelRequest })
   @ApiResponse({ type: VerifyChannelResponse })
-  @Post('/verify')
+  @Post()
   async verifyUserAndChannel(@Body() { authorizationCode }: VerifyChannelRequest): Promise<VerifyChannelResponse> {
     try {
       // get user from  authorization code
