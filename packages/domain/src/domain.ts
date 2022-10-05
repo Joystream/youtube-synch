@@ -62,6 +62,9 @@ export class Channel {
 
   //
   shouldBeIngested: boolean
+
+  // Channel suspension status
+  isSuspended: boolean
 }
 
 export interface IEvent {

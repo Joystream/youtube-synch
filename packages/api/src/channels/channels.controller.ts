@@ -1,8 +1,29 @@
 import { ChannelsRepository, IYoutubeClient, UsersRepository, VideosRepository } from '@joystream/ytube'
-import { BadRequestException, Body, Controller, Get, Inject, NotFoundException, Param, Post, Put } from '@nestjs/common'
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Inject,
+  NotFoundException,
+  Param,
+  ParseArrayPipe,
+  Post,
+  Put,
+  UnauthorizedException,
+} from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { Channel, User } from '@youtube-sync/domain'
-import { ChannelDto, SaveChannelRequest, SaveChannelResponse, UpdateChannelDto, UserDto, VideoDto } from '../dtos'
+import {
+  ChannelDto,
+  SaveChannelRequest,
+  SaveChannelResponse,
+  SuspendChannelDto,
+  UpdateChannelDto,
+  UserDto,
+  VideoDto,
+} from '../dtos'
 import { ChannelsService } from './channels.service'
 
 @Controller('channels')
@@ -55,7 +76,7 @@ export class ChannelsController {
   @Get(':joystreamChannelId')
   @ApiOperation({ description: 'Retrieves channel by joystreamChannelId' })
   @ApiResponse({ type: ChannelDto })
-  async get(@Param('joystreamChannelId') id: string) {
+  async get(@Param('joystreamChannelId') id: number) {
     try {
       const channel = await this.channelsService.get(id)
       return new ChannelDto(channel)
@@ -65,16 +86,52 @@ export class ChannelsController {
     }
   }
 
-  @Put(':joystreamChannelId')
+  @Put('/yt-syncing/:joystreamChannelId')
   @ApiBody({ type: UpdateChannelDto })
   @ApiResponse({ type: ChannelDto })
   @ApiOperation({
-    description: `Updates given channel. Note: only 'shouldBeIngested' is available for update at the moment`,
+    description: `Updates given channel YT syncing status. Note: only 'shouldBeIngested' is available for update at the moment`,
   })
-  async updateChannel(@Param('joystreamChannelId') id: string, @Body() body: UpdateChannelDto) {
-    const channel = await this.channelsService.get(id)
+  async updateChannel(@Param('joystreamChannelId') id: number, @Body() body: UpdateChannelDto) {
+    try {
+      const channel = await this.channelsService.get(id)
+      this.channelsService.update({ ...channel, ...body })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
+  }
 
-    this.channelsService.update({ ...channel, ...body })
+  @Put('/suspend')
+  @ApiBody({ type: SuspendChannelDto, isArray: true })
+  @ApiResponse({ type: ChannelDto, isArray: true })
+  @ApiOperation({
+    description: `Authenticated endpoint to suspend given channel/s from YPP program`,
+  })
+  async suspendChannels(
+    @Headers('ypp_owner_key') yppOwnerKey: string,
+    @Body(new ParseArrayPipe({ items: SuspendChannelDto, whitelist: true })) channels: SuspendChannelDto[]
+  ) {
+    if (yppOwnerKey !== process.env.YPP_OWNER_KEY) {
+      throw new UnauthorizedException('Invalid YPP owner key')
+    }
+
+    try {
+      for (const { joystreamChannelId, isSuspended } of channels) {
+        const channel = await this.channelsService.get(joystreamChannelId)
+
+        // if channel is being suspended then its YT ingestion/syncing should also be stopped
+        if (isSuspended) {
+          this.channelsService.update({ ...channel, isSuspended, shouldBeIngested: false })
+        } else {
+          // if channel suspension is revoked then its YT ingestion/syncing should be resumed
+          this.channelsService.update({ ...channel, isSuspended, shouldBeIngested: true })
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
   }
 
   @Get(':id/videos')
