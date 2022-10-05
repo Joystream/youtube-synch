@@ -9,7 +9,7 @@ import { statsRepository } from '..'
 
 // YPP induction criteria, each channel should meet following criteria
 const MINIMUM_SUBSCRIBERS_COUNT = 50
-const MINiMUM_VIDEO_COUNT = 10
+const MINIMUM_VIDEO_COUNT = 10
 const MINIMUM_VIDEO_AGE_MONTHS = 1
 const MINIMUM_CHANNEL_AGE_MONTHS = 3
 
@@ -94,17 +94,17 @@ class YoutubeClient implements IYoutubeClient {
     oneMonthsAgo.setMonth(oneMonthsAgo.getMonth() - MINIMUM_VIDEO_AGE_MONTHS)
 
     // filter all videos that are older than one month
-    const videos = (await this.getVideos(channel, MINiMUM_VIDEO_COUNT)).filter(
+    const videos = (await this.getVideos(channel, MINIMUM_VIDEO_COUNT)).filter(
       (v) => new Date(v.publishedAt) < oneMonthsAgo
     )
-    if (videos.length < MINiMUM_VIDEO_COUNT) {
+    if (videos.length < MINIMUM_VIDEO_COUNT) {
       errors.push({
         errorCode: ExitCodes.CHANNEL_CRITERIA_UNMET_VIDEOS,
         message:
-          `Channel ${channel.id} with ${channel.statistics.videoCount} videos does not meet Youtube ` +
-          `Partner Program requirement of at least ${MINiMUM_VIDEO_COUNT} videos, each 1 month old`,
+          `Channel ${channel.id} with ${videos.length} videos does not meet Youtube ` +
+          `Partner Program requirement of at least ${MINIMUM_VIDEO_COUNT} videos, each ${MINIMUM_VIDEO_AGE_MONTHS} month old`,
         result: channel.statistics.videoCount,
-        expected: MINiMUM_VIDEO_COUNT,
+        expected: MINIMUM_VIDEO_COUNT,
       })
     }
 
@@ -116,7 +116,7 @@ class YoutubeClient implements IYoutubeClient {
         errorCode: ExitCodes.CHANNEL_CRITERIA_UNMET_CREATION_DATE,
         message:
           `Channel ${channel.id} with creation time of ${channel.publishedAt} does not ` +
-          `meet Youtube Partner Program requirement of channel being at least 3 months old`,
+          `meet Youtube Partner Program requirement of channel being at least ${MINIMUM_CHANNEL_AGE_MONTHS} months old`,
         result: channel.publishedAt,
         expected: threeMonthsAgo,
       })

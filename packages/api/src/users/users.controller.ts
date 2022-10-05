@@ -1,4 +1,4 @@
-import { ChannelsRepository, IYoutubeClient, UsersRepository } from '@joystream/ytube'
+import { IYoutubeClient, UsersRepository } from '@joystream/ytube'
 import {
   BadRequestException,
   Body,
@@ -10,32 +10,20 @@ import {
   Post,
   Query,
 } from '@nestjs/common'
-import { Channel, User } from '@youtube-sync/domain'
 import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
-import {
-  ChannelDto,
-  SaveChannelRequest,
-  SaveChannelResponse,
-  UserDto,
-  VerifyChannelRequest,
-  VerifyChannelResponse,
-} from '../dtos'
+import { UserDto, VerifyChannelRequest, VerifyChannelResponse } from '../dtos'
 
 @Controller('users')
 @ApiTags('channels')
 export class UsersController {
-  constructor(
-    @Inject('youtube') private youtube: IYoutubeClient,
-    private usersRepository: UsersRepository,
-    private channelsRepository: ChannelsRepository
-  ) {}
+  constructor(@Inject('youtube') private youtube: IYoutubeClient, private usersRepository: UsersRepository) {}
 
   @ApiOperation({
     description: `fetches user's channel from the supplied google authorization code, and verifies if it satisfies YPP induction criteria`,
   })
   @ApiBody({ type: VerifyChannelRequest })
   @ApiResponse({ type: VerifyChannelResponse })
-  @Post('/verify')
+  @Post()
   async verifyUserAndChannel(@Body() { authorizationCode }: VerifyChannelRequest): Promise<VerifyChannelResponse> {
     try {
       // get user from  authorization code
@@ -53,39 +41,6 @@ export class UsersController {
 
       // return verified user
       return { email: user.email, userId: user.id }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : error
-      throw new BadRequestException(message)
-    }
-  }
-
-  @ApiOperation({
-    description: `Creates user from the supplied google authorization code and fetches
-     user's channel and if it satisfies YPP induction criteria it saves the record`,
-  })
-  @ApiBody({ type: SaveChannelRequest })
-  @ApiResponse({ type: SaveChannelResponse })
-  @Post('/verify-and-save')
-  async addVerifiedChannel(
-    @Body() { authorizationCode, userId, joystreamChannelId, referrerChannelId, email }: SaveChannelRequest
-  ): Promise<SaveChannelResponse> {
-    try {
-      // get user from userId
-      const user = await this.usersRepository.get(userId)
-
-      // ensure request's authorization code matches the user's authorization code
-      if (user.authorizationCode !== authorizationCode) {
-        throw new Error('Invalid request author. Permission denied.')
-      }
-
-      // get channel from user
-      const [channel] = await this.youtube.getChannels(user)
-
-      // save user and channel
-      await this.saveUserAndChannel(user, { ...channel, joystreamChannelId, referrerChannelId, email })
-
-      // return user and channel
-      return new SaveChannelResponse(new UserDto(user), new ChannelDto(channel))
     } catch (error) {
       const message = error instanceof Error ? error.message : error
       throw new BadRequestException(message)
@@ -129,13 +84,5 @@ export class UsersController {
       const message = error instanceof Error ? error.message : error
       throw new NotFoundException(message)
     }
-  }
-
-  private async saveUserAndChannel(user: User, channel: Channel) {
-    // save user
-    await this.usersRepository.save(user)
-
-    // save channel
-    return await this.channelsRepository.save(channel)
   }
 }

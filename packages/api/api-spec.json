@@ -36,6 +36,39 @@
         ]
       }
     },
+    "/channels": {
+      "post": {
+        "operationId": "ChannelsController_addVerifiedChannel",
+        "summary": "",
+        "description": "Creates user from the supplied google authorization code and fetches\n     user's channel and if it satisfies YPP induction criteria it saves the record",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveChannelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveChannelResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
     "/channels/{joystreamChannelId}": {
       "get": {
         "operationId": "ChannelsController_get",
@@ -191,7 +224,7 @@
         ]
       }
     },
-    "/users/verify": {
+    "/users": {
       "post": {
         "operationId": "UsersController_verifyUserAndChannel",
         "summary": "",
@@ -222,31 +255,31 @@
         "tags": [
           "channels"
         ]
-      }
-    },
-    "/users/verify-and-save": {
-      "post": {
-        "operationId": "UsersController_addVerifiedChannel",
+      },
+      "get": {
+        "operationId": "UsersController_find",
         "summary": "",
-        "description": "Creates user from the supplied google authorization code and fetches\n     user's channel and if it satisfies YPP induction criteria it saves the record",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SaveChannelRequest"
-              }
+        "description": "Searches users added to the system. Use optional 'search' param to filter the results by email.",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           }
-        },
+        ],
         "responses": {
           "default": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SaveChannelResponse"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserDto"
+                  }
                 }
               }
             }
@@ -288,41 +321,6 @@
           "channels"
         ]
       }
-    },
-    "/users": {
-      "get": {
-        "operationId": "UsersController_find",
-        "summary": "",
-        "description": "Searches users added to the system. Use optional 'search' param to filter the results by email.",
-        "parameters": [
-          {
-            "name": "search",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/UserDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "channels"
-        ]
-      }
     }
   },
   "info": {
@@ -338,6 +336,47 @@
       "Video": {
         "type": "object",
         "properties": {}
+      },
+      "SaveChannelRequest": {
+        "type": "object",
+        "properties": {
+          "authorizationCode": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "joystreamChannelId": {
+            "type": "number"
+          },
+          "referrerChannelId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "authorizationCode",
+          "userId",
+          "email",
+          "joystreamChannelId"
+        ]
+      },
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email"
+        ]
       },
       "ThumbnailsDto": {
         "type": "object",
@@ -399,6 +438,21 @@
           "joystreamChannelId",
           "thumbnails",
           "tier"
+        ]
+      },
+      "SaveChannelResponse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/ChannelDto"
+          }
+        },
+        "required": [
+          "user",
+          "channel"
         ]
       },
       "UpdateChannelDto": {
@@ -483,62 +537,6 @@
         "required": [
           "email",
           "userId"
-        ]
-      },
-      "SaveChannelRequest": {
-        "type": "object",
-        "properties": {
-          "authorizationCode": {
-            "type": "string"
-          },
-          "userId": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "joystreamChannelId": {
-            "type": "number"
-          },
-          "referrerChannelId": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "authorizationCode",
-          "userId",
-          "email",
-          "joystreamChannelId"
-        ]
-      },
-      "UserDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "email"
-        ]
-      },
-      "SaveChannelResponse": {
-        "type": "object",
-        "properties": {
-          "user": {
-            "$ref": "#/components/schemas/UserDto"
-          },
-          "channel": {
-            "$ref": "#/components/schemas/ChannelDto"
-          }
-        },
-        "required": [
-          "user",
-          "channel"
         ]
       }
     }
