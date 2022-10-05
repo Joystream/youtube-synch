@@ -4,7 +4,7 @@ import FormData from 'form-data'
 import _ from 'lodash'
 import ytdl from 'ytdl-core'
 import QueryNodeApi from '../src/graphql/QueryNodeApi'
-import { StorageNodeInfo } from '../Types'
+import { StorageNodeInfo } from '../src/types'
 
 export type OperatorInfo = { id: string; endpoint: string }
 export type OperatorsMapping = Record<string, OperatorInfo>

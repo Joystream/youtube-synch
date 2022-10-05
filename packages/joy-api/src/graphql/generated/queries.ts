@@ -1,7 +1,11 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
-export type ChannelFieldsFragment = { id: string; videos: Array<{ id: string; videoStateBloatBond: any }> }
+export type ChannelFieldsFragment = {
+  id: string
+  videos: Array<{ id: string; videoStateBloatBond: any }>
+  ownerMember?: Types.Maybe<{ id: string; controllerAccount: string }>
+}
 
 export type GetChannelByIdQueryVariables = Types.Exact<{
   channelId: Types.Scalars['ID']
@@ -66,6 +70,7 @@ export type DataObjectInfoFragment = {
         video?: Types.Maybe<{ id: string }>
         subtitle?: Types.Maybe<{ id: string }>
       }
+    | { __typename: 'DataObjectTypeChannelPayoutsPayload' }
     | { __typename: 'DataObjectTypeUnknown' }
 }
 
@@ -158,6 +163,10 @@ export const ChannelFields = gql`
     videos {
       id
       videoStateBloatBond
+    }
+    ownerMember {
+      id
+      controllerAccount
     }
   }
 `

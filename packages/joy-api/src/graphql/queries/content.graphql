@@ -4,6 +4,10 @@ fragment ChannelFields on Channel {
     id
     videoStateBloatBond
   }
+  ownerMember {
+    id
+    controllerAccount
+  }
 }
 
 query getChannelById($channelId: ID!) {

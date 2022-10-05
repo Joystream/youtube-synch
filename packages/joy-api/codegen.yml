@@ -3,7 +3,7 @@ overwrite: true
 schema: ${JOYSTREAM_QUERY_NODE_URL}
 
 documents:
-  - 'packages/joy-api/src/graphql/queries/*.graphql'
+  - './src/graphql/queries/*.graphql'
 
 config:
   scalars:

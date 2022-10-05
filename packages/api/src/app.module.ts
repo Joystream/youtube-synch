@@ -8,7 +8,7 @@ import { VideosController } from './videos/videos.controller'
 import { JoystreamClient } from '@youtube-sync/joy-api'
 import { ChannelsRepository, UsersRepository, VideosRepository, YtClient } from '@joystream/ytube'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-// import { createGraphqlClient } from 'packages/joy-api/graphql'
+import QueryNodeApi from 'packages/joy-api/src/graphql/QueryNodeApi'
 import { Uploader } from 'packages/joy-api/storage/uploader'
 
 @Module({
@@ -45,13 +45,13 @@ import { Uploader } from 'packages/joy-api/storage/uploader'
       },
       inject: [ConfigService],
     },
-    // {
-    //   provide: 'queryNode',
-    //   useFactory: (config: ConfigService) => {
-    //     return createGraphqlClient(config.get<string>('JOYSTREAM_QUERY_NODE_URL'))
-    //   },
-    //   inject: [ConfigService],
-    // },
+    {
+      provide: QueryNodeApi,
+      useFactory: (config: ConfigService) => {
+        return new QueryNodeApi(config.get<string>('JOYSTREAM_QUERY_NODE_URL'))
+      },
+      inject: [ConfigService],
+    },
     {
       provide: 'youtube',
       useFactory: (config: ConfigService) => {
