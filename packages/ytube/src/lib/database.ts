@@ -47,8 +47,8 @@ export function createChannelModel(): ModelType<AnyDocument> {
       // Description of the channel
       description: String,
 
-      // Channel's creation date
-      createdAt: Number,
+      // Youtube channel creation date
+      publishedAt: String,
 
       // Whether this YT channels is verified by partner program or not (can be enum as well such as verified, suspended, pending etc)
       isVerified: Boolean,
@@ -113,7 +113,13 @@ export function createChannelModel(): ModelType<AnyDocument> {
       },
     },
 
-    { saveUnknown: true }
+    {
+      saveUnknown: true,
+      timestamps: {
+        createdAt: 'createdAt',
+        updatedAt: 'updatedAt',
+      },
+    }
   )
   return dynamoose.model('channels', channelSchema, { create: false })
 }
@@ -284,7 +290,7 @@ export function statsRepository(): ModelType<AnyDocument> {
 }
 
 export function mapTo<TEntity>(doc: AnyDocument) {
-  return doc.toJSON() as TEntity
+  return doc.original() as TEntity
 }
 
 export interface IRepository<T> {
@@ -314,14 +320,11 @@ export class UsersRepository implements IRepository<User> {
 
   async get(id: string): Promise<User | undefined> {
     const result = await this.model.get({ id })
-    if (!result) {
-      throw new Error(`Could not find user with id ${id}`)
-    }
-    return mapTo<User>(result)
+    return result ? mapTo<User>(result) : undefined
   }
 
   async save(model: User): Promise<User> {
-    const update = omit(['id', 'updatedAt', 'createdAt'], model)
+    const update = omit(['id', 'updatedAt'], model)
     const result = await this.model.update({ id: model.id }, update)
     return mapTo<User>(result)
   }
@@ -359,7 +362,8 @@ export class ChannelsRepository implements IRepository<Channel> {
   }
 
   async save(channel: Channel): Promise<Channel> {
-    const update = omit(['id', 'userId', 'updatedAt', 'createdAt'], channel)
+    const update = omit(['id', 'userId', 'updatedAt'], channel)
+    console.log('Saving channel', channel.id, update)
     const result = await this.model.update({ id: channel.id, userId: channel.userId }, update)
     return mapTo<Channel>(result)
   }
@@ -370,7 +374,14 @@ export class ChannelsRepository implements IRepository<Channel> {
   }
 
   async query(init: ConditionInitializer, f: (q: Query<AnyDocument>) => Query<AnyDocument>) {
-    const results = await f(this.model.query(init)).exec()
+    const results = this.model
+      .query({ timestampPartition: 'partition' })
+      .where('createdAt')
+      .using('partition-createdAt-index')
+      .exec()
+    console.log('Querying channels', results, init, f)
+    // const results = await f(this.model.query(init)).exec()
+    // console.log('Querying channels', results)
     return results.map((r) => mapTo<Channel>(r))
   }
 }
@@ -406,7 +417,7 @@ export class VideosRepository implements IRepository<Video> {
   }
 
   async save(model: Video): Promise<Video> {
-    const upd = omit(['id', 'channelId', 'createdAt', 'updatedAt'], model)
+    const upd = omit(['id', 'channelId', 'updatedAt'], model)
     const result = await this.model.update({ channelId: model.channelId, id: model.id }, upd)
     return mapTo<Video>(result)
   }

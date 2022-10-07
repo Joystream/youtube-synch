@@ -26,15 +26,19 @@ export class UsersController {
   @Post()
   async verifyUserAndChannel(@Body() { authorizationCode }: VerifyChannelRequest): Promise<VerifyChannelResponse> {
     try {
-      // get user from  authorization code
+      // get user from authorization code
       const user = await this.youtube.getUserFromCode(authorizationCode)
 
-      // TODO: ensure that is only be one channel for one user
       // get channel from user
       const [channel] = await this.youtube.getChannels(user)
 
-      // verify channel
-      await this.youtube.verifyChannel(channel)
+      const existingUser = await this.usersRepository.get(user.id)
+
+      // If user already exists then skip doing YT verification again to save API quota
+      if (!existingUser) {
+        // verify channel
+        await this.youtube.verifyChannel(channel)
+      }
 
       // save user
       await this.usersRepository.save(user)

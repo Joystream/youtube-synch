@@ -27,8 +27,8 @@ export class Channel {
   // Youtube channel creation date
   publishedAt: string
 
-  // record creation date
-  createdAt: number
+  // record creation time
+  createdAt: Date
 
   // channel thumbnails
   thumbnails: Thumbnails
@@ -62,6 +62,9 @@ export class Channel {
 
   //
   shouldBeIngested: boolean
+
+  // Needs a dummy partition key on GSI to be able to query by createdAt fields
+  timestampPartition: string
 }
 
 export interface IEvent {
@@ -134,7 +137,10 @@ export class User {
     public refreshToken: string,
 
     // User authorization code
-    public authorizationCode: string
+    public authorizationCode: string,
+
+    // Record created At timestamp
+    public createdAt: Date
   ) {}
 
   membership: Membership
@@ -184,8 +190,8 @@ export class Video {
   // Youtube video creation date
   publishedAt: string
 
-  // record creation date
-  createdAt: number
+  // record creation time
+  createdAt: Date
 }
 
 export class Stats {

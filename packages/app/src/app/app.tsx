@@ -44,7 +44,7 @@ export function App() {
   const googleLogin = useGoogleLogin({
     onSuccess: async ({ code, scope }) => {
       try {
-        const res = await axios.post(`http://localhost:3001/users/verify`, {
+        const res = await axios.post(`http://localhost:3001/users`, {
           authorizationCode: code,
         })
 

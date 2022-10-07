@@ -67,6 +67,27 @@
         "tags": [
           "channels"
         ]
+      },
+      "get": {
+        "operationId": "ChannelsController_getRecentVerifiedChannels",
+        "summary": "",
+        "description": "Retrieves the most recently verified 30 channels desc by date",
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
       }
     },
     "/channels/{joystreamChannelId}": {
@@ -188,7 +209,7 @@
       "get": {
         "operationId": "ChannelsController_getVideo",
         "summary": "",
-        "description": "Retrieves particular video by it`s id",
+        "description": "Retrieves particular video by it`s channel id",
         "parameters": [
           {
             "name": "id",

@@ -1,6 +1,8 @@
 import { ChannelsRepository } from '@joystream/ytube'
 import { Injectable } from '@nestjs/common'
 import { Channel } from '@youtube-sync/domain'
+import { AnyDocument } from 'dynamoose/dist/Document'
+import { Query } from 'dynamoose/dist/DocumentRetriever'
 
 @Injectable()
 export class ChannelsService {
@@ -38,6 +40,17 @@ export class ChannelsService {
    */
   async getAll(userId: string): Promise<Channel[]> {
     return await this.channelsRepository.query({ userId }, (q) => q)
+  }
+
+  /**
+   * @param count Number of record to retrieve
+   * @returns List of `n` recent verified channels
+   */
+  async getRecent(count: number): Promise<Channel[]> {
+    return await this.channelsRepository.query(
+      'partition',
+      (q) => q.sort('descending').limit(count).using('partition-createdAt-index') as Query<AnyDocument>
+    )
   }
 
   async getAllWithFrequency(frequency: number): Promise<Channel[]> {
