@@ -60,8 +60,11 @@ export class Channel {
   userRefreshToken: string
   uploadsPlaylistId: string
 
-  //
-  shouldBeIngested: boolean
+  // Should this channel be ingested for automated Youtube/Joystream syncing?
+  shouldBeIngested: {
+    status: boolean
+    lastChangedAt: number
+  }
 }
 
 export interface IEvent {

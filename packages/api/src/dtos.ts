@@ -1,7 +1,7 @@
 import { MemberId } from '@joystream/types/primitives'
-import { ApiProperty, PickType } from '@nestjs/swagger'
+import { ApiProperty } from '@nestjs/swagger'
 import { User, Channel, Video, VideoState } from '@youtube-sync/domain'
-import { IsEmail } from 'class-validator'
+import { IsEmail, IsNotEmpty } from 'class-validator'
 
 // NestJS Data Transfer Objects (DTO)s
 
@@ -32,7 +32,7 @@ export class ChannelDto {
     this.description = channel.description
     this.tier = channel.tier
     this.joystreamChannelId = channel.joystreamChannelId
-    this.shouldBeIngested = channel.shouldBeIngested
+    this.shouldBeIngested = channel.shouldBeIngested.status
     this.aggregatedStats = channel.aggregatedStats
     this.thumbnails = channel.thumbnails
   }
@@ -104,6 +104,10 @@ export class VideoDto extends Video {
   @ApiProperty() destinationUrl: string
 }
 
-export class UpdateChannelDto extends PickType(Channel, ['shouldBeIngested']) {
-  @ApiProperty() shouldBeIngested: boolean
+export class IngestChannelDto {
+  @IsNotEmpty() @ApiProperty({ required: true }) signature: string
+  @IsNotEmpty() @ApiProperty({ required: true }) message: {
+    shouldBeIngested: boolean
+    timestamp: Date
+  }
 }

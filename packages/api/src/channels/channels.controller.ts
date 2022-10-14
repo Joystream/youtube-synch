@@ -2,8 +2,12 @@ import { ChannelsRepository, IYoutubeClient, UsersRepository, VideosRepository }
 import { BadRequestException, Body, Controller, Get, Inject, NotFoundException, Param, Post, Put } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { Channel, User } from '@youtube-sync/domain'
-import { ChannelDto, SaveChannelRequest, SaveChannelResponse, UpdateChannelDto, UserDto, VideoDto } from '../dtos'
+// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
+import QueryNodeApi from 'packages/joy-api/src/graphql/QueryNodeApi'
+import { ChannelDto, SaveChannelRequest, SaveChannelResponse, IngestChannelDto, UserDto, VideoDto } from '../dtos'
 import { ChannelsService } from './channels.service'
+import { stringToU8a, u8aToHex } from '@polkadot/util'
+import { signatureVerify } from '@polkadot/util-crypto'
 
 @Controller('channels')
 @ApiTags('channels')
@@ -13,7 +17,8 @@ export class ChannelsController {
     private channelsService: ChannelsService,
     private channelsRepository: ChannelsRepository,
     private usersRepository: UsersRepository,
-    private videosRepository: VideosRepository
+    private videosRepository: VideosRepository,
+    private qnApi: QueryNodeApi
   ) {}
 
   @ApiOperation({
@@ -65,16 +70,38 @@ export class ChannelsController {
     }
   }
 
-  @Put(':joystreamChannelId')
-  @ApiBody({ type: UpdateChannelDto })
+  @Put('ingestion/:joystreamChannelId')
+  @ApiBody({ type: IngestChannelDto })
   @ApiResponse({ type: ChannelDto })
   @ApiOperation({
-    description: `Updates given channel. Note: only 'shouldBeIngested' is available for update at the moment`,
+    description: `Updates given channel ingestion status. Note: only channel owner can update the status`,
   })
-  async updateChannel(@Param('joystreamChannelId') id: string, @Body() body: UpdateChannelDto) {
-    const channel = await this.channelsService.get(id)
+  async Channel(@Param('joystreamChannelId') id: string, @Body() { message, signature }: IngestChannelDto) {
+    try {
+      const channel = await this.channelsService.get(id)
 
-    this.channelsService.update({ ...channel, ...body })
+      const { controllerAccount } = (await this.qnApi.getChannelById(channel.joystreamChannelId.toString())).ownerMember
+
+      // verify the message using Channel owner's address
+      const { isValid } = signatureVerify(JSON.stringify(message), signature, controllerAccount)
+
+      // Ensure that the signature isn't invalid and the message is not a playback message
+      if (!isValid || new Date(channel.shouldBeIngested.lastChangedAt) >= message.timestamp) {
+        throw new Error('Invalid request signature or playback message. Permission denied.')
+      }
+
+      // update channel ingestion status
+      this.channelsService.update({
+        ...channel,
+        shouldBeIngested: {
+          status: message.shouldBeIngested,
+          lastChangedAt: message.timestamp.getTime(),
+        },
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
   }
 
   @Get(':id/videos')

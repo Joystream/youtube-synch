@@ -99,11 +99,13 @@
         "tags": [
           "channels"
         ]
-      },
+      }
+    },
+    "/channels/ingestion/{joystreamChannelId}": {
       "put": {
-        "operationId": "ChannelsController_updateChannel",
+        "operationId": "ChannelsController_Channel",
         "summary": "",
-        "description": "Updates given channel. Note: only 'shouldBeIngested' is available for update at the moment",
+        "description": "Updates given channel ingestion status. Note: only channel owner can update the status",
         "parameters": [
           {
             "name": "joystreamChannelId",
@@ -119,7 +121,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateChannelDto"
+                "$ref": "#/components/schemas/IngestChannelDto"
               }
             }
           }
@@ -455,15 +457,19 @@
           "channel"
         ]
       },
-      "UpdateChannelDto": {
+      "IngestChannelDto": {
         "type": "object",
         "properties": {
-          "shouldBeIngested": {
-            "type": "boolean"
+          "signature": {
+            "type": "string"
+          },
+          "message": {
+            "type": "object"
           }
         },
         "required": [
-          "shouldBeIngested"
+          "signature",
+          "message"
         ]
       },
       "VideoDto": {

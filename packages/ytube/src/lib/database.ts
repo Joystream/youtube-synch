@@ -102,8 +102,17 @@ export function createChannelModel(): ModelType<AnyDocument> {
 
       // Should this channel be ingested for automated Youtube/Joystream syncing?
       shouldBeIngested: {
+        type: Object,
+        schema: {
+          status: Boolean,
+          lastChangedAt: Date,
+        },
+      },
+
+      // Is this channel currently being suspended by YPP owner due to TOS violations?
+      isSuspended: {
         type: Boolean,
-        default: true,
+        default: false,
       },
     },
 
