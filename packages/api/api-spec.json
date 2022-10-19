@@ -101,7 +101,7 @@
         ]
       }
     },
-    "/channels/yt-syncing/{joystreamChannelId}": {
+    "/channels/{joystreamChannelId}/ingest": {
       "put": {
         "operationId": "ChannelsController_updateChannel",
         "summary": "",
@@ -150,7 +150,7 @@
         "description": "Authenticated endpoint to suspend given channel/s from YPP program",
         "parameters": [
           {
-            "name": "ypp_owner_key",
+            "name": "authorization",
             "required": true,
             "in": "header",
             "schema": {

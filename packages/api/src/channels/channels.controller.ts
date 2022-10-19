@@ -12,6 +12,7 @@ import {
   Post,
   Put,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { Channel, User } from '@youtube-sync/domain'
@@ -86,7 +87,7 @@ export class ChannelsController {
     }
   }
 
-  @Put('/yt-syncing/:joystreamChannelId')
+  @Put(':joystreamChannelId/ingest')
   @ApiBody({ type: UpdateChannelDto })
   @ApiResponse({ type: ChannelDto })
   @ApiOperation({
@@ -105,13 +106,15 @@ export class ChannelsController {
   @Put('/suspend')
   @ApiBody({ type: SuspendChannelDto, isArray: true })
   @ApiResponse({ type: ChannelDto, isArray: true })
+  @UseGuards()
   @ApiOperation({
     description: `Authenticated endpoint to suspend given channel/s from YPP program`,
   })
   async suspendChannels(
-    @Headers('ypp_owner_key') yppOwnerKey: string,
+    @Headers('authorization') authorizationHeader: string,
     @Body(new ParseArrayPipe({ items: SuspendChannelDto, whitelist: true })) channels: SuspendChannelDto[]
   ) {
+    const yppOwnerKey = authorizationHeader.split(' ')[1]
     if (yppOwnerKey !== process.env.YPP_OWNER_KEY) {
       throw new UnauthorizedException('Invalid YPP owner key')
     }
@@ -124,8 +127,8 @@ export class ChannelsController {
         if (isSuspended) {
           this.channelsService.update({ ...channel, isSuspended, shouldBeIngested: false })
         } else {
-          // if channel suspension is revoked then its YT ingestion/syncing should be resumed
-          this.channelsService.update({ ...channel, isSuspended, shouldBeIngested: true })
+          // if channel suspension is revoked then its YT ingestion/syncing should not be resumed
+          this.channelsService.update({ ...channel, isSuspended })
         }
       }
     } catch (error) {
