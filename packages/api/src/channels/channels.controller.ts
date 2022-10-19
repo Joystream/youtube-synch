@@ -70,7 +70,7 @@ export class ChannelsController {
   @ApiResponse({ type: ChannelDto })
   async getRecentVerifiedChannels() {
     try {
-      const channels = await this.channelsService.getRecent(2)
+      const channels = await this.channelsService.getRecent(30)
       return channels.map((channel) => new ChannelDto(channel))
     } catch (error) {
       const message = error instanceof Error ? error.message : error
