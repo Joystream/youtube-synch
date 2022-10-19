@@ -65,6 +65,9 @@ export class Channel {
     status: boolean
     lastChangedAt: number
   }
+
+  // Is this channel's YPP status suspended?
+  isSuspended: boolean
 }
 
 export interface IEvent {

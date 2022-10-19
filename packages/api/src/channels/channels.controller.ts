@@ -70,7 +70,7 @@ export class ChannelsController {
     }
   }
 
-  @Put('ingestion/:joystreamChannelId')
+  @Put(':joystreamChannelId/ingest')
   @ApiBody({ type: IngestChannelDto })
   @ApiResponse({ type: ChannelDto })
   @ApiOperation({
@@ -80,12 +80,17 @@ export class ChannelsController {
     try {
       const channel = await this.channelsService.get(id)
 
+      // Ensure channel is not suspended
+      if (channel.isSuspended) {
+        throw new Error(`Can't change ingestion status of a suspended channel. Permission denied.`)
+      }
+
       const { controllerAccount } = (await this.qnApi.getChannelById(channel.joystreamChannelId.toString())).ownerMember
 
-      // verify the message using Channel owner's address
+      // verify the message signature using Channel owner's address
       const { isValid } = signatureVerify(JSON.stringify(message), signature, controllerAccount)
 
-      // Ensure that the signature isn't invalid and the message is not a playback message
+      // Ensure that the signature is valid and the message is not a playback message
       if (!isValid || new Date(channel.shouldBeIngested.lastChangedAt) >= message.timestamp) {
         throw new Error('Invalid request signature or playback message. Permission denied.')
       }
