@@ -79,7 +79,7 @@ export class SaveChannelRequest {
   @IsNotEmpty() @ApiProperty({ required: true }) joystreamChannelId: number
 
   // referrer Channel ID
-  @IsNotEmpty() @ApiProperty({ required: false }) referrerChannelId: number
+  @ApiProperty({ required: false }) referrerChannelId: number
 }
 
 // Dto for save channel response
