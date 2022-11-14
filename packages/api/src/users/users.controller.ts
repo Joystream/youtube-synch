@@ -36,10 +36,7 @@ export class UsersController {
 
       // Ensure channel exists
       if (!channel) {
-        throw new YoutubeAuthorizationError(
-          ExitCodes.CHANNEL_NOT_FOUND,
-          `No Youtube Channel exists for user ${user.email}`
-        )
+        throw new YoutubeAuthorizationError(ExitCodes.CHANNEL_NOT_FOUND, `No Youtube Channel exists for given user`)
       }
 
       // verify channel
