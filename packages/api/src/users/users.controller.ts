@@ -11,6 +11,7 @@ import {
   Query,
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ExitCodes, YoutubeAuthorizationError } from '@youtube-sync/domain'
 import { UserDto, VerifyChannelRequest, VerifyChannelResponse } from '../dtos'
 
 @Controller('users')
@@ -26,12 +27,16 @@ export class UsersController {
   @Post()
   async verifyUserAndChannel(@Body() { authorizationCode }: VerifyChannelRequest): Promise<VerifyChannelResponse> {
     try {
-      // get user from  authorization code
+      // get user from authorization code
       const user = await this.youtube.getUserFromCode(authorizationCode)
 
-      // TODO: ensure that is only be one channel for one user
       // get channel from user
       const [channel] = await this.youtube.getChannels(user)
+
+      // Ensure channel exists
+      if (!channel) {
+        throw new YoutubeAuthorizationError(ExitCodes.CHANNEL_NOT_FOUND, `No Youtube Channel exists for given user`)
+      }
 
       // verify channel
       await this.youtube.verifyChannel(channel)

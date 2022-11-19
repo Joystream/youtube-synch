@@ -1,8 +1,30 @@
 import { ChannelsRepository, IYoutubeClient, UsersRepository, VideosRepository } from '@joystream/ytube'
-import { BadRequestException, Body, Controller, Get, Inject, NotFoundException, Param, Post, Put } from '@nestjs/common'
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Inject,
+  NotFoundException,
+  Param,
+  ParseArrayPipe,
+  Post,
+  Put,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { Channel, User } from '@youtube-sync/domain'
-import { ChannelDto, SaveChannelRequest, SaveChannelResponse, UpdateChannelDto, UserDto, VideoDto } from '../dtos'
+import {
+  ChannelDto,
+  SaveChannelRequest,
+  SaveChannelResponse,
+  SuspendChannelDto,
+  UpdateChannelDto,
+  UserDto,
+  VideoDto,
+} from '../dtos'
 import { ChannelsService } from './channels.service'
 
 @Controller('channels')
@@ -55,7 +77,7 @@ export class ChannelsController {
   @Get(':joystreamChannelId')
   @ApiOperation({ description: 'Retrieves channel by joystreamChannelId' })
   @ApiResponse({ type: ChannelDto })
-  async get(@Param('joystreamChannelId') id: string) {
+  async get(@Param('joystreamChannelId') id: number) {
     try {
       const channel = await this.channelsService.get(id)
       return new ChannelDto(channel)
@@ -65,16 +87,67 @@ export class ChannelsController {
     }
   }
 
-  @Put(':joystreamChannelId')
+  @Get()
+  @ApiOperation({ description: 'Retrieves the most recently verified 30 channels desc by date' })
+  @ApiResponse({ type: ChannelDto })
+  async getRecentVerifiedChannels() {
+    try {
+      const channels = await this.channelsService.getRecent(30)
+      return channels.map((channel) => new ChannelDto(channel))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
+  }
+
+  @Put(':joystreamChannelId/ingest')
   @ApiBody({ type: UpdateChannelDto })
   @ApiResponse({ type: ChannelDto })
   @ApiOperation({
-    description: `Updates given channel. Note: only 'shouldBeIngested' is available for update at the moment`,
+    description: `Updates given channel YT syncing status. Note: only 'shouldBeIngested' is available for update at the moment`,
   })
-  async updateChannel(@Param('joystreamChannelId') id: string, @Body() body: UpdateChannelDto) {
-    const channel = await this.channelsService.get(id)
+  async updateChannel(@Param('joystreamChannelId') id: number, @Body() body: UpdateChannelDto) {
+    try {
+      const channel = await this.channelsService.get(id)
+      this.channelsService.update({ ...channel, ...body })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
+  }
 
-    this.channelsService.update({ ...channel, ...body })
+  @Put('/suspend')
+  @ApiBody({ type: SuspendChannelDto, isArray: true })
+  @ApiResponse({ type: ChannelDto, isArray: true })
+  @UseGuards()
+  @ApiOperation({
+    description: `Authenticated endpoint to suspend given channel/s from YPP program`,
+  })
+  async suspendChannels(
+    @Headers('authorization') authorizationHeader: string,
+    @Body(new ParseArrayPipe({ items: SuspendChannelDto, whitelist: true })) channels: SuspendChannelDto[]
+  ) {
+    const yppOwnerKey = authorizationHeader.split(' ')[1]
+    if (yppOwnerKey !== process.env.YPP_OWNER_KEY) {
+      throw new UnauthorizedException('Invalid YPP owner key')
+    }
+
+    try {
+      for (const { joystreamChannelId, isSuspended } of channels) {
+        const channel = await this.channelsService.get(joystreamChannelId)
+
+        // if channel is being suspended then its YT ingestion/syncing should also be stopped
+        if (isSuspended) {
+          this.channelsService.update({ ...channel, isSuspended, shouldBeIngested: false })
+        } else {
+          // if channel suspension is revoked then its YT ingestion/syncing should not be resumed
+          this.channelsService.update({ ...channel, isSuspended })
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
   }
 
   @Get(':id/videos')
@@ -89,7 +162,7 @@ export class ChannelsController {
 
   @Get(':id/videos/:videoId')
   @ApiResponse({ type: ChannelDto })
-  @ApiOperation({ description: 'Retrieves particular video by it`s id' })
+  @ApiOperation({ description: 'Retrieves particular video by it`s channel id' })
   async getVideo(@Param('id') id: string, @Param('videoId') videoId: string) {
     const result = await this.videosRepository.get(id, videoId)
     return result

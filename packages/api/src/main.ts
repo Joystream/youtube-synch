@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
-import { INestApplication } from '@nestjs/common'
+import { INestApplication, ValidationPipe } from '@nestjs/common'
 import { config } from 'aws-sdk'
 import * as fs from 'fs'
 
@@ -30,6 +30,8 @@ function setupSwagger(app: INestApplication) {
 async function bootstrap() {
   // Create App
   const app = await NestFactory.create(AppModule)
+
+  app.useGlobalPipes(new ValidationPipe()) // enable ValidationPipe
 
   app.enableCors({
     allowedHeaders: '*',
