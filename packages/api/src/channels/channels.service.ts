@@ -10,9 +10,9 @@ export class ChannelsService {
    * @param joystreamChannelId
    * @returns Returns channel by joystreamChannelId
    */
-  async get(joystreamChannelId: string): Promise<Channel> {
+  async get(joystreamChannelId: number): Promise<Channel> {
     const [result] = await this.channelsRepository.scan('id', (q) =>
-      q.filter('joystreamChannelId').eq(Number(joystreamChannelId))
+      q.filter('joystreamChannelId').eq(joystreamChannelId)
     )
     if (!result) {
       throw new Error(`Could not find channel with id ${joystreamChannelId}`)
