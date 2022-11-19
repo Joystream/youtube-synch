@@ -27,7 +27,7 @@ export class Channel {
   // Youtube channel creation date
   publishedAt: string
 
-  // record creation date
+  // record creation time
   createdAt: number
 
   // channel thumbnails
@@ -65,6 +65,9 @@ export class Channel {
 
   // Channel suspension status
   isSuspended: boolean
+
+  // Needs a dummy partition key on GSI to be able to query by createdAt fields
+  phantomKey: string
 }
 
 export interface IEvent {
@@ -137,7 +140,10 @@ export class User {
     public refreshToken: string,
 
     // User authorization code
-    public authorizationCode: string
+    public authorizationCode: string,
+
+    // Record created At timestamp
+    public createdAt: number
   ) {}
 
   membership: Membership
@@ -187,7 +193,7 @@ export class Video {
   // Youtube video creation date
   publishedAt: string
 
-  // record creation date
+  // record creation time
   createdAt: number
 }
 

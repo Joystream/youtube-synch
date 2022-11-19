@@ -59,7 +59,8 @@ class YoutubeClient implements IYoutubeClient {
       tokenInfo.email,
       tokenResponse.tokens.access_token,
       tokenResponse.tokens.refresh_token,
-      code
+      code,
+      Date.now()
     )
     return user
   }
@@ -204,7 +205,8 @@ class YoutubeClient implements IYoutubeClient {
           frequency: 0,
           createdAt: Date.now(),
           publishedAt: channel.snippet?.publishedAt,
-          shouldBeIngested: false,
+          shouldBeIngested: true,
+          phantomKey: 'phantomData',
         }
     )
   }

@@ -27,10 +27,9 @@ export class UsersController {
   @Post()
   async verifyUserAndChannel(@Body() { authorizationCode }: VerifyChannelRequest): Promise<VerifyChannelResponse> {
     try {
-      // get user from  authorization code
+      // get user from authorization code
       const user = await this.youtube.getUserFromCode(authorizationCode)
 
-      // TODO: ensure that is only be one channel for one user
       // get channel from user
       const [channel] = await this.youtube.getChannels(user)
 
@@ -40,7 +39,7 @@ export class UsersController {
       }
 
       // verify channel
-      await this.youtube.verifyChannel(channel)
+      // await this.youtube.verifyChannel(channel)
 
       // save user
       await this.usersRepository.save(user)

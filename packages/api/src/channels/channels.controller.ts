@@ -87,6 +87,19 @@ export class ChannelsController {
     }
   }
 
+  @Get()
+  @ApiOperation({ description: 'Retrieves the most recently verified 30 channels desc by date' })
+  @ApiResponse({ type: ChannelDto })
+  async getRecentVerifiedChannels() {
+    try {
+      const channels = await this.channelsService.getRecent(30)
+      return channels.map((channel) => new ChannelDto(channel))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
+  }
+
   @Put(':joystreamChannelId/ingest')
   @ApiBody({ type: UpdateChannelDto })
   @ApiResponse({ type: ChannelDto })
@@ -149,7 +162,7 @@ export class ChannelsController {
 
   @Get(':id/videos/:videoId')
   @ApiResponse({ type: ChannelDto })
-  @ApiOperation({ description: 'Retrieves particular video by it`s id' })
+  @ApiOperation({ description: 'Retrieves particular video by it`s channel id' })
   async getVideo(@Param('id') id: string, @Param('videoId') videoId: string) {
     const result = await this.videosRepository.get(id, videoId)
     return result

@@ -27,6 +27,7 @@ export class ChannelDto {
   @ApiProperty() joystreamChannelId: number
   @ApiProperty() thumbnails: ThumbnailsDto
   @ApiProperty() tier: number
+  @ApiProperty() createdAt: Date
 
   constructor(channel: Channel) {
     this.title = channel.title
@@ -37,6 +38,7 @@ export class ChannelDto {
     this.isSuspended = channel.isSuspended
     this.aggregatedStats = channel.aggregatedStats
     this.thumbnails = channel.thumbnails
+    this.createdAt = new Date(channel.createdAt)
   }
 }
 export class UserDto {
