@@ -3,7 +3,7 @@ import { OAuth2Client } from 'google-auth-library'
 import ytdl from 'ytdl-core'
 import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
 import Schema$Channel = youtube_v3.Schema$Channel
-import { Channel, ChannelVerificationFailed, ExitCodes, User, Video } from '@youtube-sync/domain'
+import { Channel, ExitCodes, User, Video, YoutubeAuthorizationError } from '@youtube-sync/domain'
 import { Readable } from 'stream'
 import { statsRepository } from '..'
 
@@ -77,16 +77,17 @@ class YoutubeClient implements IYoutubeClient {
   }
 
   async verifyChannel(channel: Channel): Promise<Channel> {
-    const errors: ChannelVerificationFailed[] = []
+    const errors: YoutubeAuthorizationError[] = []
     if (channel.statistics.subscriberCount < MINIMUM_SUBSCRIBERS_COUNT) {
-      errors.push({
-        errorCode: ExitCodes.CHANNEL_CRITERIA_UNMET_SUBSCRIBERS,
-        message:
+      errors.push(
+        new YoutubeAuthorizationError(
+          ExitCodes.CHANNEL_CRITERIA_UNMET_SUBSCRIBERS,
           `Channel ${channel.id} with ${channel.statistics.subscriberCount} subscribers does not ` +
-          `meet Youtube Partner Program requirement of ${MINIMUM_SUBSCRIBERS_COUNT} subscribers`,
-        result: channel.statistics.subscriberCount,
-        expected: MINIMUM_SUBSCRIBERS_COUNT,
-      })
+            `meet Youtube Partner Program requirement of ${MINIMUM_SUBSCRIBERS_COUNT} subscribers`,
+          channel.statistics.subscriberCount,
+          MINIMUM_SUBSCRIBERS_COUNT
+        )
+      )
     }
 
     // at least MINiMUM_VIDEO_COUNT videos should be one month old
@@ -98,28 +99,30 @@ class YoutubeClient implements IYoutubeClient {
       (v) => new Date(v.publishedAt) < oneMonthsAgo
     )
     if (videos.length < MINIMUM_VIDEO_COUNT) {
-      errors.push({
-        errorCode: ExitCodes.CHANNEL_CRITERIA_UNMET_VIDEOS,
-        message:
+      errors.push(
+        new YoutubeAuthorizationError(
+          ExitCodes.CHANNEL_CRITERIA_UNMET_VIDEOS,
           `Channel ${channel.id} with ${videos.length} videos does not meet Youtube ` +
-          `Partner Program requirement of at least ${MINIMUM_VIDEO_COUNT} videos, each ${MINIMUM_VIDEO_AGE_MONTHS} month old`,
-        result: channel.statistics.videoCount,
-        expected: MINIMUM_VIDEO_COUNT,
-      })
+            `Partner Program requirement of at least ${MINIMUM_VIDEO_COUNT} videos, each ${MINIMUM_VIDEO_AGE_MONTHS} month old`,
+          channel.statistics.videoCount,
+          MINIMUM_VIDEO_COUNT
+        )
+      )
     }
 
     // Channel should be at least 3 months old
     const threeMonthsAgo = new Date()
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - MINIMUM_CHANNEL_AGE_MONTHS)
     if (new Date(channel.publishedAt) > threeMonthsAgo) {
-      errors.push({
-        errorCode: ExitCodes.CHANNEL_CRITERIA_UNMET_CREATION_DATE,
-        message:
+      errors.push(
+        new YoutubeAuthorizationError(
+          ExitCodes.CHANNEL_CRITERIA_UNMET_CREATION_DATE,
           `Channel ${channel.id} with creation time of ${channel.publishedAt} does not ` +
-          `meet Youtube Partner Program requirement of channel being at least ${MINIMUM_CHANNEL_AGE_MONTHS} months old`,
-        result: channel.publishedAt,
-        expected: threeMonthsAgo,
-      })
+            `meet Youtube Partner Program requirement of channel being at least ${MINIMUM_CHANNEL_AGE_MONTHS} months old`,
+          channel.publishedAt,
+          threeMonthsAgo
+        )
+      )
     }
 
     if (errors.length > 0) {

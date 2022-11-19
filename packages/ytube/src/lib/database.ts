@@ -231,7 +231,7 @@ export function videoRepository() {
       },
     }
   )
-  return dynamoose.model('videos', videoSchema)
+  return dynamoose.model('videos', videoSchema, { create: false })
 }
 
 export function videoStateRepository(): ModelType<AnyDocument> {
