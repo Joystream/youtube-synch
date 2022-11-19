@@ -109,7 +109,13 @@ export function createChannelModel(): ModelType<AnyDocument> {
       // Should this channel be ingested for automated Youtube/Joystream syncing?
       shouldBeIngested: {
         type: Boolean,
-        default: true,
+        default: false,
+      },
+
+      // Is this channel currently being suspended by YPP owner due to TOS violations?
+      isSuspended: {
+        type: Boolean,
+        default: false,
       },
     },
 
@@ -231,7 +237,7 @@ export function videoRepository() {
       },
     }
   )
-  return dynamoose.model('videos', videoSchema)
+  return dynamoose.model('videos', videoSchema, { create: false })
 }
 
 export function videoStateRepository(): ModelType<AnyDocument> {

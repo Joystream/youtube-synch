@@ -63,6 +63,9 @@ export class Channel {
   //
   shouldBeIngested: boolean
 
+  // Channel suspension status
+  isSuspended: boolean
+
   // Needs a dummy partition key on GSI to be able to query by createdAt fields
   timestampPartition: string
 }
