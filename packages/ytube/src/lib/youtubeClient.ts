@@ -60,7 +60,7 @@ class YoutubeClient implements IYoutubeClient {
       tokenResponse.tokens.access_token,
       tokenResponse.tokens.refresh_token,
       code,
-      new Date()
+      Date.now()
     )
     return user
   }
@@ -203,10 +203,10 @@ class YoutubeClient implements IYoutubeClient {
               : 3,
           uploadsPlaylistId: channel.contentDetails?.relatedPlaylists?.uploads,
           frequency: 0,
-          createdAt: new Date(),
+          createdAt: Date.now(),
           publishedAt: channel.snippet?.publishedAt,
           shouldBeIngested: true,
-          timestampPartition: 'partition',
+          phantomKey: 'phantomData',
         }
     )
   }
@@ -229,7 +229,7 @@ class YoutubeClient implements IYoutubeClient {
           url: `https://youtube.com/watch?v=${video.id}`,
           resourceId: video.id,
           publishedAt: video.snippet?.publishedAt,
-          createdAt: new Date(),
+          createdAt: Date.now(),
           state: 'new',
         }
     )

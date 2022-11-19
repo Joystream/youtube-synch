@@ -28,7 +28,7 @@ export class Channel {
   publishedAt: string
 
   // record creation time
-  createdAt: Date
+  createdAt: number
 
   // channel thumbnails
   thumbnails: Thumbnails
@@ -67,7 +67,7 @@ export class Channel {
   isSuspended: boolean
 
   // Needs a dummy partition key on GSI to be able to query by createdAt fields
-  timestampPartition: string
+  phantomKey: string
 }
 
 export interface IEvent {
@@ -143,7 +143,7 @@ export class User {
     public authorizationCode: string,
 
     // Record created At timestamp
-    public createdAt: Date
+    public createdAt: number
   ) {}
 
   membership: Membership
@@ -194,7 +194,7 @@ export class Video {
   publishedAt: string
 
   // record creation time
-  createdAt: Date
+  createdAt: number
 }
 
 export class Stats {

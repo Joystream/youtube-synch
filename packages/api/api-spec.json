@@ -530,6 +530,10 @@
           },
           "tier": {
             "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
           }
         },
         "required": [
@@ -540,7 +544,8 @@
           "isSuspended",
           "joystreamChannelId",
           "thumbnails",
-          "tier"
+          "tier",
+          "createdAt"
         ]
       },
       "SaveChannelResponse": {

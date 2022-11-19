@@ -47,10 +47,11 @@ export class ChannelsService {
    * @returns List of `n` recent verified channels
    */
   async getRecent(count: number): Promise<Channel[]> {
-    return await this.channelsRepository.query(
-      'partition',
-      (q) => q.sort('descending').limit(count).using('partition-createdAt-index') as Query<AnyDocument>
-    )
+    // TODO: Use query using phantomKey-createdAt-index instead of
+    // TODO: scan operation here, and figure out why it's not working now
+
+    const allChannels = await this.channelsRepository.scan('id', (s) => s)
+    return allChannels.sort((a, b) => b.createdAt - a.createdAt).slice(0, count)
   }
 
   async getAllWithFrequency(frequency: number): Promise<Channel[]> {

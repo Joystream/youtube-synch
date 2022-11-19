@@ -40,27 +40,27 @@ const channelsTable = new aws.dynamodb.Table('channels', {
     },
     {
       name: nameof<Channel>('createdAt'),
-      type: 'S',
+      type: 'N',
     },
     {
-      name: 'timestampPartition',
-      type: 'N',
+      name: nameof<Channel>('phantomKey'),
+      type: 'S',
     },
   ],
   billingMode: 'PROVISIONED',
   globalSecondaryIndexes: [
     {
-      hashKey: nameof<Channel>('frequency'),
       name: 'frequency-id-index',
-      rangeKey: 'id',
+      hashKey: nameof<Channel>('frequency'),
+      rangeKey: nameof<Channel>('id'),
       projectionType: 'ALL',
       readCapacity: 1,
       writeCapacity: 1,
     },
     {
-      name: 'partition-createdAt-index',
-      hashKey: 'timestampPartition', // we'll have a single partition for users
-      rangeKey: 'createdAt',
+      name: 'phantomKey-createdAt-index',
+      hashKey: nameof<Channel>('phantomKey'), // we'll have a single partition for users
+      rangeKey: nameof<Channel>('createdAt'),
       projectionType: 'ALL',
       readCapacity: 1,
       writeCapacity: 1,

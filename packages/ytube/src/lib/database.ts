@@ -369,7 +369,6 @@ export class ChannelsRepository implements IRepository<Channel> {
 
   async save(channel: Channel): Promise<Channel> {
     const update = omit(['id', 'userId', 'updatedAt'], channel)
-    console.log('Saving channel', channel.id, update)
     const result = await this.model.update({ id: channel.id, userId: channel.userId }, update)
     return mapTo<Channel>(result)
   }
@@ -380,14 +379,7 @@ export class ChannelsRepository implements IRepository<Channel> {
   }
 
   async query(init: ConditionInitializer, f: (q: Query<AnyDocument>) => Query<AnyDocument>) {
-    const results = this.model
-      .query({ timestampPartition: 'partition' })
-      .where('createdAt')
-      .using('partition-createdAt-index')
-      .exec()
-    console.log('Querying channels', results, init, f)
-    // const results = await f(this.model.query(init)).exec()
-    // console.log('Querying channels', results)
+    const results = await f(this.model.query(init)).exec()
     return results.map((r) => mapTo<Channel>(r))
   }
 }
