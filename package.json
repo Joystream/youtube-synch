@@ -2,7 +2,13 @@
   "name": "youtube-sync",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "deploy-all": "RESOURCES=all ./deploy.sh",
+    "destroy-all": "./destroy.sh",
+    "deploy-monitoring": "./deploy.sh",
+    "api": "yarn nx run api:serve",
+    "app": "yarn nx run app:serve"
+  },
   "private": true,
   "devDependencies": {
     "@emotion/babel-plugin": "11.3.0",
