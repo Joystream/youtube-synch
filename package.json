@@ -3,9 +3,12 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "deploy-all": "RESOURCES=all ./deploy.sh",
-    "destroy-all": "./destroy.sh",
-    "deploy-monitoring": "./deploy.sh",
+    "deploy-all:local": "RESOURCES=all ENV=local ./deploy.sh",
+    "deploy-all:prod": "RESOURCES=all ./deploy.sh",
+    "destroy-all:local": "ENV=local ./destroy.sh",
+    "destroy-all:prod": "./destroy.sh",
+    "deploy-monitoring:local": "./deploy.sh",
+    "deploy-monitoring:prod": "./deploy.sh",
     "api": "yarn nx run api:serve",
     "app": "yarn nx run app:serve"
   },

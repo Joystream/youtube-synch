@@ -335,8 +335,8 @@ export class ChannelsRepository implements IRepository<Channel> {
   }
 
   async get(id: string): Promise<Channel> {
-    const result = await this.model.query({ id }).using('id-index').exec()
-    return mapTo<Channel>(result)
+    const [result] = await this.model.query({ id }).using('id-index').exec()
+    return result ? mapTo<Channel>(result) : undefined
   }
 
   async save(channel: Channel): Promise<Channel> {
