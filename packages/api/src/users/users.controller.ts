@@ -50,7 +50,8 @@ export class UsersController {
       if (registeredChannel) {
         throw new YoutubeAuthorizationError(
           ExitCodes.CHANNEL_ALREADY_REGISTERED,
-          `Selected Youtube channel is already registered for YPP program`
+          `Selected Youtube channel is already registered for YPP program`,
+          registeredChannel.joystreamChannelId
         )
       }
 
