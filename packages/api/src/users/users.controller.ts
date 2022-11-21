@@ -39,7 +39,7 @@ export class UsersController {
       }
 
       // verify channel
-      // await this.youtube.verifyChannel(channel)
+      await this.youtube.verifyChannel(channel)
 
       // save user
       await this.usersRepository.save(user)
