@@ -6,7 +6,7 @@ import { config } from 'aws-sdk'
 import * as fs from 'fs'
 
 config.update({
-  region: 'us-east-1',
+  region: process.env.AWS_REGION,
   dynamodb: { endpoint: process.env.AWS_ENDPOINT },
 })
 
