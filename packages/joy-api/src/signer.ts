@@ -9,14 +9,14 @@ export type Account = {
   address: string
   secret: string
 }
+
 export class AccountsUtil {
   private keyring: Keyring
   constructor() {
     cryptoWaitReady().then(() => {
       this.keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
-      process.env.JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED
-        ? this.keyring.addFromUri(process.env.JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED)
-        : console.log('JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED not set')
+      process.env.JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED &&
+        this.keyring.addFromUri(process.env.JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED)
     })
   }
 
