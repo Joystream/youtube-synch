@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+# set -e
 
 GREEN=$(tput setaf 2)
 RED=$(tput setaf 1)
@@ -7,8 +7,15 @@ NC=$(tput sgr0)
 # HIDE_OUTPUT=> /dev/null 2>&1
 CONTAINER=ypp-localaws
 
-# Export the env variables for child processes
-source .env
+# # Export the env variables for child processes
+# source .env
+
+set -a
+. .env
+if [ -f .env.prod ]; then
+    . .env.prod
+fi
+set +a
 
 # Run new AWS docker container only if its not running
 if ! docker ps -a --format '{{.Names}}' | grep ${CONTAINER} >/dev/null; then
