@@ -12,8 +12,8 @@ export type VideoUploadResponse = { id: string; video: Video }
 
 export class Uploader {
   private client: QueryNodeApi
-  constructor(queryNodeUrl: string) {
-    this.client = new QueryNodeApi(queryNodeUrl)
+  constructor(client: QueryNodeApi) {
+    this.client = client
   }
 
   async upload(dataObjectId: string, channel: Channel, video: Video): Promise<VideoUploadResponse> {

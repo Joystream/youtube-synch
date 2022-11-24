@@ -4,8 +4,77 @@ import * as aws from '@pulumi/aws'
 import { User, Channel, Video, VideoEvent, Stats } from '../../domain/src'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { AvailableTopic } from '../../ytube/src'
+import * as awsx from '@pulumi/awsx'
+import * as pulumi from '@pulumi/pulumi'
 
 const nameof = <T>(name: keyof T) => <string>name
+
+function lambdaFunction(name: string, handler: string, source: string) {
+  // IAM role
+  const role = new aws.iam.Role(`${name}Role`, {
+    assumeRolePolicy: {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Action: 'sts:AssumeRole',
+          Principal: {
+            Service: 'lambda.amazonaws.com',
+          },
+          Effect: 'Allow',
+          Sid: '',
+        },
+      ],
+    },
+  })
+
+  // IAM policy attachments
+  new aws.iam.RolePolicyAttachment(`${name}Attach`, {
+    role: role,
+    policyArn: aws.iam.ManagedPolicies.AWSLambdaExecute,
+  })
+
+  new aws.iam.RolePolicyAttachment(`${name}DynamoAttach`, {
+    role: role,
+    policyArn: aws.iam.ManagedPolicies.AmazonDynamoDBFullAccess,
+  })
+
+  // Next, create the Lambda function itself:
+  const func = new aws.lambda.Function(name, {
+    code: new pulumi.asset.AssetArchive({
+      '.': new pulumi.asset.FileArchive(source),
+    }),
+    runtime: 'nodejs14.x',
+    role: role.arn,
+    handler: handler,
+    name: name,
+    memorySize: 512,
+    timeout: 60,
+    environment: {
+      variables: {
+        YOUTUBE_CLIENT_ID: process.env.YOUTUBE_CLIENT_ID,
+        YOUTUBE_CLIENT_SECRET: process.env.YOUTUBE_CLIENT_SECRET,
+        YOUTUBE_REDIRECT_URI: process.env.YOUTUBE_REDIRECT_URI,
+        AWS_ENDPOINT: process.env.AWS_ENDPOINT,
+        DEPLOYMENT_ENV: process.env.DEPLOYMENT_ENV,
+        JOYSTREAM_QUERY_NODE_URL: process.env.JOYSTREAM_QUERY_NODE_URL,
+        JOYSTREAM_WEBSOCKET_RPC: process.env.JOYSTREAM_WEBSOCKET_RPC,
+        JOYSTREAM_CHANNEL_COLLABORATOR_MEMBER_ID: process.env.JOYSTREAM_CHANNEL_COLLABORATOR_MEMBER_ID,
+        JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED: process.env.JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED,
+      },
+    },
+  })
+  return func
+}
+
+const yppEndpoint = new awsx.apigateway.API('ypp-api', {
+  routes: [
+    {
+      path: '{proxy+}',
+      method: 'ANY',
+      eventHandler: lambdaFunction('ypp-api', 'main.handler', '../../../dist/packages/api-lambda'),
+    },
+  ],
+})
 
 const userTable = new aws.dynamodb.Table('users', {
   name: 'users',
@@ -152,3 +221,5 @@ export const statsTableArn = statsTable.arn
 export const videosTopicArn = videoEvents.arn
 export const channelsTopicArn = channelEventsTopic.arn
 export const usersTopicArn = userEventsTopic.arn
+
+export const url = yppEndpoint.url

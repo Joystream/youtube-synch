@@ -4,13 +4,15 @@ import * as stream from 'stream'
 import { ChannelsRepository, VideosRepository } from './database'
 import { IYoutubeClient } from './youtubeClient'
 import { JoystreamClient } from '@youtube-sync/joy-api'
+import { createType } from '@joystream/types'
+import { BN } from 'bn.js'
 
 export interface IUploadService {
   uploadVideo(channelId: string, videoId: string): Promise<Video>
 }
 
 export class S3UploadService implements IUploadService {
-  constructor(private youtubeClient: IYoutubeClient) {}
+  constructor(private youtubeClient: IYoutubeClient, q) {}
   async uploadVideo(channelId: string, videoId: string): Promise<Video> {
     const videoRepository = new VideosRepository()
     const video = await videoRepository.get(channelId, videoId)
@@ -88,15 +90,10 @@ export class JoystreamUploadService implements IUploadService {
     const channelsRepository = new ChannelsRepository()
     const channel = await channelsRepository.get(channelId)
 
-    console.log('creating video ')
-
     const client = new JoystreamClient(process.env.JOYSTREAM_WEBSOCKET_RPC, process.env.JOYSTREAM_QUERY_NODE_URL)
 
     const createdVideo = await client.createVideo(
-      {
-        secret: process.env.JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT,
-        memberId: Number(process.env.JOYSTREAM_CHANNEL_COLLABORATOR_MEMBER_ID),
-      },
+      createType('u64', new BN(process.env.JOYSTREAM_CHANNEL_COLLABORATOR_MEMBER_ID)),
       channel,
       video
     )

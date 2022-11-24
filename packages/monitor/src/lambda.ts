@@ -30,6 +30,11 @@ export function lambda(name: string, handler: string, source: string) {
     policyArn: aws.iam.ManagedPolicies.AmazonDynamoDBFullAccess,
   })
 
+  new aws.iam.RolePolicyAttachment(`${name}SnsAttach`, {
+    role: role,
+    policyArn: aws.iam.ManagedPolicies.AmazonSNSFullAccess,
+  })
+
   // Next, create the Lambda function itself:
   const func = new aws.lambda.Function(name, {
     code: new pulumi.asset.AssetArchive({
@@ -39,16 +44,19 @@ export function lambda(name: string, handler: string, source: string) {
     role: role.arn,
     handler: handler,
     name: name,
+    timeout: 10,
+    memorySize: 512,
     environment: {
       variables: {
         YOUTUBE_CLIENT_ID: process.env.YOUTUBE_CLIENT_ID,
         YOUTUBE_CLIENT_SECRET: process.env.YOUTUBE_CLIENT_SECRET,
         YOUTUBE_REDIRECT_URI: process.env.YOUTUBE_REDIRECT_URI,
         AWS_ENDPOINT: process.env.AWS_ENDPOINT,
+        DEPLOYMENT_ENV: process.env.DEPLOYMENT_ENV,
         JOYSTREAM_QUERY_NODE_URL: process.env.JOYSTREAM_QUERY_NODE_URL,
         JOYSTREAM_WEBSOCKET_RPC: process.env.JOYSTREAM_WEBSOCKET_RPC,
-        JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT: process.env.JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT,
         JOYSTREAM_CHANNEL_COLLABORATOR_MEMBER_ID: process.env.JOYSTREAM_CHANNEL_COLLABORATOR_MEMBER_ID,
+        JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED: process.env.JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED,
       },
     },
   })

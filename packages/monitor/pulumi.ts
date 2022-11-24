@@ -16,7 +16,8 @@ interface CommonInfraOutput {
 
 const nameof = <T>(name: keyof T) => <string>name
 
-const commonInfrastructure = new pulumi.StackReference('zeeshanakram3/youtube-sync/dev')
+const commonInfraStackReference = `zeeshanakram3/youtube-partner-program/${process.env.DEPLOYMENT_ENV}`
+const commonInfrastructure = new pulumi.StackReference(commonInfraStackReference)
 const orphanUsersSchedule = new aws.cloudwatch.EventRule('everyHalfHour', {
   description: 'Check',
   name: 'everyHalfHour',

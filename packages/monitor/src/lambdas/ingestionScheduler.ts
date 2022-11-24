@@ -1,13 +1,12 @@
 import { EventRuleEvent } from '@pulumi/aws/cloudwatch'
-import { MessageBus, getMatchingFrequenciesForDate, SyncService, YtClient } from '@joystream/ytube'
-import { config } from 'aws-sdk'
+import { MessageBus, SyncService, YtClient } from '@joystream/ytube'
+import { setAwsConfig } from '@youtube-sync/domain'
 
 export async function ingestionScheduler(event: EventRuleEvent) {
+  // Set AWS config in case we are running locally
+  setAwsConfig()
+
   console.log('event: ', event)
-  config.update({
-    region: process.env.AWS_REGION,
-    dynamodb: { endpoint: process.env.AWS_ENDPOINT },
-  })
   const youtubeClient = YtClient.create(
     process.env.YOUTUBE_CLIENT_ID,
     process.env.YOUTUBE_CLIENT_SECRET,
@@ -16,5 +15,5 @@ export async function ingestionScheduler(event: EventRuleEvent) {
   // const date = new Date(event.time)
   // const frequencies = getMatchingFrequenciesForDate(date)
   // if (frequencies.length === 0) return
-  await new SyncService(youtubeClient, new MessageBus(process.env.AWS_REGION)).startIngestionFor([0])
+  await new SyncService(youtubeClient, new MessageBus()).startIngestionFor([0])
 }

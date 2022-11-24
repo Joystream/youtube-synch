@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { Handler, Context, Callback } from 'aws-lambda'
 import { AppModule } from './app.module'
 import serverlessExpress from '@vendia/serverless-express'
+import { setAwsConfig } from '@youtube-sync/domain'
 
 function setupSwagger(app: INestApplication) {
   const config = new DocumentBuilder()
@@ -34,7 +35,9 @@ async function bootstrapServerless() {
 let cachedHandler: Handler
 
 export const handler: Handler = async (event: any, context: Context, callback: Callback) => {
-  console.log(event)
+  // Set AWS config in global scope case we are running locally
+  setAwsConfig()
+
   if (event.path === '/api') {
     event.path = '/api/'
   }

@@ -11,8 +11,8 @@ export type AvailableTopic = typeof availableTopics[number]
 export class MessageBus {
   private _sns: SNS
   private _topics: SNS.Topic[] = []
-  constructor(private region: string) {
-    this._sns = new SNS({ region: this.region, endpoint: process.env.AWS_ENDPOINT })
+  constructor() {
+    this._sns = new SNS()
   }
 
   /**

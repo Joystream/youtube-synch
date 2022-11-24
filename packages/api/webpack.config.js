@@ -30,14 +30,5 @@ module.exports = (config, context) => {
       },
     }),
   ]
-
-  config.resolve = {
-    ...config.resolve,
-    alias: {
-      'blake3': 'node_modules/blake3/esm/browser/',
-    },
-  }
-
-  config.output.libraryTarget = 'commonjs2'
   return config
 }
