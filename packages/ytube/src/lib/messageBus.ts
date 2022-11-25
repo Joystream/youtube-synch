@@ -56,7 +56,6 @@ export class MessageBus {
       await Promise.all(promises)
       return events
     } catch (error) {
-      console.log('error: ', error)
       new DomainError(`Failed to publish events, Error: ${error}`)
     }
   }

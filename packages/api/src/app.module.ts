@@ -16,16 +16,6 @@ import QueryNodeApi from 'packages/joy-api/src/graphql/QueryNodeApi'
   providers: [
     ChannelsService,
     {
-      provide: JoystreamClient,
-      useFactory: (config: ConfigService) => {
-        return new JoystreamClient(
-          config.get<string>('JOYSTREAM_WEBSOCKET_RPC'),
-          config.get<string>('JOYSTREAM_ORION_URL')
-        )
-      },
-      inject: [ConfigService],
-    },
-    {
       provide: UsersRepository,
       useClass: UsersRepository,
     },
