@@ -12,12 +12,17 @@ import {
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { ExitCodes, YoutubeAuthorizationError } from '@youtube-sync/domain'
+import { ChannelsService } from '../channels/channels.service'
 import { UserDto, VerifyChannelRequest, VerifyChannelResponse } from '../dtos'
 
 @Controller('users')
 @ApiTags('channels')
 export class UsersController {
-  constructor(@Inject('youtube') private youtube: IYoutubeClient, private usersRepository: UsersRepository) {}
+  constructor(
+    @Inject('youtube') private youtube: IYoutubeClient,
+    private usersRepository: UsersRepository,
+    private channelsService: ChannelsService
+  ) {}
 
   @ApiOperation({
     description: `fetches user's channel from the supplied google authorization code, and verifies if it satisfies YPP induction criteria`,
@@ -36,6 +41,17 @@ export class UsersController {
       // Ensure channel exists
       if (!channel) {
         throw new YoutubeAuthorizationError(ExitCodes.CHANNEL_NOT_FOUND, `No Youtube Channel exists for given user`)
+      }
+
+      const [registeredChannel] = await this.channelsService.getAll(user.id)
+
+      // Ensure selected YT channel is not already registered for YPP program
+      if (registeredChannel) {
+        throw new YoutubeAuthorizationError(
+          ExitCodes.CHANNEL_ALREADY_REGISTERED,
+          `Selected Youtube channel is already registered for YPP program`,
+          registeredChannel.joystreamChannelId
+        )
       }
 
       // verify channel
