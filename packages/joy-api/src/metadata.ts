@@ -1,29 +1,17 @@
-import {
-  ChannelMetadata,
-  License,
-  MediaType,
-  PublishedBeforeJoystream,
-  VideoMetadata,
-} from '@joystream/metadata-protobuf'
+import { License, MediaType, PublishedBeforeJoystream, VideoMetadata } from '@joystream/metadata-protobuf'
 import { ApiPromise as PolkadotApi } from '@polkadot/api'
-import { Bytes, Option, Raw } from '@polkadot/types'
+import { Bytes, Option } from '@polkadot/types'
 
-import { prepareAssetsForExtrinsic } from './helpers'
-import {
-  ChannelInputAssets,
-  ChannelInputMetadata,
-  DataObjectMetadata,
-  VideoInputAssets,
-  VideoInputMetadata,
-} from './types'
 import { createType } from '@joystream/types'
+import { prepareAssetsForExtrinsic } from './helpers'
 import { metadataToBytes } from './serialization'
+import { DataObjectMetadata, VideoInputAssets, VideoInputMetadata } from './types'
 
-export const parseVideoExtrinsicInput = async (
+export async function parseVideoExtrinsicInput(
   api: PolkadotApi,
   inputMetadata: VideoInputMetadata,
   inputAssets: VideoInputAssets
-) => {
+) {
   const videoMetadata = new VideoMetadata()
 
   // prepare data objects and assign proper indexes in metadata
@@ -105,45 +93,4 @@ export const parseVideoExtrinsicInput = async (
   const optionalVideoStorageAssets = createType('Option<PalletContentStorageAssetsRecord>', videoStorageAssets)
 
   return [optionalVideoMetadataBytes, optionalVideoStorageAssets] as const
-}
-
-export async function parseChannelExtrinsicInput(
-  api: PolkadotApi,
-  inputMetadata: ChannelInputMetadata,
-  inputAssets: ChannelInputAssets
-) {
-  const channelMetadata = new ChannelMetadata()
-
-  // prepare data objects and assign proper indexes in metadata
-  const channelDataObjectsMetadata: DataObjectMetadata[] = [
-    ...(inputAssets.avatarPhoto ? [inputAssets.avatarPhoto] : []),
-    ...(inputAssets.coverPhoto ? [inputAssets.coverPhoto] : []),
-  ]
-  const channelStorageAssets = await prepareAssetsForExtrinsic(api, channelDataObjectsMetadata)
-  if (inputAssets.avatarPhoto) {
-    channelMetadata.avatarPhoto = 0
-  }
-  if (inputAssets.coverPhoto) {
-    channelMetadata.coverPhoto = inputAssets.avatarPhoto ? 1 : 0
-  }
-
-  if (inputMetadata.title != null) {
-    channelMetadata.title = inputMetadata.title
-  }
-  if (inputMetadata.description != null) {
-    channelMetadata.description = inputMetadata.description
-  }
-  if (inputMetadata.isPublic != null) {
-    channelMetadata.isPublic = inputMetadata.isPublic
-  }
-  if (inputMetadata.language != null) {
-    channelMetadata.language = inputMetadata.language
-  }
-
-  const channelMetadataBytes = metadataToBytes(ChannelMetadata, channelMetadata)
-  const optionalChannelMetadataBytes = new Option(api.registry, Bytes, channelMetadataBytes)
-
-  const optionalChannelStorageAssets = createType('Option<PalletContentStorageAssetsRecord>', channelStorageAssets)
-
-  return [optionalChannelMetadataBytes, optionalChannelStorageAssets] as const
 }

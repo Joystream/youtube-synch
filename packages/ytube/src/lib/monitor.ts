@@ -1,10 +1,9 @@
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { User, Channel, IngestChannel, Stats, Video, VideoEvent, ChannelSpotted, Result } from '@youtube-sync/domain'
+import { User, Channel, IngestChannel, Stats, Video, VideoEvent, ChannelSpotted } from '@youtube-sync/domain'
 import { ChannelsRepository, statsRepository, VideosRepository } from './database'
 import { IUploadService, mapTo, MessageBus, IYoutubeClient, UsersRepository } from '..'
-import { S3UploadService } from './uploadService'
+import { JoystreamUploadService } from './uploadService'
 import { Frequency } from './frequency'
-import R from 'ramda'
 
 const DailyQuota = 10000
 
@@ -15,7 +14,7 @@ export class SyncService {
   private videosRepository: VideosRepository
 
   constructor(private youtube: IYoutubeClient, private bus: MessageBus) {
-    this._uploader = new S3UploadService(youtube)
+    this._uploader = new JoystreamUploadService(youtube)
     this.channelsRepository = new ChannelsRepository()
     this.usersRepository = new UsersRepository()
     this.videosRepository = new VideosRepository()
@@ -36,7 +35,9 @@ export class SyncService {
 
   async ingestChannels(user: User) {
     // ensure have some api quota
-    if (!(await this.canCallYoutube())) return []
+    if (!(await this.canCallYoutube())) {
+      return []
+    }
 
     // fetch all channels of user from youtube API
     const channels = await this.youtube.getChannels(user)
@@ -64,8 +65,11 @@ export class SyncService {
     // get new videos
     const newVideos = await this.onlyNewVideos(channel, allVideos)
 
+    // save not videos tp DB
+    this.videosRepository.upsertAll(newVideos)
+
     // create user events
-    const videoEvents = newVideos.map((v) => new VideoEvent('new', v.id, v.channelId, Date.now()))
+    const videoEvents = newVideos.map((v) => new VideoEvent('New', v.id, v.channelId, Date.now()))
 
     // publish events
     return this.bus.publishAll(videoEvents, 'videoEvents')
@@ -76,20 +80,25 @@ export class SyncService {
   }
 
   private async onlyNewVideos(channel: Channel, videos: Video[]): Promise<Video[]> {
-    return R.pipe(
-      () => this.videosRepository.query({ channelId: channel.id }, (q) => q.filter('id').in(videos.map((v) => v.id))),
-      R.andThen((existingVideos) => new Set(existingVideos.map((v) => v.id))),
-      R.andThen((set) => videos.filter((vid) => !set.has(vid.id)))
-    )()
+    const existingVideos = await this.videosRepository.query({ channelId: channel.id }, (q) => q)
+    const set = new Set(existingVideos.map((v) => v.id))
+    return videos //.filter((v) => !set.has(v.id))
   }
 
   private async canCallYoutube(): Promise<boolean> {
     const today = new Date()
     today.setUTCHours(0, 0, 0, 0)
-    const statsDoc = await statsRepository().get({
+    let statsDoc = await statsRepository().get({
       partition: 'stats',
       date: today.setUTCHours(0, 0, 0, 0),
     })
+    if (!statsDoc) {
+      statsDoc = await statsRepository().update({
+        partition: 'stats',
+        date: today.setUTCHours(0, 0, 0, 0),
+        quotaUsed: 0,
+      })
+    }
     const stats = mapTo<Stats>(statsDoc)
     return stats.quotaUsed < DailyQuota
   }

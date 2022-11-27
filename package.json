@@ -2,7 +2,16 @@
   "name": "youtube-sync",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "start:api": "DEPLOYMENT_ENV=local yarn nx run api:serve",
+    "start:app": "yarn nx run app:serve",
+    "deploy-all:local": "export DEPLOYMENT_ENV=local && RESOURCES=all ./deploy.sh",
+    "destroy-all:local": "export DEPLOYMENT_ENV=local && ./destroy.sh",
+    "deploy-ypp:local": "export DEPLOYMENT_ENV=local && ./deploy.sh",
+    "deploy-all:dev": "export DEPLOYMENT_ENV=development && RESOURCES=all ./deploy.sh",
+    "destroy-all:dev": "export DEPLOYMENT_ENV=development && ./destroy.sh",
+    "deploy-ypp:dev": "export DEPLOYMENT_ENV=development && ./deploy.sh"
+  },
   "private": true,
   "devDependencies": {
     "@emotion/babel-plugin": "11.3.0",
@@ -51,7 +60,10 @@
     "serverless-plugin-optimize": "^4.2.1-rc.1",
     "ts-jest": "27.0.5",
     "typescript": "4.5.2",
-    "zip-webpack-plugin": "^4.0.1"
+    "zip-webpack-plugin": "^4.0.1",
+    "async-lock": "^1.3.1",
+    "@types/async-lock": "^1.1.3",
+    "envalid": "^7.1.0"
   },
   "dependencies": {
     "@apollo/client": "^3.5.8",
@@ -59,15 +71,14 @@
     "@emotion/styled": "^11.6.0",
     "@fontsource/roboto": "^4.5.1",
     "@googleapis/youtube": "^2.0.0",
-    "@graphql-codegen/cli": "^2.5.0",
-    "@graphql-codegen/graphql-modules-preset": "^2.3.3",
-    "@graphql-codegen/introspection": "^2.1.1",
-    "@graphql-codegen/near-operation-file-preset": "^2.2.4",
-    "@graphql-codegen/typescript": "^2.4.3",
-    "@graphql-codegen/typescript-operations": "^2.2.4",
-    "@joystream/metadata-protobuf": "~2.2.0",
+    "@graphql-codegen/cli": "^1.21.4",
+    "@graphql-codegen/import-types-preset": "^1.18.1",
+    "@graphql-codegen/typescript": "^1.22.0",
+    "@graphql-codegen/typescript-document-nodes": "^2.2.11",
+    "@graphql-codegen/typescript-operations": "^1.17.16",
+    "@joystream/metadata-protobuf": "~2.4.0",
     "@joystream/prettier-config": "^1.0.0",
-    "@joystream/types": "0.20.2",
+    "@joystream/cli": "0.8.0",
     "@mui/icons-material": "^5.3.1",
     "@mui/material": "^5.3.1",
     "@nestjs/common": "^8.0.0",
@@ -112,6 +123,17 @@
     "tslib": "^2.0.0",
     "vite": "^2.7.13",
     "ws": "^8.5.0",
-    "ytdl-core": "^4.10.1"
+    "ytdl-core": "^4.11.2",
+    "node-cleanup": "^2.1.2"
+  },
+  "resolutions": {
+    "@joystream/metadata-protobuf": "^2.4.0",
+    "@joystream/types": "^0.20.2",
+    "@polkadot/keyring": "^9.5.1",
+    "@polkadot/util": "^9.7.2",
+    "@polkadot/util-crypto": "^9.7.2",
+    "@polkadot/api": "^8.9.1",
+    "@polkadot/api-derive": "^8.9.1",
+    "@polkadot/types": "^8.9.1"
   }
 }

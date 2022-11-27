@@ -1,6 +1,0 @@
-query GetDataObjectAvailability($id_eq: ID, $id_in: [ID!]) {
-  storageDataObjects(where: { id_eq: $id_eq, id_in: $id_in }) {
-    id
-    isAccepted
-  }
-}

@@ -1,29 +1,40 @@
 import Keyring from '@polkadot/keyring'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { DomainError, Result } from '@youtube-sync/domain'
-import { mnemonicGenerate } from '@polkadot/util-crypto'
+import { mnemonicGenerate, cryptoWaitReady } from '@polkadot/util-crypto'
 import { AccountId } from '@polkadot/types/interfaces'
 import { JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
+import { getConfig } from '@youtube-sync/domain'
 
 export type Account = {
   address: string
   secret: string
 }
+
 export class AccountsUtil {
   private keyring: Keyring
   constructor() {
-    this.keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
+    cryptoWaitReady().then(() => {
+      this.keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
+      const seed = getConfig().JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED
+      seed && this.keyring.addFromUri(seed)
+    })
   }
 
-  getPair(accountId: string): Result<KeyringPair, DomainError> {
+  getPair(accountId: string): KeyringPair {
     const pair = this.keyring.getPairs().find((p) => p.address == accountId)
-    return pair ? Result.Success(pair) : Result.Error(new DomainError('Pair not found'))
+    if (!pair) {
+      throw new Error(`Account ${accountId} not found`)
+    }
+    return pair
   }
 
-  getOrAddPair(address: string, secret: string): Result<KeyringPair, DomainError> {
+  getOrAddPair(secret: string, address?: string): KeyringPair {
     let pair = this.keyring.getPairs().find((p) => p.address == address)
-    if (!pair) pair = this.keyring.addFromUri(secret)
-    return Result.Success(pair)
+    if (!pair) {
+      pair = this.keyring.addFromUri(secret)
+    }
+    return pair
   }
 
   createAccount(key: string): Result<Account, DomainError> {

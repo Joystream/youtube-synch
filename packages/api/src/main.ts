@@ -1,14 +1,12 @@
-import { NestFactory } from '@nestjs/core'
-import { AppModule } from './app.module'
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { INestApplication, ValidationPipe } from '@nestjs/common'
-import { config } from 'aws-sdk'
+import { NestFactory } from '@nestjs/core'
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import { setAwsConfig } from '@youtube-sync/domain'
 import * as fs from 'fs'
+import { AppModule } from './app.module'
 
-config.update({
-  region: 'us-east-1',
-  dynamodb: { endpoint: process.env.AWS_ENDPOINT },
-})
+// Set AWS config in case we are running locally
+setAwsConfig()
 
 // Create Swagger API documentation
 function setupSwagger(app: INestApplication) {

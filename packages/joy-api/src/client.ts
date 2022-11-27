@@ -1,102 +1,48 @@
-import { ChannelId } from '@joystream/types/primitives'
-import { Channel, User, Result, DomainError, Video, Membership, Thumbnails } from '@youtube-sync/domain'
+import { ChannelId, MemberId } from '@joystream/types/primitives'
+import { Channel, Thumbnails, Video } from '@youtube-sync/domain'
 import axios from 'axios'
+import { BN } from 'bn.js'
 import R from 'ramda'
 import ytdl from 'ytdl-core'
-import {
-  Account,
-  AccountsUtil,
-  ChannelInputAssets,
-  ChannelInputMetadata,
-  DataObjectMetadata,
-  Faucet,
-  JoystreamLib,
-  RegisteredMember,
-  VideoInputAssets,
-  VideoInputMetadata,
-} from '.'
+import { AccountsUtil, DataObjectMetadata, JoystreamLib, VideoInputAssets, VideoInputMetadata } from '.'
 import { Uploader } from '../storage/uploader'
+import QueryNodeApi from './graphql/QueryNodeApi'
 import { computeFileHashAndSize } from './hasher'
+import { createType } from '@joystream/types'
 
 export class JoystreamClient {
-  private faucet: Faucet
   private lib: JoystreamLib
   private accounts: AccountsUtil
   private uploader: Uploader
-  constructor(faucetUri: string, private nodeUri: string, private orionUrl: string, private rootAccount: string) {
-    this.faucet = new Faucet(faucetUri)
+  private qnApi: QueryNodeApi
+  constructor(private nodeUri: string, private queryNodeUrl: string) {
     this.lib = new JoystreamLib(this.nodeUri)
-    this.uploader = new Uploader(orionUrl)
+    this.qnApi = new QueryNodeApi(queryNodeUrl)
+    this.uploader = new Uploader(this.qnApi)
     this.accounts = new AccountsUtil()
   }
 
-  createMembership = async (user: User): Promise<Result<Membership, DomainError>> => {
-    await this.ensureApi()
-    const accKey = `${user.id}-youtube-sync`
-    const result = await this.accounts
-      .createAccount(accKey)
-      .pipeAsync((account) =>
-        this.faucet
-          .register(randomHandle(), account.address)
-          .then((member) => member.map((m) => [account, m] as [Account, RegisteredMember]))
-      )
-    return result
-      .map(([account, member]) => ({
-        address: account.address,
-        secret: account.secret,
-        memberId: member.memberId,
-        suri: `${account.secret}//${accKey}`,
-      }))
-      .onFailure((err) => console.log(err))
-  }
+  async createVideo(memberId: MemberId, channel: Channel, video: Video) {
+    const member = await this.qnApi.memberById(memberId)
+    const keyPair = this.accounts.getPair(member.controllerAccount)
 
-  createChannel = async (member: Membership, channel: Channel) => {
-    const input: ChannelInputMetadata = {
-      title: channel.title,
-      description: channel.description,
-      isPublic: true,
-    }
-    const assets: ChannelInputAssets = {}
-    const result = await R.pipe(
-      (m: Membership) => this.accounts.getOrAddPair(m.address, m.secret),
-      (pair) => Result.bindAsync(pair, (p) => this.lib.extrinsics.createChannel(p, member.memberId, input, assets)),
-      R.andThen((res) => res.onFailure((err) => console.log(err))),
-      R.andThen((res) => res.map((c) => [c.channelId, channel] as [ChannelId, Channel]))
-    )(member)
-    return result
-  }
+    const inputs = parseVideoInputs(video)
 
-  uploadVideo = async (member: Membership, channel: Channel, video: Video) => {
-    const result = await R.pipe(
-      (member: Membership) => this.accounts.getOrAddPair(member.address, member.secret),
-      (pair) => Result.concat(pair, (_) => parseVideoInputs(video)),
-      R.andThen((pairAndInput) =>
-        Result.bindAsync(pairAndInput, ([pair, inputs]) =>
-          this.lib.extrinsics.createVideo(
-            pair,
-            member.memberId,
-            channel.joystreamChannelId as unknown as ChannelId,
-            inputs[0],
-            inputs[1]
-          )
-        )
-      ),
-      R.andThen((vid) => Result.bindAsync(vid, (v) => this.uploader.upload(v.assetsIds.media, channel, video))),
-      R.andThen((up) => up.map((v) => [v.id, video] as [string, Video])),
-      R.andThen((r) => r.onFailure((err) => console.log(err)))
-    )(member)
-    return result
-  }
+    const v = await this.lib.extrinsics.createVideo(
+      keyPair,
+      createType('u64', new BN(member.id)),
+      channel.joystreamChannelId as unknown as ChannelId,
+      inputs[0],
+      inputs[1]
+    )
 
-  private async ensureApi(): Promise<Result<boolean, DomainError>> {
-    await this.lib.connect()
-    this.accounts = new AccountsUtil()
-    const result = this.accounts.addKnownAccount(this.rootAccount)
-    return result.map((_) => true)
+    const { id } = await this.uploader.upload(v.assetsIds.media, channel, video)
+
+    return [id, video] as const
   }
 }
 
-async function parseVideoInputs(video: Video): Promise<Result<[VideoInputMetadata, VideoInputAssets], DomainError>> {
+async function parseVideoInputs(video: Video): Promise<[VideoInputMetadata, VideoInputAssets]> {
   const videoInputMetadata: VideoInputMetadata = {
     title: video.title,
     description: video.description,
@@ -111,18 +57,11 @@ async function parseVideoInputs(video: Video): Promise<Result<[VideoInputMetadat
     size: size,
   }
   assets.media = metadata
-  return Result.Success<[VideoInputMetadata, VideoInputAssets], DomainError>([videoInputMetadata, assets])
+  return [videoInputMetadata, assets]
 }
 
 async function getThumbnailAsset(thumbnails: Thumbnails) {
   const candidates = [thumbnails.maxRes, thumbnails.high, thumbnails.medium, thumbnails.standard, thumbnails.default]
   const selectedThumb = R.reduce((acc, next) => (acc = acc ? acc : next), '', candidates)
   axios.get(selectedThumb, { responseType: 'arraybuffer' })
-}
-
-function randomHandle() {
-  return Math.random()
-    .toString(36)
-    .replace(/[^a-z]+/g, '')
-    .substr(0, 5)
 }
