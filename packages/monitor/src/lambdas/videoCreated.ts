@@ -1,6 +1,6 @@
 import { TopicEvent } from '@pulumi/aws/sns'
 import { YtClient, videoStateRepository, SyncService, MessageBus } from '@joystream/ytube'
-import { setAwsConfig, VideoEvent } from '@youtube-sync/domain'
+import { getConfig, setAwsConfig, VideoEvent } from '@youtube-sync/domain'
 
 export async function videoCreatedHandler(event: TopicEvent) {
   // Set AWS config in case we are running locally
@@ -12,11 +12,9 @@ export async function videoCreatedHandler(event: TopicEvent) {
     return
   console.log('New video', videoCreated)
 
-  const youtubeClient = YtClient.create(
-    process.env.YOUTUBE_CLIENT_ID,
-    process.env.YOUTUBE_CLIENT_SECRET,
-    process.env.YOUTUBE_REDIRECT_URI
-  )
+  const { YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI } = getConfig()
+  const youtubeClient = YtClient.create(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI)
+
   await new SyncService(youtubeClient, new MessageBus()).uploadVideo(videoCreated.channelId, videoCreated.videoId)
 }
 

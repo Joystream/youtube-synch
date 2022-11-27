@@ -6,6 +6,7 @@ import { User, Channel, Video, VideoEvent, Stats } from '../../domain/src'
 import { AvailableTopic } from '../../ytube/src'
 import * as awsx from '@pulumi/awsx'
 import * as pulumi from '@pulumi/pulumi'
+import { getConfig } from '../../domain/src/config'
 
 const nameof = <T>(name: keyof T) => <string>name
 
@@ -50,17 +51,7 @@ function lambdaFunction(name: string, handler: string, source: string) {
     memorySize: 512,
     timeout: 60,
     environment: {
-      variables: {
-        YOUTUBE_CLIENT_ID: process.env.YOUTUBE_CLIENT_ID,
-        YOUTUBE_CLIENT_SECRET: process.env.YOUTUBE_CLIENT_SECRET,
-        YOUTUBE_REDIRECT_URI: process.env.YOUTUBE_REDIRECT_URI,
-        AWS_ENDPOINT: process.env.AWS_ENDPOINT,
-        DEPLOYMENT_ENV: process.env.DEPLOYMENT_ENV,
-        JOYSTREAM_QUERY_NODE_URL: process.env.JOYSTREAM_QUERY_NODE_URL,
-        JOYSTREAM_WEBSOCKET_RPC: process.env.JOYSTREAM_WEBSOCKET_RPC,
-        JOYSTREAM_CHANNEL_COLLABORATOR_MEMBER_ID: process.env.JOYSTREAM_CHANNEL_COLLABORATOR_MEMBER_ID,
-        JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED: process.env.JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED,
-      },
+      variables: getConfig(),
     },
   })
   return func

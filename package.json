@@ -3,14 +3,14 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "start:api": "DEPLOYMENT_ENV=local yarn nx run api:serve",
+    "start:app": "yarn nx run app:serve",
     "deploy-all:local": "export DEPLOYMENT_ENV=local && RESOURCES=all ./deploy.sh",
     "destroy-all:local": "export DEPLOYMENT_ENV=local && ./destroy.sh",
     "deploy-ypp:local": "export DEPLOYMENT_ENV=local && ./deploy.sh",
-    "deploy-all:dev": "export DEPLOYMENT_ENV=dev && RESOURCES=all ./deploy.sh",
-    "destroy-all:dev": "export DEPLOYMENT_ENV=dev && ./destroy.sh",
-    "deploy-ypp:dev": "export DEPLOYMENT_ENV=dev && ./deploy.sh",
-    "api": "DEPLOYMENT_ENV=local yarn nx run api:serve",
-    "app": "yarn nx run app:serve"
+    "deploy-all:dev": "export DEPLOYMENT_ENV=development && RESOURCES=all ./deploy.sh",
+    "destroy-all:dev": "export DEPLOYMENT_ENV=development && ./destroy.sh",
+    "deploy-ypp:dev": "export DEPLOYMENT_ENV=development && ./deploy.sh"
   },
   "private": true,
   "devDependencies": {
@@ -62,7 +62,8 @@
     "typescript": "4.5.2",
     "zip-webpack-plugin": "^4.0.1",
     "async-lock": "^1.3.1",
-    "@types/async-lock": "^1.1.3"
+    "@types/async-lock": "^1.1.3",
+    "envalid": "^7.1.0"
   },
   "dependencies": {
     "@apollo/client": "^3.5.8",

@@ -4,6 +4,7 @@ import { DomainError, Result } from '@youtube-sync/domain'
 import { mnemonicGenerate, cryptoWaitReady } from '@polkadot/util-crypto'
 import { AccountId } from '@polkadot/types/interfaces'
 import { JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
+import { getConfig } from '@youtube-sync/domain'
 
 export type Account = {
   address: string
@@ -15,8 +16,8 @@ export class AccountsUtil {
   constructor() {
     cryptoWaitReady().then(() => {
       this.keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
-      process.env.JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED &&
-        this.keyring.addFromUri(process.env.JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED)
+      const seed = getConfig().JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED
+      seed && this.keyring.addFromUri(seed)
     })
   }
 

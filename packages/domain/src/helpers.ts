@@ -1,11 +1,13 @@
 import { config } from 'aws-sdk'
+import { getConfig } from './config'
 
 export function setAwsConfig() {
-  process.env.DEPLOYMENT_ENV === 'local' &&
+  const { AWS_ENDPOINT, DEPLOYMENT_ENV } = getConfig()
+  DEPLOYMENT_ENV === 'local' &&
     config.update({
       region: process.env.AWS_REGION,
-      dynamodb: { endpoint: process.env.AWS_ENDPOINT },
-      sns: { endpoint: process.env.AWS_ENDPOINT },
-      s3: { endpoint: process.env.AWS_ENDPOINT },
+      dynamodb: { endpoint: AWS_ENDPOINT },
+      sns: { endpoint: AWS_ENDPOINT },
+      s3: { endpoint: AWS_ENDPOINT },
     })
 }

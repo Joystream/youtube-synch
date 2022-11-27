@@ -1,14 +1,16 @@
 /* eslint-disable @nrwl/nx/enforce-module-boundaries */
 import { Module } from '@nestjs/common'
-import { ConfigModule, ConfigService } from '@nestjs/config'
+import { ConfigModule } from '@nestjs/config'
 import { ChannelsController } from './channels/channels.controller'
 import { ChannelsService } from './channels/channels.service'
 import { UsersController } from './users/users.controller'
 import { VideosController } from './videos/videos.controller'
-import { JoystreamClient } from '@youtube-sync/joy-api'
 import { ChannelsRepository, UsersRepository, VideosRepository, YtClient } from '@joystream/ytube'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import QueryNodeApi from 'packages/joy-api/src/graphql/QueryNodeApi'
+import { getConfig } from '@youtube-sync/domain'
+
+const { JOYSTREAM_QUERY_NODE_URL, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI } = getConfig()
 
 @Module({
   imports: [ConfigModule.forRoot()],
@@ -29,21 +31,15 @@ import QueryNodeApi from 'packages/joy-api/src/graphql/QueryNodeApi'
     },
     {
       provide: QueryNodeApi,
-      useFactory: (config: ConfigService) => {
-        return new QueryNodeApi(config.get<string>('JOYSTREAM_QUERY_NODE_URL'))
+      useFactory: () => {
+        return new QueryNodeApi(JOYSTREAM_QUERY_NODE_URL)
       },
-      inject: [ConfigService],
     },
     {
       provide: 'youtube',
-      useFactory: (config: ConfigService) => {
-        return YtClient.create(
-          config.get<string>('YOUTUBE_CLIENT_ID'),
-          config.get<string>('YOUTUBE_CLIENT_SECRET'),
-          config.get<string>('YOUTUBE_REDIRECT_URI')
-        )
+      useFactory: () => {
+        return YtClient.create(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI)
       },
-      inject: [ConfigService],
     },
   ],
 })
