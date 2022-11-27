@@ -79,3 +79,8 @@ export type VideoExtrinsicResult = ExtrinsicResult<{
   videoId: ChannelId
   assetsIds: VideoAssetsIds
 }>
+
+export type StorageNodeInfo = {
+  bucketId: number
+  apiEndpoint: string
+}

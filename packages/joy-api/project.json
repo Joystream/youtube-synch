@@ -6,11 +6,8 @@
     "generate": {
       "executor": "@nrwl/workspace:run-commands",
       "options": {
-        "commands": [
-          {
-            "command": "npx graphql-codegen --config packages/joy-api/codegen.yaml"
-          }
-        ]
+        "commands": ["npx graphql-codegen --config codegen.yml"],
+        "cwd": "packages/joy-api"
       }
     },
     "build": {

@@ -1,0 +1,17 @@
+fragment ChannelFields on Channel {
+  id
+  videos {
+    id
+    videoStateBloatBond
+  }
+  ownerMember {
+    id
+    controllerAccount
+  }
+}
+
+query getChannelById($channelId: ID!) {
+  channelByUniqueInput(where: { id: $channelId }) {
+    ...ChannelFields
+  }
+}

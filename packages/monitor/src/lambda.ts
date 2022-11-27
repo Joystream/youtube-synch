@@ -1,7 +1,9 @@
 import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
+import { getConfig } from '../../domain/src/config'
 
 export function lambda(name: string, handler: string, source: string) {
+  // IAM role
   const role = new aws.iam.Role(`${name}Role`, {
     assumeRolePolicy: {
       Version: '2012-10-17',
@@ -17,6 +19,8 @@ export function lambda(name: string, handler: string, source: string) {
       ],
     },
   })
+
+  // IAM policy attachments
   new aws.iam.RolePolicyAttachment(`${name}Attach`, {
     role: role,
     policyArn: aws.iam.ManagedPolicies.AWSLambdaExecute,
@@ -25,6 +29,11 @@ export function lambda(name: string, handler: string, source: string) {
   new aws.iam.RolePolicyAttachment(`${name}DynamoAttach`, {
     role: role,
     policyArn: aws.iam.ManagedPolicies.AmazonDynamoDBFullAccess,
+  })
+
+  new aws.iam.RolePolicyAttachment(`${name}SnsAttach`, {
+    role: role,
+    policyArn: aws.iam.ManagedPolicies.AmazonSNSFullAccess,
   })
 
   // Next, create the Lambda function itself:
@@ -36,6 +45,9 @@ export function lambda(name: string, handler: string, source: string) {
     role: role.arn,
     handler: handler,
     name: name,
+    timeout: 10,
+    memorySize: 512,
+    environment: { variables: getConfig() },
   })
   return func
 }

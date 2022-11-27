@@ -23,7 +23,7 @@ import { JoystreamLibError } from './errors'
 import { ConsoleLogger } from './logger'
 import { createType } from '@joystream/types'
 
-export const prepareAssetsForExtrinsic = async (api: PolkadotApi, dataObjectsMetadata: DataObjectMetadata[]) => {
+export async function prepareAssetsForExtrinsic(api: PolkadotApi, dataObjectsMetadata: DataObjectMetadata[]) {
   if (!dataObjectsMetadata.length) {
     return null
   }
