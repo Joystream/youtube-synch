@@ -3,15 +3,15 @@ import { OAuth2Client } from 'google-auth-library'
 import ytdl from 'ytdl-core'
 import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
 import Schema$Channel = youtube_v3.Schema$Channel
-import { Channel, ExitCodes, User, Video, YoutubeAuthorizationError } from '@youtube-sync/domain'
+import { Channel, ExitCodes, getConfig, User, Video, YoutubeAuthorizationError } from '@youtube-sync/domain'
 import { Readable } from 'stream'
 import { statsRepository } from '..'
 
-// YPP induction criteria, each channel should meet following criteria
-const MINIMUM_SUBSCRIBERS_COUNT = 50
-const MINIMUM_VIDEO_COUNT = 10
-const MINIMUM_VIDEO_AGE_MONTHS = 1
-const MINIMUM_CHANNEL_AGE_MONTHS = 3
+const config = getConfig()
+const MINIMUM_SUBSCRIBERS_COUNT = parseInt(config.MINIMUM_SUBSCRIBERS_COUNT)
+const MINIMUM_VIDEO_COUNT = parseInt(config.MINIMUM_VIDEO_COUNT)
+const MINIMUM_VIDEO_AGE_MONTHS = parseFloat(config.MINIMUM_VIDEO_AGE_MONTHS)
+const MINIMUM_CHANNEL_AGE_MONTHS = parseFloat(config.MINIMUM_CHANNEL_AGE_MONTHS)
 
 export interface IYoutubeClient {
   getUserFromCode(code: string): Promise<User>
