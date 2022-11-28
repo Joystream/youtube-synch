@@ -500,6 +500,9 @@
           "thumbnails": {
             "$ref": "#/components/schemas/ThumbnailsDto"
           },
+          "subscribersCount": {
+            "type": "number"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -513,6 +516,7 @@
           "isSuspended",
           "joystreamChannelId",
           "thumbnails",
+          "subscribersCount",
           "createdAt"
         ]
       },
