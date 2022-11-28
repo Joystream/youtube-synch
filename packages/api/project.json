@@ -9,7 +9,9 @@
       "options": {
         "outputPath": "dist/packages/api",
         "main": "packages/api/src/main.ts",
-        "tsConfig": "packages/api/tsconfig.app.json"
+        "tsConfig": "packages/api/tsconfig.app.json",
+        "webpackConfig": "packages/api/webpack.config.js",
+        "externalDependencies": "none"
       },
       "configurations": {
         "production": {

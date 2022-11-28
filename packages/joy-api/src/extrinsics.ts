@@ -63,7 +63,7 @@ export class JoystreamLibExtrinsics {
 
   async createVideo(
     accountId: KeyringPair,
-    memberId: number,
+    memberId: MemberId,
     channelId: ChannelId,
     inputMetadata: VideoInputMetadata,
     inputAssets: VideoInputAssets

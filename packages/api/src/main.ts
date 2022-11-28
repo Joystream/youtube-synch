@@ -1,14 +1,12 @@
+import { INestApplication, ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
-import { AppModule } from './app.module'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
-import { INestApplication } from '@nestjs/common'
-import { config } from 'aws-sdk'
+import { setAwsConfig } from '@youtube-sync/domain'
 import * as fs from 'fs'
+import { AppModule } from './app.module'
 
-config.update({
-  region: 'us-east-1',
-  dynamodb: { endpoint: process.env.AWS_ENDPOINT },
-})
+// Set AWS config in case we are running locally
+setAwsConfig()
 
 // Create Swagger API documentation
 function setupSwagger(app: INestApplication) {
@@ -30,6 +28,8 @@ function setupSwagger(app: INestApplication) {
 async function bootstrap() {
   // Create App
   const app = await NestFactory.create(AppModule)
+
+  app.useGlobalPipes(new ValidationPipe()) // enable ValidationPipe
 
   app.enableCors({
     allowedHeaders: '*',

@@ -1,6 +1,8 @@
 import { ChannelsRepository } from '@joystream/ytube'
 import { Injectable } from '@nestjs/common'
 import { Channel } from '@youtube-sync/domain'
+import { AnyDocument } from 'dynamoose/dist/Document'
+import { Query } from 'dynamoose/dist/DocumentRetriever'
 
 @Injectable()
 export class ChannelsService {
@@ -10,9 +12,9 @@ export class ChannelsService {
    * @param joystreamChannelId
    * @returns Returns channel by joystreamChannelId
    */
-  async get(joystreamChannelId: string): Promise<Channel> {
+  async get(joystreamChannelId: number): Promise<Channel> {
     const [result] = await this.channelsRepository.scan('id', (q) =>
-      q.filter('joystreamChannelId').eq(Number(joystreamChannelId))
+      q.filter('joystreamChannelId').eq(joystreamChannelId)
     )
     if (!result) {
       throw new Error(`Could not find channel with id ${joystreamChannelId}`)
@@ -38,6 +40,18 @@ export class ChannelsService {
    */
   async getAll(userId: string): Promise<Channel[]> {
     return await this.channelsRepository.query({ userId }, (q) => q)
+  }
+
+  /**
+   * @param count Number of record to retrieve
+   * @returns List of `n` recent verified channels
+   */
+  async getRecent(count: number): Promise<Channel[]> {
+    // TODO: Use query using phantomKey-createdAt-index instead of
+    // TODO: scan operation here, and figure out why it's not working now
+
+    const allChannels = await this.channelsRepository.scan('id', (s) => s)
+    return allChannels.sort((a, b) => b.createdAt - a.createdAt).slice(0, count)
   }
 
   async getAllWithFrequency(frequency: number): Promise<Channel[]> {

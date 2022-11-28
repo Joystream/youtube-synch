@@ -1,16 +1,18 @@
-import { Video } from '@youtube-sync/domain'
+import { getConfig, Video } from '@youtube-sync/domain'
 import { S3 } from 'aws-sdk'
 import * as stream from 'stream'
 import { ChannelsRepository, VideosRepository } from './database'
 import { IYoutubeClient } from './youtubeClient'
 import { JoystreamClient } from '@youtube-sync/joy-api'
+import { createType } from '@joystream/types'
+import { BN } from 'bn.js'
 
 export interface IUploadService {
   uploadVideo(channelId: string, videoId: string): Promise<Video>
 }
 
 export class S3UploadService implements IUploadService {
-  constructor(private youtubeClient: IYoutubeClient) {}
+  constructor(private youtubeClient: IYoutubeClient, q) {}
   async uploadVideo(channelId: string, videoId: string): Promise<Video> {
     const videoRepository = new VideosRepository()
     const video = await videoRepository.get(channelId, videoId)
@@ -23,7 +25,7 @@ export class S3UploadService implements IUploadService {
       .on('data', (chunk) => console.log(chunk))
     return video
     // // TODO: this is for demo purposes only, will be replaces by the upload to joystream network
-    // const s3 = new S3({ endpoint: process.env.AWS_ENDPOINT })
+    // const s3 = new S3({ endpoint: AWS_ENDPOINT })
     // const exists = await this.bucketExists(s3, channelId.toLowerCase())
     // console.log('Bucket exists:', exists)
     // if (!exists) {
@@ -88,15 +90,11 @@ export class JoystreamUploadService implements IUploadService {
     const channelsRepository = new ChannelsRepository()
     const channel = await channelsRepository.get(channelId)
 
-    console.log('creating video ')
-
-    const client = new JoystreamClient(process.env.JOYSTREAM_WEBSOCKET_RPC, process.env.JOYSTREAM_QUERY_NODE_URL)
+    const { JOYSTREAM_WEBSOCKET_RPC, JOYSTREAM_QUERY_NODE_URL, JOYSTREAM_CHANNEL_COLLABORATOR_MEMBER_ID } = getConfig()
+    const client = new JoystreamClient(JOYSTREAM_WEBSOCKET_RPC, JOYSTREAM_QUERY_NODE_URL)
 
     const createdVideo = await client.createVideo(
-      {
-        secret: process.env.JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT,
-        memberId: Number(process.env.JOYSTREAM_CHANNEL_COLLABORATOR_MEMBER_ID),
-      },
+      createType('u64', new BN(JOYSTREAM_CHANNEL_COLLABORATOR_MEMBER_ID)),
       channel,
       video
     )

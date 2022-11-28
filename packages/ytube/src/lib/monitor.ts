@@ -88,10 +88,17 @@ export class SyncService {
   private async canCallYoutube(): Promise<boolean> {
     const today = new Date()
     today.setUTCHours(0, 0, 0, 0)
-    const statsDoc = await statsRepository().get({
+    let statsDoc = await statsRepository().get({
       partition: 'stats',
       date: today.setUTCHours(0, 0, 0, 0),
     })
+    if (!statsDoc) {
+      statsDoc = await statsRepository().update({
+        partition: 'stats',
+        date: today.setUTCHours(0, 0, 0, 0),
+        quotaUsed: 0,
+      })
+    }
     const stats = mapTo<Stats>(statsDoc)
     return stats.quotaUsed < DailyQuota
   }

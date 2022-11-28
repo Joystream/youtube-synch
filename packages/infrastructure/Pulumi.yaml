@@ -1,5 +1,5 @@
-name: youtube-sync
-runtime: 
+name: youtube-partner-program
+runtime:
   name: nodejs
-main: "src/index.ts"
-description: Common infrastructure of youtube-sync project
+main: 'src/index.ts'
+description: Common infrastructure of youtube partner program & youtube-sync project

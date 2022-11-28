@@ -1,29 +1,36 @@
-import { ChannelId } from '@joystream/types/primitives'
-import { Channel, DomainError, Membership, Result, Thumbnails, Video } from '@youtube-sync/domain'
+import { ChannelId, MemberId } from '@joystream/types/primitives'
+import { Channel, Thumbnails, Video } from '@youtube-sync/domain'
 import axios from 'axios'
+import { BN } from 'bn.js'
 import R from 'ramda'
 import ytdl from 'ytdl-core'
 import { AccountsUtil, DataObjectMetadata, JoystreamLib, VideoInputAssets, VideoInputMetadata } from '.'
 import { Uploader } from '../storage/uploader'
+import QueryNodeApi from './graphql/QueryNodeApi'
 import { computeFileHashAndSize } from './hasher'
+import { createType } from '@joystream/types'
 
 export class JoystreamClient {
   private lib: JoystreamLib
   private accounts: AccountsUtil
   private uploader: Uploader
+  private qnApi: QueryNodeApi
   constructor(private nodeUri: string, private queryNodeUrl: string) {
     this.lib = new JoystreamLib(this.nodeUri)
-    this.uploader = new Uploader(this.queryNodeUrl)
+    this.qnApi = new QueryNodeApi(queryNodeUrl)
+    this.uploader = new Uploader(this.qnApi)
     this.accounts = new AccountsUtil()
   }
 
-  async createVideo(member: Membership, channel: Channel, video: Video) {
-    const keyPair = this.accounts.getOrAddPair(member.address, member.secret)
+  async createVideo(memberId: MemberId, channel: Channel, video: Video) {
+    const member = await this.qnApi.memberById(memberId)
+    const keyPair = this.accounts.getPair(member.controllerAccount)
+
     const inputs = parseVideoInputs(video)
 
     const v = await this.lib.extrinsics.createVideo(
       keyPair,
-      member.memberId,
+      createType('u64', new BN(member.id)),
       channel.joystreamChannelId as unknown as ChannelId,
       inputs[0],
       inputs[1]

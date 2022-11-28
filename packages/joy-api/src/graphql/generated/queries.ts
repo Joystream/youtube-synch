@@ -15,13 +15,25 @@ export type GetChannelByIdQuery = { channelByUniqueInput?: Types.Maybe<ChannelFi
 
 export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
 
-export type MembershipFieldsFragment = { id: string; handle: string; metadata: MemberMetadataFieldsFragment }
+export type MembershipFieldsFragment = {
+  id: string
+  handle: string
+  controllerAccount: string
+  rootAccount: string
+  metadata: MemberMetadataFieldsFragment
+}
 
 export type GetMembersByIdsQueryVariables = Types.Exact<{
   ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
 export type GetMembersByIdsQuery = { memberships: Array<MembershipFieldsFragment> }
+
+export type GetMemberByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
+
+export type GetMemberByIdQuery = { membershipByUniqueInput?: Types.Maybe<MembershipFieldsFragment> }
 
 export type StorageNodeInfoFragment = {
   id: string
@@ -180,6 +192,8 @@ export const MembershipFields = gql`
   fragment MembershipFields on Membership {
     id
     handle
+    controllerAccount
+    rootAccount
     metadata {
       ...MemberMetadataFields
     }
@@ -300,6 +314,14 @@ export const GetChannelById = gql`
 export const GetMembersByIds = gql`
   query getMembersByIds($ids: [ID!]) {
     memberships(where: { id_in: $ids }) {
+      ...MembershipFields
+    }
+  }
+  ${MembershipFields}
+`
+export const GetMemberById = gql`
+  query getMemberById($id: ID!) {
+    membershipByUniqueInput(where: { id: $id }) {
       ...MembershipFields
     }
   }

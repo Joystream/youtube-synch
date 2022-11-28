@@ -3,18 +3,18 @@ import { OAuth2Client } from 'google-auth-library'
 import ytdl from 'ytdl-core'
 import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
 import Schema$Channel = youtube_v3.Schema$Channel
-import { Channel, ChannelVerificationFailed, ExitCodes, User, Video } from '@youtube-sync/domain'
+import { Channel, ExitCodes, getConfig, User, Video, YoutubeAuthorizationError } from '@youtube-sync/domain'
 import { Readable } from 'stream'
 import { statsRepository } from '..'
 
-// YPP induction criteria, each channel should meet following criteria
-const MINIMUM_SUBSCRIBERS_COUNT = 50
-const MINIMUM_VIDEO_COUNT = 10
-const MINIMUM_VIDEO_AGE_MONTHS = 1
-const MINIMUM_CHANNEL_AGE_MONTHS = 3
+const config = getConfig()
+const MINIMUM_SUBSCRIBERS_COUNT = parseInt(config.MINIMUM_SUBSCRIBERS_COUNT)
+const MINIMUM_VIDEO_COUNT = parseInt(config.MINIMUM_VIDEO_COUNT)
+const MINIMUM_VIDEO_AGE_MONTHS = parseFloat(config.MINIMUM_VIDEO_AGE_MONTHS)
+const MINIMUM_CHANNEL_AGE_MONTHS = parseFloat(config.MINIMUM_CHANNEL_AGE_MONTHS)
 
 export interface IYoutubeClient {
-  getUserFromCode(code: string): Promise<User>
+  getUserFromCode(code: string, youtubeRedirectUri: string): Promise<User>
   getChannels(user: User): Promise<Channel[]>
   verifyChannel(channel: Channel): Promise<Channel>
   getVideos(channel: Channel, top: number): Promise<Video[]>
@@ -23,7 +23,15 @@ export interface IYoutubeClient {
 }
 
 class YoutubeClient implements IYoutubeClient {
-  constructor(private clientId: string, private clientSecret: string, private redirectUri: string) {}
+  constructor(private clientId: string, private clientSecret: string) {}
+
+  private getAuth(youtubeRedirectUri?: string) {
+    return new OAuth2Client({
+      clientId: this.clientId,
+      clientSecret: this.clientSecret,
+      redirectUri: youtubeRedirectUri,
+    })
+  }
 
   private getYoutube(accessToken: string, refreshToken: string) {
     const auth = this.getAuth()
@@ -34,24 +42,16 @@ class YoutubeClient implements IYoutubeClient {
     return new youtube_v3.Youtube({ auth })
   }
 
-  private async getAccessToken(code: string) {
+  private async getAccessToken(code: string, youtubeRedirectUri: string) {
     try {
-      return await this.getAuth().getToken(code)
+      return await this.getAuth(youtubeRedirectUri).getToken(code)
     } catch (error) {
       throw new Error(`Could not get User's access token using authorization code ${error}`)
     }
   }
 
-  private getAuth() {
-    return new OAuth2Client({
-      clientId: this.clientId,
-      clientSecret: this.clientSecret,
-      redirectUri: this.redirectUri,
-    })
-  }
-
-  async getUserFromCode(code: string) {
-    const tokenResponse = await this.getAccessToken(code)
+  async getUserFromCode(code: string, youtubeRedirectUri: string) {
+    const tokenResponse = await this.getAccessToken(code, youtubeRedirectUri)
     const tokenInfo = await this.getAuth().getTokenInfo(tokenResponse.tokens.access_token)
 
     const user = new User(
@@ -59,7 +59,8 @@ class YoutubeClient implements IYoutubeClient {
       tokenInfo.email,
       tokenResponse.tokens.access_token,
       tokenResponse.tokens.refresh_token,
-      code
+      code,
+      Date.now()
     )
     return user
   }
@@ -77,16 +78,17 @@ class YoutubeClient implements IYoutubeClient {
   }
 
   async verifyChannel(channel: Channel): Promise<Channel> {
-    const errors: ChannelVerificationFailed[] = []
+    const errors: YoutubeAuthorizationError[] = []
     if (channel.statistics.subscriberCount < MINIMUM_SUBSCRIBERS_COUNT) {
-      errors.push({
-        errorCode: ExitCodes.CHANNEL_CRITERIA_UNMET_SUBSCRIBERS,
-        message:
+      errors.push(
+        new YoutubeAuthorizationError(
+          ExitCodes.CHANNEL_CRITERIA_UNMET_SUBSCRIBERS,
           `Channel ${channel.id} with ${channel.statistics.subscriberCount} subscribers does not ` +
-          `meet Youtube Partner Program requirement of ${MINIMUM_SUBSCRIBERS_COUNT} subscribers`,
-        result: channel.statistics.subscriberCount,
-        expected: MINIMUM_SUBSCRIBERS_COUNT,
-      })
+            `meet Youtube Partner Program requirement of ${MINIMUM_SUBSCRIBERS_COUNT} subscribers`,
+          channel.statistics.subscriberCount,
+          MINIMUM_SUBSCRIBERS_COUNT
+        )
+      )
     }
 
     // at least MINiMUM_VIDEO_COUNT videos should be one month old
@@ -98,28 +100,30 @@ class YoutubeClient implements IYoutubeClient {
       (v) => new Date(v.publishedAt) < oneMonthsAgo
     )
     if (videos.length < MINIMUM_VIDEO_COUNT) {
-      errors.push({
-        errorCode: ExitCodes.CHANNEL_CRITERIA_UNMET_VIDEOS,
-        message:
+      errors.push(
+        new YoutubeAuthorizationError(
+          ExitCodes.CHANNEL_CRITERIA_UNMET_VIDEOS,
           `Channel ${channel.id} with ${videos.length} videos does not meet Youtube ` +
-          `Partner Program requirement of at least ${MINIMUM_VIDEO_COUNT} videos, each ${MINIMUM_VIDEO_AGE_MONTHS} month old`,
-        result: channel.statistics.videoCount,
-        expected: MINIMUM_VIDEO_COUNT,
-      })
+            `Partner Program requirement of at least ${MINIMUM_VIDEO_COUNT} videos, each ${MINIMUM_VIDEO_AGE_MONTHS} month old`,
+          channel.statistics.videoCount,
+          MINIMUM_VIDEO_COUNT
+        )
+      )
     }
 
     // Channel should be at least 3 months old
     const threeMonthsAgo = new Date()
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - MINIMUM_CHANNEL_AGE_MONTHS)
     if (new Date(channel.publishedAt) > threeMonthsAgo) {
-      errors.push({
-        errorCode: ExitCodes.CHANNEL_CRITERIA_UNMET_CREATION_DATE,
-        message:
+      errors.push(
+        new YoutubeAuthorizationError(
+          ExitCodes.CHANNEL_CRITERIA_UNMET_CREATION_DATE,
           `Channel ${channel.id} with creation time of ${channel.publishedAt} does not ` +
-          `meet Youtube Partner Program requirement of channel being at least ${MINIMUM_CHANNEL_AGE_MONTHS} months old`,
-        result: channel.publishedAt,
-        expected: threeMonthsAgo,
-      })
+            `meet Youtube Partner Program requirement of channel being at least ${MINIMUM_CHANNEL_AGE_MONTHS} months old`,
+          channel.publishedAt,
+          threeMonthsAgo
+        )
+      )
     }
 
     if (errors.length > 0) {
@@ -205,6 +209,7 @@ class YoutubeClient implements IYoutubeClient {
             status: true,
             lastChangedAt: Date.now(),
           },
+          phantomKey: 'phantomData',
         }
     )
   }
@@ -242,8 +247,8 @@ class QuotaTrackingClient implements IYoutubeClient {
     this._statsRepo = statsRepository()
   }
 
-  getUserFromCode(code: string) {
-    return this.decorated.getUserFromCode(code)
+  getUserFromCode(code: string, youtubeRedirectUri: string) {
+    return this.decorated.getUserFromCode(code, youtubeRedirectUri)
   }
 
   async verifyChannel(channel: Channel) {
@@ -293,7 +298,7 @@ class QuotaTrackingClient implements IYoutubeClient {
 }
 
 export const YtClient = {
-  create(clientId: string, clientSecret: string, redirectUri: string): IYoutubeClient {
-    return new QuotaTrackingClient(new YoutubeClient(clientId, clientSecret, redirectUri))
+  create(clientId: string, clientSecret: string): IYoutubeClient {
+    return new QuotaTrackingClient(new YoutubeClient(clientId, clientSecret))
   },
 }

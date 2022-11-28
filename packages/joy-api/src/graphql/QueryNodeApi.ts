@@ -31,6 +31,9 @@ import {
   GetDistributionFamiliesAndBuckets,
   GetDistributionFamiliesAndBucketsQuery,
   GetDistributionFamiliesAndBucketsQueryVariables,
+  GetMemberById,
+  GetMemberByIdQuery,
+  GetMemberByIdQueryVariables,
   GetMembersByIds,
   GetMembersByIdsQuery,
   GetMembersByIdsQueryVariables,
@@ -195,6 +198,16 @@ export default class QueryNodeApi {
         ids: ids.map((id) => id.toString()),
       },
       'memberships'
+    )
+  }
+
+  async memberById(id: MemberId | string): Promise<MembershipFieldsFragment> {
+    return this.uniqueEntityQuery<GetMemberByIdQuery, GetMemberByIdQueryVariables>(
+      GetMemberById,
+      {
+        id: id.toString(),
+      },
+      'membershipByUniqueInput'
     )
   }
 }

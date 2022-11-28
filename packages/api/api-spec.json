@@ -67,6 +67,27 @@
         "tags": [
           "channels"
         ]
+      },
+      "get": {
+        "operationId": "ChannelsController_getRecentVerifiedChannels",
+        "summary": "",
+        "description": "Retrieves the most recently verified 30 channels desc by date",
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
       }
     },
     "/channels/{joystreamChannelId}": {
@@ -80,7 +101,7 @@
             "required": true,
             "in": "path",
             "schema": {
-              "type": "string"
+              "type": "number"
             }
           }
         ],
@@ -101,7 +122,7 @@
         ]
       }
     },
-    "/channels/ingestion/{joystreamChannelId}": {
+    "/channels/{joystreamChannelId}/ingest": {
       "put": {
         "operationId": "ChannelsController_Channel",
         "summary": "",
@@ -112,7 +133,7 @@
             "required": true,
             "in": "path",
             "schema": {
-              "type": "string"
+              "type": "number"
             }
           }
         ],
@@ -133,6 +154,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
+    "/channels/suspend": {
+      "put": {
+        "operationId": "ChannelsController_suspendChannels",
+        "summary": "",
+        "description": "Authenticated endpoint to suspend given channel/s from YPP program",
+        "parameters": [
+          {
+            "name": "authorization",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SuspendChannelDto"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChannelDto"
+                  }
                 }
               }
             }
@@ -190,7 +259,7 @@
       "get": {
         "operationId": "ChannelsController_getVideo",
         "summary": "",
-        "description": "Retrieves particular video by it`s id",
+        "description": "Retrieves particular video by it`s channel id",
         "parameters": [
           {
             "name": "id",
@@ -422,6 +491,9 @@
           "shouldBeIngested": {
             "type": "boolean"
           },
+          "isSuspended": {
+            "type": "boolean"
+          },
           "joystreamChannelId": {
             "type": "number"
           },
@@ -430,6 +502,10 @@
           },
           "tier": {
             "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
           }
         },
         "required": [
@@ -437,9 +513,11 @@
           "description",
           "aggregatedStats",
           "shouldBeIngested",
+          "isSuspended",
           "joystreamChannelId",
           "thumbnails",
-          "tier"
+          "tier",
+          "createdAt"
         ]
       },
       "SaveChannelResponse": {
@@ -470,6 +548,21 @@
         "required": [
           "signature",
           "message"
+        ]
+      },
+      "SuspendChannelDto": {
+        "type": "object",
+        "properties": {
+          "joystreamChannelId": {
+            "type": "number"
+          },
+          "isSuspended": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "joystreamChannelId",
+          "isSuspended"
         ]
       },
       "VideoDto": {
@@ -524,10 +617,14 @@
         "properties": {
           "authorizationCode": {
             "type": "string"
+          },
+          "youtubeRedirectUri": {
+            "type": "string"
           }
         },
         "required": [
-          "authorizationCode"
+          "authorizationCode",
+          "youtubeRedirectUri"
         ]
       },
       "VerifyChannelResponse": {

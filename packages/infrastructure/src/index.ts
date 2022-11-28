@@ -4,8 +4,68 @@ import * as aws from '@pulumi/aws'
 import { User, Channel, Video, VideoEvent, Stats } from '../../domain/src'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { AvailableTopic } from '../../ytube/src'
+import * as awsx from '@pulumi/awsx'
+import * as pulumi from '@pulumi/pulumi'
+import { getConfig } from '../../domain/src/config'
 
 const nameof = <T>(name: keyof T) => <string>name
+
+function lambdaFunction(name: string, handler: string, source: string) {
+  // IAM role
+  const role = new aws.iam.Role(`${name}Role`, {
+    assumeRolePolicy: {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Action: 'sts:AssumeRole',
+          Principal: {
+            Service: 'lambda.amazonaws.com',
+          },
+          Effect: 'Allow',
+          Sid: '',
+        },
+      ],
+    },
+  })
+
+  // IAM policy attachments
+  new aws.iam.RolePolicyAttachment(`${name}Attach`, {
+    role: role,
+    policyArn: aws.iam.ManagedPolicies.AWSLambdaExecute,
+  })
+
+  new aws.iam.RolePolicyAttachment(`${name}DynamoAttach`, {
+    role: role,
+    policyArn: aws.iam.ManagedPolicies.AmazonDynamoDBFullAccess,
+  })
+
+  // Next, create the Lambda function itself:
+  const func = new aws.lambda.Function(name, {
+    code: new pulumi.asset.AssetArchive({
+      '.': new pulumi.asset.FileArchive(source),
+    }),
+    runtime: 'nodejs14.x',
+    role: role.arn,
+    handler: handler,
+    name: name,
+    memorySize: 512,
+    timeout: 60,
+    environment: {
+      variables: getConfig(),
+    },
+  })
+  return func
+}
+
+const yppEndpoint = new awsx.apigateway.API('ypp-api', {
+  routes: [
+    {
+      path: '{proxy+}',
+      method: 'ANY',
+      eventHandler: lambdaFunction('ypp-api', 'main.handler', '../../../dist/packages/api-lambda'),
+    },
+  ],
+})
 
 const userTable = new aws.dynamodb.Table('users', {
   name: 'users',
@@ -38,13 +98,29 @@ const channelsTable = new aws.dynamodb.Table('channels', {
       name: nameof<Channel>('frequency'),
       type: 'N',
     },
+    {
+      name: nameof<Channel>('createdAt'),
+      type: 'N',
+    },
+    {
+      name: nameof<Channel>('phantomKey'),
+      type: 'S',
+    },
   ],
   billingMode: 'PROVISIONED',
   globalSecondaryIndexes: [
     {
-      hashKey: nameof<Channel>('frequency'),
       name: 'frequency-id-index',
-      rangeKey: 'id',
+      hashKey: nameof<Channel>('frequency'),
+      rangeKey: nameof<Channel>('id'),
+      projectionType: 'ALL',
+      readCapacity: 1,
+      writeCapacity: 1,
+    },
+    {
+      name: 'phantomKey-createdAt-index',
+      hashKey: nameof<Channel>('phantomKey'), // we'll have a single partition for users
+      rangeKey: nameof<Channel>('createdAt'),
       projectionType: 'ALL',
       readCapacity: 1,
       writeCapacity: 1,
@@ -136,3 +212,5 @@ export const statsTableArn = statsTable.arn
 export const videosTopicArn = videoEvents.arn
 export const channelsTopicArn = channelEventsTopic.arn
 export const usersTopicArn = userEventsTopic.arn
+
+export const url = yppEndpoint.url
