@@ -7,8 +7,8 @@ export async function ingestChannelHandler(event: TopicEvent) {
   // Set AWS config in case we are running locally
   setAwsConfig()
 
-  const { YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI } = getConfig()
-  const youtubeClient = YtClient.create(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI)
+  const { YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET } = getConfig()
+  const youtubeClient = YtClient.create(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET)
 
   const message: IngestChannel = JSON.parse(event.Records[0].Sns.Message)
   console.log('Got message: ', message)

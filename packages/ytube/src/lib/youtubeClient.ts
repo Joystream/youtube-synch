@@ -14,7 +14,7 @@ const MINIMUM_VIDEO_AGE_MONTHS = 1
 const MINIMUM_CHANNEL_AGE_MONTHS = 3
 
 export interface IYoutubeClient {
-  getUserFromCode(code: string): Promise<User>
+  getUserFromCode(code: string, youtubeRedirectUri: string): Promise<User>
   getChannels(user: User): Promise<Channel[]>
   verifyChannel(channel: Channel): Promise<Channel>
   getVideos(channel: Channel, top: number): Promise<Video[]>
@@ -23,7 +23,15 @@ export interface IYoutubeClient {
 }
 
 class YoutubeClient implements IYoutubeClient {
-  constructor(private clientId: string, private clientSecret: string, private redirectUri: string) {}
+  constructor(private clientId: string, private clientSecret: string) {}
+
+  private getAuth(youtubeRedirectUri?: string) {
+    return new OAuth2Client({
+      clientId: this.clientId,
+      clientSecret: this.clientSecret,
+      redirectUri: youtubeRedirectUri,
+    })
+  }
 
   private getYoutube(accessToken: string, refreshToken: string) {
     const auth = this.getAuth()
@@ -34,24 +42,16 @@ class YoutubeClient implements IYoutubeClient {
     return new youtube_v3.Youtube({ auth })
   }
 
-  private async getAccessToken(code: string) {
+  private async getAccessToken(code: string, youtubeRedirectUri: string) {
     try {
-      return await this.getAuth().getToken(code)
+      return await this.getAuth(youtubeRedirectUri).getToken(code)
     } catch (error) {
       throw new Error(`Could not get User's access token using authorization code ${error}`)
     }
   }
 
-  private getAuth() {
-    return new OAuth2Client({
-      clientId: this.clientId,
-      clientSecret: this.clientSecret,
-      redirectUri: this.redirectUri,
-    })
-  }
-
-  async getUserFromCode(code: string) {
-    const tokenResponse = await this.getAccessToken(code)
+  async getUserFromCode(code: string, youtubeRedirectUri: string) {
+    const tokenResponse = await this.getAccessToken(code, youtubeRedirectUri)
     const tokenInfo = await this.getAuth().getTokenInfo(tokenResponse.tokens.access_token)
 
     const user = new User(
@@ -244,8 +244,8 @@ class QuotaTrackingClient implements IYoutubeClient {
     this._statsRepo = statsRepository()
   }
 
-  getUserFromCode(code: string) {
-    return this.decorated.getUserFromCode(code)
+  getUserFromCode(code: string, youtubeRedirectUri: string) {
+    return this.decorated.getUserFromCode(code, youtubeRedirectUri)
   }
 
   async verifyChannel(channel: Channel) {
@@ -295,7 +295,7 @@ class QuotaTrackingClient implements IYoutubeClient {
 }
 
 export const YtClient = {
-  create(clientId: string, clientSecret: string, redirectUri: string): IYoutubeClient {
-    return new QuotaTrackingClient(new YoutubeClient(clientId, clientSecret, redirectUri))
+  create(clientId: string, clientSecret: string): IYoutubeClient {
+    return new QuotaTrackingClient(new YoutubeClient(clientId, clientSecret))
   },
 }

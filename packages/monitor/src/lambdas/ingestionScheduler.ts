@@ -7,8 +7,8 @@ export async function ingestionScheduler(event: EventRuleEvent) {
   setAwsConfig()
 
   console.log('event: ', event)
-  const { YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI } = getConfig()
-  const youtubeClient = YtClient.create(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI)
+  const { YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET } = getConfig()
+  const youtubeClient = YtClient.create(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET)
 
   // const date = new Date(event.time)
   // const frequencies = getMatchingFrequenciesForDate(date)

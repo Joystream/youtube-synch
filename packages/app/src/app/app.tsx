@@ -46,6 +46,7 @@ export function App() {
       try {
         const res = await axios.post(`http://localhost:3001/users`, {
           authorizationCode: code,
+          youtubeRedirectUri: 'http://localhost:4200',
         })
 
         console.log('success: ', res.data)

@@ -55,6 +55,8 @@ export class UserDto {
 export class VerifyChannelRequest {
   // Authorization code send to the backend after user o-auth verification
   @IsNotEmpty() @ApiProperty({ required: true }) authorizationCode: string
+
+  @IsNotEmpty() @ApiProperty({ required: true }) youtubeRedirectUri: string
 }
 
 // Dto for verified Youtube channel response
