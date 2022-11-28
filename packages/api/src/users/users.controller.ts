@@ -30,10 +30,12 @@ export class UsersController {
   @ApiBody({ type: VerifyChannelRequest })
   @ApiResponse({ type: VerifyChannelResponse })
   @Post()
-  async verifyUserAndChannel(@Body() { authorizationCode }: VerifyChannelRequest): Promise<VerifyChannelResponse> {
+  async verifyUserAndChannel(
+    @Body() { authorizationCode, youtubeRedirectUri }: VerifyChannelRequest
+  ): Promise<VerifyChannelResponse> {
     try {
       // get user from authorization code
-      const user = await this.youtube.getUserFromCode(authorizationCode)
+      const user = await this.youtube.getUserFromCode(authorizationCode, youtubeRedirectUri)
 
       // get channel from user
       const [channel] = await this.youtube.getChannels(user)

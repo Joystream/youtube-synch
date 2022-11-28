@@ -10,7 +10,7 @@ import { ChannelsRepository, UsersRepository, VideosRepository, YtClient } from 
 import QueryNodeApi from 'packages/joy-api/src/graphql/QueryNodeApi'
 import { getConfig } from '@youtube-sync/domain'
 
-const { JOYSTREAM_QUERY_NODE_URL, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI } = getConfig()
+const { JOYSTREAM_QUERY_NODE_URL, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET } = getConfig()
 
 @Module({
   imports: [ConfigModule.forRoot()],
@@ -38,7 +38,7 @@ const { JOYSTREAM_QUERY_NODE_URL, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUT
     {
       provide: 'youtube',
       useFactory: () => {
-        return YtClient.create(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI)
+        return YtClient.create(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET)
       },
     },
   ],

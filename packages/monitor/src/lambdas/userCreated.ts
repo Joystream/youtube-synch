@@ -6,8 +6,8 @@ export async function userCreatedHandler(event: TopicEvent) {
   // Set AWS config in case we are running locally
   setAwsConfig()
 
-  const { YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI } = getConfig()
-  const client = YtClient.create(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI)
+  const { YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET } = getConfig()
+  const client = YtClient.create(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET)
 
   const userEvent = <UserCreated | UserIngestionTriggered>JSON.parse(event.Records[0].Sns.Message)
   await new SyncService(client, new MessageBus()).ingestChannels(userEvent.user)

@@ -12,8 +12,8 @@ export async function videoCreatedHandler(event: TopicEvent) {
     return
   console.log('New video', videoCreated)
 
-  const { YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI } = getConfig()
-  const youtubeClient = YtClient.create(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REDIRECT_URI)
+  const { YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET } = getConfig()
+  const youtubeClient = YtClient.create(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET)
 
   await new SyncService(youtubeClient, new MessageBus()).uploadVideo(videoCreated.channelId, videoCreated.videoId)
 }

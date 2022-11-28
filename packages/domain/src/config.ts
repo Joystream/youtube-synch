@@ -3,7 +3,6 @@ import { cleanEnv, str } from 'envalid'
 
 let conf: {
   YOUTUBE_CLIENT_ID: string
-  YOUTUBE_REDIRECT_URI: string
   JOYSTREAM_QUERY_NODE_URL: string
   JOYSTREAM_WEBSOCKET_RPC: string
   AWS_ENDPOINT: string
@@ -16,7 +15,6 @@ let conf: {
 
 export function configure(): void {
   const envConf: Readonly<typeof conf> = {
-    YOUTUBE_REDIRECT_URI: readEnv('YOUTUBE_REDIRECT_URI'),
     YOUTUBE_CLIENT_ID: readEnv('YOUTUBE_CLIENT_ID'),
     YOUTUBE_CLIENT_SECRET: readEnv('YOUTUBE_CLIENT_SECRET'),
     JOYSTREAM_QUERY_NODE_URL: readEnv('JOYSTREAM_QUERY_NODE_URL'),

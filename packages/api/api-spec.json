@@ -613,10 +613,14 @@
         "properties": {
           "authorizationCode": {
             "type": "string"
+          },
+          "youtubeRedirectUri": {
+            "type": "string"
           }
         },
         "required": [
-          "authorizationCode"
+          "authorizationCode",
+          "youtubeRedirectUri"
         ]
       },
       "VerifyChannelResponse": {
