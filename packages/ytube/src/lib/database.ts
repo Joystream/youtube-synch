@@ -65,12 +65,6 @@ export function createChannelModel(): ModelType<AnyDocument> {
         },
       },
 
-      // Tier of Channel based on its subscriber's count
-      tier: {
-        type: Number,
-        enum: [1, 2, 3],
-      },
-
       // Channel Ingestion frequency
       frequency: {
         type: Number,

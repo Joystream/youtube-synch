@@ -48,9 +48,6 @@ export class Channel {
     videoCount: number
   }
 
-  // Tier of Channel based on its subscriber's count
-  tier: 1 | 2 | 3
-
   aggregatedStats: number
 
   // Channel owner's access token
