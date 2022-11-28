@@ -6,11 +6,13 @@ import { User, Channel, Video, VideoEvent, Stats } from '../../domain/src'
 import { AvailableTopic } from '../../ytube/src'
 import * as awsx from '@pulumi/awsx'
 import * as pulumi from '@pulumi/pulumi'
-import { getConfig } from '../../domain/src/config'
+// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
+import { DeploymentEnv, getConfig } from '../../domain/src/config'
 
 const nameof = <T>(name: keyof T) => <string>name
+const resourceSuffix = getConfig().DEPLOYMENT_ENV as DeploymentEnv
 
-function lambdaFunction(name: string, handler: string, source: string) {
+function lambdaFunction(name: string, resourceSuffix: DeploymentEnv, handler: string, source: string) {
   // IAM role
   const role = new aws.iam.Role(`${name}Role`, {
     assumeRolePolicy: {
@@ -48,6 +50,7 @@ function lambdaFunction(name: string, handler: string, source: string) {
     role: role.arn,
     handler: handler,
     name: name,
+    tags: { environment: resourceSuffix },
     memorySize: 512,
     timeout: 60,
     environment: {
@@ -62,7 +65,7 @@ const yppEndpoint = new awsx.apigateway.API('ypp-api', {
     {
       path: '{proxy+}',
       method: 'ANY',
-      eventHandler: lambdaFunction('ypp-api', 'main.handler', '../../../dist/packages/api-lambda'),
+      eventHandler: lambdaFunction('ypp-api', resourceSuffix, 'main.handler', '../../../dist/packages/api-lambda'),
     },
   ],
 })
@@ -79,6 +82,7 @@ const userTable = new aws.dynamodb.Table('users', {
   billingMode: 'PROVISIONED',
   readCapacity: 1,
   writeCapacity: 1,
+  tags: { environment: resourceSuffix },
 })
 
 const channelsTable = new aws.dynamodb.Table('channels', {
@@ -135,6 +139,7 @@ const channelsTable = new aws.dynamodb.Table('channels', {
   ],
   readCapacity: 1,
   writeCapacity: 1,
+  tags: { environment: resourceSuffix },
 })
 
 const videosTable = new aws.dynamodb.Table('videos', {
@@ -154,6 +159,7 @@ const videosTable = new aws.dynamodb.Table('videos', {
   billingMode: 'PROVISIONED',
   readCapacity: 1,
   writeCapacity: 1,
+  tags: { environment: resourceSuffix },
 })
 
 const videoLogsTable = new aws.dynamodb.Table('videoLogs', {
@@ -173,6 +179,7 @@ const videoLogsTable = new aws.dynamodb.Table('videoLogs', {
   billingMode: 'PROVISIONED',
   readCapacity: 1,
   writeCapacity: 1,
+  tags: { environment: resourceSuffix },
 })
 
 const statsTable = new aws.dynamodb.Table('stats', {
@@ -186,6 +193,7 @@ const statsTable = new aws.dynamodb.Table('stats', {
   billingMode: 'PROVISIONED',
   readCapacity: 1,
   writeCapacity: 1,
+  tags: { environment: resourceSuffix },
 })
 
 const userEventsTopic = new aws.sns.Topic(<AvailableTopic>'userEvents', {

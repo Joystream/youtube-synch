@@ -10,7 +10,10 @@
     "deploy-ypp:local": "export DEPLOYMENT_ENV=local && ./deploy.sh",
     "deploy-all:dev": "export DEPLOYMENT_ENV=development && RESOURCES=all ./deploy.sh",
     "destroy-all:dev": "export DEPLOYMENT_ENV=development && ./destroy.sh",
-    "deploy-ypp:dev": "export DEPLOYMENT_ENV=development && ./deploy.sh"
+    "deploy-ypp:dev": "export DEPLOYMENT_ENV=development && ./deploy.sh",
+    "deploy-all:test": "export DEPLOYMENT_ENV=testing && RESOURCES=all ./deploy.sh",
+    "destroy-all:test": "export DEPLOYMENT_ENV=testing && ./destroy.sh",
+    "deploy-ypp:test": "export DEPLOYMENT_ENV=testing && ./deploy.sh"
   },
   "private": true,
   "devDependencies": {
