@@ -195,12 +195,7 @@ class YoutubeClient implements IYoutubeClient {
             videoCount: parseInt(channel.statistics?.videoCount ?? '0'),
             commentCount: parseInt(channel.statistics?.commentCount ?? '0'),
           },
-          tier:
-            parseInt(channel.statistics?.subscriberCount || '0') <= 10_000
-              ? 1
-              : parseInt(channel.statistics?.subscriberCount || '0') <= 100_000
-              ? 2
-              : 3,
+
           uploadsPlaylistId: channel.contentDetails?.relatedPlaylists?.uploads,
           frequency: 0,
           createdAt: Date.now(),

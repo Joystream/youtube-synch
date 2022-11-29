@@ -26,13 +26,13 @@ export class ChannelDto {
   @ApiProperty() isSuspended: boolean
   @ApiProperty() joystreamChannelId: number
   @ApiProperty() thumbnails: ThumbnailsDto
-  @ApiProperty() tier: number
+  @ApiProperty() subscribersCount: number
   @ApiProperty() createdAt: Date
 
   constructor(channel: Channel) {
     this.title = channel.title
     this.description = channel.description
-    this.tier = channel.tier
+    this.subscribersCount = channel.statistics.subscriberCount
     this.joystreamChannelId = channel.joystreamChannelId
     this.shouldBeIngested = channel.shouldBeIngested
     this.isSuspended = channel.isSuspended

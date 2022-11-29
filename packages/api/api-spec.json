@@ -500,7 +500,7 @@
           "thumbnails": {
             "$ref": "#/components/schemas/ThumbnailsDto"
           },
-          "tier": {
+          "subscribersCount": {
             "type": "number"
           },
           "createdAt": {
@@ -516,7 +516,7 @@
           "isSuspended",
           "joystreamChannelId",
           "thumbnails",
-          "tier",
+          "subscribersCount",
           "createdAt"
         ]
       },
