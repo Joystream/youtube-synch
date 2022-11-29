@@ -48,7 +48,7 @@ export function getConfig(): typeof conf {
   return conf
 }
 
-type DeploymentEnv = 'local' | 'development' | 'testing' | 'production'
+export type DeploymentEnv = 'local' | 'development' | 'testing' | 'production'
 
 function getEnv(name: string) {
   return process.env[name]

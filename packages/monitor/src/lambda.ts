@@ -1,8 +1,9 @@
 import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
-import { getConfig } from '../../domain/src/config'
+// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
+import { getConfig, DeploymentEnv } from '../../domain/src/config'
 
-export function lambda(name: string, handler: string, source: string) {
+export function lambda(name: string, resourceSuffix: DeploymentEnv, handler: string, source: string) {
   // IAM role
   const role = new aws.iam.Role(`${name}Role`, {
     assumeRolePolicy: {
@@ -45,6 +46,7 @@ export function lambda(name: string, handler: string, source: string) {
     role: role.arn,
     handler: handler,
     name: name,
+    tags: { environment: resourceSuffix },
     timeout: 10,
     memorySize: 512,
     environment: { variables: getConfig() },
