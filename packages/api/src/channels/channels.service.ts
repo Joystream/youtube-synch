@@ -14,7 +14,7 @@ export class ChannelsService {
    */
   async get(joystreamChannelId: number): Promise<Channel> {
     const [result] = await this.channelsRepository.scan('id', (q) =>
-      q.filter('joystreamChannelId').eq(joystreamChannelId)
+      q.filter('joystreamChannelId').eq(Number(joystreamChannelId))
     )
     if (!result) {
       throw new Error(`Could not find channel with id ${joystreamChannelId}`)
