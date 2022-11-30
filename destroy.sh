@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+set -a
+. .env
+set +a
+
 pulumi down --skip-preview --stack ${DEPLOYMENT_ENV} --cwd packages/infrastructure
 
 pulumi down --skip-preview --stack ${DEPLOYMENT_ENV} --cwd packages/monitor

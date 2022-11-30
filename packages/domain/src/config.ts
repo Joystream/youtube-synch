@@ -15,8 +15,8 @@ let conf: {
   // YPP induction criteria, each channel should meet following criteria
   MINIMUM_SUBSCRIBERS_COUNT: string
   MINIMUM_VIDEO_COUNT: string
-  MINIMUM_VIDEO_AGE_MONTHS: string
-  MINIMUM_CHANNEL_AGE_MONTHS: string
+  MINIMUM_VIDEO_AGE_HOURS: string
+  MINIMUM_CHANNEL_AGE_HOURS: string
 }
 
 export function configure(): void {
@@ -33,8 +33,8 @@ export function configure(): void {
 
     MINIMUM_SUBSCRIBERS_COUNT: readEnv('MINIMUM_SUBSCRIBERS_COUNT'),
     MINIMUM_VIDEO_COUNT: readEnv('MINIMUM_VIDEO_COUNT'),
-    MINIMUM_VIDEO_AGE_MONTHS: readEnv('MINIMUM_VIDEO_AGE_MONTHS'),
-    MINIMUM_CHANNEL_AGE_MONTHS: readEnv('MINIMUM_CHANNEL_AGE_MONTHS'),
+    MINIMUM_VIDEO_AGE_HOURS: readEnv('MINIMUM_VIDEO_AGE_HOURS'),
+    MINIMUM_CHANNEL_AGE_HOURS: readEnv('MINIMUM_CHANNEL_AGE_HOURS'),
   }
 
   conf = {
