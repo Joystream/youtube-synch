@@ -157,9 +157,14 @@ export class ChannelsController {
     description: `Retrieves all videos (in the backend system) for a given youtube channel by its corresponding joystream channel Id.`,
   })
   async getVideos(@Param('joystreamChannelId', ParseIntPipe) id: number): Promise<Video[]> {
-    const channelId = (await this.channelsService.get(id)).id
-    const result = await this.videosRepository.query({ channelId }, (q) => q.sort('descending'))
-    return result
+    try {
+      const channelId = (await this.channelsService.get(id)).id
+      const result = await this.videosRepository.query({ channelId }, (q) => q.sort('descending'))
+      return result
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
   }
 
   @Get(':id/videos/:videoId')
