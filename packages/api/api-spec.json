@@ -295,6 +295,29 @@
         ]
       }
     },
+    "/channels/induction/requirements": {
+      "get": {
+        "operationId": "ChannelsController_inductionRequirements",
+        "summary": "",
+        "description": "Retrieves Youtube Partner program induction requirements",
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelInductionRequirementsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
     "/users": {
       "post": {
         "operationId": "UsersController_verifyUserAndChannel",
@@ -606,6 +629,29 @@
           "thumbnails",
           "state",
           "destinationUrl"
+        ]
+      },
+      "ChannelInductionRequirementsDto": {
+        "type": "object",
+        "properties": {
+          "MINIMUM_SUBSCRIBERS_COUNT": {
+            "type": "number"
+          },
+          "MINIMUM_VIDEO_COUNT": {
+            "type": "number"
+          },
+          "MINIMUM_VIDEO_AGE_HOURS": {
+            "type": "number"
+          },
+          "MINIMUM_CHANNEL_AGE_HOURS": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "MINIMUM_SUBSCRIBERS_COUNT",
+          "MINIMUM_VIDEO_COUNT",
+          "MINIMUM_VIDEO_AGE_HOURS",
+          "MINIMUM_CHANNEL_AGE_HOURS"
         ]
       },
       "VerifyChannelRequest": {
