@@ -10,8 +10,8 @@ import { statsRepository } from '..'
 const config = getConfig()
 const MINIMUM_SUBSCRIBERS_COUNT = parseInt(config.MINIMUM_SUBSCRIBERS_COUNT)
 const MINIMUM_VIDEO_COUNT = parseInt(config.MINIMUM_VIDEO_COUNT)
-const MINIMUM_VIDEO_AGE_MONTHS = parseFloat(config.MINIMUM_VIDEO_AGE_MONTHS)
-const MINIMUM_CHANNEL_AGE_MONTHS = parseFloat(config.MINIMUM_CHANNEL_AGE_MONTHS)
+const MINIMUM_VIDEO_AGE_HOURS = parseFloat(config.MINIMUM_VIDEO_AGE_HOURS)
+const MINIMUM_CHANNEL_AGE_HOURS = parseFloat(config.MINIMUM_CHANNEL_AGE_HOURS)
 
 export interface IYoutubeClient {
   getUserFromCode(code: string, youtubeRedirectUri: string): Promise<User>
@@ -91,37 +91,41 @@ class YoutubeClient implements IYoutubeClient {
       )
     }
 
-    // at least MINiMUM_VIDEO_COUNT videos should be one month old
-    const oneMonthsAgo = new Date()
-    oneMonthsAgo.setMonth(oneMonthsAgo.getMonth() - MINIMUM_VIDEO_AGE_MONTHS)
+    // at least MINiMUM_VIDEO_COUNT videos should be MINIMUM_VIDEO_AGE_HOURS old
+    const videoCreationTimeCutoff = new Date()
+    videoCreationTimeCutoff.setHours(videoCreationTimeCutoff.getHours() - MINIMUM_VIDEO_AGE_HOURS)
 
-    // filter all videos that are older than one month
+    // filter all videos that are older than MINIMUM_VIDEO_AGE_HOURS
     const videos = (await this.getVideos(channel, MINIMUM_VIDEO_COUNT)).filter(
-      (v) => new Date(v.publishedAt) < oneMonthsAgo
+      (v) => new Date(v.publishedAt) < videoCreationTimeCutoff
     )
     if (videos.length < MINIMUM_VIDEO_COUNT) {
       errors.push(
         new YoutubeAuthorizationError(
           ExitCodes.CHANNEL_CRITERIA_UNMET_VIDEOS,
           `Channel ${channel.id} with ${videos.length} videos does not meet Youtube ` +
-            `Partner Program requirement of at least ${MINIMUM_VIDEO_COUNT} videos, each ${MINIMUM_VIDEO_AGE_MONTHS} month old`,
+            `Partner Program requirement of at least ${MINIMUM_VIDEO_COUNT} videos, each ${(
+              MINIMUM_VIDEO_AGE_HOURS / 720
+            ).toPrecision(2)} month old`,
           channel.statistics.videoCount,
           MINIMUM_VIDEO_COUNT
         )
       )
     }
 
-    // Channel should be at least 3 months old
-    const threeMonthsAgo = new Date()
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - MINIMUM_CHANNEL_AGE_MONTHS)
-    if (new Date(channel.publishedAt) > threeMonthsAgo) {
+    // Channel should be at least MINIMUM_CHANNEL_AGE_HOURS old
+    const channelCreationTimeCutoff = new Date()
+    channelCreationTimeCutoff.setHours(channelCreationTimeCutoff.getHours() - MINIMUM_CHANNEL_AGE_HOURS)
+    if (new Date(channel.publishedAt) > channelCreationTimeCutoff) {
       errors.push(
         new YoutubeAuthorizationError(
           ExitCodes.CHANNEL_CRITERIA_UNMET_CREATION_DATE,
           `Channel ${channel.id} with creation time of ${channel.publishedAt} does not ` +
-            `meet Youtube Partner Program requirement of channel being at least ${MINIMUM_CHANNEL_AGE_MONTHS} months old`,
+            `meet Youtube Partner Program requirement of channel being at least ${(
+              MINIMUM_CHANNEL_AGE_HOURS / 720
+            ).toPrecision(2)} months old`,
           channel.publishedAt,
-          threeMonthsAgo
+          channelCreationTimeCutoff
         )
       )
     }
