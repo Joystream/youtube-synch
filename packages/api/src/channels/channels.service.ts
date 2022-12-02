@@ -1,8 +1,6 @@
 import { ChannelsRepository } from '@joystream/ytube'
 import { Injectable } from '@nestjs/common'
 import { Channel } from '@youtube-sync/domain'
-import { AnyDocument } from 'dynamoose/dist/Document'
-import { Query } from 'dynamoose/dist/DocumentRetriever'
 
 @Injectable()
 export class ChannelsService {
