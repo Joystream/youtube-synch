@@ -9,13 +9,14 @@ import {
   NotFoundException,
   Param,
   ParseArrayPipe,
+  ParseIntPipe,
   Post,
   Put,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
-import { Channel, getConfig, User } from '@youtube-sync/domain'
+import { Channel, getConfig, User, Video } from '@youtube-sync/domain'
 import {
   ChannelDto,
   ChannelInductionRequirementsDto,
@@ -78,7 +79,7 @@ export class ChannelsController {
   @Get(':joystreamChannelId')
   @ApiOperation({ description: 'Retrieves channel by joystreamChannelId' })
   @ApiResponse({ type: ChannelDto })
-  async get(@Param('joystreamChannelId') id: number) {
+  async get(@Param('joystreamChannelId', ParseIntPipe) id: number) {
     try {
       const channel = await this.channelsService.get(id)
       return new ChannelDto(channel)
@@ -151,14 +152,20 @@ export class ChannelsController {
     }
   }
 
-  @Get(':id/videos')
+  @Get(':joystreamChannelId/videos')
   @ApiResponse({ type: VideoDto, isArray: true })
   @ApiOperation({
-    description: `Retrieves already ingested(spotted on youtube and saved to the database) videos for a given channel.`,
+    description: `Retrieves all videos (in the backend system) for a given youtube channel by its corresponding joystream channel Id.`,
   })
-  async getVideos(@Param('userId') userId: string, @Param('id') id: string) {
-    const result = await this.videosRepository.query({ channelId: id }, (q) => q.sort('descending'))
-    return result
+  async getVideos(@Param('joystreamChannelId', ParseIntPipe) id: number): Promise<Video[]> {
+    try {
+      const channelId = (await this.channelsService.get(id)).id
+      const result = await this.videosRepository.query({ channelId }, (q) => q.sort('descending'))
+      return result
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
   }
 
   @Get(':id/videos/:videoId')

@@ -212,26 +212,18 @@
         ]
       }
     },
-    "/channels/{id}/videos": {
+    "/channels/{joystreamChannelId}/videos": {
       "get": {
         "operationId": "ChannelsController_getVideos",
         "summary": "",
-        "description": "Retrieves already ingested(spotted on youtube and saved to the database) videos for a given channel.",
+        "description": "Retrieves all videos (in the backend system) for a given youtube channel by its corresponding joystream channel Id.",
         "parameters": [
           {
-            "name": "userId",
+            "name": "joystreamChannelId",
             "required": true,
             "in": "path",
             "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
+              "type": "number"
             }
           }
         ],
