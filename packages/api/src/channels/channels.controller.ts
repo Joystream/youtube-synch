@@ -16,9 +16,10 @@ import {
   UseGuards,
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
-import { Channel, User, Video } from '@youtube-sync/domain'
+import { Channel, getConfig, User, Video } from '@youtube-sync/domain'
 import {
   ChannelDto,
+  ChannelInductionRequirementsDto,
   SaveChannelRequest,
   SaveChannelResponse,
   SuspendChannelDto,
@@ -173,6 +174,13 @@ export class ChannelsController {
   async getVideo(@Param('id') id: string, @Param('videoId') videoId: string) {
     const result = await this.videosRepository.get(id, videoId)
     return result
+  }
+
+  @Get('/induction/requirements')
+  @ApiResponse({ type: ChannelInductionRequirementsDto })
+  @ApiOperation({ description: 'Retrieves Youtube Partner program induction requirements' })
+  async inductionRequirements() {
+    return new ChannelInductionRequirementsDto(getConfig())
   }
 
   private async saveUserAndChannel(user: User, channel: Channel) {

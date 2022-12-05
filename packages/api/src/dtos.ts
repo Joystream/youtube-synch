@@ -2,6 +2,7 @@ import { MemberId } from '@joystream/types/primitives'
 import { ApiProperty, PickType } from '@nestjs/swagger'
 import { User, Channel, Video, VideoState } from '@youtube-sync/domain'
 import { IsEmail, IsNotEmpty } from 'class-validator'
+import { getConfig as config } from '@youtube-sync/domain'
 
 // NestJS Data Transfer Objects (DTO)s
 
@@ -16,6 +17,20 @@ export class ThumbnailsDto {
   @ApiProperty() high: string
   @ApiProperty() maxRes: string
   @ApiProperty() standard: string
+}
+
+export class ChannelInductionRequirementsDto {
+  @ApiProperty() MINIMUM_SUBSCRIBERS_COUNT: number
+  @ApiProperty() MINIMUM_VIDEO_COUNT: number
+  @ApiProperty() MINIMUM_VIDEO_AGE_HOURS: number
+  @ApiProperty() MINIMUM_CHANNEL_AGE_HOURS: number
+
+  constructor(requirements: ReturnType<typeof config>) {
+    this.MINIMUM_SUBSCRIBERS_COUNT = Number(requirements.MINIMUM_SUBSCRIBERS_COUNT)
+    this.MINIMUM_VIDEO_COUNT = Number(requirements.MINIMUM_VIDEO_COUNT)
+    this.MINIMUM_VIDEO_AGE_HOURS = Number(requirements.MINIMUM_VIDEO_AGE_HOURS)
+    this.MINIMUM_CHANNEL_AGE_HOURS = Number(requirements.MINIMUM_CHANNEL_AGE_HOURS)
+  }
 }
 
 export class ChannelDto {
@@ -41,6 +56,7 @@ export class ChannelDto {
     this.createdAt = new Date(channel.createdAt)
   }
 }
+
 export class UserDto {
   @ApiProperty() id: string
   @ApiProperty() email: string
