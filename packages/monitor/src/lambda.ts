@@ -47,7 +47,7 @@ export function lambda(name: string, resourceSuffix: DeploymentEnv, handler: str
     handler: handler,
     name: name,
     tags: { environment: resourceSuffix },
-    timeout: 10,
+    timeout: 30,
     memorySize: 512,
     environment: { variables: getConfig() },
   })

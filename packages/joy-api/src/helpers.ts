@@ -3,7 +3,7 @@ import { Hash } from '@polkadot/types/interfaces'
 import { ApiPromise as PolkadotApi } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { Bytes, GenericEvent, Vec, u128 } from '@polkadot/types'
+import { Bytes, GenericEvent, BTreeSet, u128 } from '@polkadot/types'
 import { DispatchError, Event, EventRecord } from '@polkadot/types/interfaces/system'
 import { Registry } from '@polkadot/types/types'
 import {
@@ -147,9 +147,9 @@ export const getInputDataObjectsIds = (assets: VideoInputAssets | ChannelInputAs
 
 const getResultVideoDataObjectsIds = (
   assets: VideoAssets<unknown>,
-  dataObjectsIds: Vec<DataObjectId>
+  dataObjectsIds: BTreeSet<DataObjectId>
 ): VideoAssetsIds => {
-  const ids = dataObjectsIds.map((dataObjectsId) => dataObjectsId.toString())
+  const ids = [...dataObjectsIds].map((dataObjectsId) => dataObjectsId.toString())
 
   const hasMedia = !!assets.media
   const hasThumbnail = !!assets.thumbnailPhoto
@@ -162,9 +162,9 @@ const getResultVideoDataObjectsIds = (
 
 const getResultChannelDataObjectsIds = (
   assets: ChannelAssets<unknown>,
-  dataObjectsIds: Vec<DataObjectId>
+  dataObjectsIds: BTreeSet<DataObjectId>
 ): ChannelAssetsIds => {
-  const ids = dataObjectsIds.map((dataObjectsId) => dataObjectsId.toString())
+  const ids = [...dataObjectsIds].map((dataObjectsId) => dataObjectsId.toString())
 
   const hasAvatar = !!assets.avatarPhoto
   const hasCover = !!assets.coverPhoto

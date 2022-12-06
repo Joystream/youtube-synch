@@ -79,9 +79,9 @@
     "@graphql-codegen/typescript": "^1.22.0",
     "@graphql-codegen/typescript-document-nodes": "^2.2.11",
     "@graphql-codegen/typescript-operations": "^1.17.16",
-    "@joystream/metadata-protobuf": "~2.4.0",
+    "@joystream/metadata-protobuf": "~2.5.0",
     "@joystream/prettier-config": "^1.0.0",
-    "@joystream/cli": "0.8.0",
+    "@joystream/types": "0.20.3",
     "@mui/icons-material": "^5.3.1",
     "@mui/material": "^5.3.1",
     "@nestjs/common": "^8.0.0",
@@ -90,7 +90,6 @@
     "@nestjs/graphql": "^9.1.2",
     "@nestjs/platform-express": "^8.0.0",
     "@nestjs/swagger": "^5.1.5",
-    "@polkadot/keyring": "^9.5.1",
     "@pulumi/aws": "^4.35.0",
     "@pulumi/aws-apigateway": "^0.0.5",
     "@pulumi/awsx": "^0.32.0",
@@ -128,15 +127,5 @@
     "ws": "^8.5.0",
     "ytdl-core": "^4.11.2",
     "node-cleanup": "^2.1.2"
-  },
-  "resolutions": {
-    "@joystream/metadata-protobuf": "^2.4.0",
-    "@joystream/types": "^0.20.2",
-    "@polkadot/keyring": "^9.5.1",
-    "@polkadot/util": "^9.7.2",
-    "@polkadot/util-crypto": "^9.7.2",
-    "@polkadot/api": "^8.9.1",
-    "@polkadot/api-derive": "^8.9.1",
-    "@polkadot/types": "^8.9.1"
   }
 }
