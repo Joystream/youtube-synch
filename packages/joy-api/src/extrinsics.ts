@@ -69,10 +69,16 @@ export class JoystreamLibExtrinsics {
     inputAssets: VideoInputAssets
   ): Promise<VideoExtrinsicResult> {
     await this.ensureApi()
+
+    const channelBag = await this.api.query.storage.bags(
+      createType('PalletStorageBagIdType', { Dynamic: { Channel: channelId } })
+    )
+
     const [videoMetadata, videoAssets] = await parseVideoExtrinsicInput(this.api, inputMetadata, inputAssets)
     const creationParameters = createType('PalletContentVideoCreationParametersRecord', {
       meta: videoMetadata,
       assets: videoAssets,
+      storageBucketsNumWitness: channelBag.storedBy.size,
       expectedDataObjectStateBloatBond: await this.api.query.storage.dataObjectStateBloatBondValue(),
       expectedVideoStateBloatBond: await this.api.query.content.videoStateBloatBondValue(),
       autoIssueNft: null,
