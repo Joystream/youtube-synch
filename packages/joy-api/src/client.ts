@@ -26,9 +26,9 @@ export class JoystreamClient {
     const member = await this.qnApi.memberById(memberId)
     const keyPair = this.accounts.getPair(member.controllerAccount)
 
-    const inputs = parseVideoInputs(video)
+    const inputs = await parseVideoInputs(video)
 
-    const v = await this.lib.extrinsics.createVideo(
+    const createdVideo = await this.lib.extrinsics.createVideo(
       keyPair,
       createType('u64', new BN(member.id)),
       channel.joystreamChannelId as unknown as ChannelId,
@@ -36,9 +36,9 @@ export class JoystreamClient {
       inputs[1]
     )
 
-    const { id } = await this.uploader.upload(v.assetsIds.media, channel, video)
+    await this.uploader.upload(createdVideo.assetsIds[0].toString(), channel, video)
 
-    return [id, video] as const
+    return createdVideo
   }
 }
 

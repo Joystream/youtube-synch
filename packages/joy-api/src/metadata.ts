@@ -1,8 +1,11 @@
-import { License, MediaType, PublishedBeforeJoystream, VideoMetadata } from '@joystream/metadata-protobuf'
+import {
+  ContentMetadata,
+  License,
+  MediaType,
+  PublishedBeforeJoystream,
+  VideoMetadata,
+} from '@joystream/metadata-protobuf'
 import { ApiPromise as PolkadotApi } from '@polkadot/api'
-import { Bytes, Option } from '@polkadot/types'
-
-import { createType } from '@joystream/types'
 import { prepareAssetsForExtrinsic } from './helpers'
 import { metadataToBytes } from './serialization'
 import { DataObjectMetadata, VideoInputAssets, VideoInputMetadata } from './types'
@@ -85,12 +88,7 @@ export async function parseVideoExtrinsicInput(
     videoMetadata.publishedBeforeJoystream = protoPublishedBeforeJoystream
   }
 
-  const serializedVideoMetadata = videoMetadata
-  const videoMetadataRaw = metadataToBytes(VideoMetadata, serializedVideoMetadata)
-  const videoMetadataBytes = new Bytes(api.registry, videoMetadataRaw)
-  const optionalVideoMetadataBytes = new Option(api.registry, Bytes, videoMetadataBytes)
+  const videoMetadataBytes = metadataToBytes(ContentMetadata, { videoMetadata })
 
-  const optionalVideoStorageAssets = createType('Option<PalletContentStorageAssetsRecord>', videoStorageAssets)
-
-  return [optionalVideoMetadataBytes, optionalVideoStorageAssets] as const
+  return [videoMetadataBytes, videoStorageAssets] as const
 }

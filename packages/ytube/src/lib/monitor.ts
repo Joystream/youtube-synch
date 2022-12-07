@@ -82,7 +82,7 @@ export class SyncService {
   private async onlyNewVideos(channel: Channel, videos: Video[]): Promise<Video[]> {
     const existingVideos = await this.videosRepository.query({ channelId: channel.id }, (q) => q)
     const set = new Set(existingVideos.map((v) => v.id))
-    return videos //.filter((v) => !set.has(v.id))
+    return videos.filter((v) => !set.has(v.id))
   }
 
   private async canCallYoutube(): Promise<boolean> {

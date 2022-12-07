@@ -17,23 +17,29 @@ export class Uploader {
   }
 
   async upload(dataObjectId: string, channel: Channel, video: Video): Promise<VideoUploadResponse> {
-    const bag = `dynamic:channel:${channel.joystreamChannelId}`
-    const operator = await this.getRandomActiveStorageNodeInfo(bag)
-    const videoInfo = await ytdl.getBasicInfo(video.url)
-    console.log(videoInfo)
+    const bagId = `dynamic:channel:${channel.joystreamChannelId}`
+    const operator = await this.getRandomActiveStorageNodeInfo(bagId)
+    // await ytdl.getBasicInfo(video.url)
     const formData = new FormData()
-    formData.append('dataObjectId', dataObjectId)
-    formData.append('storageBucketId', operator.bucketId)
-    formData.append('bagId', bag)
     formData.append('file', ytdl(video.url, { quality: 'highest' }), 'video.mp4')
 
     try {
-      const response = await axios.post<VideoUploadResponse>(`${operator.apiEndpoint}api/v1/files`, formData, {
-        headers: formData.getHeaders(),
+      const response = await axios.post<VideoUploadResponse>(`${operator.apiEndpoint}/files`, formData, {
+        params: {
+          dataObjectId,
+          storageBucketId: operator.bucketId,
+          bagId,
+        },
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+        headers: {
+          'content-type': 'multipart/form-data',
+          ...formData.getHeaders(),
+        },
       })
       return response.data
     } catch (error) {
-      console.log(error)
+      console.log('error: ', error)
       throw error
     }
   }
