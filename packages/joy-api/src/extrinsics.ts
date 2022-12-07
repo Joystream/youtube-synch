@@ -74,10 +74,10 @@ export class JoystreamLibExtrinsics {
       createType('PalletStorageBagIdType', { Dynamic: { Channel: channelId } })
     )
 
-    const [videoMetadata, videoAssets] = await parseVideoExtrinsicInput(this.api, inputMetadata, inputAssets)
+    const [meta, assets] = await parseVideoExtrinsicInput(this.api, inputMetadata, inputAssets)
     const creationParameters = createType('PalletContentVideoCreationParametersRecord', {
-      meta: videoMetadata,
-      assets: videoAssets,
+      meta,
+      assets,
       storageBucketsNumWitness: channelBag.storedBy.size,
       expectedDataObjectStateBloatBond: await this.api.query.storage.dataObjectStateBloatBondValue(),
       expectedVideoStateBloatBond: await this.api.query.content.videoStateBloatBondValue(),
@@ -87,12 +87,12 @@ export class JoystreamLibExtrinsics {
     const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, creationParameters)
     const { block, getEventData } = await this.sendExtrinsic(accountId, tx)
 
-    const videoId = getEventData('content', 'VideoCreated')[2]
+    const [, , videoId, , assetsIds] = getEventData('content', 'VideoCreated')
 
     return {
       videoId,
       block,
-      assetsIds: extractVideoResultAssetsIds(inputAssets, getEventData),
+      assetsIds: [...assetsIds],
     }
   }
 }

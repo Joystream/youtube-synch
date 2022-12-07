@@ -23,7 +23,7 @@ export async function computeFileHashAndSize(file: Readable): Promise<FileMetada
   const { createHash } = await getBlake3()
   const hash = createHash()
 
-  let finalSize: number
+  let finalSize = 0
   for await (const chunk of file) {
     hash.update(chunk)
     finalSize += chunk.length

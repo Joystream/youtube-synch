@@ -99,6 +99,8 @@ export class JoystreamUploadService implements IUploadService {
       video
     )
 
+    await videosRepository.save({ ...video, state: 'UploadSucceeded' })
+
     console.log('video stats', createdVideo)
 
     return video

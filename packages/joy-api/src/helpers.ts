@@ -29,15 +29,14 @@ export async function prepareAssetsForExtrinsic(api: PolkadotApi, dataObjectsMet
   }
 
   const feePerMB = await api.query.storage.dataObjectPerMegabyteFee()
-  const feePerMBUint = new u128(api.registry, feePerMB)
 
   const objectCreationList = dataObjectsMetadata.map((metadata) => ({
     size_: metadata.size,
-    ipfsContentId: new Bytes(api.registry, metadata.ipfsHash),
+    ipfsContentId: metadata.ipfsHash,
   }))
 
   return createType('PalletContentStorageAssetsRecord', {
-    expectedDataSizeFee: feePerMBUint,
+    expectedDataSizeFee: feePerMB,
     objectCreationList: objectCreationList,
   })
 }

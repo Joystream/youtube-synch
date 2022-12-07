@@ -1,5 +1,5 @@
-import { ChannelMetadata, IChannelMetadata, VideoMetadata, IVideoMetadata } from '@joystream/metadata-protobuf'
-import { ChannelId, MemberId } from '@joystream/types/primitives'
+import { IChannelMetadata, IVideoMetadata } from '@joystream/metadata-protobuf'
+import { ChannelId, DataObjectId, VideoId } from '@joystream/types/primitives'
 import { AugmentedEvent, AugmentedEvents } from '@polkadot/api/types/events'
 import { GenericEvent } from '@polkadot/types'
 
@@ -41,7 +41,7 @@ export type ExtrinsicResult<T = undefined> = T extends undefined
 
 export type VideoInputMetadata = Omit<
   IVideoMetadata,
-  'thumbnailPhoto' | 'video' | 'personsList' | 'mediaType' | 'publishedBeforeJoystream'
+  'thumbnailPhoto' | 'video' | 'mediaType' | 'publishedBeforeJoystream'
 > & {
   publishedBeforeJoystream?: string
   mimeMediaType?: string
@@ -71,13 +71,13 @@ export type SendExtrinsicResult = ExtrinsicResult<{
 }>
 
 export type ChannelExtrinsicResult = ExtrinsicResult<{
-  channelId: MemberId
+  channelId: ChannelId
   assetsIds: ChannelAssetsIds
 }>
 
 export type VideoExtrinsicResult = ExtrinsicResult<{
-  videoId: ChannelId
-  assetsIds: VideoAssetsIds
+  videoId: VideoId
+  assetsIds: DataObjectId[]
 }>
 
 export type StorageNodeInfo = {
