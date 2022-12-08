@@ -2,9 +2,8 @@ import { Channel, Video } from '@youtube-sync/domain'
 import axios from 'axios'
 import FormData from 'form-data'
 import _ from 'lodash'
-import ytdl from 'ytdl-core'
 import QueryNodeApi from '../src/graphql/QueryNodeApi'
-import { StorageNodeInfo } from '../src/types'
+import { AssetUploadInput, StorageNodeInfo } from '../src/types'
 
 export type OperatorInfo = { id: string; endpoint: string }
 export type OperatorsMapping = Record<string, OperatorInfo>
@@ -16,28 +15,28 @@ export class Uploader {
     this.client = client
   }
 
-  async upload(dataObjectId: string, channel: Channel, video: Video): Promise<VideoUploadResponse> {
+  async upload(assets: AssetUploadInput[], channel: Channel) {
     const bagId = `dynamic:channel:${channel.joystreamChannelId}`
     const operator = await this.getRandomActiveStorageNodeInfo(bagId)
-    // await ytdl.getBasicInfo(video.url)
-    const formData = new FormData()
-    formData.append('file', ytdl(video.url, { quality: 'highest' }), 'video.mp4')
 
     try {
-      const response = await axios.post<VideoUploadResponse>(`${operator.apiEndpoint}/files`, formData, {
-        params: {
-          dataObjectId,
-          storageBucketId: operator.bucketId,
-          bagId,
-        },
-        maxBodyLength: Infinity,
-        maxContentLength: Infinity,
-        headers: {
-          'content-type': 'multipart/form-data',
-          ...formData.getHeaders(),
-        },
-      })
-      return response.data
+      for (const { dataObjectId, file } of assets) {
+        const formData = new FormData()
+        formData.append('file', file, 'video.mp4')
+        await axios.post<VideoUploadResponse>(`${operator.apiEndpoint}/files`, formData, {
+          params: {
+            dataObjectId: dataObjectId.toString(),
+            storageBucketId: operator.bucketId,
+            bagId,
+          },
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+          headers: {
+            'content-type': 'multipart/form-data',
+            ...formData.getHeaders(),
+          },
+        })
+      }
     } catch (error) {
       console.log('error: ', error)
       throw error

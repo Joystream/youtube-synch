@@ -476,9 +476,6 @@
           "high": {
             "type": "string"
           },
-          "maxRes": {
-            "type": "string"
-          },
           "standard": {
             "type": "string"
           }
@@ -487,7 +484,6 @@
           "default",
           "medium",
           "high",
-          "maxRes",
           "standard"
         ]
       },

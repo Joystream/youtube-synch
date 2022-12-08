@@ -150,7 +150,6 @@ export type Thumbnails = {
   default: string
   medium: string
   high: string
-  maxRes: string
   standard: string
 }
 
@@ -208,6 +207,9 @@ export class Video {
 
   // record creation time
   createdAt: number
+
+  // youtube video license
+  license: string
 }
 
 export class Stats {
@@ -220,7 +222,6 @@ export const getImages = (channel: Channel) => {
   return [
     ...urlAsArray(channel.thumbnails.default),
     ...urlAsArray(channel.thumbnails.high),
-    ...urlAsArray(channel.thumbnails.maxRes),
     ...urlAsArray(channel.thumbnails.medium),
     ...urlAsArray(channel.thumbnails.standard),
   ]

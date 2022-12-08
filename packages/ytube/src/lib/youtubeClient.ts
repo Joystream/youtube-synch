@@ -189,7 +189,6 @@ class YoutubeClient implements IYoutubeClient {
             default: channel.snippet?.thumbnails?.default?.url,
             medium: channel.snippet?.thumbnails?.medium?.url,
             high: channel.snippet?.thumbnails?.high?.url,
-            maxRes: channel.snippet?.thumbnails?.maxres?.url,
             standard: channel.snippet?.thumbnails?.standard?.url,
           },
 
@@ -221,7 +220,6 @@ class YoutubeClient implements IYoutubeClient {
           thumbnails: {
             high: video.snippet?.thumbnails?.high?.url,
             medium: video.snippet?.thumbnails?.medium?.url,
-            maxRes: video.snippet?.thumbnails?.maxres?.url,
             standard: video.snippet?.thumbnails?.standard?.url,
             default: video.snippet?.thumbnails?.default?.url,
           },
