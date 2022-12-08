@@ -1,14 +1,21 @@
+import { createType } from '@joystream/types'
 import { ChannelId, MemberId } from '@joystream/types/primitives'
-import { Channel, Thumbnails, Video } from '@youtube-sync/domain'
+import { Channel, Video } from '@youtube-sync/domain'
 import axios from 'axios'
 import { BN } from 'bn.js'
-import R from 'ramda'
+import { Readable } from 'stream'
 import ytdl from 'ytdl-core'
-import { AccountsUtil, DataObjectMetadata, JoystreamLib, VideoInputAssets, VideoInputMetadata } from '.'
+import {
+  AccountsUtil,
+  AssetUploadInput,
+  DataObjectMetadata,
+  JoystreamLib,
+  VideoInputAssets,
+  VideoInputMetadata,
+} from '.'
 import { Uploader } from '../storage/uploader'
 import QueryNodeApi from './graphql/QueryNodeApi'
 import { computeFileHashAndSize } from './hasher'
-import { createType } from '@joystream/types'
 
 export class JoystreamClient {
   private lib: JoystreamLib
@@ -28,6 +35,8 @@ export class JoystreamClient {
 
     const inputs = await parseVideoInputs(video)
 
+    console.log('Creating video', inputs)
+
     const createdVideo = await this.lib.extrinsics.createVideo(
       keyPair,
       createType('u64', new BN(member.id)),
@@ -36,7 +45,13 @@ export class JoystreamClient {
       inputs[1]
     )
 
-    await this.uploader.upload(createdVideo.assetsIds[0].toString(), channel, video)
+    console.log('Uploading video', createdVideo)
+
+    const assetsInput: AssetUploadInput[] = [
+      { dataObjectId: createdVideo.assetsIds[0], file: ytdl(video.url, { quality: 'highest' }) },
+      { dataObjectId: createdVideo.assetsIds[1], file: await getThumbnailAsset(video.thumbnails.default) },
+    ]
+    await this.uploader.upload(assetsInput, channel)
 
     return createdVideo
   }
@@ -49,19 +64,27 @@ async function parseVideoInputs(video: Video): Promise<[VideoInputMetadata, Vide
     isPublic: true,
   }
   const assets: VideoInputAssets = {}
-  const readable = ytdl(video.url, { quality: 'highest' })
-  const { hash, size } = await computeFileHashAndSize(readable)
-  console.log(`Hash ${hash}, size: ${size}`)
-  const metadata: DataObjectMetadata = {
-    ipfsHash: hash,
-    size: size,
+  const videoStream = ytdl(video.url, { quality: 'highest' })
+  const { hash: videoHash, size: videoSize } = await computeFileHashAndSize(videoStream)
+  console.log(`Hash ${videoHash}, size: ${videoSize}`)
+  const videoMetadata: DataObjectMetadata = {
+    ipfsHash: videoHash,
+    size: videoSize,
   }
-  assets.media = metadata
+
+  const thumbnailPhotoStream = await getThumbnailAsset(video.thumbnails.default)
+  const { hash: thumbnailPhotoHash, size: thumbnailPhotoSize } = await computeFileHashAndSize(thumbnailPhotoStream)
+
+  const thumbnailPhotoMetadata: DataObjectMetadata = {
+    ipfsHash: thumbnailPhotoHash,
+    size: thumbnailPhotoSize,
+  }
+  assets.media = videoMetadata
+  assets.thumbnailPhoto = thumbnailPhotoMetadata
   return [videoInputMetadata, assets]
 }
 
-async function getThumbnailAsset(thumbnails: Thumbnails) {
-  const candidates = [thumbnails.maxRes, thumbnails.high, thumbnails.medium, thumbnails.standard, thumbnails.default]
-  const selectedThumb = R.reduce((acc, next) => (acc = acc ? acc : next), '', candidates)
-  axios.get(selectedThumb, { responseType: 'arraybuffer' })
+async function getThumbnailAsset(thumbnailUrl: string) {
+  const response = await axios.get<Readable>(thumbnailUrl, { responseType: 'stream' })
+  return response.data
 }

@@ -15,7 +15,6 @@ export class ThumbnailsDto {
   @ApiProperty() default: string
   @ApiProperty() medium: string
   @ApiProperty() high: string
-  @ApiProperty() maxRes: string
   @ApiProperty() standard: string
 }
 

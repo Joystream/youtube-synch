@@ -2,6 +2,7 @@ import { IChannelMetadata, IVideoMetadata } from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId, VideoId } from '@joystream/types/primitives'
 import { AugmentedEvent, AugmentedEvents } from '@polkadot/api/types/events'
 import { GenericEvent } from '@polkadot/types'
+import { Readable } from 'stream'
 
 export type DataObjectMetadata = {
   size: number
@@ -83,4 +84,9 @@ export type VideoExtrinsicResult = ExtrinsicResult<{
 export type StorageNodeInfo = {
   bucketId: number
   apiEndpoint: string
+}
+
+export type AssetUploadInput = {
+  dataObjectId: DataObjectId
+  file: Readable
 }
