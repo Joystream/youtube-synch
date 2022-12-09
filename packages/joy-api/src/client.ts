@@ -1,6 +1,6 @@
 import { createType } from '@joystream/types'
 import { ChannelId, MemberId } from '@joystream/types/primitives'
-import { Channel, Video } from '@youtube-sync/domain'
+import { Channel, Thumbnails, Video } from '@youtube-sync/domain'
 import axios from 'axios'
 import { BN } from 'bn.js'
 import { Readable } from 'stream'
@@ -24,7 +24,7 @@ export class JoystreamClient {
   private qnApi: QueryNodeApi
   constructor(private nodeUri: string, private queryNodeUrl: string) {
     this.lib = new JoystreamLib(this.nodeUri)
-    this.qnApi = new QueryNodeApi(queryNodeUrl)
+    this.qnApi = new QueryNodeApi(this.queryNodeUrl)
     this.uploader = new Uploader(this.qnApi)
     this.accounts = new AccountsUtil()
   }
@@ -49,7 +49,7 @@ export class JoystreamClient {
 
     const assetsInput: AssetUploadInput[] = [
       { dataObjectId: createdVideo.assetsIds[0], file: ytdl(video.url, { quality: 'highest' }) },
-      { dataObjectId: createdVideo.assetsIds[1], file: await getThumbnailAsset(video.thumbnails.default) },
+      { dataObjectId: createdVideo.assetsIds[1], file: await getThumbnailAsset(video.thumbnails) },
     ]
     await this.uploader.upload(assetsInput, channel)
 
@@ -61,8 +61,10 @@ async function parseVideoInputs(video: Video): Promise<[VideoInputMetadata, Vide
   const videoInputMetadata: VideoInputMetadata = {
     title: video.title,
     description: video.description,
+    category: video.category,
     isPublic: true,
   }
+
   const assets: VideoInputAssets = {}
   const videoStream = ytdl(video.url, { quality: 'highest' })
   const { hash: videoHash, size: videoSize } = await computeFileHashAndSize(videoStream)
@@ -72,19 +74,19 @@ async function parseVideoInputs(video: Video): Promise<[VideoInputMetadata, Vide
     size: videoSize,
   }
 
-  const thumbnailPhotoStream = await getThumbnailAsset(video.thumbnails.default)
+  const thumbnailPhotoStream = await getThumbnailAsset(video.thumbnails)
   const { hash: thumbnailPhotoHash, size: thumbnailPhotoSize } = await computeFileHashAndSize(thumbnailPhotoStream)
-
   const thumbnailPhotoMetadata: DataObjectMetadata = {
     ipfsHash: thumbnailPhotoHash,
     size: thumbnailPhotoSize,
   }
+
   assets.media = videoMetadata
   assets.thumbnailPhoto = thumbnailPhotoMetadata
   return [videoInputMetadata, assets]
 }
 
-async function getThumbnailAsset(thumbnailUrl: string) {
-  const response = await axios.get<Readable>(thumbnailUrl, { responseType: 'stream' })
+async function getThumbnailAsset(thumbnails: Thumbnails) {
+  const response = await axios.get<Readable>(thumbnails.medium, { responseType: 'stream' })
   return response.data
 }

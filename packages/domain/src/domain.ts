@@ -1,5 +1,3 @@
-import { MemberId } from '@joystream/types/primitives'
-
 export class Channel {
   // Channel ID
   id: string
@@ -12,6 +10,9 @@ export class Channel {
 
   // ID of the corresponding Joystream Channel
   joystreamChannelId: number
+
+  // video category ID to be added to all synced videos
+  videoCategoryId: string
 
   // Referrer Joystream Channel ID
   referrerChannelId: number
@@ -210,6 +211,9 @@ export class Video {
 
   // youtube video license
   license: string
+
+  // Joystream video category to be assigned to synced videos
+  category: string
 }
 
 export class Stats {

@@ -39,6 +39,7 @@ export class ChannelDto {
   @ApiProperty() shouldBeIngested: boolean
   @ApiProperty() isSuspended: boolean
   @ApiProperty() joystreamChannelId: number
+  @ApiProperty() videoCategoryId: string
   @ApiProperty() thumbnails: ThumbnailsDto
   @ApiProperty() subscribersCount: number
   @ApiProperty() createdAt: Date
@@ -48,6 +49,7 @@ export class ChannelDto {
     this.description = channel.description
     this.subscribersCount = channel.statistics.subscriberCount
     this.joystreamChannelId = channel.joystreamChannelId
+    this.videoCategoryId = channel.videoCategoryId
     this.shouldBeIngested = channel.shouldBeIngested
     this.isSuspended = channel.isSuspended
     this.aggregatedStats = channel.aggregatedStats
@@ -97,6 +99,9 @@ export class SaveChannelRequest {
   // Joystream Channel ID of the user verifying his Youtube Channel for YPP
   @IsNotEmpty() @ApiProperty({ required: true }) joystreamChannelId: number
 
+  // video category ID to be added to all synced videos
+  @IsNotEmpty() @ApiProperty({ required: true }) videoCategoryId: string
+
   // referrer Channel ID
   @ApiProperty({ required: false }) referrerChannelId: number
 }
@@ -116,6 +121,7 @@ export class VideoDto extends Video {
   @ApiProperty() url: string
   @ApiProperty() title: string
   @ApiProperty() description: string
+  @ApiProperty() category: string
   @ApiProperty() id: string
   @ApiProperty() playlistId: string
   @ApiProperty() resourceId: string
