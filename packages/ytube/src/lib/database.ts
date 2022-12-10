@@ -32,6 +32,9 @@ export function createChannelModel(): ModelType<AnyDocument> {
       // ID of the corresponding Joystream Channel
       joystreamChannelId: Number,
 
+      // video category ID to be added to all synced videos
+      videoCategoryId: String,
+
       // Referrer's Joystream Channel ID
       referrerChannelId: Number,
 
@@ -189,6 +192,7 @@ export function videoRepository() {
       playlistId: String,
 
       resourceId: String,
+
       thumbnails: {
         type: Object,
         schema: {
@@ -205,6 +209,9 @@ export function videoRepository() {
         type: String,
         enum: videoStates,
       },
+
+      // Joystream video category to be assigned to synced videos
+      category: String,
     },
     {
       saveUnknown: true,

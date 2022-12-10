@@ -169,7 +169,7 @@ class YoutubeClient implements IYoutubeClient {
         maxResults: 50,
       })
       continuation = nextPage.data.nextPageToken ?? ''
-      const page = this.mapVideos(nextPage.data.items ?? [])
+      const page = this.mapVideos(nextPage.data.items ?? [], channel)
       videos = [...videos, ...page]
     } while (continuation && videos.length < max)
     return videos
@@ -209,7 +209,7 @@ class YoutubeClient implements IYoutubeClient {
     )
   }
 
-  private mapVideos(videos: Schema$PlaylistItem[]) {
+  private mapVideos(videos: Schema$PlaylistItem[], channel: Channel) {
     return videos.map(
       (video) =>
         <Video>{
@@ -227,6 +227,7 @@ class YoutubeClient implements IYoutubeClient {
           resourceId: video.snippet?.resourceId?.videoId,
           publishedAt: video.contentDetails.videoPublishedAt,
           createdAt: Date.now(),
+          category: channel.videoCategoryId,
           state: 'New',
         }
     )

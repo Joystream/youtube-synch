@@ -48,7 +48,8 @@ export class ChannelsController {
   @ApiResponse({ type: SaveChannelResponse })
   @Post()
   async addVerifiedChannel(
-    @Body() { authorizationCode, userId, joystreamChannelId, referrerChannelId, email }: SaveChannelRequest
+    @Body()
+    { authorizationCode, userId, joystreamChannelId, referrerChannelId, email, videoCategoryId }: SaveChannelRequest
   ): Promise<SaveChannelResponse> {
     try {
       // get user from userId
@@ -63,7 +64,7 @@ export class ChannelsController {
       const [channel] = await this.youtube.getChannels(user)
 
       const updatedUser: User = { ...user, email }
-      const updatedChannel: Channel = { ...channel, joystreamChannelId, referrerChannelId, email }
+      const updatedChannel: Channel = { ...channel, joystreamChannelId, referrerChannelId, email, videoCategoryId }
 
       // save user and channel
       await this.saveUserAndChannel(updatedUser, updatedChannel)

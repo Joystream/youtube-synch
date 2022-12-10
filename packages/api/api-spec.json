@@ -438,6 +438,9 @@
           "joystreamChannelId": {
             "type": "number"
           },
+          "videoCategoryId": {
+            "type": "string"
+          },
           "referrerChannelId": {
             "type": "number"
           }
@@ -446,7 +449,8 @@
           "authorizationCode",
           "userId",
           "email",
-          "joystreamChannelId"
+          "joystreamChannelId",
+          "videoCategoryId"
         ]
       },
       "UserDto": {
@@ -508,6 +512,9 @@
           "joystreamChannelId": {
             "type": "number"
           },
+          "videoCategoryId": {
+            "type": "string"
+          },
           "thumbnails": {
             "$ref": "#/components/schemas/ThumbnailsDto"
           },
@@ -526,6 +533,7 @@
           "shouldBeIngested",
           "isSuspended",
           "joystreamChannelId",
+          "videoCategoryId",
           "thumbnails",
           "subscribersCount",
           "createdAt"
@@ -584,6 +592,9 @@
           "description": {
             "type": "string"
           },
+          "category": {
+            "type": "string"
+          },
           "id": {
             "type": "string"
           },
@@ -610,6 +621,7 @@
           "url",
           "title",
           "description",
+          "category",
           "id",
           "playlistId",
           "resourceId",
