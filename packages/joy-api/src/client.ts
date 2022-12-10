@@ -87,6 +87,7 @@ async function parseVideoInputs(video: Video): Promise<[VideoInputMetadata, Vide
 }
 
 async function getThumbnailAsset(thumbnails: Thumbnails) {
+  // * We are using `medium` thumbnail because it has correct aspect ratio for Atlas (16/9)
   const response = await axios.get<Readable>(thumbnails.medium, { responseType: 'stream' })
   return response.data
 }
