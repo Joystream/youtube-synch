@@ -40,6 +40,7 @@ export class ChannelDto {
   @ApiProperty() isSuspended: boolean
   @ApiProperty() joystreamChannelId: number
   @ApiProperty() videoCategoryId: string
+  @ApiProperty() language: string
   @ApiProperty() thumbnails: ThumbnailsDto
   @ApiProperty() subscribersCount: number
   @ApiProperty() createdAt: Date
@@ -50,6 +51,7 @@ export class ChannelDto {
     this.subscribersCount = channel.statistics.subscriberCount
     this.joystreamChannelId = channel.joystreamChannelId
     this.videoCategoryId = channel.videoCategoryId
+    this.language = channel.language
     this.shouldBeIngested = channel.shouldBeIngested
     this.isSuspended = channel.isSuspended
     this.aggregatedStats = channel.aggregatedStats
@@ -129,6 +131,8 @@ export class VideoDto extends Video {
   @ApiProperty() thumbnails: ThumbnailsDto
   @ApiProperty() state: VideoState
   @ApiProperty() destinationUrl: string
+  @ApiProperty() duration: number
+  @ApiProperty() language: string
 }
 
 export class UpdateChannelDto extends PickType(Channel, ['shouldBeIngested']) {

@@ -25,6 +25,9 @@ export class Channel {
   // Channel description
   description: string
 
+  // default language of youtube channel
+  language: string
+
   // Youtube channel creation date
   publishedAt: string
 
@@ -200,11 +203,17 @@ export class Video {
 
   destinationUrl: string
 
-  // Video duration
-  duration: string
+  // Video duration in seconds
+  duration: number
+
+  // Media container format
+  container: string
 
   // Youtube video creation date
   publishedAt: string
+
+  // The status of the uploaded video on Youtube.
+  uploadStatus: string
 
   // record creation time
   createdAt: number
@@ -214,6 +223,9 @@ export class Video {
 
   // Joystream video category to be assigned to synced videos
   category: string
+
+  // language of the synced video (derived from corresponding Youtube channel)
+  language: string
 }
 
 export class Stats {

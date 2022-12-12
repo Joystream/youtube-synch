@@ -7,7 +7,7 @@ import { createType } from '@joystream/types'
 import { ChannelId, MemberId } from '@joystream/types/primitives'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { JoystreamLibError } from './errors'
-import { extractVideoResultAssetsIds, sendExtrinsicAndParseEvents } from './helpers'
+import { sendExtrinsicAndParseEvents } from './helpers'
 import { parseVideoExtrinsicInput } from './metadata'
 import {
   GetEventDataFn,

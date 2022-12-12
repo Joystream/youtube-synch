@@ -126,6 +126,7 @@
     "vite": "^2.7.13",
     "ws": "^8.5.0",
     "ytdl-core": "^4.11.2",
-    "node-cleanup": "^2.1.2"
+    "node-cleanup": "^2.1.2",
+    "iso8601-duration": "^2.1.1"
   }
 }
