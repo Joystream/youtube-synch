@@ -35,6 +35,9 @@ export function createChannelModel(): ModelType<AnyDocument> {
       // video category ID to be added to all synced videos
       videoCategoryId: String,
 
+      // default language of youtube channel
+      language: String,
+
       // Referrer's Joystream Channel ID
       referrerChannelId: Number,
 
@@ -212,6 +215,18 @@ export function videoRepository() {
 
       // Joystream video category to be assigned to synced videos
       category: String,
+
+      // language of the synced video (derived from corresponding Youtube channel)
+      language: String,
+
+      // video duration in seconds
+      duration: Number,
+
+      // The status of the uploaded video on Youtube.
+      uploadStatus: String,
+
+      // Video's container
+      container: String,
     },
     {
       saveUnknown: true,

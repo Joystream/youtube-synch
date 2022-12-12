@@ -1,11 +1,13 @@
 import { youtube_v3 } from '@googleapis/youtube'
-import { OAuth2Client } from 'google-auth-library'
-import ytdl from 'ytdl-core'
-import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
-import Schema$Channel = youtube_v3.Schema$Channel
 import { Channel, ExitCodes, getConfig, User, Video, YoutubeAuthorizationError } from '@youtube-sync/domain'
+import { OAuth2Client } from 'google-auth-library'
+import { parse, toSeconds } from 'iso8601-duration'
 import { Readable } from 'stream'
+import ytdl from 'ytdl-core'
 import { statsRepository } from '..'
+import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
+import Schema$Video = youtube_v3.Schema$Video
+import Schema$Channel = youtube_v3.Schema$Channel
 
 const config = getConfig()
 const MINIMUM_SUBSCRIBERS_COUNT = parseInt(config.MINIMUM_SUBSCRIBERS_COUNT)
@@ -169,7 +171,13 @@ class YoutubeClient implements IYoutubeClient {
         maxResults: 50,
       })
       continuation = nextPage.data.nextPageToken ?? ''
-      const page = this.mapVideos(nextPage.data.items ?? [], channel)
+
+      const videosDetails = await youtube.videos.list({
+        id: nextPage.data.items.map((v) => v.snippet.resourceId.videoId),
+        part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status'],
+      })
+
+      const page = this.mapVideos(nextPage.data.items ?? [], videosDetails.data.items ?? [], channel)
       videos = [...videos, ...page]
     } while (continuation && videos.length < max)
     return videos
@@ -204,14 +212,15 @@ class YoutubeClient implements IYoutubeClient {
           createdAt: Date.now(),
           publishedAt: channel.snippet?.publishedAt,
           shouldBeIngested: true,
+          language: channel.snippet.defaultLanguage,
           phantomKey: 'phantomData',
         }
     )
   }
 
-  private mapVideos(videos: Schema$PlaylistItem[], channel: Channel) {
+  private mapVideos(videos: Schema$PlaylistItem[], videosDetails: Schema$Video[], channel: Channel) {
     return videos.map(
-      (video) =>
+      (video, i) =>
         <Video>{
           id: video.id,
           description: video.snippet?.description,
@@ -228,6 +237,10 @@ class YoutubeClient implements IYoutubeClient {
           publishedAt: video.contentDetails.videoPublishedAt,
           createdAt: Date.now(),
           category: channel.videoCategoryId,
+          language: channel.language,
+          duration: toSeconds(parse(videosDetails[i].contentDetails.duration)),
+          container: videosDetails[i].fileDetails.container,
+          uploadStatus: videosDetails[i].status.uploadStatus,
           state: 'New',
         }
     )

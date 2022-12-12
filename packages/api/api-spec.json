@@ -515,6 +515,9 @@
           "videoCategoryId": {
             "type": "string"
           },
+          "language": {
+            "type": "string"
+          },
           "thumbnails": {
             "$ref": "#/components/schemas/ThumbnailsDto"
           },
@@ -534,6 +537,7 @@
           "isSuspended",
           "joystreamChannelId",
           "videoCategoryId",
+          "language",
           "thumbnails",
           "subscribersCount",
           "createdAt"
@@ -615,6 +619,12 @@
           },
           "destinationUrl": {
             "type": "string"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "language": {
+            "type": "string"
           }
         },
         "required": [
@@ -628,7 +638,9 @@
           "channelId",
           "thumbnails",
           "state",
-          "destinationUrl"
+          "destinationUrl",
+          "duration",
+          "language"
         ]
       },
       "ChannelInductionRequirementsDto": {

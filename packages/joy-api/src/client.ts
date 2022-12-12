@@ -62,7 +62,9 @@ async function parseVideoInputs(video: Video): Promise<[VideoInputMetadata, Vide
     title: video.title,
     description: video.description,
     category: video.category,
+    language: video.language,
     isPublic: true,
+    duration: video.duration,
   }
 
   const assets: VideoInputAssets = {}
