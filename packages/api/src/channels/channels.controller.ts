@@ -130,7 +130,7 @@ export class ChannelsController {
     @Headers('authorization') authorizationHeader: string,
     @Body(new ParseArrayPipe({ items: SuspendChannelDto, whitelist: true })) channels: SuspendChannelDto[]
   ) {
-    const yppOwnerKey = authorizationHeader.split(' ')[1]
+    const yppOwnerKey = authorizationHeader ? authorizationHeader.split(' ')[1] : ''
     if (yppOwnerKey !== process.env.YPP_OWNER_KEY) {
       throw new UnauthorizedException('Invalid YPP owner key')
     }
@@ -141,10 +141,10 @@ export class ChannelsController {
 
         // if channel is being suspended then its YT ingestion/syncing should also be stopped
         if (isSuspended) {
-          this.channelsService.update({ ...channel, isSuspended, shouldBeIngested: false })
+          return await this.channelsService.update({ ...channel, isSuspended, shouldBeIngested: false })
         } else {
           // if channel suspension is revoked then its YT ingestion/syncing should not be resumed
-          this.channelsService.update({ ...channel, isSuspended })
+          return await this.channelsService.update({ ...channel, isSuspended })
         }
       }
     } catch (error) {

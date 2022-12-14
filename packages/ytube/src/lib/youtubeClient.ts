@@ -212,6 +212,7 @@ class YoutubeClient implements IYoutubeClient {
           createdAt: Date.now(),
           publishedAt: channel.snippet?.publishedAt,
           shouldBeIngested: true,
+          isSuspended: false,
           language: channel.snippet.defaultLanguage,
           phantomKey: 'phantomData',
         }
