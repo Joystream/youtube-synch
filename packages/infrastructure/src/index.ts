@@ -206,9 +206,14 @@ const channelEventsTopic = new aws.sns.Topic(<AvailableTopic>'channelEvents', {
   name: <AvailableTopic>'channelEvents',
 })
 
-const videoEvents = new aws.sns.Topic(<AvailableTopic>'videoEvents', {
-  name: <AvailableTopic>'videoEvents',
-  displayName: 'Videos events',
+const createVideoEvents = new aws.sns.Topic(<AvailableTopic>'createVideoEvents', {
+  name: <AvailableTopic>'createVideoEvents',
+  displayName: 'Create Videos events',
+})
+
+const uploadVideoEvents = new aws.sns.Topic(<AvailableTopic>'uploadVideoEvents', {
+  name: <AvailableTopic>'uploadVideoEvents',
+  displayName: 'Upload Videos events',
 })
 
 export const usersTableArn = userTable.arn
@@ -217,7 +222,8 @@ export const videosTableArn = videosTable.arn
 export const videoLogsTableArn = videoLogsTable.arn
 export const statsTableArn = statsTable.arn
 
-export const videosTopicArn = videoEvents.arn
+export const createVideosTopicArn = createVideoEvents.arn
+export const uploadVideosTopicArn = uploadVideoEvents.arn
 export const channelsTopicArn = channelEventsTopic.arn
 export const usersTopicArn = userEventsTopic.arn
 

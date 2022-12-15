@@ -7,39 +7,37 @@ import { AssetUploadInput, StorageNodeInfo } from '../src/types'
 
 export type OperatorInfo = { id: string; endpoint: string }
 export type OperatorsMapping = Record<string, OperatorInfo>
-export type VideoUploadResponse = { id: string; video: Video }
+export type VideoUploadResponse = {
+  id: string // hash of dataObject uploaded
+}
 
 export class Uploader {
   private client: QueryNodeApi
-  constructor(client: QueryNodeApi) {
-    this.client = client
+  constructor(private queryNodeUrl: string) {
+    this.client = new QueryNodeApi(this.queryNodeUrl)
   }
 
-  async upload(assets: AssetUploadInput[], channel: Channel) {
+  async upload(channel: Channel, assets: AssetUploadInput[]) {
     const bagId = `dynamic:channel:${channel.joystreamChannelId}`
     const operator = await this.getRandomActiveStorageNodeInfo(bagId)
 
-    try {
-      for (const { dataObjectId, file } of assets) {
-        const formData = new FormData()
-        formData.append('file', file, 'video.mp4')
-        await axios.post<VideoUploadResponse>(`${operator.apiEndpoint}/files`, formData, {
-          params: {
-            dataObjectId: dataObjectId.toString(),
-            storageBucketId: operator.bucketId,
-            bagId,
-          },
-          maxBodyLength: Infinity,
-          maxContentLength: Infinity,
-          headers: {
-            'content-type': 'multipart/form-data',
-            ...formData.getHeaders(),
-          },
-        })
-      }
-    } catch (error) {
-      console.log('error: ', error)
-      throw error
+    for (const { dataObjectId, file } of assets) {
+      const formData = new FormData()
+      formData.append('file', file, 'video.mp4')
+      const res = await axios.post<VideoUploadResponse>(`${operator.apiEndpoint}/files`, formData, {
+        params: {
+          dataObjectId: dataObjectId.toString(),
+          storageBucketId: operator.bucketId,
+          bagId,
+        },
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+        headers: {
+          'content-type': 'multipart/form-data',
+          ...formData.getHeaders(),
+        },
+      })
+      console.log('Video asset uploaded', res.data)
     }
   }
 

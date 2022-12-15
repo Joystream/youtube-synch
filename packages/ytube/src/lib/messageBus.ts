@@ -4,7 +4,7 @@ import { Topic } from 'aws-sdk/clients/sns'
 import { DomainError, IEvent } from '@youtube-sync/domain'
 
 // Available SNS topics
-export const availableTopics = ['userEvents', 'channelEvents', 'videoEvents'] as const
+export const availableTopics = ['userEvents', 'channelEvents', 'createVideoEvents', 'uploadVideoEvents'] as const
 export type AvailableTopic = typeof availableTopics[number]
 
 // A message bus class to hold the list of all SNS Topics
@@ -23,11 +23,13 @@ export class MessageBus {
   async publish<TEvent extends IEvent>(event: TEvent, topic: AvailableTopic): Promise<TEvent> {
     try {
       const tpc = await this.getTopic(topic)
-      this._sns.publish({
-        Message: JSON.stringify(event),
-        TopicArn: tpc.TopicArn,
-        Subject: event.subject,
-      })
+      await this._sns
+        .publish({
+          Message: JSON.stringify(event),
+          TopicArn: tpc.TopicArn,
+          Subject: event.subject,
+        })
+        .promise()
       return event
     } catch (error) {
       throw new Error(`Failed to publish event. Error ${error}`)

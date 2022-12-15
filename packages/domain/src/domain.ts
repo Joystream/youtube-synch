@@ -1,3 +1,5 @@
+import { DataObjectId, VideoId } from '@joystream/types/primitives'
+
 export class Channel {
   // Channel ID
   id: string
@@ -112,11 +114,10 @@ export class UserIngestionTriggered implements IEvent {
 }
 
 export class VideoEvent implements IEvent {
+  subject: VideoState
   constructor(public state: VideoState, public videoId: string, public channelId: string, public timestamp: number) {
     this.subject = state
   }
-
-  subject: VideoState
 }
 
 export type Membership = {
@@ -158,8 +159,14 @@ export type Thumbnails = {
 }
 
 const readOnlyVideoStates = [
-  // Newly created youtube video
+  // Newly tracked youtube video (in the backend syncing system)
   'New',
+  // Video is being creating on Joystream network (by calling extrinsics, but not yet uploaded)
+  'CreatingVideo',
+  // Video has been created on Joystream network (by calling extrinsics, but not yet uploaded)
+  'VideoCreated',
+  // `create_video` extrinsic errored
+  'VideoCreationFailed',
   // Video is being uploaded to Joystream
   'UploadStarted',
   // Video upload to Joystream failed
@@ -173,6 +180,14 @@ const readOnlyVideoStates = [
 export const videoStates = readOnlyVideoStates as unknown as string[]
 
 export type VideoState = typeof readOnlyVideoStates[number]
+
+export type JoystreamVideo = {
+  // Joystream runtime Video ID for successfully synced video
+  id: string
+
+  // Data Object IDs (first element is the video, the second is the thumbnail)
+  assetIds: string[]
+}
 
 export class Video {
   // Video ID
@@ -226,6 +241,9 @@ export class Video {
 
   // language of the synced video (derived from corresponding Youtube channel)
   language: string
+
+  // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
+  joystreamVideo: JoystreamVideo
 }
 
 export class Stats {

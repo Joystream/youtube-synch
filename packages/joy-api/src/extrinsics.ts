@@ -89,6 +89,10 @@ export class JoystreamLibExtrinsics {
 
     const [, , videoId, , assetsIds] = getEventData('content', 'VideoCreated')
 
+    if (assetsIds.size !== (assets?.objectCreationList.length || 0)) {
+      throw new Error('Unexpected number of video assets in VideoCreated event!')
+    }
+
     return {
       videoId,
       block,

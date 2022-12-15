@@ -227,6 +227,22 @@ export function videoRepository() {
 
       // Video's container
       container: String,
+
+      // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
+      joystreamVideo: {
+        type: Object,
+
+        schema: {
+          // Joystream runtime Video ID for successfully synced video
+          id: String,
+
+          // Data Object IDs (first element is the video, the second is the thumbnail)
+          assetIds: {
+            type: Array,
+            schema: [String],
+          },
+        },
+      },
     },
     {
       saveUnknown: true,
