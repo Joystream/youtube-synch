@@ -5,31 +5,21 @@ import axios from 'axios'
 import { BN } from 'bn.js'
 import { Readable } from 'stream'
 import ytdl from 'ytdl-core'
-import {
-  AccountsUtil,
-  AssetUploadInput,
-  DataObjectMetadata,
-  JoystreamLib,
-  VideoInputAssets,
-  VideoInputMetadata,
-} from '.'
-import { Uploader } from '../storage/uploader'
+import { AccountsUtil, DataObjectMetadata, JoystreamLib, VideoInputAssets, VideoInputMetadata } from '.'
 import QueryNodeApi from './graphql/QueryNodeApi'
 import { computeFileHashAndSize } from './hasher'
 
 export class JoystreamClient {
   private lib: JoystreamLib
   private accounts: AccountsUtil
-  private uploader: Uploader
   private qnApi: QueryNodeApi
   constructor(private nodeUri: string, private queryNodeUrl: string) {
     this.lib = new JoystreamLib(this.nodeUri)
     this.qnApi = new QueryNodeApi(this.queryNodeUrl)
-    this.uploader = new Uploader(this.qnApi)
     this.accounts = new AccountsUtil()
   }
 
-  async createVideo(memberId: MemberId, channel: Channel, video: Video) {
+  async createVideo(memberId: MemberId, channel: Channel, video: Video): Promise<Video> {
     const member = await this.qnApi.memberById(memberId)
     const keyPair = this.accounts.getPair(member.controllerAccount)
 
@@ -45,15 +35,15 @@ export class JoystreamClient {
       inputs[1]
     )
 
-    console.log('Uploading video', createdVideo)
+    console.log('Video created', createdVideo)
 
-    const assetsInput: AssetUploadInput[] = [
-      { dataObjectId: createdVideo.assetsIds[0], file: ytdl(video.url, { quality: 'highest' }) },
-      { dataObjectId: createdVideo.assetsIds[1], file: await getThumbnailAsset(video.thumbnails) },
-    ]
-    await this.uploader.upload(assetsInput, channel)
-
-    return createdVideo
+    return {
+      ...video,
+      joystreamVideo: {
+        id: createdVideo.videoId.toString(),
+        assetIds: createdVideo.assetsIds.map((a) => a.toString()),
+      },
+    }
   }
 }
 
@@ -88,7 +78,7 @@ async function parseVideoInputs(video: Video): Promise<[VideoInputMetadata, Vide
   return [videoInputMetadata, assets]
 }
 
-async function getThumbnailAsset(thumbnails: Thumbnails) {
+export async function getThumbnailAsset(thumbnails: Thumbnails) {
   // * We are using `medium` thumbnail because it has correct aspect ratio for Atlas (16/9)
   const response = await axios.get<Readable>(thumbnails.medium, { responseType: 'stream' })
   return response.data

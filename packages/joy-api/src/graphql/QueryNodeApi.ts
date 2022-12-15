@@ -55,7 +55,7 @@ import { StorageNodeInfo } from '../types'
 export default class QueryNodeApi {
   private _qnClient: ApolloClient<NormalizedCacheObject>
 
-  public constructor(uri?: string, errorHandler?: ErrorLink.ErrorHandler) {
+  public constructor(uri: string, errorHandler?: ErrorLink.ErrorHandler) {
     const links: ApolloLink[] = []
     if (errorHandler) {
       links.push(onError(errorHandler))

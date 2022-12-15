@@ -3,7 +3,7 @@ import * as pulumi from '@pulumi/pulumi'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { getConfig, DeploymentEnv } from '../../domain/src/config'
 
-type LambdaName = 'ingestChannel' | 'videoCreated' | 'scheduler' | 'orphanUsers'
+type LambdaName = 'ingestChannel' | 'createVideo' | 'uploadVideo' | 'scheduler' | 'orphanUsers'
 
 export function lambda(name: LambdaName, resourceSuffix: DeploymentEnv, handler: string, source: string) {
   // IAM role
@@ -48,9 +48,9 @@ export function lambda(name: LambdaName, resourceSuffix: DeploymentEnv, handler:
     role: role.arn,
     handler: handler,
     name: name,
-    reservedConcurrentExecutions: name === 'videoCreated' ? 1 : -1,
+    reservedConcurrentExecutions: name === 'createVideo' ? 1 : -1,
     tags: { environment: resourceSuffix },
-    timeout: name === 'videoCreated' ? 900 : 30,
+    timeout: name === 'createVideo' || name === 'uploadVideo' ? 900 : 30,
     memorySize: 512,
     environment: { variables: getConfig() },
   })

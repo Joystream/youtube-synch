@@ -625,6 +625,9 @@
           },
           "language": {
             "type": "string"
+          },
+          "joystreamVideo": {
+            "type": "object"
           }
         },
         "required": [
@@ -640,7 +643,8 @@
           "state",
           "destinationUrl",
           "duration",
-          "language"
+          "language",
+          "joystreamVideo"
         ]
       },
       "ChannelInductionRequirementsDto": {

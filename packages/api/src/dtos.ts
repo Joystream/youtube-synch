@@ -1,6 +1,6 @@
 import { MemberId } from '@joystream/types/primitives'
 import { ApiProperty, PickType } from '@nestjs/swagger'
-import { User, Channel, Video, VideoState } from '@youtube-sync/domain'
+import { User, Channel, Video, VideoState, JoystreamVideo } from '@youtube-sync/domain'
 import { IsEmail, IsNotEmpty } from 'class-validator'
 import { getConfig as config } from '@youtube-sync/domain'
 
@@ -133,6 +133,7 @@ export class VideoDto extends Video {
   @ApiProperty() destinationUrl: string
   @ApiProperty() duration: number
   @ApiProperty() language: string
+  @ApiProperty() joystreamVideo: JoystreamVideo
 }
 
 export class UpdateChannelDto extends PickType(Channel, ['shouldBeIngested']) {

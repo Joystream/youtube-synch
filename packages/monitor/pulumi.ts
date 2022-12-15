@@ -6,7 +6,8 @@ import { lambda } from './src/lambda'
 import { getConfig, DeploymentEnv } from '../domain/src/config'
 
 interface CommonInfraOutput {
-  videosTopicArn: string
+  createVideosTopicArn: string
+  uploadVideosTopicArn: string
   channelsTopicArn: string
   usersTopicArn: string
   usersTableArn: string
@@ -34,9 +35,13 @@ const ingestionSchedule = new aws.cloudwatch.EventRule('everyMinute', {
 
 const buildDirectory = '../../dist/packages/monitor'
 
-const videoTopic = aws.sns.Topic.get(
-  <AvailableTopic>'videoEvents',
-  commonInfrastructure.getOutputValue(nameof<CommonInfraOutput>('videosTopicArn'))
+const createVideosTopic = aws.sns.Topic.get(
+  <AvailableTopic>'createVideoEvents',
+  commonInfrastructure.getOutputValue(nameof<CommonInfraOutput>('createVideosTopicArn'))
+)
+const uploadVideosTopic = aws.sns.Topic.get(
+  <AvailableTopic>'uploadVideoEvents',
+  commonInfrastructure.getOutputValue(nameof<CommonInfraOutput>('uploadVideosTopicArn'))
 )
 const channelsTopic = aws.sns.Topic.get(
   <AvailableTopic>'channelEvents',
@@ -52,6 +57,9 @@ orphanUsersSchedule.onEvent(
   lambda('orphanUsers', resourceSuffix, 'main.orphanUsers', buildDirectory)
 )
 
-// Bind videoEvents SNS topic to videoCreated lambda
-videoTopic.onEvent('videoCreated', lambda('videoCreated', resourceSuffix, 'main.videoCreated', buildDirectory))
+// Bind channelEvents SNS topic to ingestChannel lambda
 channelsTopic.onEvent('ingestChannel', lambda('ingestChannel', resourceSuffix, 'main.ingestChannel', buildDirectory))
+// Bind createVideoEvents SNS topic to createVideo lambda
+createVideosTopic.onEvent('createVideo', lambda('createVideo', resourceSuffix, 'main.createVideo', buildDirectory))
+// Bind uploadVideoEvents SNS topic to uploadVideo lambda
+uploadVideosTopic.onEvent('uploadVideo', lambda('uploadVideo', resourceSuffix, 'main.uploadVideo', buildDirectory))
