@@ -17,7 +17,7 @@ const MINIMUM_CHANNEL_AGE_HOURS = parseFloat(config.MINIMUM_CHANNEL_AGE_HOURS)
 
 export interface IYoutubeClient {
   getUserFromCode(code: string, youtubeRedirectUri: string): Promise<User>
-  getChannels(user: User): Promise<Channel[]>
+  getChannels(user: Pick<User, 'id' | 'accessToken' | 'refreshToken'>): Promise<Channel[]>
   verifyChannel(channel: Channel): Promise<Channel>
   getVideos(channel: Channel, top: number): Promise<Video[]>
   getAllVideos(channel: Channel, max: number): Promise<Video[]>
@@ -67,7 +67,7 @@ class YoutubeClient implements IYoutubeClient {
     return user
   }
 
-  async getChannels(user: User) {
+  async getChannels(user: Pick<User, 'id' | 'accessToken' | 'refreshToken'>) {
     const yt = this.getYoutube(user.accessToken, user.refreshToken)
 
     const channelResponse = await yt.channels.list({
@@ -183,7 +183,7 @@ class YoutubeClient implements IYoutubeClient {
     return videos
   }
 
-  private mapChannels(user: User, channels: Schema$Channel[]) {
+  private mapChannels(user: Pick<User, 'id' | 'accessToken' | 'refreshToken'>, channels: Schema$Channel[]) {
     return channels.map<Channel>(
       (channel) =>
         <Channel>{
@@ -265,7 +265,7 @@ class QuotaTrackingClient implements IYoutubeClient {
     return verifiedChannel
   }
 
-  async getChannels(user: User) {
+  async getChannels(user: Pick<User, 'id' | 'accessToken' | 'refreshToken'>) {
     // get channels from api
     const channels = await this.decorated.getChannels(user)
 
