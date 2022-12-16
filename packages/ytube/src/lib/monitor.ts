@@ -1,6 +1,7 @@
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { Channel, ChannelSpotted, IngestChannel, Stats, User, Video, VideoEvent } from '@youtube-sync/domain'
 import { JoystreamClient } from '@youtube-sync/joy-api'
+import { GaxiosError } from 'gaxios/build/src/common'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { Uploader } from 'packages/joy-api/storage/uploader'
 import { ChannelsRepository, mapTo, statsRepository, UsersRepository, VideosRepository } from './database'
@@ -50,8 +51,10 @@ export class SyncService {
   // get all videos with state 'New'
   private async onlyNewVideos(channel: Channel, videos: Video[]): Promise<Video[]> {
     const existingVideos = await this.videosRepository.query({ channelId: channel.id }, (q) => q)
-    const existingVideoIds = new Set(existingVideos.filter((v) => v.uploadStatus === 'processed').map((v) => v.id))
-    return videos.filter((v) => !existingVideoIds.has(v.id))
+    const existingUnprocessedVideoIds = new Set(
+      existingVideos.filter((v) => v.uploadStatus === 'processed').map((v) => v.id)
+    )
+    return videos.filter((v) => !existingUnprocessedVideoIds.has(v.id))
   }
 
   async startIngestionFor(frequencies: Frequency[]) {
@@ -142,8 +145,8 @@ export class SyncService {
     const channel = await this.channelsRepository.get(channelId)
     const video = await this.videosRepository.get(channelId, videoId)
 
-    // if video hasn't finished processing on Youtube, then don't sync it yet
-    if (video.uploadStatus !== 'processed') {
+    // if video hasn't finished processing on Youtube OR it's a private video, then don't sync it yet
+    if (video.uploadStatus !== 'processed' || video.privacyStatus === 'private') {
       return
     }
 

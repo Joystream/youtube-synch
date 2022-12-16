@@ -225,6 +225,9 @@ export function videoRepository() {
       // The status of the uploaded video on Youtube.
       uploadStatus: String,
 
+      // The privacy status of the youtube
+      privacyStatus: String,
+
       // Video's container
       container: String,
 

@@ -230,6 +230,9 @@ export class Video {
   // The status of the uploaded video on Youtube.
   uploadStatus: string
 
+  // The video's privacy status. `private`, `public`, or `unlisted`.
+  privacyStatus: 'public' | 'private' | 'unlisted'
+
   // record creation time
   createdAt: number
 

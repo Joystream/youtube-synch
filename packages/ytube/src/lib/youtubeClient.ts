@@ -242,6 +242,7 @@ class YoutubeClient implements IYoutubeClient {
           duration: toSeconds(parse(videosDetails[i].contentDetails.duration)),
           container: videosDetails[i].fileDetails.container,
           uploadStatus: videosDetails[i].status.uploadStatus,
+          privacyStatus: video.status.privacyStatus,
           state: 'New',
         }
     )
