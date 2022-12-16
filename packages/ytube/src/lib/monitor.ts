@@ -55,17 +55,41 @@ export class SyncService {
   }
 
   async startIngestionFor(frequencies: Frequency[]) {
-    // get all channels that need to be ingested
+    // get all channels that need to be ingested based on following conditions:
+    // 1. `shouldBeIngested` flag should be set to true
+    // 2. `isSuspended` flag should be set to false
     const channelsToBeIngested = await this.channelsRepository.scan('frequency', (s) =>
-      s.in(frequencies).filter('shouldBeIngested').eq(true)
+      s.in(frequencies).filter('shouldBeIngested').eq(true).and().filter('isSuspended').eq(false)
     )
 
-    // create channels event based on
-    // `shouldBeIngested` flag should be set to true
-    // `isSuspended` flag should be set to false
-    const channelsEvent = channelsToBeIngested
-      .filter((ch) => ch.shouldBeIngested && !ch.isSuspended)
-      .map((ch) => new IngestChannel(ch, Date.now()))
+    // updated channel objects with latest subscriber count info
+    const updatedChannels = await Promise.all(
+      channelsToBeIngested.map(async (ch) => {
+        try {
+          const [channel] = await this.youtube.getChannels({
+            id: ch.userId,
+            accessToken: ch.userAccessToken,
+            refreshToken: ch.userRefreshToken,
+          })
+
+          return { ...ch, statistics: channel.statistics }
+        } catch (error: unknown) {
+          // set `shouldBeIngested` to false, if app permission is revoked by user from Google account, because
+          // then trying to fetch user channel will throw error with code 400 and 'invalid_grant' message
+          if (error instanceof GaxiosError && error.code === '400' && error.response?.data?.error === 'invalid_grant') {
+            return { ...ch, shouldBeIngested: false }
+          }
+
+          return ch
+        }
+      })
+    )
+
+    // save updated  channels
+    await this.channelsRepository.upsertAll(updatedChannels)
+
+    // create channels event
+    const channelsEvent = channelsToBeIngested.map((ch) => new IngestChannel(ch, Date.now()))
 
     // publish events
     return this.bus.publishAll(channelsEvent, 'channelEvents')
