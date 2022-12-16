@@ -63,7 +63,7 @@ export class SyncService {
     )
 
     // updated channel objects with latest subscriber count info
-    const updatedChannel: Channel[] = await Promise.all(
+    const updatedChannels = await Promise.all(
       channelsToBeIngested.map(async (ch) => {
         try {
           const [channel] = await this.youtube.getChannels({
@@ -71,17 +71,22 @@ export class SyncService {
             accessToken: ch.userAccessToken,
             refreshToken: ch.userRefreshToken,
           })
+
           return { ...ch, statistics: channel.statistics }
-        } catch (error) {
-          // TODO: error means user has revoked access to the channel?
-          console.log('error', error)
-          return { ...ch, shouldBeIngested: false }
+        } catch (error: unknown) {
+          // set `shouldBeIngested` to false, if app permission is revoked by user from Google account, because
+          // then trying to fetch user channel will throw error with code 400 and 'invalid_grant' message
+          if (error instanceof GaxiosError && error.code === '400' && error.response?.data?.error === 'invalid_grant') {
+            return { ...ch, shouldBeIngested: false }
+          }
+
+          return ch
         }
       })
     )
 
     // save updated  channels
-    await this.channelsRepository.upsertAll(updatedChannel)
+    await this.channelsRepository.upsertAll(updatedChannels)
 
     // create channels event
     const channelsEvent = channelsToBeIngested.map((ch) => new IngestChannel(ch, Date.now()))
