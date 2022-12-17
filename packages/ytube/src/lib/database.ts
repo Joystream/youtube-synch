@@ -294,7 +294,8 @@ export function statsRepository(): ModelType<AnyDocument> {
       type: Number,
       rangeKey: true,
     },
-    quotaUsed: Number,
+    syncQuotaUsed: Number,
+    signupQuotaUsed: Number,
   })
   return dynamoose.model('stats', schema, DYNAMO_MODEL_OPTIONS)
 }

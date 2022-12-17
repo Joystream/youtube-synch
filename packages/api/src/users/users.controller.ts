@@ -37,14 +37,6 @@ export class UsersController {
       // get user from authorization code
       const user = await this.youtube.getUserFromCode(authorizationCode, youtubeRedirectUri)
 
-      // get channel from user
-      const [channel] = await this.youtube.getChannels(user)
-
-      // Ensure channel exists
-      if (!channel) {
-        throw new YoutubeAuthorizationError(ExitCodes.CHANNEL_NOT_FOUND, `No Youtube Channel exists for given user`)
-      }
-
       const [registeredChannel] = await this.channelsService.getAll(user.id)
 
       // Ensure 1. selected YT channel is not already registered for YPP program
@@ -57,8 +49,8 @@ export class UsersController {
         )
       }
 
-      // verify channel
-      await this.youtube.verifyChannel(channel)
+      // get verified channel from user
+      await this.youtube.getVerifiedChannel(user)
 
       // save user
       await this.usersRepository.save(user)

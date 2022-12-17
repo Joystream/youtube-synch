@@ -247,8 +247,9 @@ export class Video {
 }
 
 export class Stats {
-  quotaUsed = 0
-  date: number = Date.now()
+  syncQuotaUsed: number
+  signupQuotaUsed: number
+  date: number
   partition = 'stats'
 }
 
