@@ -1,15 +1,14 @@
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Channel, ChannelSpotted, IngestChannel, Stats, User, Video, VideoEvent } from '@youtube-sync/domain'
+import { Channel, ChannelSpotted, IngestChannel, User, Video, VideoEvent } from '@youtube-sync/domain'
 import { JoystreamClient } from '@youtube-sync/joy-api'
+import { GaxiosError } from 'gaxios/build/src/common'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { Uploader } from 'packages/joy-api/storage/uploader'
-import { ChannelsRepository, mapTo, statsRepository, UsersRepository, VideosRepository } from './database'
+import { ChannelsRepository, UsersRepository, VideosRepository } from './database'
 import { Frequency } from './frequency'
 import { MessageBus } from './messageBus'
 import { ISyncService, JoystreamSyncService } from './uploadService'
 import { IYoutubeClient } from './youtubeClient'
-
-const DailyQuota = 10000
 
 export class SyncService {
   private syncService: ISyncService
@@ -27,24 +26,6 @@ export class SyncService {
     this.channelsRepository = new ChannelsRepository()
     this.usersRepository = new UsersRepository()
     this.videosRepository = new VideosRepository()
-  }
-
-  private async canCallYoutube(): Promise<boolean> {
-    const today = new Date()
-    today.setUTCHours(0, 0, 0, 0)
-    let statsDoc = await statsRepository().get({
-      partition: 'stats',
-      date: today.setUTCHours(0, 0, 0, 0),
-    })
-    if (!statsDoc) {
-      statsDoc = await statsRepository().update({
-        partition: 'stats',
-        date: today.setUTCHours(0, 0, 0, 0),
-        quotaUsed: 0,
-      })
-    }
-    const stats = mapTo<Stats>(statsDoc)
-    return stats.quotaUsed < DailyQuota
   }
 
   // get all videos with state 'New'
@@ -96,11 +77,6 @@ export class SyncService {
   }
 
   async ingestChannels(user: User) {
-    // ensure have some api quota
-    if (!(await this.canCallYoutube())) {
-      return []
-    }
-
     // fetch all channels of user from youtube API
     const channels = await this.youtube.getChannels(user)
 
@@ -118,9 +94,6 @@ export class SyncService {
   }
 
   async ingestAllVideos(channel: Channel, top: number) {
-    // ensure have some api quota
-    if (!(await this.canCallYoutube())) return []
-
     // get all videos of the channel
     const allVideos = await this.youtube.getAllVideos(channel, top)
 

@@ -1,10 +1,10 @@
 import { youtube_v3 } from '@googleapis/youtube'
-import { Channel, ExitCodes, getConfig, User, Video, YoutubeAuthorizationError } from '@youtube-sync/domain'
+import { Channel, ExitCodes, getConfig, Stats, User, Video, YoutubeAuthorizationError } from '@youtube-sync/domain'
 import { OAuth2Client } from 'google-auth-library'
 import { parse, toSeconds } from 'iso8601-duration'
 import { Readable } from 'stream'
 import ytdl from 'ytdl-core'
-import { statsRepository } from '..'
+import { mapTo, statsRepository } from '..'
 import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
 import Schema$Video = youtube_v3.Schema$Video
 import Schema$Channel = youtube_v3.Schema$Channel
@@ -18,7 +18,7 @@ const MINIMUM_CHANNEL_AGE_HOURS = parseFloat(config.MINIMUM_CHANNEL_AGE_HOURS)
 export interface IYoutubeClient {
   getUserFromCode(code: string, youtubeRedirectUri: string): Promise<User>
   getChannels(user: Pick<User, 'id' | 'accessToken' | 'refreshToken'>): Promise<Channel[]>
-  verifyChannel(channel: Channel): Promise<Channel>
+  getVerifiedChannel(user: User): Promise<Channel>
   getVideos(channel: Channel, top: number): Promise<Video[]>
   getAllVideos(channel: Channel, max: number): Promise<Video[]>
   downloadVideo(videoUrl: string): Readable
@@ -79,7 +79,14 @@ class YoutubeClient implements IYoutubeClient {
     return channels
   }
 
-  async verifyChannel(channel: Channel): Promise<Channel> {
+  async getVerifiedChannel(user: User): Promise<Channel> {
+    const [channel] = await this.getChannels(user)
+
+    // Ensure channel exists
+    if (!channel) {
+      throw new YoutubeAuthorizationError(ExitCodes.CHANNEL_NOT_FOUND, `No Youtube Channel exists for given user`)
+    }
+
     const errors: YoutubeAuthorizationError[] = []
     if (channel.statistics.subscriberCount < MINIMUM_SUBSCRIBERS_COUNT) {
       errors.push(
@@ -172,12 +179,16 @@ class YoutubeClient implements IYoutubeClient {
       })
       continuation = nextPage.data.nextPageToken ?? ''
 
-      const videosDetails = await youtube.videos.list({
-        id: nextPage.data.items.map((v) => v.snippet.resourceId.videoId),
-        part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status'],
-      })
+      const videosDetails = nextPage.data.items.length
+        ? (
+            await youtube.videos.list({
+              id: nextPage.data.items.map((v) => v.snippet.resourceId.videoId),
+              part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status'],
+            })
+          ).data.items
+        : []
 
-      const page = this.mapVideos(nextPage.data.items ?? [], videosDetails.data.items ?? [], channel)
+      const page = this.mapVideos(nextPage.data.items ?? [], videosDetails, channel)
       videos = [...videos, ...page]
     } while (continuation && videos.length < max)
     return videos
@@ -250,47 +261,78 @@ class YoutubeClient implements IYoutubeClient {
 
 // TODO: check if have remaining quota, set time to next poll
 class QuotaTrackingClient implements IYoutubeClient {
-  private _statsRepo
+  private statsRepo: ReturnType<typeof statsRepository>
 
   constructor(private decorated: IYoutubeClient) {
-    this._statsRepo = statsRepository()
+    this.statsRepo = statsRepository()
   }
 
   getUserFromCode(code: string, youtubeRedirectUri: string) {
     return this.decorated.getUserFromCode(code, youtubeRedirectUri)
   }
 
-  async verifyChannel(channel: Channel) {
-    const verifiedChannel = await this.decorated.verifyChannel(channel)
-    return verifiedChannel
+  async getVerifiedChannel(user: User) {
+    // ensure have some left api quota
+    if (!(await this.canCallYoutube('signup'))) {
+      throw new YoutubeAuthorizationError(
+        ExitCodes.YOUTUBE_QUOTA_LIMIT_EXCEEDED,
+        'No more quota left for signup. Please try again later.'
+      )
+    }
+
+    try {
+      const verifiedChannel = await this.decorated.getVerifiedChannel(user)
+      // increase used quota count
+      await this.increaseUsedQuota({ signupQuotaIncrement: 1 })
+      return verifiedChannel
+    } catch (error) {
+      // increase used quota count even in case of failed verification
+      await this.increaseUsedQuota({ signupQuotaIncrement: 1 })
+      throw error
+    }
   }
 
   async getChannels(user: Pick<User, 'id' | 'accessToken' | 'refreshToken'>) {
+    // ensure have some left api quota
+    if (!(await this.canCallYoutube('sync'))) {
+      return []
+    }
+
     // get channels from api
     const channels = await this.decorated.getChannels(user)
 
-    // increase used quota count
-    this.increaseUsedQuota(channels.length % 50)
+    // increase used quota count by 1 because only one page is returned
+    await this.increaseUsedQuota({ syncQuotaIncrement: 1 })
 
     return channels
   }
 
   async getVideos(channel: Channel, top: number) {
+    // ensure have some left api quota
+    if (!(await this.canCallYoutube('sync'))) {
+      return []
+    }
+
     // get videos from api
     const videos = await this.decorated.getVideos(channel, top)
 
-    // increase used quota count
-    this.increaseUsedQuota(videos.length % 50)
+    // increase used quota count, at least 2 api per channel are being used for requesting video details
+    await this.increaseUsedQuota({ syncQuotaIncrement: parseInt((videos.length / 50).toString()) * 2 || 2 })
 
     return videos
   }
 
   async getAllVideos(channel: Channel, max: number) {
+    // ensure have some left api quota
+    if (!(await this.canCallYoutube('sync'))) {
+      return []
+    }
+
     // get videos from api
     const videos = await this.decorated.getVideos(channel, max)
 
-    // increase used quota count
-    this.increaseUsedQuota(videos.length % 50)
+    // increase used quota count, at least 2 api per channel are being used for requesting video details
+    await this.increaseUsedQuota({ syncQuotaIncrement: parseInt((videos.length / 50).toString()) * 2 || 2 })
 
     return videos
   }
@@ -299,10 +341,36 @@ class QuotaTrackingClient implements IYoutubeClient {
     return this.decorated.downloadVideo(videoUrl)
   }
 
-  private async increaseUsedQuota(increment: number) {
-    const today = new Date()
-    const timestamp = today.setUTCHours(0, 0, 0, 0)
-    await this._statsRepo.update({ partition: 'stats', date: timestamp }, { $ADD: { quotaUsed: increment } })
+  private async increaseUsedQuota({ syncQuotaIncrement = 0, signupQuotaIncrement = 0 }) {
+    // Quota resets at Pacific Time, and pst is 8 hours behind UTC
+    const pst = new Date().setUTCHours(8, 0, 0, 0)
+    await this.statsRepo.update(
+      { partition: 'stats', date: pst },
+      { $ADD: { syncQuotaUsed: syncQuotaIncrement, signupQuotaUsed: signupQuotaIncrement } }
+    )
+  }
+
+  private async canCallYoutube(purpose: 'signup' | 'sync'): Promise<boolean> {
+    // Total daily Youtube quota is 10,000 which is shared between signup(2%) and sync(98%) services
+    const syncDailyQuota = 9500
+    const signupDailyQuota = 500
+    // Quota resets at Pacific Time, and pst is 8 hours behind UTC
+    const pst = new Date().setUTCHours(8, 0, 0, 0)
+    let statsDoc = await this.statsRepo.get({
+      partition: 'stats',
+      date: pst,
+    })
+    if (!statsDoc) {
+      statsDoc = await this.statsRepo.update({
+        partition: 'stats',
+        date: pst,
+        syncQuotaUsed: 0,
+        signupQuotaUsed: 0,
+      })
+    }
+
+    const stats = mapTo<Stats>(statsDoc)
+    return purpose === 'signup' ? stats.signupQuotaUsed < signupDailyQuota : stats.syncQuotaUsed < syncDailyQuota
   }
 }
 
