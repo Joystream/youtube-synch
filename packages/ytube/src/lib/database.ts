@@ -291,7 +291,7 @@ export function statsRepository(): ModelType<AnyDocument> {
       hashKey: true,
     },
     date: {
-      type: Number,
+      type: String,
       rangeKey: true,
     },
     syncQuotaUsed: Number,

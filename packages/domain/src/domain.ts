@@ -249,7 +249,7 @@ export class Video {
 export class Stats {
   syncQuotaUsed: number
   signupQuotaUsed: number
-  date: number
+  date: string
   partition = 'stats'
 }
 

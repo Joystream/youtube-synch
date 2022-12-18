@@ -343,7 +343,10 @@ class QuotaTrackingClient implements IYoutubeClient {
 
   private async increaseUsedQuota({ syncQuotaIncrement = 0, signupQuotaIncrement = 0 }) {
     // Quota resets at Pacific Time, and pst is 8 hours behind UTC
-    const pst = new Date().setUTCHours(8, 0, 0, 0)
+    const pst = new Date().toLocaleDateString('en-US', {
+      timeZone: 'America/Los_Angeles',
+      dateStyle: 'full',
+    })
     await this.statsRepo.update(
       { partition: 'stats', date: pst },
       { $ADD: { syncQuotaUsed: syncQuotaIncrement, signupQuotaUsed: signupQuotaIncrement } }
@@ -355,7 +358,10 @@ class QuotaTrackingClient implements IYoutubeClient {
     const syncDailyQuota = 9500
     const signupDailyQuota = 500
     // Quota resets at Pacific Time, and pst is 8 hours behind UTC
-    const pst = new Date().setUTCHours(8, 0, 0, 0)
+    const pst = new Date().toLocaleDateString('en-US', {
+      timeZone: 'America/Los_Angeles',
+      dateStyle: 'full',
+    })
     let statsDoc = await this.statsRepo.get({
       partition: 'stats',
       date: pst,

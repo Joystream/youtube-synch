@@ -9,10 +9,10 @@ export type AvailableTopic = typeof availableTopics[number]
 
 // A message bus class to hold the list of all SNS Topics
 export class MessageBus {
-  private _sns: SNS
-  private _topics: SNS.Topic[] = []
+  private sns: SNS
+  private topics: SNS.Topic[] = []
   constructor() {
-    this._sns = new SNS()
+    this.sns = new SNS()
   }
 
   /**
@@ -23,7 +23,7 @@ export class MessageBus {
   async publish<TEvent extends IEvent>(event: TEvent, topic: AvailableTopic): Promise<TEvent> {
     try {
       const tpc = await this.getTopic(topic)
-      await this._sns
+      await this.sns
         .publish({
           Message: JSON.stringify(event),
           TopicArn: tpc.TopicArn,
@@ -54,7 +54,7 @@ export class MessageBus {
               Subject: event.subject,
             }
         )
-        .map((input) => this._sns.publish(input).promise())
+        .map((input) => this.sns.publish(input).promise())
       await Promise.all(promises)
       return events
     } catch (error) {
@@ -73,11 +73,11 @@ export class MessageBus {
   }
 
   private async getOrInitTopics() {
-    if (this._topics.length === availableTopics.length) {
-      return this._topics
+    if (this.topics.length === availableTopics.length) {
+      return this.topics
     }
-    const topics = await this._sns.listTopics().promise()
-    this._topics = topics.Topics ?? []
-    return this._topics
+    const topics = await this.sns.listTopics().promise()
+    this.topics = topics.Topics ?? []
+    return this.topics
   }
 }

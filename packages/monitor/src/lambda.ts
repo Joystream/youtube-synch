@@ -5,7 +5,7 @@ import { getConfig, DeploymentEnv } from '../../domain/src/config'
 
 type LambdaName = 'ingestChannel' | 'createVideo' | 'uploadVideo' | 'scheduler' | 'orphanUsers'
 
-export function lambda(name: LambdaName, resourceSuffix: DeploymentEnv, handler: string, source: string) {
+export function lambda(name: LambdaName, resourceSuffix: DeploymentEnv, handler: string, source: string, layers = []) {
   // IAM role
   const role = new aws.iam.Role(`${name}Role`, {
     assumeRolePolicy: {
@@ -48,10 +48,11 @@ export function lambda(name: LambdaName, resourceSuffix: DeploymentEnv, handler:
     role: role.arn,
     handler: handler,
     name: name,
-    reservedConcurrentExecutions: name === 'createVideo' ? 1 : -1,
-    tags: { environment: resourceSuffix },
-    timeout: name === 'createVideo' || name === 'uploadVideo' ? 900 : 30,
     memorySize: 512,
+    tags: { environment: resourceSuffix },
+    reservedConcurrentExecutions: name === 'createVideo' ? 1 : -1,
+    timeout: name === 'createVideo' || name === 'uploadVideo' ? 900 : 30,
+    layers,
     environment: { variables: getConfig() },
   })
   return func
