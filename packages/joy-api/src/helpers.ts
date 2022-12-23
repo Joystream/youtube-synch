@@ -28,12 +28,12 @@ import {
   VideoInputAssets,
 } from './'
 import { JoystreamLibError } from './errors'
-import { ConsoleLogger } from './logger'
+import { Logger } from './logger'
 import { metadataToBytes } from './serialization'
 
 export async function prepareAssetsForExtrinsic(api: PolkadotApi, dataObjectsMetadata: DataObjectMetadata[]) {
   if (!dataObjectsMetadata.length) {
-    return null
+    return undefined
   }
 
   const feePerMB = await api.query.storage.dataObjectPerMegabyteFee()
@@ -92,7 +92,7 @@ export async function parseVideoExtrinsicInput(
   api: PolkadotApi,
   videoMetadata: IVideoMetadata,
   inputAssets: VideoInputAssets
-): Promise<readonly [Bytes, PalletContentStorageAssetsRecord]> {
+): Promise<readonly [Bytes, PalletContentStorageAssetsRecord | undefined]> {
   // prepare data objects and assign proper indexes in metadata
   const videoDataObjectsMetadata: DataObjectMetadata[] = [
     ...(inputAssets.video ? [inputAssets.video] : []),
@@ -131,7 +131,7 @@ export function parseExtrinsicEvents(registry: Registry, eventRecords: EventReco
     } else if (event.method === 'ExtrinsicSuccess') {
       return events
     } else {
-      ConsoleLogger.log('Unknown extrinsic event', {
+      Logger.log('Unknown extrinsic event', {
         event: { method: event.method },
       })
     }

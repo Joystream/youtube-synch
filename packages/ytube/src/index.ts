@@ -1,8 +1,6 @@
-export * from '../src/lib/youtubeClient'
-export { ISyncService } from '../src/lib/uploadService'
-export { SyncService } from '../src/lib/monitor'
+export * from './lib/youtubeClient'
+export { ISyncService } from './lib/uploadService'
+export { SyncService } from './lib/monitor'
 export * from './lib/messageBus'
-export * from '../src/lib/database'
-export * from '../src/lib/frequency'
-
-// just to test nx: affected
+export * from './lib/database'
+export * from './lib/frequency'

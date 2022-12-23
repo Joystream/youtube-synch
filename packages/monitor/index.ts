@@ -1,6 +1,6 @@
+import { createVideoHandler } from './src/lambdas/createVideo'
 import { ingestChannelHandler } from './src/lambdas/ingestChannel'
 import { ingestionScheduler } from './src/lambdas/ingestionScheduler'
-import { createVideoHandler } from './src/lambdas/createVideo'
 import { uploadVideoHandler } from './src/lambdas/uploadVideo'
 
 export const ingestChannel = ingestChannelHandler

@@ -1,28 +1,17 @@
-const getLogArgs = (message: string, details?: unknown) => {
-  if (details) {
-    return [message, details]
-  }
-  return [message]
-}
+import winston from 'winston'
 
-type LogFn = (message: string, details?: unknown) => void
-
-class _ConsoleLogger {
-  log: LogFn = (message, details) => {
-    console.log(...getLogArgs(message, details))
-  }
-
-  warn: LogFn = (message, details) => {
-    console.warn(...getLogArgs(message, details))
-  }
-
-  error: LogFn = (message, details) => {
-    console.error(...getLogArgs(message, details))
-  }
-
-  debug: LogFn = (message, details) => {
-    console.debug(...getLogArgs(message, details))
-  }
-}
-
-export const ConsoleLogger = new _ConsoleLogger()
+// Create a Winston logger
+export const Logger = winston.createLogger({
+  levels: winston.config.syslog.levels,
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+  ],
+  format: winston.format.combine(
+    winston.format.colorize(),
+    winston.format.timestamp({
+      format: 'YYYY-MM-DD HH:mm:ss',
+    }),
+    winston.format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`)
+  ),
+})

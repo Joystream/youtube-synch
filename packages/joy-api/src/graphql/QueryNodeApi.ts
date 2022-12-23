@@ -201,7 +201,7 @@ export default class QueryNodeApi {
     )
   }
 
-  async memberById(id: MemberId | string): Promise<MembershipFieldsFragment> {
+  async memberById(id: MemberId | string): Promise<MembershipFieldsFragment | null> {
     return this.uniqueEntityQuery<GetMemberByIdQuery, GetMemberByIdQueryVariables>(
       GetMemberById,
       {

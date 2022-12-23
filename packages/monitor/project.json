@@ -3,7 +3,7 @@
   "sourceRoot": "packages/monitor",
   "projectType": "library",
   "targets": {
-    "build": {
+    "build-lambdas": {
       "executor": "@nrwl/node:build",
       "outputs": ["{options.outputPath}"],
       "options": {

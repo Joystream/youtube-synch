@@ -19,7 +19,7 @@ let conf: {
   MINIMUM_CHANNEL_AGE_HOURS: string
 }
 
-export function configure(): void {
+function configure(): void {
   const envConf: Readonly<typeof conf> = {
     YOUTUBE_CLIENT_ID: readEnv('YOUTUBE_CLIENT_ID'),
     YOUTUBE_CLIENT_SECRET: readEnv('YOUTUBE_CLIENT_SECRET'),
@@ -54,7 +54,7 @@ function getEnv(name: string) {
   return process.env[name]
 }
 
-export function readEnv<K extends keyof typeof conf>(name: K, required = true): typeof conf[K] {
+function readEnv<K extends keyof typeof conf>(name: K, required = true): typeof conf[K] {
   const deploymentEnv = cleanEnv(process.env, { DEPLOYMENT_ENV: str({ default: 'local' }) })
     .DEPLOYMENT_ENV as DeploymentEnv
 

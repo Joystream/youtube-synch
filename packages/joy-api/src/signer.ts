@@ -1,6 +1,5 @@
 import Keyring from '@polkadot/keyring'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { DomainError, Result } from '@youtube-sync/domain'
 import { mnemonicGenerate, cryptoWaitReady } from '@polkadot/util-crypto'
 import { AccountId } from '@polkadot/types/interfaces'
 import { JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
@@ -37,15 +36,15 @@ export class AccountsUtil {
     return pair
   }
 
-  createAccount(key: string): Result<Account, DomainError> {
+  createAccount(key: string): Account {
     const mnemonic = mnemonicGenerate()
     const secretString = `${mnemonic}//${key}`
     const pair = this.keyring.addFromUri(secretString)
-    return Result.Success({ address: pair.address, secret: secretString })
+    return { address: pair.address, secret: secretString }
   }
 
-  addKnownAccount(uri: string): Result<AccountId, DomainError> {
+  addKnownAccount(uri: string): AccountId {
     const pair = this.keyring.addFromUri(uri)
-    return Result.Success(pair.address as unknown as AccountId)
+    return pair.address as unknown as AccountId
   }
 }

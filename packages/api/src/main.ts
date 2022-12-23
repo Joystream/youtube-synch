@@ -1,7 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
-import { setAwsConfig } from '@youtube-sync/domain'
+import { setAwsConfig, toPrettyJSON } from '@youtube-sync/domain'
 import * as fs from 'fs'
 import { AppModule } from './app.module'
 
@@ -22,7 +22,7 @@ function setupSwagger(app: INestApplication) {
   SwaggerModule.setup('docs', app, document)
 
   // Also write api spec to JSON file
-  fs.writeFileSync('./packages/api/api-spec.json', JSON.stringify(document, null, 2))
+  fs.writeFileSync('./packages/api/api-spec.json', toPrettyJSON(document))
 }
 
 async function bootstrap() {

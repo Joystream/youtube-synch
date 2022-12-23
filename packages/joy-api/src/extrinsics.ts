@@ -1,7 +1,7 @@
 import { ApiPromise as PolkadotApi } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 
-import { ConsoleLogger } from './logger'
+import { Logger } from './logger'
 
 import { IVideoMetadata } from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
@@ -39,7 +39,7 @@ export class JoystreamLibExtrinsics {
 
       return { events, block: blockHeader.number.toNumber(), getEventData }
     } catch (error) {
-      if (error?.message === 'Cancelled') {
+      if ((error as Error).message === 'Cancelled') {
         throw new JoystreamLibError({ name: 'SignCancelledError' })
       }
       throw error
@@ -50,7 +50,7 @@ export class JoystreamLibExtrinsics {
     try {
       await this.api.isReady
     } catch (e) {
-      ConsoleLogger.error('Failed to initialize Polkadot API', e)
+      Logger.error('Failed to initialize Polkadot API', e)
       throw new JoystreamLibError({ name: 'ApiNotConnectedError' })
     }
   }

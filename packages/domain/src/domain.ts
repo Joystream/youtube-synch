@@ -115,7 +115,13 @@ export class UserIngestionTriggered implements IEvent {
 
 export class VideoEvent implements IEvent {
   subject: VideoState
-  constructor(public state: VideoState, public videoId: string, public channelId: string, public timestamp: number) {
+  constructor(
+    public state: VideoState,
+    public videoId: string,
+    public videoTitle: string,
+    public channelId: string,
+    public timestamp: number
+  ) {
     this.subject = state
   }
 }
@@ -223,6 +229,9 @@ export class Video {
 
   // Media container format
   container: string
+
+  // view count
+  viewCount: number
 
   // Youtube video creation date
   publishedAt: string

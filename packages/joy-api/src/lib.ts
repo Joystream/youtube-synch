@@ -1,7 +1,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 
 import { JoystreamLibError } from './errors'
-import { ConsoleLogger } from './logger'
+import { Logger } from './logger'
 
 import { JoystreamLibExtrinsics } from './extrinsics'
 import { AccountId } from '@polkadot/types/interfaces'
@@ -34,14 +34,14 @@ export class JoystreamLib {
 
   destroy() {
     this.api.disconnect()
-    ConsoleLogger.log('[JoystreamLib] Destroyed')
+    Logger.info('[JoystreamLib] Destroyed')
   }
 
   private async ensureApi() {
     try {
       await this.api.isReady
     } catch (e) {
-      ConsoleLogger.error('Failed to initialize Polkadot API', e)
+      Logger.error('Failed to initialize Polkadot API', e)
       throw new JoystreamLibError({ name: 'ApiNotConnectedError' })
     }
   }
@@ -49,7 +49,7 @@ export class JoystreamLib {
   private async logConnectionData(endpoint: string) {
     await this.ensureApi()
     const chain = await this.api.rpc.system.chain()
-    ConsoleLogger.log(`[JoystreamLib] Connected to chain "${chain}" via "${endpoint}"`)
+    Logger.info(`[JoystreamLib] Connected to chain "${chain}" via "${endpoint}"`)
   }
 
   async connect() {

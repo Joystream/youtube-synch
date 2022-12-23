@@ -61,7 +61,7 @@ export class ChannelsService {
    * @param channel
    * @returns Updated channel
    */
-  async update(channel: Channel): Promise<Channel> {
+  async save(channel: Channel): Promise<Channel> {
     return await this.channelsRepository.save(channel)
   }
 }

@@ -305,7 +305,7 @@ export function mapTo<TEntity>(doc: AnyDocument) {
 }
 
 export interface IRepository<T> {
-  get(partition: string, id: string): Promise<T>
+  get(partition: string, id: string): Promise<T | undefined>
   save(model: T, partition: string): Promise<T>
   delete(partition: string, id: string): Promise<void>
   query(init: ConditionInitializer, f: (q: Query<AnyDocument>) => Query<AnyDocument>): Promise<T[]>
@@ -358,7 +358,7 @@ export class ChannelsRepository implements IRepository<Channel> {
   }
 
   async upsertAll(channels: Channel[]): Promise<Channel[]> {
-    const results = await Promise.all(channels.map(async (channel) => this.save(channel)))
+    const results = await Promise.all(channels.map(async (channel) => await this.save(channel)))
     return results
   }
 
@@ -367,7 +367,7 @@ export class ChannelsRepository implements IRepository<Channel> {
     return results.map((r) => mapTo<Channel>(r))
   }
 
-  async get(id: string): Promise<Channel> {
+  async get(id: string): Promise<Channel | undefined> {
     const [result] = await this.model.query({ id }).using('id-index').exec()
     return result ? mapTo<Channel>(result) : undefined
   }
@@ -399,7 +399,7 @@ export class VideosRepository implements IRepository<Video> {
   }
 
   async upsertAll(videos: Video[]): Promise<Video[]> {
-    const results = await Promise.all(videos.map(async (video) => this.save(video)))
+    const results = await Promise.all(videos.map(async (video) => await this.save(video)))
     return results
   }
 
@@ -414,9 +414,9 @@ export class VideosRepository implements IRepository<Video> {
    * @param id ID of the video
    * @returns
    */
-  async get(partition: string, id: string): Promise<Video> {
-    const result = await this.model.get({ channelId: partition, id })
-    return mapTo<Video>(result)
+  async get(channelId: string, id: string): Promise<Video | undefined> {
+    const result = await this.model.get({ channelId, id })
+    return result ? mapTo<Video>(result) : undefined
   }
 
   async save(model: Video): Promise<Video> {

@@ -16,7 +16,6 @@ import {
 } from '.'
 import QueryNodeApi from './graphql/QueryNodeApi'
 import { computeFileHashAndSize } from './hasher'
-import { getVideoFileMetadata } from './helpers'
 import { asValidatedMetadata } from './serialization'
 
 export class JoystreamClient {
@@ -31,11 +30,13 @@ export class JoystreamClient {
 
   async createVideo(memberId: MemberId, channel: Channel, video: Video): Promise<Video> {
     const member = await this.qnApi.memberById(memberId)
+    if (!member) {
+      throw new Error(`Joystream member with id ${memberId} not found`)
+    }
+
     const keyPair = this.accounts.getPair(member.controllerAccount)
 
     const inputs = await parseVideoInputs(video)
-
-    console.log('Creating video', inputs)
 
     const createdVideo = await this.lib.extrinsics.createVideo(
       keyPair,
@@ -44,8 +45,6 @@ export class JoystreamClient {
       inputs[0],
       inputs[1]
     )
-
-    console.log('Video created', createdVideo)
 
     return {
       ...video,

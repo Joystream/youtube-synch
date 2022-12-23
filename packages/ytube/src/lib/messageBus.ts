@@ -1,14 +1,25 @@
+import { DomainError, IEvent } from '@youtube-sync/domain'
 import { SNS } from 'aws-sdk'
 import { Topic } from 'aws-sdk/clients/sns'
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { DomainError, IEvent } from '@youtube-sync/domain'
 
 // Available SNS topics
 export const availableTopics = ['userEvents', 'channelEvents', 'createVideoEvents', 'uploadVideoEvents'] as const
 export type AvailableTopic = typeof availableTopics[number]
+export type SubscriptionConfirmationRequest = {
+  Type: 'SubscriptionConfirmation'
+  MessageId: string
+  Token: string
+  TopicArn: string
+  Message: string
+  SubscribeURL: string
+  Timestamp: string
+  SignatureVersion: string
+  Signature: string
+  SigningCertURL: string
+}
 
 // A message bus class to hold the list of all SNS Topics
-export class MessageBus {
+export class SnsClient {
   private sns: SNS
   private topics: SNS.Topic[] = []
   constructor() {
@@ -37,12 +48,49 @@ export class MessageBus {
   }
 
   /**
+   * @param topic Topic to which subscribe
+   * @returns published event
+   */
+  async subscribe(topic: AvailableTopic, endpoint: URL) {
+    try {
+      const tpc = await this.getTopic(topic)
+      await this.sns
+        .subscribe({
+          TopicArn: tpc.TopicArn,
+          Protocol: endpoint.protocol.replace(':', ''),
+          Endpoint: endpoint.toString(),
+        })
+        .promise()
+    } catch (error) {
+      throw new Error(`Failed to Subscribe to event. Error ${error}`)
+    }
+  }
+
+  /**
+   * @param topic confirm subscription to topic by consumer
+   * @returns published event
+   */
+  async confirmSubscription(topic: AvailableTopic, token: string) {
+    try {
+      const tpc = await this.getTopic(topic)
+      await this.sns
+        .confirmSubscription({
+          TopicArn: tpc.TopicArn,
+          Token: token,
+        })
+        .promise()
+    } catch (error) {
+      throw new Error(`Failed to Confirm Subscription to topic. Error ${error}`)
+    }
+  }
+
+  /**
    *
    * @param events Events tp be published
    * @param topic Topic to which publish the event
    * @returns published events
    */
-  async publishAll<TEvent extends IEvent>(events: TEvent[], topic: AvailableTopic): Promise<TEvent[]> {
+  async publishAll<TEvent extends IEvent>(events: TEvent[], topic: AvailableTopic) {
     try {
       const tpc = await this.getTopic(topic)
       const promises = events
@@ -66,10 +114,16 @@ export class MessageBus {
    * @param name Get topic by name
    * @returns Topic
    */
-  private async getTopic(name: AvailableTopic): Promise<Topic> {
-    return await this.getOrInitTopics().then((topics) => {
-      return topics.find((t) => t.TopicArn!.includes(name))!
+  private async getTopic(name: AvailableTopic): Promise<Required<Topic>> {
+    const topic = await this.getOrInitTopics().then((topics) => {
+      return topics.find((t) => t.TopicArn?.includes(name))
     })
+
+    if (!topic || !topic.TopicArn) {
+      throw new Error(`Topic ${name} not found`)
+    }
+
+    return topic as Required<Topic>
   }
 
   private async getOrInitTopics() {

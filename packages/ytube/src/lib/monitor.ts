@@ -110,10 +110,18 @@ export class SyncService {
     return this.bus.publishAll(videoEvents, 'createVideoEvents')
   }
 
-  async createVideo(channelId: string, videoId: string): Promise<VideoEvent> {
-    // Load channel and video records from DB
+  async createVideo(channelId: string, videoId: string) {
+    // Load channel
     const channel = await this.channelsRepository.get(channelId)
+    if (!channel) {
+      throw new Error(`Channel with id ${channelId} not found`)
+    }
+
+    // Load Video
     const video = await this.videosRepository.get(channelId, videoId)
+    if (!video) {
+      throw new Error(`Video with id ${videoId} not found in channel ${channelId}`)
+    }
 
     // if video hasn't finished processing on Youtube, then don't sync it yet
     if (video.uploadStatus !== 'processed') {
@@ -126,6 +134,8 @@ export class SyncService {
 
       // Create video on joystream blockchain by calling extrinsic
       const { joystreamVideo } = await this.syncService.createVideo(channel, video)
+
+      Logger.info(`Created new video ${toPrettyJSON(joystreamVideo)}`)
 
       // Update video state and save to DB
       await this.videosRepository.save({ ...video, joystreamVideo, state: 'VideoCreated' })
@@ -148,9 +158,16 @@ export class SyncService {
   }
 
   async uploadVideo(channelId: string, videoId: string) {
-    // Load channel and video records from DB
     const channel = await this.channelsRepository.get(channelId)
+    if (!channel) {
+      throw new Error(`Channel with id ${channelId} not found`)
+    }
+
+    // Load Video
     const video = await this.videosRepository.get(channelId, videoId)
+    if (!video) {
+      throw new Error(`Video with id ${videoId} not found in channel ${channelId}`)
+    }
 
     try {
       // Update video state and save to DB

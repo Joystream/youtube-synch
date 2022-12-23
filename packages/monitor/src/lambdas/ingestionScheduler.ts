@@ -1,5 +1,5 @@
 import { EventRuleEvent } from '@pulumi/aws/cloudwatch'
-import { MessageBus, SyncService, YtClient } from '@joystream/ytube'
+import { SnsClient, SyncService, YtClient } from '@joystream/ytube'
 import { getConfig, setAwsConfig } from '@youtube-sync/domain'
 import { JoystreamClient } from '@youtube-sync/joy-api'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
@@ -20,5 +20,5 @@ export async function ingestionScheduler(event: EventRuleEvent) {
   const joystreamClient = new JoystreamClient(JOYSTREAM_WEBSOCKET_RPC, JOYSTREAM_QUERY_NODE_URL)
   const storageClient = new Uploader(JOYSTREAM_QUERY_NODE_URL)
 
-  await new SyncService(youtubeClient, joystreamClient, storageClient, new MessageBus()).startIngestionFor([0])
+  await new SyncService(youtubeClient, joystreamClient, storageClient, new SnsClient()).startIngestionFor([0])
 }
