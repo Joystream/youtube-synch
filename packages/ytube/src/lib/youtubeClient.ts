@@ -2,22 +2,21 @@ import { youtube_v3 } from '@googleapis/youtube'
 import {
   Channel,
   ExitCodes,
-  getConfig,
-  Stats,
   User,
   Video,
   WithRequired,
   YoutubeAuthorizationError,
+  getConfig,
 } from '@youtube-sync/domain'
 import { OAuth2Client } from 'google-auth-library'
+import { GetTokenResponse } from 'google-auth-library/build/src/auth/oauth2client'
 import { parse, toSeconds } from 'iso8601-duration'
 import { Readable } from 'stream'
 import ytdl from 'ytdl-core'
-import { mapTo, statsRepository } from '..'
+import { StatsRepository } from '..'
 import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
 import Schema$Video = youtube_v3.Schema$Video
 import Schema$Channel = youtube_v3.Schema$Channel
-import { GetTokenResponse } from 'google-auth-library/build/src/auth/oauth2client'
 
 const config = getConfig()
 const MINIMUM_SUBSCRIBERS_COUNT = parseInt(config.MINIMUM_SUBSCRIBERS_COUNT)
@@ -286,10 +285,10 @@ class YoutubeClient implements IYoutubeClient {
 
 // TODO: check if have remaining quota, set time to next poll
 class QuotaTrackingClient implements IYoutubeClient {
-  private statsRepo: ReturnType<typeof statsRepository>
+  private statsRepo
 
   constructor(private decorated: IYoutubeClient) {
-    this.statsRepo = statsRepository()
+    this.statsRepo = new StatsRepository()
   }
 
   getUserFromCode(code: string, youtubeRedirectUri: string) {
@@ -368,12 +367,11 @@ class QuotaTrackingClient implements IYoutubeClient {
 
   private async increaseUsedQuota({ syncQuotaIncrement = 0, signupQuotaIncrement = 0 }) {
     // Quota resets at Pacific Time, and pst is 8 hours behind UTC
-    const pst = new Date().toLocaleDateString('en-US', {
-      timeZone: 'America/Los_Angeles',
-      dateStyle: 'full',
-    })
-    await this.statsRepo.update(
-      { partition: 'stats', date: pst },
+    const stats = await this.statsRepo.getOrSetTodaysStats()
+    const statsModel = await this.statsRepo.getModel()
+
+    await statsModel.update(
+      { partition: 'stats', date: stats.date },
       { $ADD: { syncQuotaUsed: syncQuotaIncrement, signupQuotaUsed: signupQuotaIncrement } }
     )
   }
@@ -382,25 +380,9 @@ class QuotaTrackingClient implements IYoutubeClient {
     // Total daily Youtube quota is 10,000 which is shared between signup(2%) and sync(98%) services
     const syncDailyQuota = 9500
     const signupDailyQuota = 500
-    // Quota resets at Pacific Time, and pst is 8 hours behind UTC
-    const pst = new Date().toLocaleDateString('en-US', {
-      timeZone: 'America/Los_Angeles',
-      dateStyle: 'full',
-    })
-    let statsDoc = await this.statsRepo.get({
-      partition: 'stats',
-      date: pst,
-    })
-    if (!statsDoc) {
-      statsDoc = await this.statsRepo.update({
-        partition: 'stats',
-        date: pst,
-        syncQuotaUsed: 0,
-        signupQuotaUsed: 0,
-      })
-    }
 
-    const stats = mapTo<Stats>(statsDoc)
+    const stats = await this.statsRepo.getOrSetTodaysStats()
+
     return purpose === 'signup' ? stats.signupQuotaUsed < signupDailyQuota : stats.syncQuotaUsed < syncDailyQuota
   }
 }

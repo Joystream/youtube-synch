@@ -1,4 +1,4 @@
-import { IYoutubeClient, UsersRepository } from '@joystream/ytube'
+import { IYoutubeClient } from '@joystream/ytube'
 import {
   BadRequestException,
   Body,
