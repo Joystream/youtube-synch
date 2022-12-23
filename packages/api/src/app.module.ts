@@ -9,6 +9,7 @@ import { ChannelsRepository, UsersRepository, VideosRepository, YtClient } from 
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import QueryNodeApi from 'packages/joy-api/src/graphql/QueryNodeApi'
 import { getConfig } from '@youtube-sync/domain'
+import { UsersService } from './users/user.service'
 
 const { JOYSTREAM_QUERY_NODE_URL, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET } = getConfig()
 
@@ -17,6 +18,7 @@ const { JOYSTREAM_QUERY_NODE_URL, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET } = g
   controllers: [VideosController, ChannelsController, UsersController],
   providers: [
     ChannelsService,
+    UsersService,
     {
       provide: UsersRepository,
       useClass: UsersRepository,

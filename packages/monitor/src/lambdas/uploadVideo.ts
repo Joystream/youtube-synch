@@ -1,5 +1,5 @@
 import { TopicEvent } from '@pulumi/aws/sns'
-import { YtClient, videoStateRepository, SyncService, MessageBus } from '@joystream/ytube'
+import { YtClient, videoStateRepository, SyncService, SnsClient } from '@joystream/ytube'
 import { getConfig, setAwsConfig, VideoEvent } from '@youtube-sync/domain'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { Uploader } from 'packages/joy-api/storage/uploader'
@@ -20,7 +20,7 @@ export async function uploadVideoHandler(event: TopicEvent) {
   const joystreamClient = new JoystreamClient(JOYSTREAM_WEBSOCKET_RPC, JOYSTREAM_QUERY_NODE_URL)
   const storageClient = new Uploader(JOYSTREAM_QUERY_NODE_URL)
 
-  await new SyncService(youtubeClient, joystreamClient, storageClient, new MessageBus()).uploadVideo(
+  await new SyncService(youtubeClient, joystreamClient, storageClient, new SnsClient()).uploadVideo(
     videoCreated.channelId,
     videoCreated.videoId
   )

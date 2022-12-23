@@ -10,7 +10,7 @@ export type DataObjectMetadata = {
   replacedDataObjectId?: string
 }
 
-type VideoAssetsKey = 'thumbnailPhoto' | 'media'
+type VideoAssetsKey = 'thumbnailPhoto' | 'video'
 export type VideoAssets<T> = {
   [key in VideoAssetsKey]?: T
 }
@@ -40,7 +40,7 @@ export type ExtrinsicResult<T = undefined> = T extends undefined
     }
   : { block: number } & T
 
-export type VideoInputMetadata = Omit<
+export type VideoInputParameters = Omit<
   IVideoMetadata,
   'thumbnailPhoto' | 'video' | 'mediaType' | 'publishedBeforeJoystream'
 > & {
@@ -89,4 +89,18 @@ export type StorageNodeInfo = {
 export type AssetUploadInput = {
   dataObjectId: DataObjectId
   file: Readable
+}
+
+export type VideoFFProbeMetadata = {
+  width?: number
+  height?: number
+  codecName?: string
+  codecFullName?: string
+  duration?: number
+}
+
+export type VideoFileMetadata = VideoFFProbeMetadata & {
+  size?: number
+  container?: string
+  mimeType?: string
 }

@@ -1,4 +1,4 @@
-import { ChannelsRepository, IYoutubeClient, UsersRepository, VideosRepository } from '@joystream/ytube'
+import { IYoutubeClient, VideosRepository } from '@joystream/ytube'
 import {
   BadRequestException,
   Body,
@@ -16,7 +16,7 @@ import {
   UseGuards,
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
-import { Channel, getConfig, User, Video } from '@youtube-sync/domain'
+import { Channel, User, Video, getConfig } from '@youtube-sync/domain'
 import {
   ChannelDto,
   ChannelInductionRequirementsDto,
@@ -27,6 +27,7 @@ import {
   UserDto,
   VideoDto,
 } from '../dtos'
+import { UsersService } from '../users/user.service'
 import { ChannelsService } from './channels.service'
 
 @Controller('channels')
@@ -35,8 +36,7 @@ export class ChannelsController {
   constructor(
     @Inject('youtube') private youtube: IYoutubeClient,
     private channelsService: ChannelsService,
-    private channelsRepository: ChannelsRepository,
-    private usersRepository: UsersRepository,
+    private usersService: UsersService,
     private videosRepository: VideosRepository
   ) {}
 
@@ -53,7 +53,7 @@ export class ChannelsController {
   ): Promise<SaveChannelResponse> {
     try {
       // get user from userId
-      const user = await this.usersRepository.get(userId)
+      const user = await this.usersService.get(userId)
 
       // ensure request's authorization code matches the user's authorization code
       if (user.authorizationCode !== authorizationCode) {
@@ -112,7 +112,7 @@ export class ChannelsController {
   async updateChannel(@Param('joystreamChannelId') id: number, @Body() body: UpdateChannelDto) {
     try {
       const channel = await this.channelsService.get(id)
-      this.channelsService.update({ ...channel, ...body })
+      this.channelsService.save({ ...channel, ...body })
     } catch (error) {
       const message = error instanceof Error ? error.message : error
       throw new NotFoundException(message)
@@ -141,10 +141,10 @@ export class ChannelsController {
 
         // if channel is being suspended then its YT ingestion/syncing should also be stopped
         if (isSuspended) {
-          return await this.channelsService.update({ ...channel, isSuspended, shouldBeIngested: false })
+          return await this.channelsService.save({ ...channel, isSuspended, shouldBeIngested: false })
         } else {
           // if channel suspension is revoked then its YT ingestion/syncing should not be resumed
-          return await this.channelsService.update({ ...channel, isSuspended })
+          return await this.channelsService.save({ ...channel, isSuspended })
         }
       }
     } catch (error) {
@@ -186,9 +186,9 @@ export class ChannelsController {
 
   private async saveUserAndChannel(user: User, channel: Channel) {
     // save user
-    await this.usersRepository.save(user)
+    await this.usersService.save(user)
 
     // save channel
-    return await this.channelsRepository.save(channel)
+    return await this.channelsService.save(channel)
   }
 }

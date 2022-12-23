@@ -1,5 +1,14 @@
 import { youtube_v3 } from '@googleapis/youtube'
-import { Channel, ExitCodes, getConfig, Stats, User, Video, YoutubeAuthorizationError } from '@youtube-sync/domain'
+import {
+  Channel,
+  ExitCodes,
+  getConfig,
+  Stats,
+  User,
+  Video,
+  WithRequired,
+  YoutubeAuthorizationError,
+} from '@youtube-sync/domain'
 import { OAuth2Client } from 'google-auth-library'
 import { parse, toSeconds } from 'iso8601-duration'
 import { Readable } from 'stream'
@@ -8,6 +17,7 @@ import { mapTo, statsRepository } from '..'
 import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
 import Schema$Video = youtube_v3.Schema$Video
 import Schema$Channel = youtube_v3.Schema$Channel
+import { GetTokenResponse } from 'google-auth-library/build/src/auth/oauth2client'
 
 const config = getConfig()
 const MINIMUM_SUBSCRIBERS_COUNT = parseInt(config.MINIMUM_SUBSCRIBERS_COUNT)
@@ -44,9 +54,23 @@ class YoutubeClient implements IYoutubeClient {
     return new youtube_v3.Youtube({ auth })
   }
 
-  private async getAccessToken(code: string, youtubeRedirectUri: string) {
+  private async getAccessToken(
+    code: string,
+    youtubeRedirectUri: string
+  ): Promise<WithRequired<GetTokenResponse['tokens'], 'access_token' | 'refresh_token'>> {
     try {
-      return await this.getAuth(youtubeRedirectUri).getToken(code)
+      const token = await this.getAuth(youtubeRedirectUri).getToken(code)
+      if (!token.tokens?.access_token) {
+        throw new Error('Access token not found in token response.')
+      }
+
+      if (!token.tokens?.refresh_token) {
+        throw new Error(
+          'Refresh token not found in token response. User authorization should be requested with `access_type: offline`'
+        )
+      }
+
+      return { access_token: token.tokens.access_token, refresh_token: token.tokens.refresh_token }
     } catch (error) {
       throw new Error(`Could not get User's access token using authorization code ${error}`)
     }
@@ -54,13 +78,13 @@ class YoutubeClient implements IYoutubeClient {
 
   async getUserFromCode(code: string, youtubeRedirectUri: string) {
     const tokenResponse = await this.getAccessToken(code, youtubeRedirectUri)
-    const tokenInfo = await this.getAuth().getTokenInfo(tokenResponse.tokens.access_token)
 
+    const tokenInfo = await this.getAuth().getTokenInfo(tokenResponse.access_token)
     const user = new User(
-      tokenInfo.sub,
-      tokenInfo.email,
-      tokenResponse.tokens.access_token,
-      tokenResponse.tokens.refresh_token,
+      tokenInfo.sub || '',
+      tokenInfo.email || '',
+      tokenResponse.access_token,
+      tokenResponse.refresh_token,
       code,
       Date.now()
     )
@@ -179,16 +203,16 @@ class YoutubeClient implements IYoutubeClient {
       })
       continuation = nextPage.data.nextPageToken ?? ''
 
-      const videosDetails = nextPage.data.items.length
+      const videosDetails = nextPage.data.items?.length
         ? (
             await youtube.videos.list({
-              id: nextPage.data.items.map((v) => v.snippet.resourceId.videoId),
-              part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status'],
+              id: nextPage.data.items?.map((v) => v.snippet?.resourceId?.videoId ?? ``),
+              part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status', 'statistics'],
             })
-          ).data.items
+          ).data?.items
         : []
 
-      const page = this.mapVideos(nextPage.data.items ?? [], videosDetails, channel)
+      const page = this.mapVideos(nextPage.data.items ?? [], videosDetails ?? [], channel)
       videos = [...videos, ...page]
     } while (continuation && videos.length < max)
     return videos
@@ -224,7 +248,7 @@ class YoutubeClient implements IYoutubeClient {
           publishedAt: channel.snippet?.publishedAt,
           shouldBeIngested: true,
           isSuspended: false,
-          language: channel.snippet.defaultLanguage,
+          language: channel.snippet?.defaultLanguage,
           phantomKey: 'phantomData',
         }
     )
@@ -246,13 +270,14 @@ class YoutubeClient implements IYoutubeClient {
           },
           url: `https://youtube.com/watch?v=${video.snippet?.resourceId?.videoId}`,
           resourceId: video.snippet?.resourceId?.videoId,
-          publishedAt: video.contentDetails.videoPublishedAt,
+          publishedAt: video.contentDetails?.videoPublishedAt,
           createdAt: Date.now(),
           category: channel.videoCategoryId,
           language: channel.language,
-          duration: toSeconds(parse(videosDetails[i].contentDetails.duration)),
-          container: videosDetails[i].fileDetails.container,
-          uploadStatus: videosDetails[i].status.uploadStatus,
+          duration: toSeconds(parse(videosDetails[i].contentDetails?.duration ?? 'PT0S')),
+          container: videosDetails[i].fileDetails?.container,
+          uploadStatus: videosDetails[i].status?.uploadStatus,
+          viewCount: parseInt(videosDetails[i].statistics?.viewCount ?? '0'),
           state: 'New',
         }
     )
@@ -329,7 +354,7 @@ class QuotaTrackingClient implements IYoutubeClient {
     }
 
     // get videos from api
-    const videos = await this.decorated.getVideos(channel, max)
+    const videos = await this.decorated.getAllVideos(channel, max)
 
     // increase used quota count, at least 2 api per channel are being used for requesting video details
     await this.increaseUsedQuota({ syncQuotaIncrement: parseInt((videos.length / 50).toString()) * 2 || 2 })
@@ -343,7 +368,10 @@ class QuotaTrackingClient implements IYoutubeClient {
 
   private async increaseUsedQuota({ syncQuotaIncrement = 0, signupQuotaIncrement = 0 }) {
     // Quota resets at Pacific Time, and pst is 8 hours behind UTC
-    const pst = new Date().setUTCHours(8, 0, 0, 0)
+    const pst = new Date().toLocaleDateString('en-US', {
+      timeZone: 'America/Los_Angeles',
+      dateStyle: 'full',
+    })
     await this.statsRepo.update(
       { partition: 'stats', date: pst },
       { $ADD: { syncQuotaUsed: syncQuotaIncrement, signupQuotaUsed: signupQuotaIncrement } }
@@ -355,7 +383,10 @@ class QuotaTrackingClient implements IYoutubeClient {
     const syncDailyQuota = 9500
     const signupDailyQuota = 500
     // Quota resets at Pacific Time, and pst is 8 hours behind UTC
-    const pst = new Date().setUTCHours(8, 0, 0, 0)
+    const pst = new Date().toLocaleDateString('en-US', {
+      timeZone: 'America/Los_Angeles',
+      dateStyle: 'full',
+    })
     let statsDoc = await this.statsRepo.get({
       partition: 'stats',
       date: pst,
