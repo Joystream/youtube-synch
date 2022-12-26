@@ -1,4 +1,4 @@
-import { Channel, User, Video, videoStates } from '@youtube-sync/domain'
+import { Channel, Stats, User, Video, videoStates } from '@youtube-sync/domain'
 import * as dynamoose from 'dynamoose'
 import { ConditionInitalizer as ConditionInitializer } from 'dynamoose/dist/Condition'
 import { AnyDocument } from 'dynamoose/dist/Document'
@@ -433,5 +433,68 @@ export class VideosRepository implements IRepository<Video> {
   async query(init: ConditionInitializer, f: (q: Query<AnyDocument>) => Query<AnyDocument>): Promise<Video[]> {
     const results = await f(this.model.query(init)).exec()
     return results.map((r) => mapTo<Video>(r))
+  }
+}
+export class StatsRepository implements IRepository<Stats> {
+  private model: ModelType<AnyDocument>
+  constructor() {
+    this.model = statsRepository()
+  }
+
+  async getModel() {
+    return this.model
+  }
+
+  async getOrSetTodaysStats(): Promise<Stats> {
+    // Quota resets at Pacific Time, and pst is 8 hours behind UTC
+    const today = new Date().toLocaleDateString('en-US', {
+      timeZone: 'America/Los_Angeles',
+      dateStyle: 'full',
+    })
+
+    // Get today's stats
+    let stats = await this.get(today)
+
+    console.log('stats', stats)
+    if (!stats) {
+      const statsDoc = await this.model.update({
+        partition: 'stats',
+        date: today,
+        syncQuotaUsed: 0,
+        signupQuotaUsed: 0,
+      })
+      stats = mapTo<Stats>(statsDoc)
+    }
+
+    return stats
+  }
+
+  async upsertAll(): Promise<Stats[]> {
+    throw new Error('Not implemented')
+  }
+
+  async scan(init: ConditionInitializer, f: (q: Scan<AnyDocument>) => Scan<AnyDocument>): Promise<Stats[]> {
+    const results = await f(this.model.scan(init)).exec()
+    return results.map((r) => mapTo<Stats>(r))
+  }
+
+  async get(date: string): Promise<Stats | undefined> {
+    const result = await this.model.get({ partition: 'stats', date })
+    return result ? mapTo<Stats>(result) : undefined
+  }
+
+  async save(model: Stats): Promise<Stats> {
+    const update = omit(['id', 'updatedAt'], model)
+    const result = await this.model.update({ partition: 'stats', date: model.date }, update)
+    return mapTo<Stats>(result)
+  }
+
+  async delete(id: string): Promise<void> {
+    throw Error('Deleting Youtube Quota stats is not implemented')
+  }
+
+  async query(init: ConditionInitializer, f: (q: Query<AnyDocument>) => Query<AnyDocument>) {
+    const results = await f(this.model.query(init)).exec()
+    return results.map((r) => mapTo<Stats>(r))
   }
 }

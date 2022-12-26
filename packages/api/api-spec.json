@@ -407,6 +407,55 @@
           "channels"
         ]
       }
+    },
+    "/youtube/quota-usage": {
+      "get": {
+        "operationId": "YoutubeController_getAll",
+        "summary": "",
+        "description": "Get youtube quota usage information",
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Stats"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "youtube"
+        ]
+      }
+    },
+    "/youtube/quota-usage/today": {
+      "get": {
+        "operationId": "YoutubeController_get",
+        "summary": "",
+        "description": "Get youtube quota usage information for today",
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stats"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "youtube"
+        ]
+      }
     }
   },
   "info": {
@@ -699,6 +748,10 @@
           "email",
           "userId"
         ]
+      },
+      "Stats": {
+        "type": "object",
+        "properties": {}
       }
     }
   }
