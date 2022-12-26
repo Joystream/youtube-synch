@@ -124,9 +124,9 @@
     },
     "/channels/{joystreamChannelId}/ingest": {
       "put": {
-        "operationId": "ChannelsController_updateChannel",
+        "operationId": "ChannelsController_Channel",
         "summary": "",
-        "description": "Updates given channel YT syncing status. Note: only 'shouldBeIngested' is available for update at the moment",
+        "description": "Updates given channel ingestion status. Note: only channel owner can update the status",
         "parameters": [
           {
             "name": "joystreamChannelId",
@@ -142,7 +142,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateChannelDto"
+                "$ref": "#/components/schemas/IngestChannelDto"
               }
             }
           }
@@ -212,18 +212,26 @@
         ]
       }
     },
-    "/channels/{joystreamChannelId}/videos": {
+    "/channels/{id}/videos": {
       "get": {
         "operationId": "ChannelsController_getVideos",
         "summary": "",
-        "description": "Retrieves all videos (in the backend system) for a given youtube channel by its corresponding joystream channel Id.",
+        "description": "Retrieves already ingested(spotted on youtube and saved to the database) videos for a given channel.",
         "parameters": [
           {
-            "name": "joystreamChannelId",
+            "name": "userId",
             "required": true,
             "in": "path",
             "schema": {
-              "type": "number"
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -277,29 +285,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ChannelDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "channels"
-        ]
-      }
-    },
-    "/channels/induction/requirements": {
-      "get": {
-        "operationId": "ChannelsController_inductionRequirements",
-        "summary": "",
-        "description": "Retrieves Youtube Partner program induction requirements",
-        "parameters": [],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChannelInductionRequirementsDto"
                 }
               }
             }
@@ -438,9 +423,6 @@
           "joystreamChannelId": {
             "type": "number"
           },
-          "videoCategoryId": {
-            "type": "string"
-          },
           "referrerChannelId": {
             "type": "number"
           }
@@ -449,8 +431,7 @@
           "authorizationCode",
           "userId",
           "email",
-          "joystreamChannelId",
-          "videoCategoryId"
+          "joystreamChannelId"
         ]
       },
       "UserDto": {
@@ -480,6 +461,9 @@
           "high": {
             "type": "string"
           },
+          "maxRes": {
+            "type": "string"
+          },
           "standard": {
             "type": "string"
           }
@@ -488,6 +472,7 @@
           "default",
           "medium",
           "high",
+          "maxRes",
           "standard"
         ]
       },
@@ -512,16 +497,10 @@
           "joystreamChannelId": {
             "type": "number"
           },
-          "videoCategoryId": {
-            "type": "string"
-          },
-          "language": {
-            "type": "string"
-          },
           "thumbnails": {
             "$ref": "#/components/schemas/ThumbnailsDto"
           },
-          "subscribersCount": {
+          "tier": {
             "type": "number"
           },
           "createdAt": {
@@ -536,10 +515,8 @@
           "shouldBeIngested",
           "isSuspended",
           "joystreamChannelId",
-          "videoCategoryId",
-          "language",
           "thumbnails",
-          "subscribersCount",
+          "tier",
           "createdAt"
         ]
       },
@@ -558,15 +535,19 @@
           "channel"
         ]
       },
-      "UpdateChannelDto": {
+      "IngestChannelDto": {
         "type": "object",
         "properties": {
-          "shouldBeIngested": {
-            "type": "boolean"
+          "signature": {
+            "type": "string"
+          },
+          "message": {
+            "type": "object"
           }
         },
         "required": [
-          "shouldBeIngested"
+          "signature",
+          "message"
         ]
       },
       "SuspendChannelDto": {
@@ -596,9 +577,6 @@
           "description": {
             "type": "string"
           },
-          "category": {
-            "type": "string"
-          },
           "id": {
             "type": "string"
           },
@@ -619,55 +597,19 @@
           },
           "destinationUrl": {
             "type": "string"
-          },
-          "duration": {
-            "type": "number"
-          },
-          "language": {
-            "type": "string"
-          },
-          "joystreamVideo": {
-            "type": "object"
           }
         },
         "required": [
           "url",
           "title",
           "description",
-          "category",
           "id",
           "playlistId",
           "resourceId",
           "channelId",
           "thumbnails",
           "state",
-          "destinationUrl",
-          "duration",
-          "language",
-          "joystreamVideo"
-        ]
-      },
-      "ChannelInductionRequirementsDto": {
-        "type": "object",
-        "properties": {
-          "MINIMUM_SUBSCRIBERS_COUNT": {
-            "type": "number"
-          },
-          "MINIMUM_VIDEO_COUNT": {
-            "type": "number"
-          },
-          "MINIMUM_VIDEO_AGE_HOURS": {
-            "type": "number"
-          },
-          "MINIMUM_CHANNEL_AGE_HOURS": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "MINIMUM_SUBSCRIBERS_COUNT",
-          "MINIMUM_VIDEO_COUNT",
-          "MINIMUM_VIDEO_AGE_HOURS",
-          "MINIMUM_CHANNEL_AGE_HOURS"
+          "destinationUrl"
         ]
       },
       "VerifyChannelRequest": {

@@ -188,7 +188,7 @@ const statsTable = new aws.dynamodb.Table('stats', {
   rangeKey: nameof<Stats>('date'),
   attributes: [
     { name: nameof<Stats>('partition'), type: 'S' },
-    { name: nameof<Stats>('date'), type: 'N' },
+    { name: nameof<Stats>('date'), type: 'S' },
   ],
   billingMode: 'PROVISIONED',
   readCapacity: 1,

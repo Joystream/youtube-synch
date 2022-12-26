@@ -1,4 +1,4 @@
-import { IYoutubeClient, UsersRepository } from '@joystream/ytube'
+import { IYoutubeClient } from '@joystream/ytube'
 import {
   BadRequestException,
   Body,
@@ -14,13 +14,14 @@ import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/s
 import { ExitCodes, YoutubeAuthorizationError } from '@youtube-sync/domain'
 import { ChannelsService } from '../channels/channels.service'
 import { UserDto, VerifyChannelRequest, VerifyChannelResponse } from '../dtos'
+import { UsersService } from './user.service'
 
 @Controller('users')
 @ApiTags('channels')
 export class UsersController {
   constructor(
     @Inject('youtube') private youtube: IYoutubeClient,
-    private usersRepository: UsersRepository,
+    private userService: UsersService,
     private channelsService: ChannelsService
   ) {}
 
@@ -37,14 +38,6 @@ export class UsersController {
       // get user from authorization code
       const user = await this.youtube.getUserFromCode(authorizationCode, youtubeRedirectUri)
 
-      // get channel from user
-      const [channel] = await this.youtube.getChannels(user)
-
-      // Ensure channel exists
-      if (!channel) {
-        throw new YoutubeAuthorizationError(ExitCodes.CHANNEL_NOT_FOUND, `No Youtube Channel exists for given user`)
-      }
-
       const [registeredChannel] = await this.channelsService.getAll(user.id)
 
       // Ensure 1. selected YT channel is not already registered for YPP program
@@ -57,11 +50,11 @@ export class UsersController {
         )
       }
 
-      // verify channel
-      await this.youtube.verifyChannel(channel)
+      // get verified channel from user
+      await this.youtube.getVerifiedChannel(user)
 
       // save user
-      await this.usersRepository.save(user)
+      await this.userService.save(user)
 
       // return verified user
       return { email: user.email, userId: user.id }
@@ -77,7 +70,7 @@ export class UsersController {
   async get(@Param('id') id: string): Promise<UserDto> {
     try {
       // Get user with given id
-      const result = await this.usersRepository.get(id)
+      const result = await this.userService.get(id)
 
       // prepare & return user response
       return new UserDto(result)
@@ -96,9 +89,7 @@ export class UsersController {
   async find(@Query('search') search: string): Promise<UserDto[]> {
     try {
       // find users with given email
-      const users = await this.usersRepository.scan('id', (q) =>
-        search ? q.and().attribute('email').contains(search) : q
-      )
+      const users = await this.userService.usersByEmail(search)
 
       // prepare response
       const result = users.map((user) => new UserDto(user))

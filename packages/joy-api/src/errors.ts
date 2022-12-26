@@ -19,7 +19,7 @@ export class JoystreamLibError extends DomainError {
   name: JoystreamLibErrorType
   details: unknown
   constructor({ name, message, details }: JoystreamLibErrorArgs) {
-    super(message)
+    super(message!)
     this.name = name
     this.details = details
   }

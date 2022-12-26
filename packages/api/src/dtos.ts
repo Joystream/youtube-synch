@@ -136,8 +136,12 @@ export class VideoDto extends Video {
   @ApiProperty() joystreamVideo: JoystreamVideo
 }
 
-export class UpdateChannelDto extends PickType(Channel, ['shouldBeIngested']) {
-  @ApiProperty() shouldBeIngested: boolean
+export class IngestChannelDto {
+  @IsNotEmpty() @ApiProperty({ required: true }) signature: string
+  @IsNotEmpty() @ApiProperty({ required: true }) message: {
+    shouldBeIngested: boolean
+    timestamp: Date
+  }
 }
 
 export class SuspendChannelDto {

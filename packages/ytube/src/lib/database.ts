@@ -1,4 +1,4 @@
-import { Channel, User, Video, videoStates } from '@youtube-sync/domain'
+import { Channel, Stats, User, Video, videoStates } from '@youtube-sync/domain'
 import * as dynamoose from 'dynamoose'
 import { ConditionInitalizer as ConditionInitializer } from 'dynamoose/dist/Condition'
 import { AnyDocument } from 'dynamoose/dist/Document'
@@ -102,8 +102,11 @@ export function createChannelModel(): ModelType<AnyDocument> {
 
       // Should this channel be ingested for automated Youtube/Joystream syncing?
       shouldBeIngested: {
-        type: Boolean,
-        default: false,
+        type: Object,
+        schema: {
+          status: Boolean,
+          lastChangedAt: Date,
+        },
       },
 
       // Is this channel currently being suspended by YPP owner due to TOS violations?
@@ -294,10 +297,11 @@ export function statsRepository(): ModelType<AnyDocument> {
       hashKey: true,
     },
     date: {
-      type: Number,
+      type: String,
       rangeKey: true,
     },
-    quotaUsed: Number,
+    syncQuotaUsed: Number,
+    signupQuotaUsed: Number,
   })
   return dynamoose.model('stats', schema, DYNAMO_MODEL_OPTIONS)
 }
@@ -307,7 +311,7 @@ export function mapTo<TEntity>(doc: AnyDocument) {
 }
 
 export interface IRepository<T> {
-  get(partition: string, id: string): Promise<T>
+  get(partition: string, id: string): Promise<T | undefined>
   save(model: T, partition: string): Promise<T>
   delete(partition: string, id: string): Promise<void>
   query(init: ConditionInitializer, f: (q: Query<AnyDocument>) => Query<AnyDocument>): Promise<T[]>
@@ -360,7 +364,7 @@ export class ChannelsRepository implements IRepository<Channel> {
   }
 
   async upsertAll(channels: Channel[]): Promise<Channel[]> {
-    const results = await Promise.all(channels.map(async (channel) => this.save(channel)))
+    const results = await Promise.all(channels.map(async (channel) => await this.save(channel)))
     return results
   }
 
@@ -369,7 +373,7 @@ export class ChannelsRepository implements IRepository<Channel> {
     return results.map((r) => mapTo<Channel>(r))
   }
 
-  async get(id: string): Promise<Channel> {
+  async get(id: string): Promise<Channel | undefined> {
     const [result] = await this.model.query({ id }).using('id-index').exec()
     return result ? mapTo<Channel>(result) : undefined
   }
@@ -401,7 +405,7 @@ export class VideosRepository implements IRepository<Video> {
   }
 
   async upsertAll(videos: Video[]): Promise<Video[]> {
-    const results = await Promise.all(videos.map(async (video) => this.save(video)))
+    const results = await Promise.all(videos.map(async (video) => await this.save(video)))
     return results
   }
 
@@ -416,9 +420,9 @@ export class VideosRepository implements IRepository<Video> {
    * @param id ID of the video
    * @returns
    */
-  async get(partition: string, id: string): Promise<Video> {
-    const result = await this.model.get({ channelId: partition, id })
-    return mapTo<Video>(result)
+  async get(channelId: string, id: string): Promise<Video | undefined> {
+    const result = await this.model.get({ channelId, id })
+    return result ? mapTo<Video>(result) : undefined
   }
 
   async save(model: Video): Promise<Video> {
@@ -435,5 +439,68 @@ export class VideosRepository implements IRepository<Video> {
   async query(init: ConditionInitializer, f: (q: Query<AnyDocument>) => Query<AnyDocument>): Promise<Video[]> {
     const results = await f(this.model.query(init)).exec()
     return results.map((r) => mapTo<Video>(r))
+  }
+}
+export class StatsRepository implements IRepository<Stats> {
+  private model: ModelType<AnyDocument>
+  constructor() {
+    this.model = statsRepository()
+  }
+
+  async getModel() {
+    return this.model
+  }
+
+  async getOrSetTodaysStats(): Promise<Stats> {
+    // Quota resets at Pacific Time, and pst is 8 hours behind UTC
+    const today = new Date().toLocaleDateString('en-US', {
+      timeZone: 'America/Los_Angeles',
+      dateStyle: 'full',
+    })
+
+    // Get today's stats
+    let stats = await this.get(today)
+
+    console.log('stats', stats)
+    if (!stats) {
+      const statsDoc = await this.model.update({
+        partition: 'stats',
+        date: today,
+        syncQuotaUsed: 0,
+        signupQuotaUsed: 0,
+      })
+      stats = mapTo<Stats>(statsDoc)
+    }
+
+    return stats
+  }
+
+  async upsertAll(): Promise<Stats[]> {
+    throw new Error('Not implemented')
+  }
+
+  async scan(init: ConditionInitializer, f: (q: Scan<AnyDocument>) => Scan<AnyDocument>): Promise<Stats[]> {
+    const results = await f(this.model.scan(init)).exec()
+    return results.map((r) => mapTo<Stats>(r))
+  }
+
+  async get(date: string): Promise<Stats | undefined> {
+    const result = await this.model.get({ partition: 'stats', date })
+    return result ? mapTo<Stats>(result) : undefined
+  }
+
+  async save(model: Stats): Promise<Stats> {
+    const update = omit(['id', 'updatedAt'], model)
+    const result = await this.model.update({ partition: 'stats', date: model.date }, update)
+    return mapTo<Stats>(result)
+  }
+
+  async delete(id: string): Promise<void> {
+    throw Error('Deleting Youtube Quota stats is not implemented')
+  }
+
+  async query(init: ConditionInitializer, f: (q: Query<AnyDocument>) => Query<AnyDocument>) {
+    const results = await f(this.model.query(init)).exec()
+    return results.map((r) => mapTo<Stats>(r))
   }
 }

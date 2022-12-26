@@ -11,3 +11,9 @@ export function setAwsConfig() {
       s3: { endpoint: AWS_ENDPOINT },
     })
 }
+
+export function toPrettyJSON(obj: unknown) {
+  return JSON.stringify(obj, null, 2)
+}
+
+export type WithRequired<T, K extends keyof T> = T & { [P in K]-?: NonNullable<T[P]> }

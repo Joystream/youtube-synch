@@ -20,6 +20,9 @@ export class Uploader {
   async upload(channel: Channel, assets: AssetUploadInput[]) {
     const bagId = `dynamic:channel:${channel.joystreamChannelId}`
     const operator = await this.getRandomActiveStorageNodeInfo(bagId)
+    if (!operator) {
+      throw new Error('No active storage node found')
+    }
 
     for (const { dataObjectId, file } of assets) {
       const formData = new FormData()

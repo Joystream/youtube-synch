@@ -1,3 +1,4 @@
+import { IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
 import { ChannelId, MemberId } from '@joystream/types/primitives'
 import { Channel, Thumbnails, Video } from '@youtube-sync/domain'
@@ -5,9 +6,17 @@ import axios from 'axios'
 import { BN } from 'bn.js'
 import { Readable } from 'stream'
 import ytdl from 'ytdl-core'
-import { AccountsUtil, DataObjectMetadata, JoystreamLib, VideoInputAssets, VideoInputMetadata } from '.'
+import {
+  AccountsUtil,
+  DataObjectMetadata,
+  JoystreamLib,
+  VideoFileMetadata,
+  VideoInputAssets,
+  VideoInputParameters,
+} from '.'
 import QueryNodeApi from './graphql/QueryNodeApi'
 import { computeFileHashAndSize } from './hasher'
+import { asValidatedMetadata } from './serialization'
 
 export class JoystreamClient {
   private lib: JoystreamLib
@@ -21,11 +30,13 @@ export class JoystreamClient {
 
   async createVideo(memberId: MemberId, channel: Channel, video: Video): Promise<Video> {
     const member = await this.qnApi.memberById(memberId)
+    if (!member) {
+      throw new Error(`Joystream member with id ${memberId} not found`)
+    }
+
     const keyPair = this.accounts.getPair(member.controllerAccount)
 
     const inputs = await parseVideoInputs(video)
-
-    console.log('Creating video', inputs)
 
     const createdVideo = await this.lib.extrinsics.createVideo(
       keyPair,
@@ -34,8 +45,6 @@ export class JoystreamClient {
       inputs[0],
       inputs[1]
     )
-
-    console.log('Video created', createdVideo)
 
     return {
       ...video,
@@ -47,8 +56,25 @@ export class JoystreamClient {
   }
 }
 
-async function parseVideoInputs(video: Video): Promise<[VideoInputMetadata, VideoInputAssets]> {
-  const videoInputMetadata: VideoInputMetadata = {
+async function parseVideoInputs(video: Video): Promise<[IVideoMetadata, VideoInputAssets]> {
+  const assets: VideoInputAssets = {}
+  const hashVideoStream = ytdl(video.url, { quality: 'highest' })
+  // const metadataVideoStream = ytdl(video.url, { quality: 'highest' })
+  const { hash: videoHash, size: videoSize } = await computeFileHashAndSize(hashVideoStream)
+  console.log(`Hash ${videoHash}, size: ${videoSize}`)
+  const videoAssetMeta: DataObjectMetadata = {
+    ipfsHash: videoHash,
+    size: videoSize,
+  }
+
+  const thumbnailPhotoStream = await getThumbnailAsset(video.thumbnails)
+  const { hash: thumbnailPhotoHash, size: thumbnailPhotoSize } = await computeFileHashAndSize(thumbnailPhotoStream)
+  const thumbnailPhotoAssetMeta: DataObjectMetadata = {
+    ipfsHash: thumbnailPhotoHash,
+    size: thumbnailPhotoSize,
+  }
+
+  const videoInputParameters: VideoInputParameters = {
     title: video.title,
     description: video.description,
     category: video.category,
@@ -56,30 +82,34 @@ async function parseVideoInputs(video: Video): Promise<[VideoInputMetadata, Vide
     isPublic: true,
     duration: video.duration,
   }
+  const videoMetadata = asValidatedMetadata(VideoMetadata, videoInputParameters)
 
-  const assets: VideoInputAssets = {}
-  const videoStream = ytdl(video.url, { quality: 'highest' })
-  const { hash: videoHash, size: videoSize } = await computeFileHashAndSize(videoStream)
-  console.log(`Hash ${videoHash}, size: ${videoSize}`)
-  const videoMetadata: DataObjectMetadata = {
-    ipfsHash: videoHash,
-    size: videoSize,
-  }
+  // const videoFileMetadata = await getVideoFileMetadata(metadataVideoStream)
+  // this.log('Video media file parameters established:', videoFileMetadata)
+  // videoMetadata = setVideoMetadataDefaults(videoMetadata, videoFileMetadata)
 
-  const thumbnailPhotoStream = await getThumbnailAsset(video.thumbnails)
-  const { hash: thumbnailPhotoHash, size: thumbnailPhotoSize } = await computeFileHashAndSize(thumbnailPhotoStream)
-  const thumbnailPhotoMetadata: DataObjectMetadata = {
-    ipfsHash: thumbnailPhotoHash,
-    size: thumbnailPhotoSize,
-  }
+  assets.video = videoAssetMeta
+  assets.thumbnailPhoto = thumbnailPhotoAssetMeta
 
-  assets.media = videoMetadata
-  assets.thumbnailPhoto = thumbnailPhotoMetadata
-  return [videoInputMetadata, assets]
+  return [videoMetadata, assets]
 }
 
 export async function getThumbnailAsset(thumbnails: Thumbnails) {
   // * We are using `medium` thumbnail because it has correct aspect ratio for Atlas (16/9)
   const response = await axios.get<Readable>(thumbnails.medium, { responseType: 'stream' })
   return response.data
+}
+
+function setVideoMetadataDefaults(metadata: IVideoMetadata, videoFileMetadata: VideoFileMetadata): IVideoMetadata {
+  return {
+    duration: videoFileMetadata.duration,
+    mediaPixelWidth: videoFileMetadata.width,
+    mediaPixelHeight: videoFileMetadata.height,
+    mediaType: {
+      codecName: videoFileMetadata.codecName,
+      container: videoFileMetadata.container,
+      mimeMediaType: videoFileMetadata.mimeType,
+    },
+    ...metadata,
+  }
 }
