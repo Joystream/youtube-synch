@@ -31,8 +31,10 @@ export class SyncService {
   // get all videos with state 'New'
   private async onlyNewVideos(channel: Channel, videos: Video[]): Promise<Video[]> {
     const existingVideos = await this.videosRepository.query({ channelId: channel.id }, (q) => q)
-    const existingVideoIds = new Set(existingVideos.filter((v) => v.uploadStatus === 'processed').map((v) => v.id))
-    return videos.filter((v) => !existingVideoIds.has(v.id))
+    const existingUnprocessedVideoIds = new Set(
+      existingVideos.filter((v) => v.uploadStatus === 'processed').map((v) => v.id)
+    )
+    return videos.filter((v) => !existingUnprocessedVideoIds.has(v.id))
   }
 
   async startIngestionFor(frequencies: Frequency[]) {
@@ -123,8 +125,8 @@ export class SyncService {
       throw new Error(`Video with id ${videoId} not found in channel ${channelId}`)
     }
 
-    // if video hasn't finished processing on Youtube, then don't sync it yet
-    if (video.uploadStatus !== 'processed') {
+    // if video hasn't finished processing on Youtube OR it's a private video, then don't sync it yet
+    if (video.uploadStatus !== 'processed' || video.privacyStatus === 'private') {
       return
     }
 
