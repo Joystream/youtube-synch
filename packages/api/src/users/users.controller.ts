@@ -42,10 +42,16 @@ export class UsersController {
 
       // Ensure 1. selected YT channel is not already registered for YPP program
       // OR 2. even if registered previously it has opted out.
-      if (registeredChannel && registeredChannel.shouldBeIngested) {
+      if (registeredChannel?.yppStatus === 'Active') {
         throw new YoutubeAuthorizationError(
           ExitCodes.CHANNEL_ALREADY_REGISTERED,
           `Selected Youtube channel is already registered for YPP program`,
+          registeredChannel.joystreamChannelId
+        )
+      } else if (registeredChannel?.yppStatus === 'Suspended') {
+        throw new YoutubeAuthorizationError(
+          ExitCodes.CHANNEL_STATUS_SUSPENDED,
+          `A suspended channel cannot re opt-in for YPP program`,
           registeredChannel.joystreamChannelId
         )
       }

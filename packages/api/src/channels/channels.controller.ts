@@ -22,6 +22,7 @@ import {
   ChannelDto,
   ChannelInductionRequirementsDto,
   IngestChannelDto,
+  OptoutChannelDto,
   SaveChannelRequest,
   SaveChannelResponse,
   SuspendChannelDto,
@@ -111,15 +112,15 @@ export class ChannelsController {
   @ApiBody({ type: IngestChannelDto })
   @ApiResponse({ type: ChannelDto })
   @ApiOperation({
-    description: `Updates given channel ingestion status. Note: only channel owner can update the status`,
+    description: `Updates given channel ingestion/syncing status. Note: only channel owner can update the status`,
   })
-  async Channel(@Param('joystreamChannelId') id: number, @Body() { message, signature }: IngestChannelDto) {
+  async ingestChannel(@Param('joystreamChannelId') id: number, @Body() { message, signature }: IngestChannelDto) {
     try {
       const channel = await this.channelsService.get(id)
 
-      // Ensure channel is not suspended
-      if (channel.isSuspended) {
-        throw new Error(`Can't change ingestion status of a suspended channel. Permission denied.`)
+      // Ensure channel is not suspended or opted out
+      if (channel.yppStatus === 'Suspended' || channel.yppStatus === 'OptedOut') {
+        throw new Error(`Can't change ingestion status of a ${channel.yppStatus} channel. Permission denied.`)
       }
 
       const jsChannel = await this.qnApi.getChannelById(channel.joystreamChannelId.toString())
@@ -131,17 +132,56 @@ export class ChannelsController {
       const { isValid } = signatureVerify(JSON.stringify(message), signature, jsChannel.ownerMember.controllerAccount)
 
       // Ensure that the signature is valid and the message is not a playback message
-      if (!isValid || new Date(channel.shouldBeIngested.lastChangedAt) >= message.timestamp) {
+      if (!isValid || new Date(channel.lastActedAt) >= message.timestamp) {
         throw new Error('Invalid request signature or playback message. Permission denied.')
       }
 
       // update channel ingestion status
-      this.channelsService.save({
+      await this.channelsService.save({
         ...channel,
-        shouldBeIngested: {
-          status: message.shouldBeIngested,
-          lastChangedAt: message.timestamp.getTime(),
-        },
+        shouldBeIngested: message.shouldBeIngested,
+        lastActedAt: message.timestamp.getTime(),
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
+  }
+
+  @Put(':joystreamChannelId/optout')
+  @ApiBody({ type: OptoutChannelDto })
+  @ApiResponse({ type: ChannelDto })
+  @ApiOperation({
+    description: `Updates given channel's YPP participation status. Note: only channel owner can update the status`,
+  })
+  async optoutChannel(@Param('joystreamChannelId') id: number, @Body() { message, signature }: OptoutChannelDto) {
+    try {
+      const channel = await this.channelsService.get(id)
+
+      // Ensure channel is not suspended
+      if (channel.yppStatus === 'Suspended') {
+        throw new Error(`Can't change YPP participation status of a suspended channel. Permission denied.`)
+      }
+
+      const jsChannel = await this.qnApi.getChannelById(channel.joystreamChannelId.toString())
+      if (!jsChannel || !jsChannel.ownerMember) {
+        throw new Error(`Joystream Channel not found by ID ${id}.`)
+      }
+
+      // verify the message signature using Channel owner's address
+      const { isValid } = signatureVerify(JSON.stringify(message), signature, jsChannel.ownerMember.controllerAccount)
+
+      // Ensure that the signature is valid and the message is not a playback message
+      if (!isValid || new Date(channel.lastActedAt) >= message.timestamp) {
+        throw new Error('Invalid request signature or playback message. Permission denied.')
+      }
+
+      // update channel's ypp participation status
+      await this.channelsService.save({
+        ...channel,
+        yppStatus: message.optout ? 'OptedOut' : 'Active',
+        shouldBeIngested: false,
+        lastActedAt: Date.now(),
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : error
@@ -171,14 +211,14 @@ export class ChannelsController {
 
         // if channel is being suspended then its YT ingestion/syncing should also be stopped
         if (isSuspended) {
-          this.channelsService.save({
+          await this.channelsService.save({
             ...channel,
-            isSuspended,
-            shouldBeIngested: { status: false, lastChangedAt: Date.now() },
+            yppStatus: 'Suspended',
+            shouldBeIngested: false,
           })
         } else {
           // if channel suspension is revoked then its YT ingestion/syncing should not be resumed
-          return await this.channelsService.save({ ...channel, isSuspended })
+          await this.channelsService.save({ ...channel, yppStatus: 'Active' })
         }
       }
     } catch (error) {
