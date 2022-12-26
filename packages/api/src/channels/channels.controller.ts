@@ -1,4 +1,4 @@
-import { ChannelsRepository, IYoutubeClient, UsersRepository, VideosRepository } from '@joystream/ytube'
+import { IYoutubeClient, VideosRepository } from '@joystream/ytube'
 import {
   BadRequestException,
   Body,
@@ -9,18 +9,18 @@ import {
   NotFoundException,
   Param,
   ParseArrayPipe,
+  ParseIntPipe,
   Post,
   Put,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
-import { Channel, User } from '@youtube-sync/domain'
 import { signatureVerify } from '@polkadot/util-crypto'
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import QueryNodeApi from 'packages/joy-api/src/graphql/QueryNodeApi'
+import { Channel, User, Video, getConfig } from '@youtube-sync/domain'
 import {
   ChannelDto,
+  ChannelInductionRequirementsDto,
   IngestChannelDto,
   SaveChannelRequest,
   SaveChannelResponse,
@@ -28,6 +28,9 @@ import {
   UserDto,
   VideoDto,
 } from '../dtos'
+// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
+import QueryNodeApi from 'packages/joy-api/src/graphql/QueryNodeApi'
+import { UsersService } from '../users/user.service'
 import { ChannelsService } from './channels.service'
 
 @Controller('channels')
@@ -36,10 +39,9 @@ export class ChannelsController {
   constructor(
     @Inject('youtube') private youtube: IYoutubeClient,
     private channelsService: ChannelsService,
-    private channelsRepository: ChannelsRepository,
-    private usersRepository: UsersRepository,
-    private videosRepository: VideosRepository,
-    private qnApi: QueryNodeApi
+    private qnApi: QueryNodeApi,
+    private usersService: UsersService,
+    private videosRepository: VideosRepository
   ) {}
 
   @ApiOperation({
@@ -50,11 +52,12 @@ export class ChannelsController {
   @ApiResponse({ type: SaveChannelResponse })
   @Post()
   async addVerifiedChannel(
-    @Body() { authorizationCode, userId, joystreamChannelId, referrerChannelId, email }: SaveChannelRequest
+    @Body()
+    { authorizationCode, userId, joystreamChannelId, referrerChannelId, email, videoCategoryId }: SaveChannelRequest
   ): Promise<SaveChannelResponse> {
     try {
       // get user from userId
-      const user = await this.usersRepository.get(userId)
+      const user = await this.usersService.get(userId)
 
       // ensure request's authorization code matches the user's authorization code
       if (user.authorizationCode !== authorizationCode) {
@@ -65,7 +68,7 @@ export class ChannelsController {
       const [channel] = await this.youtube.getChannels(user)
 
       const updatedUser: User = { ...user, email }
-      const updatedChannel: Channel = { ...channel, joystreamChannelId, referrerChannelId, email }
+      const updatedChannel: Channel = { ...channel, joystreamChannelId, referrerChannelId, email, videoCategoryId }
 
       // save user and channel
       await this.saveUserAndChannel(updatedUser, updatedChannel)
@@ -81,7 +84,7 @@ export class ChannelsController {
   @Get(':joystreamChannelId')
   @ApiOperation({ description: 'Retrieves channel by joystreamChannelId' })
   @ApiResponse({ type: ChannelDto })
-  async get(@Param('joystreamChannelId') id: number) {
+  async get(@Param('joystreamChannelId', ParseIntPipe) id: number) {
     try {
       const channel = await this.channelsService.get(id)
       return new ChannelDto(channel)
@@ -119,10 +122,13 @@ export class ChannelsController {
         throw new Error(`Can't change ingestion status of a suspended channel. Permission denied.`)
       }
 
-      const { controllerAccount } = (await this.qnApi.getChannelById(channel.joystreamChannelId.toString())).ownerMember
+      const jsChannel = await this.qnApi.getChannelById(channel.joystreamChannelId.toString())
+      if (!jsChannel || !jsChannel.ownerMember) {
+        throw new Error(`Joystream Channel not found by ID ${id}.`)
+      }
 
       // verify the message signature using Channel owner's address
-      const { isValid } = signatureVerify(JSON.stringify(message), signature, controllerAccount)
+      const { isValid } = signatureVerify(JSON.stringify(message), signature, jsChannel.ownerMember.controllerAccount)
 
       // Ensure that the signature is valid and the message is not a playback message
       if (!isValid || new Date(channel.shouldBeIngested.lastChangedAt) >= message.timestamp) {
@@ -130,7 +136,7 @@ export class ChannelsController {
       }
 
       // update channel ingestion status
-      this.channelsService.update({
+      this.channelsService.save({
         ...channel,
         shouldBeIngested: {
           status: message.shouldBeIngested,
@@ -154,7 +160,7 @@ export class ChannelsController {
     @Headers('authorization') authorizationHeader: string,
     @Body(new ParseArrayPipe({ items: SuspendChannelDto, whitelist: true })) channels: SuspendChannelDto[]
   ) {
-    const yppOwnerKey = authorizationHeader.split(' ')[1]
+    const yppOwnerKey = authorizationHeader ? authorizationHeader.split(' ')[1] : ''
     if (yppOwnerKey !== process.env.YPP_OWNER_KEY) {
       throw new UnauthorizedException('Invalid YPP owner key')
     }
@@ -165,14 +171,14 @@ export class ChannelsController {
 
         // if channel is being suspended then its YT ingestion/syncing should also be stopped
         if (isSuspended) {
-          this.channelsService.update({
+          this.channelsService.save({
             ...channel,
             isSuspended,
             shouldBeIngested: { status: false, lastChangedAt: Date.now() },
           })
         } else {
           // if channel suspension is revoked then its YT ingestion/syncing should not be resumed
-          this.channelsService.update({ ...channel, isSuspended })
+          return await this.channelsService.save({ ...channel, isSuspended })
         }
       }
     } catch (error) {
@@ -181,14 +187,20 @@ export class ChannelsController {
     }
   }
 
-  @Get(':id/videos')
+  @Get(':joystreamChannelId/videos')
   @ApiResponse({ type: VideoDto, isArray: true })
   @ApiOperation({
-    description: `Retrieves already ingested(spotted on youtube and saved to the database) videos for a given channel.`,
+    description: `Retrieves all videos (in the backend system) for a given youtube channel by its corresponding joystream channel Id.`,
   })
-  async getVideos(@Param('userId') userId: string, @Param('id') id: string) {
-    const result = await this.videosRepository.query({ channelId: id }, (q) => q.sort('descending'))
-    return result
+  async getVideos(@Param('joystreamChannelId', ParseIntPipe) id: number): Promise<Video[]> {
+    try {
+      const channelId = (await this.channelsService.get(id)).id
+      const result = await this.videosRepository.query({ channelId }, (q) => q.sort('descending'))
+      return result
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
   }
 
   @Get(':id/videos/:videoId')
@@ -199,11 +211,18 @@ export class ChannelsController {
     return result
   }
 
+  @Get('/induction/requirements')
+  @ApiResponse({ type: ChannelInductionRequirementsDto })
+  @ApiOperation({ description: 'Retrieves Youtube Partner program induction requirements' })
+  async inductionRequirements() {
+    return new ChannelInductionRequirementsDto(getConfig())
+  }
+
   private async saveUserAndChannel(user: User, channel: Channel) {
     // save user
-    await this.usersRepository.save(user)
+    await this.usersService.save(user)
 
     // save channel
-    return await this.channelsRepository.save(channel)
+    return await this.channelsService.save(channel)
   }
 }

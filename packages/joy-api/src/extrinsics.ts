@@ -1,21 +1,15 @@
 import { ApiPromise as PolkadotApi } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 
-import { ConsoleLogger } from './logger'
+import { Logger } from './logger'
 
+import { IVideoMetadata } from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
 import { ChannelId, MemberId } from '@joystream/types/primitives'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { JoystreamLibError } from './errors'
-import { extractVideoResultAssetsIds, sendExtrinsicAndParseEvents } from './helpers'
-import { parseVideoExtrinsicInput } from './metadata'
-import {
-  GetEventDataFn,
-  SendExtrinsicResult,
-  VideoExtrinsicResult,
-  VideoInputAssets,
-  VideoInputMetadata,
-} from './types'
+import { parseVideoExtrinsicInput, sendExtrinsicAndParseEvents } from './helpers'
+import { GetEventDataFn, SendExtrinsicResult, VideoExtrinsicResult, VideoInputAssets } from './types'
 
 export class JoystreamLibExtrinsics {
   readonly api: PolkadotApi
@@ -45,7 +39,7 @@ export class JoystreamLibExtrinsics {
 
       return { events, block: blockHeader.number.toNumber(), getEventData }
     } catch (error) {
-      if (error?.message === 'Cancelled') {
+      if ((error as Error).message === 'Cancelled') {
         throw new JoystreamLibError({ name: 'SignCancelledError' })
       }
       throw error
@@ -56,7 +50,7 @@ export class JoystreamLibExtrinsics {
     try {
       await this.api.isReady
     } catch (e) {
-      ConsoleLogger.error('Failed to initialize Polkadot API', e)
+      Logger.error('Failed to initialize Polkadot API', e)
       throw new JoystreamLibError({ name: 'ApiNotConnectedError' })
     }
   }
@@ -65,14 +59,20 @@ export class JoystreamLibExtrinsics {
     accountId: KeyringPair,
     memberId: MemberId,
     channelId: ChannelId,
-    inputMetadata: VideoInputMetadata,
+    videoMetadata: IVideoMetadata,
     inputAssets: VideoInputAssets
   ): Promise<VideoExtrinsicResult> {
     await this.ensureApi()
-    const [videoMetadata, videoAssets] = await parseVideoExtrinsicInput(this.api, inputMetadata, inputAssets)
+
+    const channelBag = await this.api.query.storage.bags(
+      createType('PalletStorageBagIdType', { Dynamic: { Channel: channelId } })
+    )
+
+    const [meta, assets] = await parseVideoExtrinsicInput(this.api, videoMetadata, inputAssets)
     const creationParameters = createType('PalletContentVideoCreationParametersRecord', {
-      meta: videoMetadata,
-      assets: videoAssets,
+      meta,
+      assets,
+      storageBucketsNumWitness: channelBag.storedBy.size,
       expectedDataObjectStateBloatBond: await this.api.query.storage.dataObjectStateBloatBondValue(),
       expectedVideoStateBloatBond: await this.api.query.content.videoStateBloatBondValue(),
       autoIssueNft: null,
@@ -81,12 +81,16 @@ export class JoystreamLibExtrinsics {
     const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, creationParameters)
     const { block, getEventData } = await this.sendExtrinsic(accountId, tx)
 
-    const videoId = getEventData('content', 'VideoCreated')[2]
+    const [, , videoId, , assetsIds] = getEventData('content', 'VideoCreated')
+
+    if (assetsIds.size !== (assets?.objectCreationList.length || 0)) {
+      throw new Error('Unexpected number of video assets in VideoCreated event!')
+    }
 
     return {
       videoId,
       block,
-      assetsIds: extractVideoResultAssetsIds(inputAssets, getEventData),
+      assetsIds: [...assetsIds],
     }
   }
 }

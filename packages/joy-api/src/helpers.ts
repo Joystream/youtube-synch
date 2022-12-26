@@ -1,11 +1,17 @@
+import { ContentMetadata, IVideoMetadata } from '@joystream/metadata-protobuf'
+import { createType } from '@joystream/types'
 import { DataObjectId } from '@joystream/types/primitives'
-import { Hash } from '@polkadot/types/interfaces'
 import { ApiPromise as PolkadotApi } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { Bytes } from '@polkadot//types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { Bytes, GenericEvent, Vec, u128 } from '@polkadot/types'
+import { BTreeSet, GenericEvent } from '@polkadot/types'
+import { Hash } from '@polkadot/types/interfaces'
 import { DispatchError, Event, EventRecord } from '@polkadot/types/interfaces/system'
+import { PalletContentStorageAssetsRecord } from '@polkadot/types/lookup'
 import { Registry } from '@polkadot/types/types'
+import ffmpeg from 'fluent-ffmpeg'
+import { Readable } from 'stream'
 import {
   ChannelAssets,
   ChannelAssetsIds,
@@ -17,32 +23,94 @@ import {
   ExtrinsicStatusCallbackFn,
   VideoAssets,
   VideoAssetsIds,
+  VideoFFProbeMetadata,
+  VideoFileMetadata,
   VideoInputAssets,
 } from './'
 import { JoystreamLibError } from './errors'
-import { ConsoleLogger } from './logger'
-import { createType } from '@joystream/types'
+import { Logger } from './logger'
+import { metadataToBytes } from './serialization'
 
 export async function prepareAssetsForExtrinsic(api: PolkadotApi, dataObjectsMetadata: DataObjectMetadata[]) {
   if (!dataObjectsMetadata.length) {
-    return null
+    return undefined
   }
 
   const feePerMB = await api.query.storage.dataObjectPerMegabyteFee()
-  const feePerMBUint = new u128(api.registry, feePerMB)
 
   const objectCreationList = dataObjectsMetadata.map((metadata) => ({
     size_: metadata.size,
-    ipfsContentId: new Bytes(api.registry, metadata.ipfsHash),
+    ipfsContentId: metadata.ipfsHash,
   }))
 
   return createType('PalletContentStorageAssetsRecord', {
-    expectedDataSizeFee: feePerMBUint,
+    expectedDataSizeFee: feePerMB,
     objectCreationList: objectCreationList,
   })
 }
 
-export const parseExtrinsicEvents = (registry: Registry, eventRecords: EventRecord[]): Event[] => {
+async function getVideoFFProbeMetadata(stream: Readable): Promise<VideoFFProbeMetadata> {
+  return new Promise<VideoFFProbeMetadata>((resolve, reject) => {
+    ffmpeg(stream).ffprobe((err, data) => {
+      if (err) {
+        console.log('ffprobe error', err)
+        reject(err)
+        return
+      }
+      const videoStream = data.streams.find((s) => s.codec_type === 'video')
+      console.log('videoStream', data.streams)
+      if (videoStream) {
+        resolve({
+          width: videoStream.width,
+          height: videoStream.height,
+          codecName: videoStream.codec_name,
+          codecFullName: videoStream.codec_long_name,
+          duration: videoStream.duration !== undefined ? Math.ceil(Number(videoStream.duration)) || 0 : undefined,
+        })
+      } else {
+        reject(new Error('No video stream found in file'))
+      }
+    })
+  })
+}
+
+export async function getVideoFileMetadata(videoStream: Readable): Promise<VideoFileMetadata> {
+  let ffProbeMetadata: VideoFFProbeMetadata = {}
+  try {
+    ffProbeMetadata = await getVideoFFProbeMetadata(videoStream)
+  } catch (e) {
+    const message = e instanceof Error ? e.message : e
+    console.log(`Failed to get video metadata via ffprobe (${message})`)
+  }
+
+  return {
+    ...ffProbeMetadata,
+  }
+}
+
+export async function parseVideoExtrinsicInput(
+  api: PolkadotApi,
+  videoMetadata: IVideoMetadata,
+  inputAssets: VideoInputAssets
+): Promise<readonly [Bytes, PalletContentStorageAssetsRecord | undefined]> {
+  // prepare data objects and assign proper indexes in metadata
+  const videoDataObjectsMetadata: DataObjectMetadata[] = [
+    ...(inputAssets.video ? [inputAssets.video] : []),
+    ...(inputAssets.thumbnailPhoto ? [inputAssets.thumbnailPhoto] : []),
+  ]
+  const videoStorageAssets = await prepareAssetsForExtrinsic(api, videoDataObjectsMetadata)
+  if (inputAssets.video) {
+    videoMetadata.video = 0
+  }
+  if (inputAssets.thumbnailPhoto) {
+    videoMetadata.thumbnailPhoto = inputAssets.video ? 1 : 0
+  }
+
+  const videoMetadataBytes = metadataToBytes(ContentMetadata, { videoMetadata })
+  return [videoMetadataBytes, videoStorageAssets] as const
+}
+
+export function parseExtrinsicEvents(registry: Registry, eventRecords: EventRecord[]): Event[] {
   const events = eventRecords.map((record) => record.event)
   const systemEvents = events.filter((event) => event.section === 'system')
 
@@ -63,7 +131,7 @@ export const parseExtrinsicEvents = (registry: Registry, eventRecords: EventReco
     } else if (event.method === 'ExtrinsicSuccess') {
       return events
     } else {
-      ConsoleLogger.log('Unknown extrinsic event', {
+      Logger.log('Unknown extrinsic event', {
         event: { method: event.method },
       })
     }
@@ -147,11 +215,11 @@ export const getInputDataObjectsIds = (assets: VideoInputAssets | ChannelInputAs
 
 const getResultVideoDataObjectsIds = (
   assets: VideoAssets<unknown>,
-  dataObjectsIds: Vec<DataObjectId>
+  dataObjectsIds: BTreeSet<DataObjectId>
 ): VideoAssetsIds => {
-  const ids = dataObjectsIds.map((dataObjectsId) => dataObjectsId.toString())
+  const ids = [...dataObjectsIds].map((dataObjectsId) => dataObjectsId.toString())
 
-  const hasMedia = !!assets.media
+  const hasMedia = !!assets.video
   const hasThumbnail = !!assets.thumbnailPhoto
 
   return {
@@ -162,9 +230,9 @@ const getResultVideoDataObjectsIds = (
 
 const getResultChannelDataObjectsIds = (
   assets: ChannelAssets<unknown>,
-  dataObjectsIds: Vec<DataObjectId>
+  dataObjectsIds: BTreeSet<DataObjectId>
 ): ChannelAssetsIds => {
-  const ids = dataObjectsIds.map((dataObjectsId) => dataObjectsId.toString())
+  const ids = [...dataObjectsIds].map((dataObjectsId) => dataObjectsId.toString())
 
   const hasAvatar = !!assets.avatarPhoto
   const hasCover = !!assets.coverPhoto

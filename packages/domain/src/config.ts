@@ -15,11 +15,11 @@ let conf: {
   // YPP induction criteria, each channel should meet following criteria
   MINIMUM_SUBSCRIBERS_COUNT: string
   MINIMUM_VIDEO_COUNT: string
-  MINIMUM_VIDEO_AGE_MONTHS: string
-  MINIMUM_CHANNEL_AGE_MONTHS: string
+  MINIMUM_VIDEO_AGE_HOURS: string
+  MINIMUM_CHANNEL_AGE_HOURS: string
 }
 
-export function configure(): void {
+function configure(): void {
   const envConf: Readonly<typeof conf> = {
     YOUTUBE_CLIENT_ID: readEnv('YOUTUBE_CLIENT_ID'),
     YOUTUBE_CLIENT_SECRET: readEnv('YOUTUBE_CLIENT_SECRET'),
@@ -33,8 +33,8 @@ export function configure(): void {
 
     MINIMUM_SUBSCRIBERS_COUNT: readEnv('MINIMUM_SUBSCRIBERS_COUNT'),
     MINIMUM_VIDEO_COUNT: readEnv('MINIMUM_VIDEO_COUNT'),
-    MINIMUM_VIDEO_AGE_MONTHS: readEnv('MINIMUM_VIDEO_AGE_MONTHS'),
-    MINIMUM_CHANNEL_AGE_MONTHS: readEnv('MINIMUM_CHANNEL_AGE_MONTHS'),
+    MINIMUM_VIDEO_AGE_HOURS: readEnv('MINIMUM_VIDEO_AGE_HOURS'),
+    MINIMUM_CHANNEL_AGE_HOURS: readEnv('MINIMUM_CHANNEL_AGE_HOURS'),
   }
 
   conf = {
@@ -48,13 +48,13 @@ export function getConfig(): typeof conf {
   return conf
 }
 
-type DeploymentEnv = 'local' | 'development' | 'testing' | 'production'
+export type DeploymentEnv = 'local' | 'development' | 'testing' | 'production'
 
 function getEnv(name: string) {
   return process.env[name]
 }
 
-export function readEnv<K extends keyof typeof conf>(name: K, required = true): typeof conf[K] {
+function readEnv<K extends keyof typeof conf>(name: K, required = true): typeof conf[K] {
   const deploymentEnv = cleanEnv(process.env, { DEPLOYMENT_ENV: str({ default: 'local' }) })
     .DEPLOYMENT_ENV as DeploymentEnv
 

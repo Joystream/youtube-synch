@@ -1,4 +1,4 @@
-import { MemberId } from '@joystream/types/primitives'
+import { DataObjectId, VideoId } from '@joystream/types/primitives'
 
 export class Channel {
   // Channel ID
@@ -13,6 +13,9 @@ export class Channel {
   // ID of the corresponding Joystream Channel
   joystreamChannelId: number
 
+  // video category ID to be added to all synced videos
+  videoCategoryId: string
+
   // Referrer Joystream Channel ID
   referrerChannelId: number
 
@@ -23,6 +26,9 @@ export class Channel {
 
   // Channel description
   description: string
+
+  // default language of youtube channel
+  language: string
 
   // Youtube channel creation date
   publishedAt: string
@@ -47,9 +53,6 @@ export class Channel {
     // Total videos
     videoCount: number
   }
-
-  // Tier of Channel based on its subscriber's count
-  tier: 1 | 2 | 3
 
   aggregatedStats: number
 
@@ -114,11 +117,16 @@ export class UserIngestionTriggered implements IEvent {
 }
 
 export class VideoEvent implements IEvent {
-  constructor(public state: VideoState, public videoId: string, public channelId: string, public timestamp: number) {
+  subject: VideoState
+  constructor(
+    public state: VideoState,
+    public videoId: string,
+    public videoTitle: string,
+    public channelId: string,
+    public timestamp: number
+  ) {
     this.subject = state
   }
-
-  subject: VideoState
 }
 
 export type Membership = {
@@ -156,13 +164,18 @@ export type Thumbnails = {
   default: string
   medium: string
   high: string
-  maxRes: string
   standard: string
 }
 
 const readOnlyVideoStates = [
-  // Newly created youtube video
+  // Newly tracked youtube video (in the backend syncing system)
   'New',
+  // Video is being creating on Joystream network (by calling extrinsics, but not yet uploaded)
+  'CreatingVideo',
+  // Video has been created on Joystream network (by calling extrinsics, but not yet uploaded)
+  'VideoCreated',
+  // `create_video` extrinsic errored
+  'VideoCreationFailed',
   // Video is being uploaded to Joystream
   'UploadStarted',
   // Video upload to Joystream failed
@@ -176,6 +189,14 @@ const readOnlyVideoStates = [
 export const videoStates = readOnlyVideoStates as unknown as string[]
 
 export type VideoState = typeof readOnlyVideoStates[number]
+
+export type JoystreamVideo = {
+  // Joystream runtime Video ID for successfully synced video
+  id: string
+
+  // Data Object IDs (first element is the video, the second is the thumbnail)
+  assetIds: string[]
+}
 
 export class Video {
   // Video ID
@@ -206,19 +227,41 @@ export class Video {
 
   destinationUrl: string
 
-  // Video duration
-  duration: string
+  // Video duration in seconds
+  duration: number
+
+  // Media container format
+  container: string
+
+  // view count
+  viewCount: number
 
   // Youtube video creation date
   publishedAt: string
 
+  // The status of the uploaded video on Youtube.
+  uploadStatus: string
+
   // record creation time
   createdAt: number
+
+  // youtube video license
+  license: string
+
+  // Joystream video category to be assigned to synced videos
+  category: string
+
+  // language of the synced video (derived from corresponding Youtube channel)
+  language: string
+
+  // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
+  joystreamVideo: JoystreamVideo
 }
 
 export class Stats {
-  quotaUsed = 0
-  date: number = Date.now()
+  syncQuotaUsed: number
+  signupQuotaUsed: number
+  date: string
   partition = 'stats'
 }
 
@@ -226,7 +269,6 @@ export const getImages = (channel: Channel) => {
   return [
     ...urlAsArray(channel.thumbnails.default),
     ...urlAsArray(channel.thumbnails.high),
-    ...urlAsArray(channel.thumbnails.maxRes),
     ...urlAsArray(channel.thumbnails.medium),
     ...urlAsArray(channel.thumbnails.standard),
   ]

@@ -1,7 +1,8 @@
 import { MemberId } from '@joystream/types/primitives'
-import { ApiProperty } from '@nestjs/swagger'
-import { User, Channel, Video, VideoState } from '@youtube-sync/domain'
+import { ApiProperty, PickType } from '@nestjs/swagger'
+import { User, Channel, Video, VideoState, JoystreamVideo } from '@youtube-sync/domain'
 import { IsEmail, IsNotEmpty } from 'class-validator'
+import { getConfig as config } from '@youtube-sync/domain'
 
 // NestJS Data Transfer Objects (DTO)s
 
@@ -14,8 +15,21 @@ export class ThumbnailsDto {
   @ApiProperty() default: string
   @ApiProperty() medium: string
   @ApiProperty() high: string
-  @ApiProperty() maxRes: string
   @ApiProperty() standard: string
+}
+
+export class ChannelInductionRequirementsDto {
+  @ApiProperty() MINIMUM_SUBSCRIBERS_COUNT: number
+  @ApiProperty() MINIMUM_VIDEO_COUNT: number
+  @ApiProperty() MINIMUM_VIDEO_AGE_HOURS: number
+  @ApiProperty() MINIMUM_CHANNEL_AGE_HOURS: number
+
+  constructor(requirements: ReturnType<typeof config>) {
+    this.MINIMUM_SUBSCRIBERS_COUNT = Number(requirements.MINIMUM_SUBSCRIBERS_COUNT)
+    this.MINIMUM_VIDEO_COUNT = Number(requirements.MINIMUM_VIDEO_COUNT)
+    this.MINIMUM_VIDEO_AGE_HOURS = Number(requirements.MINIMUM_VIDEO_AGE_HOURS)
+    this.MINIMUM_CHANNEL_AGE_HOURS = Number(requirements.MINIMUM_CHANNEL_AGE_HOURS)
+  }
 }
 
 export class ChannelDto {
@@ -25,22 +39,27 @@ export class ChannelDto {
   @ApiProperty() shouldBeIngested: boolean
   @ApiProperty() isSuspended: boolean
   @ApiProperty() joystreamChannelId: number
+  @ApiProperty() videoCategoryId: string
+  @ApiProperty() language: string
   @ApiProperty() thumbnails: ThumbnailsDto
-  @ApiProperty() tier: number
+  @ApiProperty() subscribersCount: number
   @ApiProperty() createdAt: Date
 
   constructor(channel: Channel) {
     this.title = channel.title
     this.description = channel.description
-    this.tier = channel.tier
+    this.subscribersCount = channel.statistics.subscriberCount
     this.joystreamChannelId = channel.joystreamChannelId
-    this.shouldBeIngested = channel.shouldBeIngested.status
+    this.videoCategoryId = channel.videoCategoryId
+    this.language = channel.language
+    this.shouldBeIngested = channel.shouldBeIngested
     this.isSuspended = channel.isSuspended
     this.aggregatedStats = channel.aggregatedStats
     this.thumbnails = channel.thumbnails
     this.createdAt = new Date(channel.createdAt)
   }
 }
+
 export class UserDto {
   @ApiProperty() id: string
   @ApiProperty() email: string
@@ -82,6 +101,9 @@ export class SaveChannelRequest {
   // Joystream Channel ID of the user verifying his Youtube Channel for YPP
   @IsNotEmpty() @ApiProperty({ required: true }) joystreamChannelId: number
 
+  // video category ID to be added to all synced videos
+  @IsNotEmpty() @ApiProperty({ required: true }) videoCategoryId: string
+
   // referrer Channel ID
   @ApiProperty({ required: false }) referrerChannelId: number
 }
@@ -101,6 +123,7 @@ export class VideoDto extends Video {
   @ApiProperty() url: string
   @ApiProperty() title: string
   @ApiProperty() description: string
+  @ApiProperty() category: string
   @ApiProperty() id: string
   @ApiProperty() playlistId: string
   @ApiProperty() resourceId: string
@@ -108,6 +131,9 @@ export class VideoDto extends Video {
   @ApiProperty() thumbnails: ThumbnailsDto
   @ApiProperty() state: VideoState
   @ApiProperty() destinationUrl: string
+  @ApiProperty() duration: number
+  @ApiProperty() language: string
+  @ApiProperty() joystreamVideo: JoystreamVideo
 }
 
 export class IngestChannelDto {

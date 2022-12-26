@@ -1,7 +1,8 @@
-import { ChannelMetadata, IChannelMetadata, VideoMetadata, IVideoMetadata } from '@joystream/metadata-protobuf'
-import { ChannelId, MemberId } from '@joystream/types/primitives'
+import { IChannelMetadata, IVideoMetadata } from '@joystream/metadata-protobuf'
+import { ChannelId, DataObjectId, VideoId } from '@joystream/types/primitives'
 import { AugmentedEvent, AugmentedEvents } from '@polkadot/api/types/events'
 import { GenericEvent } from '@polkadot/types'
+import { Readable } from 'stream'
 
 export type DataObjectMetadata = {
   size: number
@@ -9,7 +10,7 @@ export type DataObjectMetadata = {
   replacedDataObjectId?: string
 }
 
-type VideoAssetsKey = 'thumbnailPhoto' | 'media'
+type VideoAssetsKey = 'thumbnailPhoto' | 'video'
 export type VideoAssets<T> = {
   [key in VideoAssetsKey]?: T
 }
@@ -39,9 +40,9 @@ export type ExtrinsicResult<T = undefined> = T extends undefined
     }
   : { block: number } & T
 
-export type VideoInputMetadata = Omit<
+export type VideoInputParameters = Omit<
   IVideoMetadata,
-  'thumbnailPhoto' | 'video' | 'personsList' | 'mediaType' | 'publishedBeforeJoystream'
+  'thumbnailPhoto' | 'video' | 'mediaType' | 'publishedBeforeJoystream'
 > & {
   publishedBeforeJoystream?: string
   mimeMediaType?: string
@@ -71,16 +72,35 @@ export type SendExtrinsicResult = ExtrinsicResult<{
 }>
 
 export type ChannelExtrinsicResult = ExtrinsicResult<{
-  channelId: MemberId
+  channelId: ChannelId
   assetsIds: ChannelAssetsIds
 }>
 
 export type VideoExtrinsicResult = ExtrinsicResult<{
-  videoId: ChannelId
-  assetsIds: VideoAssetsIds
+  videoId: VideoId
+  assetsIds: DataObjectId[]
 }>
 
 export type StorageNodeInfo = {
   bucketId: number
   apiEndpoint: string
+}
+
+export type AssetUploadInput = {
+  dataObjectId: DataObjectId
+  file: Readable
+}
+
+export type VideoFFProbeMetadata = {
+  width?: number
+  height?: number
+  codecName?: string
+  codecFullName?: string
+  duration?: number
+}
+
+export type VideoFileMetadata = VideoFFProbeMetadata & {
+  size?: number
+  container?: string
+  mimeType?: string
 }

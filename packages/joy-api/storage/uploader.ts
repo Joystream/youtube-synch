@@ -2,39 +2,45 @@ import { Channel, Video } from '@youtube-sync/domain'
 import axios from 'axios'
 import FormData from 'form-data'
 import _ from 'lodash'
-import ytdl from 'ytdl-core'
 import QueryNodeApi from '../src/graphql/QueryNodeApi'
-import { StorageNodeInfo } from '../src/types'
+import { AssetUploadInput, StorageNodeInfo } from '../src/types'
 
 export type OperatorInfo = { id: string; endpoint: string }
 export type OperatorsMapping = Record<string, OperatorInfo>
-export type VideoUploadResponse = { id: string; video: Video }
+export type VideoUploadResponse = {
+  id: string // hash of dataObject uploaded
+}
 
 export class Uploader {
   private client: QueryNodeApi
-  constructor(client: QueryNodeApi) {
-    this.client = client
+  constructor(private queryNodeUrl: string) {
+    this.client = new QueryNodeApi(this.queryNodeUrl)
   }
 
-  async upload(dataObjectId: string, channel: Channel, video: Video): Promise<VideoUploadResponse> {
-    const bag = `dynamic:channel:${channel.joystreamChannelId}`
-    const operator = await this.getRandomActiveStorageNodeInfo(bag)
-    const videoInfo = await ytdl.getBasicInfo(video.url)
-    console.log(videoInfo)
-    const formData = new FormData()
-    formData.append('dataObjectId', dataObjectId)
-    formData.append('storageBucketId', operator.bucketId)
-    formData.append('bagId', bag)
-    formData.append('file', ytdl(video.url, { quality: 'highest' }), 'video.mp4')
+  async upload(channel: Channel, assets: AssetUploadInput[]) {
+    const bagId = `dynamic:channel:${channel.joystreamChannelId}`
+    const operator = await this.getRandomActiveStorageNodeInfo(bagId)
+    if (!operator) {
+      throw new Error('No active storage node found')
+    }
 
-    try {
-      const response = await axios.post<VideoUploadResponse>(`${operator.apiEndpoint}api/v1/files`, formData, {
-        headers: formData.getHeaders(),
+    for (const { dataObjectId, file } of assets) {
+      const formData = new FormData()
+      formData.append('file', file, 'video.mp4')
+      const res = await axios.post<VideoUploadResponse>(`${operator.apiEndpoint}/files`, formData, {
+        params: {
+          dataObjectId: dataObjectId.toString(),
+          storageBucketId: operator.bucketId,
+          bagId,
+        },
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+        headers: {
+          'content-type': 'multipart/form-data',
+          ...formData.getHeaders(),
+        },
       })
-      return response.data
-    } catch (error) {
-      console.log(error)
-      throw error
+      console.log('Video asset uploaded', res.data)
     }
   }
 

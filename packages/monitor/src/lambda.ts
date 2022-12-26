@@ -1,8 +1,11 @@
 import * as aws from '@pulumi/aws'
 import * as pulumi from '@pulumi/pulumi'
-import { getConfig } from '../../domain/src/config'
+// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
+import { getConfig, DeploymentEnv } from '../../domain/src/config'
 
-export function lambda(name: string, handler: string, source: string) {
+type LambdaName = 'ingestChannel' | 'createVideo' | 'uploadVideo' | 'scheduler' | 'orphanUsers'
+
+export function lambda(name: LambdaName, resourceSuffix: DeploymentEnv, handler: string, source: string, layers = []) {
   // IAM role
   const role = new aws.iam.Role(`${name}Role`, {
     assumeRolePolicy: {
@@ -45,8 +48,11 @@ export function lambda(name: string, handler: string, source: string) {
     role: role.arn,
     handler: handler,
     name: name,
-    timeout: 10,
     memorySize: 512,
+    tags: { environment: resourceSuffix },
+    reservedConcurrentExecutions: name === 'createVideo' ? 1 : -1,
+    timeout: name === 'createVideo' || name === 'uploadVideo' ? 900 : 30,
+    layers,
     environment: { variables: getConfig() },
   })
   return func

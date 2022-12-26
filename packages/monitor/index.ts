@@ -1,11 +1,9 @@
-import { ingestChannelHandler } from "./src/lambdas/ingestChannel";
-import { ingestionScheduler } from "./src/lambdas/ingestionScheduler";
-import { orphanUsersChecker } from "./src/lambdas/orphanUsers";
-import { userCreatedHandler } from "./src/lambdas/userCreated";
-import { videoCreatedHandler } from "./src/lambdas/videoCreated";
+import { createVideoHandler } from './src/lambdas/createVideo'
+import { ingestChannelHandler } from './src/lambdas/ingestChannel'
+import { ingestionScheduler } from './src/lambdas/ingestionScheduler'
+import { uploadVideoHandler } from './src/lambdas/uploadVideo'
 
 export const ingestChannel = ingestChannelHandler
 export const scheduler = ingestionScheduler
-export const videoCreated = videoCreatedHandler
-export const userCreated = userCreatedHandler
-export const orphanUsers = orphanUsersChecker
+export const createVideo = createVideoHandler
+export const uploadVideo = uploadVideoHandler

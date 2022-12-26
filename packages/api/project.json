@@ -10,8 +10,17 @@
         "outputPath": "dist/packages/api",
         "main": "packages/api/src/main.ts",
         "tsConfig": "packages/api/tsconfig.app.json",
-        "webpackConfig": "packages/api/webpack.config.js",
-        "externalDependencies": "none"
+        "externalDependencies": [
+          "@nestjs/microservices",
+          "cache-manager",
+          "class-validator",
+          "class-transformer",
+          "@nestjs/websockets/socket-module",
+          "@nestjs/microservices/microservices-module",
+          "class-transformer/storage",
+          "fastify-swagger",
+          "@nestjs/swagger"
+        ]
       },
       "configurations": {
         "production": {
