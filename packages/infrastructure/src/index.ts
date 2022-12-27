@@ -51,7 +51,7 @@ function lambdaFunction(name: string, resourceSuffix: DeploymentEnv, handler: st
     handler: handler,
     name: name,
     tags: { environment: resourceSuffix },
-    memorySize: 512,
+    memorySize: 1024,
     timeout: 60,
     environment: {
       variables: getConfig(),
