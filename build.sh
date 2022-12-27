@@ -16,7 +16,6 @@ yarn nx run monitor:build-lambdas >/dev/null
 WASM_FILE=blake3_js_bg.wasm
 
 # Manually copy blake3 wasm module to the build artifacts folder because it is not add by the webpack during bundle creation
-tee ./dist/packages/api-lambda/${WASM_FILE} \
-    dist/packages/monitor/${WASM_FILE} \
+tee dist/packages/monitor/${WASM_FILE} \
     ./dist/packages/processing-server/${WASM_FILE} < \
     ./node_modules/blake3/dist/wasm/web/${WASM_FILE} >/dev/null

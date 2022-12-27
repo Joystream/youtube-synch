@@ -1,7 +1,7 @@
 import { MemberId } from '@joystream/types/primitives'
 import { ApiProperty } from '@nestjs/swagger'
 import { User, Channel, Video, VideoState, JoystreamVideo } from '@youtube-sync/domain'
-import { IsEmail, IsNotEmpty } from 'class-validator'
+import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsString, IsUrl } from 'class-validator'
 import { getConfig as config } from '@youtube-sync/domain'
 
 // NestJS Data Transfer Objects (DTO)s
@@ -73,9 +73,9 @@ export class UserDto {
 // Dto for verifying Youtube channel given the authorization code
 export class VerifyChannelRequest {
   // Authorization code send to the backend after user o-auth verification
-  @IsNotEmpty() @ApiProperty({ required: true }) authorizationCode: string
+  @IsString() @ApiProperty({ required: true }) authorizationCode: string
 
-  @IsNotEmpty() @ApiProperty({ required: true }) youtubeRedirectUri: string
+  @IsUrl({ require_tld: false }) @ApiProperty({ required: true }) youtubeRedirectUri: string
 }
 
 // Dto for verified Youtube channel response
@@ -84,25 +84,25 @@ export class VerifyChannelResponse {
   @IsEmail() @ApiProperty({ required: true }) email: string
 
   // ID of the verified user
-  @IsEmail() @ApiProperty({ required: true }) userId: string
+  @IsString() @ApiProperty({ required: true }) userId: string
 }
 
 // Dto for saving the verified Youtube channel
 export class SaveChannelRequest {
   // Authorization code send to the backend after user o-auth verification
-  @IsNotEmpty() @ApiProperty({ required: true }) authorizationCode: string
+  @IsString() @ApiProperty({ required: true }) authorizationCode: string
 
   // Authorization code send to the backend after user O-auth verification
-  @IsNotEmpty() @ApiProperty({ required: true }) userId: string
+  @IsString() @ApiProperty({ required: true }) userId: string
 
   // Email of the user
   @IsEmail() @ApiProperty({ required: true }) email: string
 
   // Joystream Channel ID of the user verifying his Youtube Channel for YPP
-  @IsNotEmpty() @ApiProperty({ required: true }) joystreamChannelId: number
+  @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
 
   // video category ID to be added to all synced videos
-  @IsNotEmpty() @ApiProperty({ required: true }) videoCategoryId: string
+  @IsString() @ApiProperty({ required: true }) videoCategoryId: string
 
   // referrer Channel ID
   @ApiProperty({ required: false }) referrerChannelId: number
@@ -137,7 +137,7 @@ export class VideoDto extends Video {
 }
 
 export class IngestChannelDto {
-  @IsNotEmpty() @ApiProperty({ required: true }) signature: string
+  @IsString() @ApiProperty({ required: true }) signature: string
   @IsNotEmpty() @ApiProperty({ required: true }) message: {
     shouldBeIngested: boolean
     timestamp: Date
@@ -145,7 +145,7 @@ export class IngestChannelDto {
 }
 
 export class OptoutChannelDto {
-  @IsNotEmpty() @ApiProperty({ required: true }) signature: string
+  @IsString() @ApiProperty({ required: true }) signature: string
   @IsNotEmpty() @ApiProperty({ required: true }) message: {
     optout: boolean
     timestamp: Date
@@ -153,6 +153,6 @@ export class OptoutChannelDto {
 }
 
 export class SuspendChannelDto {
-  @IsNotEmpty() @ApiProperty({ required: true }) @IsNotEmpty() joystreamChannelId: number
-  @IsNotEmpty() @ApiProperty({ required: true }) @IsNotEmpty() isSuspended: boolean
+  @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
+  @IsBoolean() @ApiProperty({ required: true }) isSuspended: boolean
 }

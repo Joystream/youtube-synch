@@ -13,7 +13,6 @@ import {
   Post,
   Put,
   UnauthorizedException,
-  UseGuards,
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { signatureVerify } from '@polkadot/util-crypto'
@@ -114,7 +113,10 @@ export class ChannelsController {
   @ApiOperation({
     description: `Updates given channel ingestion/syncing status. Note: only channel owner can update the status`,
   })
-  async ingestChannel(@Param('joystreamChannelId') id: number, @Body() { message, signature }: IngestChannelDto) {
+  async ingestChannel(
+    @Param('joystreamChannelId', ParseIntPipe) id: number,
+    @Body() { message, signature }: IngestChannelDto
+  ) {
     try {
       const channel = await this.channelsService.get(id)
 
@@ -154,7 +156,10 @@ export class ChannelsController {
   @ApiOperation({
     description: `Updates given channel's YPP participation status. Note: only channel owner can update the status`,
   })
-  async optoutChannel(@Param('joystreamChannelId') id: number, @Body() { message, signature }: OptoutChannelDto) {
+  async optoutChannel(
+    @Param('joystreamChannelId', ParseIntPipe) id: number,
+    @Body() { message, signature }: OptoutChannelDto
+  ) {
     try {
       const channel = await this.channelsService.get(id)
 
@@ -191,8 +196,6 @@ export class ChannelsController {
 
   @Put('/suspend')
   @ApiBody({ type: SuspendChannelDto, isArray: true })
-  @ApiResponse({ type: ChannelDto, isArray: true })
-  @UseGuards()
   @ApiOperation({
     description: `Authenticated endpoint to suspend given channel/s from YPP program`,
   })

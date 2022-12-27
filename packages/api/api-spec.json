@@ -235,18 +235,8 @@
           }
         },
         "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ChannelDto"
-                  }
-                }
-              }
-            }
+          "200": {
+            "description": ""
           }
         },
         "tags": [
