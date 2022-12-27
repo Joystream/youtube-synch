@@ -1,5 +1,5 @@
 import { MemberId } from '@joystream/types/primitives'
-import { ApiProperty, PickType } from '@nestjs/swagger'
+import { ApiProperty } from '@nestjs/swagger'
 import { User, Channel, Video, VideoState, JoystreamVideo } from '@youtube-sync/domain'
 import { IsEmail, IsNotEmpty } from 'class-validator'
 import { getConfig as config } from '@youtube-sync/domain'
@@ -37,7 +37,7 @@ export class ChannelDto {
   @ApiProperty() description: string
   @ApiProperty() aggregatedStats: number
   @ApiProperty() shouldBeIngested: boolean
-  @ApiProperty() isSuspended: boolean
+  @ApiProperty() yppStatus: string
   @ApiProperty() joystreamChannelId: number
   @ApiProperty() videoCategoryId: string
   @ApiProperty() language: string
@@ -53,7 +53,7 @@ export class ChannelDto {
     this.videoCategoryId = channel.videoCategoryId
     this.language = channel.language
     this.shouldBeIngested = channel.shouldBeIngested
-    this.isSuspended = channel.isSuspended
+    this.yppStatus = channel.yppStatus
     this.aggregatedStats = channel.aggregatedStats
     this.thumbnails = channel.thumbnails
     this.createdAt = new Date(channel.createdAt)
@@ -140,6 +140,14 @@ export class IngestChannelDto {
   @IsNotEmpty() @ApiProperty({ required: true }) signature: string
   @IsNotEmpty() @ApiProperty({ required: true }) message: {
     shouldBeIngested: boolean
+    timestamp: Date
+  }
+}
+
+export class OptoutChannelDto {
+  @IsNotEmpty() @ApiProperty({ required: true }) signature: string
+  @IsNotEmpty() @ApiProperty({ required: true }) message: {
+    optout: boolean
     timestamp: Date
   }
 }

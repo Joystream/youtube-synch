@@ -1,5 +1,3 @@
-import { DataObjectId, VideoId } from '@joystream/types/primitives'
-
 export class Channel {
   // Channel ID
   id: string
@@ -64,13 +62,14 @@ export class Channel {
   uploadsPlaylistId: string
 
   // Should this channel be ingested for automated Youtube/Joystream syncing?
-  shouldBeIngested: {
-    status: boolean
-    lastChangedAt: number
-  }
+  shouldBeIngested: boolean
 
-  // Channel suspension status
-  isSuspended: boolean
+  // Channel's YPP program participation status
+  yppStatus: ChannelYppStatus
+
+  // Timestamp of the last time this channel changed its syncing/ypp status.
+  // This field serves the purpose of nonce to avoid playback attacks
+  lastActedAt: number
 
   // Needs a dummy partition key on GSI to be able to query by createdAt fields
   phantomKey: string
@@ -186,9 +185,15 @@ const readOnlyVideoStates = [
   'NotToBeSyncedAgain',
 ] as const
 
+const readonlyChannelYppStatus = ['Active', 'Suspended', 'OptedOut'] as const
+
 export const videoStates = readOnlyVideoStates as unknown as string[]
 
+export const channelYppStatus = readonlyChannelYppStatus as unknown as string[]
+
 export type VideoState = typeof readOnlyVideoStates[number]
+
+export type ChannelYppStatus = typeof readonlyChannelYppStatus[number]
 
 export type JoystreamVideo = {
   // Joystream runtime Video ID for successfully synced video

@@ -233,24 +233,20 @@ class YoutubeClient implements IYoutubeClient {
             high: channel.snippet?.thumbnails?.high?.url,
             standard: channel.snippet?.thumbnails?.standard?.url,
           },
-
           statistics: {
             viewCount: parseInt(channel.statistics?.viewCount ?? '0'),
             subscriberCount: parseInt(channel.statistics?.subscriberCount ?? '0'),
             videoCount: parseInt(channel.statistics?.videoCount ?? '0'),
             commentCount: parseInt(channel.statistics?.commentCount ?? '0'),
           },
-
           uploadsPlaylistId: channel.contentDetails?.relatedPlaylists?.uploads,
-          frequency: 0,
-          createdAt: Date.now(),
-          publishedAt: channel.snippet?.publishedAt,
-          shouldBeIngested: {
-            status: true,
-            lastChangedAt: Date.now(),
-          },
-          isSuspended: false,
           language: channel.snippet?.defaultLanguage,
+          frequency: 0,
+          publishedAt: channel.snippet?.publishedAt,
+          shouldBeIngested: true,
+          yppStatus: 'Active',
+          createdAt: Date.now(),
+          lastActedAt: Date.now(),
           phantomKey: 'phantomData',
         }
     )

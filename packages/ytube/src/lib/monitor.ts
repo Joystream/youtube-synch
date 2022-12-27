@@ -1,14 +1,16 @@
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Channel, ChannelSpotted, IngestChannel, User, Video, VideoEvent } from '@youtube-sync/domain'
+import { Channel, ChannelSpotted, IngestChannel, User, Video, VideoEvent, toPrettyJSON } from '@youtube-sync/domain'
 import { JoystreamClient } from '@youtube-sync/joy-api'
 import { GaxiosError } from 'gaxios/build/src/common'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { Uploader } from 'packages/joy-api/storage/uploader'
 import { ChannelsRepository, UsersRepository, VideosRepository } from './database'
 import { Frequency } from './frequency'
-import { MessageBus } from './messageBus'
+import { SnsClient } from './messageBus'
 import { ISyncService, JoystreamSyncService } from './uploadService'
 import { IYoutubeClient } from './youtubeClient'
+// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
+import { Logger } from 'packages/joy-api/src/logger'
 
 export class SyncService {
   private syncService: ISyncService
@@ -20,12 +22,20 @@ export class SyncService {
     private youtube: IYoutubeClient,
     private joystreamClient: JoystreamClient,
     private storageClient: Uploader,
-    private bus: MessageBus
+    private snsClient: SnsClient
   ) {
     this.syncService = new JoystreamSyncService(this.joystreamClient, this.storageClient)
     this.channelsRepository = new ChannelsRepository()
     this.usersRepository = new UsersRepository()
     this.videosRepository = new VideosRepository()
+  }
+
+  async getVideosRepo() {
+    return this.videosRepository
+  }
+
+  async getChannelsRepo() {
+    return this.channelsRepository
   }
 
   // get all videos with state 'New'
@@ -39,15 +49,15 @@ export class SyncService {
 
   async startIngestionFor(frequencies: Frequency[]) {
     // get all channels that need to be ingested based on following conditions:
-    // 1. `shouldBeIngested` flag should be set to true
-    // 2. `isSuspended` flag should be set to false
+    // 1. `yppStatus` flag should be set to  `Active`
+    // 2. `shouldBeIngested` flag should be set to true
     const channelsToBeIngested = await this.channelsRepository.scan('frequency', (s) =>
-      s.in(frequencies).filter('shouldBeIngested').eq(true).and().filter('isSuspended').eq(false)
+      s.in(frequencies).filter('yppStatus').eq('Active').and().filter('shouldBeIngested').eq(true)
     )
 
     // updated channel objects with latest subscriber count info
     const updatedChannels = await Promise.all(
-      channelsToBeIngested.map(async (ch) => {
+      channelsToBeIngested.map(async (ch): Promise<Channel> => {
         try {
           const [channel] = await this.youtube.getChannels({
             id: ch.userId,
@@ -60,7 +70,12 @@ export class SyncService {
           // set `shouldBeIngested` to false, if app permission is revoked by user from Google account, because
           // then trying to fetch user channel will throw error with code 400 and 'invalid_grant' message
           if (error instanceof GaxiosError && error.code === '400' && error.response?.data?.error === 'invalid_grant') {
-            return { ...ch, shouldBeIngested: false }
+            return {
+              ...ch,
+              yppStatus: 'OptedOut',
+              shouldBeIngested: false,
+              lastActedAt: Date.now(),
+            }
           }
 
           return ch
@@ -75,7 +90,7 @@ export class SyncService {
     const channelsEvent = channelsToBeIngested.map((ch) => new IngestChannel(ch, Date.now()))
 
     // publish events
-    return this.bus.publishAll(channelsEvent, 'channelEvents')
+    return this.snsClient.publishAll(channelsEvent, 'channelEvents')
   }
 
   async ingestChannels(user: User) {
@@ -92,7 +107,7 @@ export class SyncService {
     const channelEvents = channels.map((ch) => new ChannelSpotted(ch, Date.now()))
 
     // publish events
-    return this.bus.publishAll(channelEvents, 'channelEvents')
+    return this.snsClient.publishAll(channelEvents, 'channelEvents')
   }
 
   async ingestAllVideos(channel: Channel, top: number) {
@@ -106,10 +121,10 @@ export class SyncService {
     await this.videosRepository.upsertAll(newVideos)
 
     // create video events
-    const videoEvents = newVideos.map((v) => new VideoEvent('New', v.id, v.channelId, Date.now()))
+    const videoEvents = newVideos.map((v) => new VideoEvent('New', v.id, v.title, v.channelId, Date.now()))
 
     // publish events
-    return this.bus.publishAll(videoEvents, 'createVideoEvents')
+    return this.snsClient.publishAll(videoEvents, 'createVideoEvents')
   }
 
   async createVideo(channelId: string, videoId: string) {
@@ -143,19 +158,25 @@ export class SyncService {
       await this.videosRepository.save({ ...video, joystreamVideo, state: 'VideoCreated' })
 
       // upload video event
-      const videoCreatedEvent = new VideoEvent('VideoCreated', video.id, video.channelId, Date.now())
+      const videoCreatedEvent = new VideoEvent('VideoCreated', video.id, video.title, video.channelId, Date.now())
 
       // publish upload video event
-      return this.bus.publish(videoCreatedEvent, 'uploadVideoEvents')
+      return this.snsClient.publish(videoCreatedEvent, 'uploadVideoEvents')
     } catch (error) {
       // Update video state and save to DB
       await this.videosRepository.save({ ...video, state: 'VideoCreationFailed' })
 
       // upload video event
-      const VideoCreationFailedEvent = new VideoEvent('VideoCreationFailed', video.id, video.channelId, Date.now())
+      const VideoCreationFailedEvent = new VideoEvent(
+        'VideoCreationFailed',
+        video.id,
+        video.title,
+        video.channelId,
+        Date.now()
+      )
 
       // publish upload video event
-      return this.bus.publish(VideoCreationFailedEvent, 'createVideoEvents')
+      return this.snsClient.publish(VideoCreationFailedEvent, 'createVideoEvents')
     }
   }
 
@@ -185,10 +206,10 @@ export class SyncService {
       await this.videosRepository.save({ ...video, state: 'UploadFailed' })
 
       // upload video event
-      const uploadFailedEvent = new VideoEvent('UploadFailed', video.id, video.channelId, Date.now())
+      const uploadFailedEvent = new VideoEvent('UploadFailed', video.id, video.title, video.channelId, Date.now())
 
       // publish upload video event
-      return this.bus.publish(uploadFailedEvent, 'uploadVideoEvents')
+      return this.snsClient.publish(uploadFailedEvent, 'uploadVideoEvents')
     }
   }
 }

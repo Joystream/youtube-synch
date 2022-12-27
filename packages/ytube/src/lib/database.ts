@@ -1,4 +1,4 @@
-import { Channel, Stats, User, Video, videoStates } from '@youtube-sync/domain'
+import { Channel, Stats, User, Video, channelYppStatus, videoStates } from '@youtube-sync/domain'
 import * as dynamoose from 'dynamoose'
 import { ConditionInitalizer as ConditionInitializer } from 'dynamoose/dist/Condition'
 import { AnyDocument } from 'dynamoose/dist/Document'
@@ -50,9 +50,6 @@ export function createChannelModel(): ModelType<AnyDocument> {
       // Youtube channel creation date
       publishedAt: String,
 
-      // Whether this YT channels is verified by partner program or not (can be enum as well such as verified, suspended, pending etc)
-      isVerified: Boolean,
-
       // Channel's statistics
       statistics: {
         type: Object,
@@ -102,17 +99,14 @@ export function createChannelModel(): ModelType<AnyDocument> {
 
       // Should this channel be ingested for automated Youtube/Joystream syncing?
       shouldBeIngested: {
-        type: Object,
-        schema: {
-          status: Boolean,
-          lastChangedAt: Date,
-        },
+        type: Boolean,
+        default: true,
       },
 
-      // Is this channel currently being suspended by YPP owner due to TOS violations?
-      isSuspended: {
-        type: Boolean,
-        default: false,
+      // Channel's YPP program participation status
+      yppStatus: {
+        type: String,
+        enum: channelYppStatus,
       },
     },
 
@@ -461,7 +455,6 @@ export class StatsRepository implements IRepository<Stats> {
     // Get today's stats
     let stats = await this.get(today)
 
-    console.log('stats', stats)
     if (!stats) {
       const statsDoc = await this.model.update({
         partition: 'stats',
