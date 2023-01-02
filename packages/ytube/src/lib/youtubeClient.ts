@@ -79,9 +79,22 @@ class YoutubeClient implements IYoutubeClient {
     const tokenResponse = await this.getAccessToken(code, youtubeRedirectUri)
 
     const tokenInfo = await this.getAuth().getTokenInfo(tokenResponse.access_token)
+
+    if (!tokenInfo.sub) {
+      throw new Error(
+        `User id not found in token info. Please add required 'userinfo.profile' scope in user authorization request.`
+      )
+    }
+
+    if (!tokenInfo.email) {
+      throw new Error(
+        `User email not found in token info. Please add required 'userinfo.email' scope in user authorization request.`
+      )
+    }
+
     const user = new User(
-      tokenInfo.sub || '',
-      tokenInfo.email || '',
+      tokenInfo.sub,
+      tokenInfo.email,
       tokenResponse.access_token,
       tokenResponse.refresh_token,
       code,
