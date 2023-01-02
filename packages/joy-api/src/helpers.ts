@@ -10,8 +10,6 @@ import { Hash } from '@polkadot/types/interfaces'
 import { DispatchError, Event, EventRecord } from '@polkadot/types/interfaces/system'
 import { PalletContentStorageAssetsRecord } from '@polkadot/types/lookup'
 import { Registry } from '@polkadot/types/types'
-import ffmpeg from 'fluent-ffmpeg'
-import { Readable } from 'stream'
 import {
   ChannelAssets,
   ChannelAssetsIds,
@@ -23,8 +21,6 @@ import {
   ExtrinsicStatusCallbackFn,
   VideoAssets,
   VideoAssetsIds,
-  VideoFFProbeMetadata,
-  VideoFileMetadata,
   VideoInputAssets,
 } from './'
 import { JoystreamLibError } from './errors'
@@ -47,45 +43,6 @@ export async function prepareAssetsForExtrinsic(api: PolkadotApi, dataObjectsMet
     expectedDataSizeFee: feePerMB,
     objectCreationList: objectCreationList,
   })
-}
-
-async function getVideoFFProbeMetadata(stream: Readable): Promise<VideoFFProbeMetadata> {
-  return new Promise<VideoFFProbeMetadata>((resolve, reject) => {
-    ffmpeg(stream).ffprobe((err, data) => {
-      if (err) {
-        console.log('ffprobe error', err)
-        reject(err)
-        return
-      }
-      const videoStream = data.streams.find((s) => s.codec_type === 'video')
-      console.log('videoStream', data.streams)
-      if (videoStream) {
-        resolve({
-          width: videoStream.width,
-          height: videoStream.height,
-          codecName: videoStream.codec_name,
-          codecFullName: videoStream.codec_long_name,
-          duration: videoStream.duration !== undefined ? Math.ceil(Number(videoStream.duration)) || 0 : undefined,
-        })
-      } else {
-        reject(new Error('No video stream found in file'))
-      }
-    })
-  })
-}
-
-export async function getVideoFileMetadata(videoStream: Readable): Promise<VideoFileMetadata> {
-  let ffProbeMetadata: VideoFFProbeMetadata = {}
-  try {
-    ffProbeMetadata = await getVideoFFProbeMetadata(videoStream)
-  } catch (e) {
-    const message = e instanceof Error ? e.message : e
-    console.log(`Failed to get video metadata via ffprobe (${message})`)
-  }
-
-  return {
-    ...ffProbeMetadata,
-  }
 }
 
 export async function parseVideoExtrinsicInput(
