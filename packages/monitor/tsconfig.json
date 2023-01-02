@@ -2,6 +2,11 @@
   "extends": "../../tsconfig.base.json",
   "files": [],
   "include": [],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS"
+    }
+  },
   "references": [
     {
       "path": "./tsconfig.lib.json"

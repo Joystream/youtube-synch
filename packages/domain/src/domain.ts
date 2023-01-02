@@ -185,13 +185,31 @@ const readOnlyVideoStates = [
   'NotToBeSyncedAgain',
 ] as const
 
+export enum VideoStates {
+  New = 1,
+  // `create_video` extrinsic errored
+  VideoCreationFailed = 2,
+  // Video is being creating on Joystream network (by calling extrinsics, but not yet uploaded)
+  CreatingVideo = 3,
+  // Video has been created on Joystream network (by calling extrinsics, but not yet uploaded)
+  VideoCreated = 4,
+  // Video upload to Joystream failed
+  UploadFailed = 5,
+  // Video is being uploaded to Joystream
+  UploadStarted = 6,
+  // Video upload to Joystream succeeded
+  UploadSucceeded = 7,
+  // Video was deleted from joystream, so it should not be synced again
+  NotToBeSyncedAgain = 8,
+}
+
 const readonlyChannelYppStatus = ['Active', 'Suspended', 'OptedOut'] as const
 
-export const videoStates = readOnlyVideoStates as unknown as string[]
+export const videoStates = Object.keys(VideoStates).filter((v) => isNaN(Number(v)))
 
 export const channelYppStatus = readonlyChannelYppStatus as unknown as string[]
 
-export type VideoState = typeof readOnlyVideoStates[number]
+export type VideoState = keyof typeof VideoStates
 
 export type ChannelYppStatus = typeof readonlyChannelYppStatus[number]
 

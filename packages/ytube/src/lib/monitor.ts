@@ -1,5 +1,14 @@
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Channel, ChannelSpotted, IngestChannel, User, Video, VideoEvent, toPrettyJSON } from '@youtube-sync/domain'
+import {
+  Channel,
+  ChannelSpotted,
+  IngestChannel,
+  User,
+  Video,
+  VideoEvent,
+  VideoStates,
+  toPrettyJSON,
+} from '@youtube-sync/domain'
 import { JoystreamClient } from '@youtube-sync/joy-api'
 import { GaxiosError } from 'gaxios/build/src/common'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
@@ -38,13 +47,26 @@ export class SyncService {
     return this.channelsRepository
   }
 
-  // get all videos with state 'New'
-  private async onlyNewVideos(channel: Channel, videos: Video[]): Promise<Video[]> {
+  // get all videos with updated state
+  private async getUpdatedVideos(channel: Channel, newVideos: Video[]): Promise<Video[]> {
+    // Get all the existing videos
     const existingVideos = await this.videosRepository.query({ channelId: channel.id }, (q) => q)
-    const existingUnprocessedVideoIds = new Set(
-      existingVideos.filter((v) => v.uploadStatus === 'processed').map((v) => v.id)
-    )
-    return videos.filter((v) => !existingUnprocessedVideoIds.has(v.id))
+
+    // Return updated video objects
+    return newVideos.map((newVideo) => {
+      const existingVideo = existingVideos.find((v) => v.id === newVideo.id)
+      if (existingVideo) {
+        // If video already exists, return the existing video object with updated properties
+        return {
+          ...newVideo,
+          createdAt: existingVideo.createdAt,
+          state: existingVideo.state,
+          joystreamVideo: existingVideo.joystreamVideo,
+        }
+      } else {
+        return newVideo
+      }
+    })
   }
 
   async startIngestionFor(frequencies: Frequency[]) {
@@ -114,14 +136,19 @@ export class SyncService {
     // get all videos of the channel
     const allVideos = await this.youtube.getAllVideos(channel, top)
 
-    // get all videos with state 'New'
-    const newVideos = await this.onlyNewVideos(channel, allVideos)
+    // get all updated videos
+    const updatedVideos = await this.getUpdatedVideos(channel, allVideos)
 
-    // save new videos tp DB
-    await this.videosRepository.upsertAll(newVideos)
+    // save all updated videos to DB as some fields might have changed, e.g. viewCount
+    await this.videosRepository.upsertAll(updatedVideos)
 
     // create video events
-    const videoEvents = newVideos.map((v) => new VideoEvent('New', v.id, v.title, v.channelId, Date.now()))
+    const videoEvents = updatedVideos.reduce((events: VideoEvent[], v) => {
+      if (v.state === 'New' || v.state === 'VideoCreationFailed') {
+        events.push(new VideoEvent(v.state, v.id, v.title, v.channelId, Date.now()))
+      }
+      return events
+    }, [])
 
     // publish events
     return this.snsClient.publishAll(videoEvents, 'createVideoEvents')
@@ -140,8 +167,13 @@ export class SyncService {
       throw new Error(`Video with id ${videoId} not found in channel ${channelId}`)
     }
 
-    // if video hasn't finished processing on Youtube OR it's a private video, then don't sync it yet
-    if (video.uploadStatus !== 'processed' || video.privacyStatus === 'private') {
+    // if video hasn't finished processing on Youtube, it's a private
+    // video, or it has been already created, then don't sync it yet
+    if (
+      video.uploadStatus !== 'processed' ||
+      video.privacyStatus === 'private' ||
+      VideoStates[video.state] >= VideoStates.VideoCreated
+    ) {
       return
     }
 
@@ -166,7 +198,7 @@ export class SyncService {
       // Update video state and save to DB
       await this.videosRepository.save({ ...video, state: 'VideoCreationFailed' })
 
-      // upload video event
+      // video creation failed event
       const VideoCreationFailedEvent = new VideoEvent(
         'VideoCreationFailed',
         video.id,
@@ -175,7 +207,7 @@ export class SyncService {
         Date.now()
       )
 
-      // publish upload video event
+      // publish video creation failed event
       return this.snsClient.publish(VideoCreationFailedEvent, 'createVideoEvents')
     }
   }
