@@ -519,6 +519,9 @@
           "joystreamChannelId": {
             "type": "number"
           },
+          "shouldBeIngested": {
+            "type": "boolean"
+          },
           "videoCategoryId": {
             "type": "string"
           },
@@ -531,6 +534,7 @@
           "userId",
           "email",
           "joystreamChannelId",
+          "shouldBeIngested",
           "videoCategoryId"
         ]
       },

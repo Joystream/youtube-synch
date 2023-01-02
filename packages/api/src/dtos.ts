@@ -1,7 +1,7 @@
 import { MemberId } from '@joystream/types/primitives'
 import { ApiProperty } from '@nestjs/swagger'
 import { User, Channel, Video, VideoState, JoystreamVideo } from '@youtube-sync/domain'
-import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsString, IsUrl } from 'class-validator'
+import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsString, IsUrl, ValidateIf } from 'class-validator'
 import { getConfig as config } from '@youtube-sync/domain'
 
 // NestJS Data Transfer Objects (DTO)s
@@ -101,8 +101,13 @@ export class SaveChannelRequest {
   // Joystream Channel ID of the user verifying his Youtube Channel for YPP
   @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
 
+  @IsBoolean() @ApiProperty({ required: true }) shouldBeIngested: boolean
+
   // video category ID to be added to all synced videos
-  @IsString() @ApiProperty({ required: true }) videoCategoryId: string
+  @ValidateIf((c: SaveChannelRequest) => c.shouldBeIngested)
+  @IsString()
+  @ApiProperty({ required: true })
+  videoCategoryId: string
 
   // referrer Channel ID
   @ApiProperty({ required: false }) referrerChannelId: number
