@@ -32,6 +32,7 @@ import {
 import QueryNodeApi from 'packages/joy-api/src/graphql/QueryNodeApi'
 import { UsersService } from '../users/user.service'
 import { ChannelsService } from './channels.service'
+import cryptoRandomString from 'crypto-random-string'
 
 @Controller('channels')
 @ApiTags('channels')
@@ -74,7 +75,8 @@ export class ChannelsController {
       // get channel from user
       const [channel] = await this.youtube.getChannels(user)
 
-      const updatedUser: User = { ...user, email }
+      // reset authorization code to prevent repeated save channel requests by authorization code re-use
+      const updatedUser: User = { ...user, email, authorizationCode: cryptoRandomString({ length: 10 }) }
       const updatedChannel: Channel = {
         ...channel,
         email,
