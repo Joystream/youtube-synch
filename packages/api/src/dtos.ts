@@ -1,8 +1,8 @@
 import { MemberId } from '@joystream/types/primitives'
 import { ApiProperty } from '@nestjs/swagger'
-import { User, Channel, Video, VideoState, JoystreamVideo } from '@youtube-sync/domain'
-import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsString, IsUrl, ValidateIf } from 'class-validator'
-import { getConfig as config } from '@youtube-sync/domain'
+import { Channel, JoystreamVideo, User, Video, VideoState, getConfig as config } from '@youtube-sync/domain'
+import { Type } from 'class-transformer'
+import { IsBoolean, IsEmail, IsNumber, IsString, IsUrl, ValidateIf, ValidateNested } from 'class-validator'
 
 // NestJS Data Transfer Objects (DTO)s
 
