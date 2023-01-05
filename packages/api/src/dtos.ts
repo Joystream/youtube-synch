@@ -141,20 +141,35 @@ export class VideoDto extends Video {
   @ApiProperty() joystreamVideo: JoystreamVideo
 }
 
+class IngestChannelMessage {
+  @IsBoolean() shouldBeIngested: boolean
+  @ValidateIf((c: IngestChannelMessage) => c.shouldBeIngested)
+  @IsString()
+  @ApiProperty({ required: true })
+  videoCategoryId: string
+
+  @IsNumber() timestamp: number
+}
+
+class OptoutChannelMessage {
+  @IsBoolean() optout: boolean
+  @IsNumber() timestamp: number
+}
+
 export class IngestChannelDto {
   @IsString() @ApiProperty({ required: true }) signature: string
-  @IsNotEmpty() @ApiProperty({ required: true }) message: {
-    shouldBeIngested: boolean
-    timestamp: Date
-  }
+  @ApiProperty({ required: true })
+  @ValidateNested()
+  @Type(() => IngestChannelMessage)
+  message: IngestChannelMessage
 }
 
 export class OptoutChannelDto {
   @IsString() @ApiProperty({ required: true }) signature: string
-  @IsNotEmpty() @ApiProperty({ required: true }) message: {
-    optout: boolean
-    timestamp: Date
-  }
+  @ApiProperty({ required: true })
+  @ValidateNested()
+  @Type(() => OptoutChannelMessage)
+  message: OptoutChannelMessage
 }
 
 export class SuspendChannelDto {
