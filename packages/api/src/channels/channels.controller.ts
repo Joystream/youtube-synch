@@ -159,6 +159,7 @@ export class ChannelsController {
         ...channel,
         shouldBeIngested: message.shouldBeIngested,
         lastActedAt: message.timestamp,
+        ...(message.videoCategoryId ? { videoCategoryId: message.videoCategoryId } : {}),
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : error
