@@ -4,12 +4,17 @@ import serverlessExpress from '@vendia/serverless-express'
 import { setAwsConfig } from '@youtube-sync/domain'
 import { Callback, Context, Handler, APIGatewayEvent } from 'aws-lambda'
 import { AppModule } from './app.module'
+import { cryptoWaitReady } from '@polkadot/util-crypto'
 
 let cachedHandler: Handler
 
 async function bootstrapServerless() {
+  // make sure WASM crypto module is ready
+  await cryptoWaitReady()
+
+  // create App
   const app = await NestFactory.create(AppModule)
-  app.useGlobalPipes(new ValidationPipe()) // enable ValidationPipe
+  app.useGlobalPipes(new ValidationPipe({ transform: true })) // enable ValidationPipe
   app.enableCors({ allowedHeaders: '*', methods: '*', origin: '*' })
   await app.init()
 

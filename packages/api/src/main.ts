@@ -1,6 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import { cryptoWaitReady } from '@polkadot/util-crypto'
 import { setAwsConfig, toPrettyJSON } from '@youtube-sync/domain'
 import * as fs from 'fs'
 import { AppModule } from './app.module'
@@ -26,17 +27,13 @@ function setupSwagger(app: INestApplication) {
 }
 
 async function bootstrap() {
-  // Create App
+  // make sure WASM crypto module is ready
+  await cryptoWaitReady()
+
+  // create App
   const app = await NestFactory.create(AppModule)
-
-  app.useGlobalPipes(new ValidationPipe()) // enable ValidationPipe
-
-  app.enableCors({
-    allowedHeaders: '*',
-    methods: '*',
-    origin: '*',
-  })
-
+  app.useGlobalPipes(new ValidationPipe({ transform: true })) // enable ValidationPipe
+  app.enableCors({ allowedHeaders: '*', methods: '*', origin: '*' })
   setupSwagger(app)
   await app.init()
   return app.listen(3001)

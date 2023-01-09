@@ -150,7 +150,7 @@ export class ChannelsController {
       const { isValid } = signatureVerify(JSON.stringify(message), signature, jsChannel.ownerMember.controllerAccount)
 
       // Ensure that the signature is valid and the message is not a playback message
-      if (!isValid || new Date(channel.lastActedAt) >= message.timestamp) {
+      if (!isValid || channel.lastActedAt >= message.timestamp) {
         throw new Error('Invalid request signature or playback message. Permission denied.')
       }
 
@@ -158,7 +158,8 @@ export class ChannelsController {
       await this.channelsService.save({
         ...channel,
         shouldBeIngested: message.shouldBeIngested,
-        lastActedAt: message.timestamp.getTime(),
+        lastActedAt: message.timestamp,
+        ...(message.videoCategoryId ? { videoCategoryId: message.videoCategoryId } : {}),
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : error
@@ -193,7 +194,7 @@ export class ChannelsController {
       const { isValid } = signatureVerify(JSON.stringify(message), signature, jsChannel.ownerMember.controllerAccount)
 
       // Ensure that the signature is valid and the message is not a playback message
-      if (!isValid || new Date(channel.lastActedAt) >= message.timestamp) {
+      if (!isValid || channel.lastActedAt >= message.timestamp) {
         throw new Error('Invalid request signature or playback message. Permission denied.')
       }
 
@@ -202,7 +203,7 @@ export class ChannelsController {
         ...channel,
         yppStatus: message.optout ? 'OptedOut' : 'Active',
         shouldBeIngested: false,
-        lastActedAt: Date.now(),
+        lastActedAt: message.timestamp,
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : error
