@@ -284,7 +284,7 @@ class YoutubeClient implements IYoutubeClient {
           publishedAt: video.contentDetails?.videoPublishedAt,
           createdAt: Date.now(),
           category: channel.videoCategoryId,
-          language: channel.language,
+          language: channel.joystreamChannelLanguageId,
           privacyStatus: video.status?.privacyStatus,
           duration: toSeconds(parse(videosDetails[i].contentDetails?.duration ?? 'PT0S')),
           container: videosDetails[i].fileDetails?.container,

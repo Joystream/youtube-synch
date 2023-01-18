@@ -4,6 +4,10 @@ fragment ChannelFields on Channel {
     id
     videoStateBloatBond
   }
+  language {
+    id
+    iso
+  }
   ownerMember {
     id
     controllerAccount

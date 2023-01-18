@@ -77,6 +77,8 @@ export class ChannelsController {
 
       // reset authorization code to prevent repeated save channel requests by authorization code re-use
       const updatedUser: User = { ...user, email, authorizationCode: cryptoRandomString({ length: 10 }) }
+
+      const joystreamChannelLanguageId = (await this.qnApi.getChannelById(joystreamChannelId.toString()))?.language?.id
       const updatedChannel: Channel = {
         ...channel,
         email,
@@ -84,6 +86,7 @@ export class ChannelsController {
         shouldBeIngested,
         videoCategoryId,
         referrerChannelId,
+        joystreamChannelLanguageId,
       }
 
       // save user and channel
