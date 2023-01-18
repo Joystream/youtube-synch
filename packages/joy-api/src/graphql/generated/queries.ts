@@ -4,6 +4,7 @@ import gql from 'graphql-tag'
 export type ChannelFieldsFragment = {
   id: string
   videos: Array<{ id: string; videoStateBloatBond: any }>
+  language?: Types.Maybe<{ id: string; iso: string }>
   ownerMember?: Types.Maybe<{ id: string; controllerAccount: string }>
 }
 
@@ -175,6 +176,10 @@ export const ChannelFields = gql`
     videos {
       id
       videoStateBloatBond
+    }
+    language {
+      id
+      iso
     }
     ownerMember {
       id

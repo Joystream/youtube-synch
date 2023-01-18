@@ -28,6 +28,9 @@ export class Channel {
   // default language of youtube channel
   language: string
 
+  // language of corresponding Joystream channel
+  joystreamChannelLanguageId?: string
+
   // Youtube channel creation date
   publishedAt: string
 
