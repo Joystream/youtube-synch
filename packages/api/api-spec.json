@@ -643,6 +643,17 @@
           "channel"
         ]
       },
+      "IngestChannelMessage": {
+        "type": "object",
+        "properties": {
+          "videoCategoryId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "videoCategoryId"
+        ]
+      },
       "IngestChannelDto": {
         "type": "object",
         "properties": {
@@ -650,13 +661,17 @@
             "type": "string"
           },
           "message": {
-            "type": "object"
+            "$ref": "#/components/schemas/IngestChannelMessage"
           }
         },
         "required": [
           "signature",
           "message"
         ]
+      },
+      "OptoutChannelMessage": {
+        "type": "object",
+        "properties": {}
       },
       "OptoutChannelDto": {
         "type": "object",
@@ -665,7 +680,7 @@
             "type": "string"
           },
           "message": {
-            "type": "object"
+            "$ref": "#/components/schemas/OptoutChannelMessage"
           }
         },
         "required": [

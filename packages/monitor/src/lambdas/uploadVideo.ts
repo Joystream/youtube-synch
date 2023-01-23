@@ -1,9 +1,7 @@
+import { SnsClient, SyncService, YtClient } from '@joystream/ytube'
 import { TopicEvent } from '@pulumi/aws/sns'
-import { YtClient, videoStateRepository, SyncService, SnsClient } from '@joystream/ytube'
-import { getConfig, setAwsConfig, VideoEvent } from '@youtube-sync/domain'
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Uploader } from 'packages/joy-api/storage/uploader'
-import { JoystreamClient } from '@youtube-sync/joy-api'
+import { VideoEvent, getConfig, setAwsConfig } from '@youtube-sync/domain'
+import { JoystreamClient, Uploader } from '@youtube-sync/joy-api'
 
 export async function uploadVideoHandler(event: TopicEvent) {
   // Set AWS config in case we are running locally
@@ -24,9 +22,4 @@ export async function uploadVideoHandler(event: TopicEvent) {
     videoCreated.channelId,
     videoCreated.videoId
   )
-}
-
-export async function videoStateLogger(event: TopicEvent) {
-  const videoEvent: VideoEvent = JSON.parse(event.Records[0].Sns.Message)
-  await videoStateRepository().update(videoEvent)
 }

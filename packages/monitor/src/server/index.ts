@@ -1,8 +1,6 @@
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Logger } from 'packages/joy-api/src/logger'
-import { createNewVideoSubscriptionApp } from './videoProcessingService'
-import { getConfig, setAwsConfig } from '@youtube-sync/domain'
 import { SnsClient } from '@joystream/ytube'
+import { Logger, getConfig, setAwsConfig } from '@youtube-sync/domain'
+import { createNewVideoSubscriptionApp } from './videoProcessingService'
 
 // Set AWS config in case we are running locally
 setAwsConfig()

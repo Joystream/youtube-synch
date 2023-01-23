@@ -17,6 +17,7 @@ import {
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { signatureVerify } from '@polkadot/util-crypto'
 import { Channel, User, Video, getConfig } from '@youtube-sync/domain'
+import cryptoRandomString from 'crypto-random-string'
 import {
   ChannelDto,
   ChannelInductionRequirementsDto,
@@ -32,7 +33,6 @@ import {
 import QueryNodeApi from 'packages/joy-api/src/graphql/QueryNodeApi'
 import { UsersService } from '../users/user.service'
 import { ChannelsService } from './channels.service'
-import cryptoRandomString from 'crypto-random-string'
 
 @Controller('channels')
 @ApiTags('channels')

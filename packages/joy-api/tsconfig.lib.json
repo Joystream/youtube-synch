@@ -8,5 +8,5 @@
     "target": "es2020"
   },
   "exclude": ["**/*.spec.ts", "**/*.test.ts"],
-  "include": ["**/*.ts", "../domain/src/results.ts"]
+  "include": ["**/*.ts", "../domain/src/results.ts", "../domain/src/logger.ts"]
 }

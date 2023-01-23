@@ -1,12 +1,10 @@
-import { ApiPromise as PolkadotApi } from '@polkadot/api'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
-
-import { Logger } from './logger'
-
 import { IVideoMetadata } from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
 import { ChannelId, MemberId } from '@joystream/types/primitives'
+import { ApiPromise as PolkadotApi } from '@polkadot/api'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { KeyringPair } from '@polkadot/keyring/types'
+import { Logger } from '@youtube-sync/domain'
 import { JoystreamLibError } from './errors'
 import { parseVideoExtrinsicInput, sendExtrinsicAndParseEvents } from './helpers'
 import { GetEventDataFn, SendExtrinsicResult, VideoExtrinsicResult, VideoInputAssets } from './types'

@@ -1,9 +1,7 @@
 import { SyncService } from '@joystream/ytube'
-import { VideoEvent, VideoStates, toPrettyJSON } from '@youtube-sync/domain'
+import { Logger, VideoEvent, VideoStates, toPrettyJSON } from '@youtube-sync/domain'
 import Queue from 'better-queue'
 import SqlStore from 'better-queue-sql'
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Logger } from 'packages/joy-api/src/logger'
 
 const MAX_SUDO_PRIORITY = 100
 const DEFAULT_SUDO_PRIORITY = 10

@@ -1,9 +1,7 @@
-import { EventRuleEvent } from '@pulumi/aws/cloudwatch'
 import { SnsClient, SyncService, YtClient } from '@joystream/ytube'
+import { EventRuleEvent } from '@pulumi/aws/cloudwatch'
 import { getConfig, setAwsConfig } from '@youtube-sync/domain'
-import { JoystreamClient } from '@youtube-sync/joy-api'
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Uploader } from 'packages/joy-api/storage/uploader'
+import { JoystreamClient, Uploader } from '@youtube-sync/joy-api'
 
 export async function ingestionScheduler(event: EventRuleEvent) {
   // Set AWS config in case we are running locally

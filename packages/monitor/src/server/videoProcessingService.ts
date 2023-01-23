@@ -1,13 +1,9 @@
+import { SnsClient, SubscriptionConfirmationRequest, SyncService, YtClient } from '@joystream/ytube'
+import { Logger, VideoEvent, getConfig } from '@youtube-sync/domain'
+import { JoystreamClient, Uploader } from '@youtube-sync/joy-api'
+import cors from 'cors'
 import express from 'express'
 import { VideoStateKeeper } from './videoStateKeeper'
-import cors from 'cors'
-import { SnsClient, SubscriptionConfirmationRequest, SyncService, YtClient } from '@joystream/ytube'
-import { VideoEvent, getConfig } from '@youtube-sync/domain'
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Logger } from 'packages/joy-api/src/logger'
-import { JoystreamClient } from '@youtube-sync/joy-api'
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Uploader } from 'packages/joy-api/storage/uploader'
 
 export async function createNewVideoSubscriptionApp(sns: SnsClient): Promise<express.Application> {
   const {
