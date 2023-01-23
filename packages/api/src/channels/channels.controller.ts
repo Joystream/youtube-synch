@@ -27,6 +27,7 @@ import {
   SaveChannelResponse,
   SuspendChannelDto,
   UserDto,
+  VerifyChannelDto,
   VideoDto,
 } from '../dtos'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
@@ -52,7 +53,7 @@ export class ChannelsController {
   @ApiBody({ type: SaveChannelRequest })
   @ApiResponse({ type: SaveChannelResponse })
   @Post()
-  async addVerifiedChannel(@Body() channelInfo: SaveChannelRequest): Promise<SaveChannelResponse> {
+  async saveChannel(@Body() channelInfo: SaveChannelRequest): Promise<SaveChannelResponse> {
     try {
       const {
         userId,
@@ -204,7 +205,7 @@ export class ChannelsController {
       // update channel's ypp participation status
       await this.channelsService.save({
         ...channel,
-        yppStatus: message.optout ? 'OptedOut' : 'Active',
+        yppStatus: message.optout ? 'OptedOut' : 'Unverified',
         shouldBeIngested: false,
         lastActedAt: message.timestamp,
       })
@@ -241,7 +242,39 @@ export class ChannelsController {
           })
         } else {
           // if channel suspension is revoked then its YT ingestion/syncing should not be resumed
-          await this.channelsService.save({ ...channel, yppStatus: 'Active' })
+          await this.channelsService.save({ ...channel, yppStatus: 'Unverified' })
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
+  }
+
+  @Put('/verify')
+  @ApiBody({ type: SuspendChannelDto, isArray: true })
+  @ApiOperation({
+    description: `Authenticated endpoint to verify given channel/s in YPP program`,
+  })
+  async verifyChannels(
+    @Headers('authorization') authorizationHeader: string,
+    @Body(new ParseArrayPipe({ items: VerifyChannelDto, whitelist: true })) channels: VerifyChannelDto[]
+  ) {
+    const yppOwnerKey = authorizationHeader ? authorizationHeader.split(' ')[1] : ''
+    if (yppOwnerKey !== process.env.YPP_OWNER_KEY) {
+      throw new UnauthorizedException('Invalid YPP owner key')
+    }
+
+    try {
+      for (const { joystreamChannelId, isVerified } of channels) {
+        const channel = await this.channelsService.get(joystreamChannelId)
+
+        // channel is being verified
+        if (isVerified) {
+          await this.channelsService.save({ ...channel, yppStatus: 'Verified' })
+        } else {
+          // channel is being unverified
+          await this.channelsService.save({ ...channel, yppStatus: 'Unverified' })
         }
       }
     } catch (error) {
