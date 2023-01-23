@@ -1,10 +1,7 @@
+import { SnsClient, SyncService, YtClient } from '@joystream/ytube'
 import { TopicEvent } from '@pulumi/aws/sns'
-import { YtClient, SnsClient, SyncService } from '@joystream/ytube'
-import { IngestChannel, setAwsConfig } from '@youtube-sync/domain'
-import { getConfig } from '@youtube-sync/domain'
-import { JoystreamClient } from '@youtube-sync/joy-api'
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Uploader } from 'packages/joy-api/storage/uploader'
+import { IngestChannel, getConfig, setAwsConfig } from '@youtube-sync/domain'
+import { JoystreamClient, Uploader } from '@youtube-sync/joy-api'
 
 export async function ingestChannelHandler(event: TopicEvent) {
   // Set AWS config in case we are running locally

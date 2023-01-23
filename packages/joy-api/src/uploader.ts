@@ -1,9 +1,9 @@
-import { Channel, Video } from '@youtube-sync/domain'
+import { Channel } from '@youtube-sync/domain'
 import axios from 'axios'
 import FormData from 'form-data'
 import _ from 'lodash'
-import QueryNodeApi from '../src/graphql/QueryNodeApi'
-import { AssetUploadInput, StorageNodeInfo } from '../src/types'
+import QueryNodeApi from './graphql/QueryNodeApi'
+import { AssetUploadInput, StorageNodeInfo } from './types'
 
 export type OperatorInfo = { id: string; endpoint: string }
 export type OperatorsMapping = Record<string, OperatorInfo>

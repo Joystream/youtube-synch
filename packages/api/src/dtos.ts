@@ -176,3 +176,8 @@ export class SuspendChannelDto {
   @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
   @IsBoolean() @ApiProperty({ required: true }) isSuspended: boolean
 }
+
+export class VerifyChannelDto {
+  @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
+  @IsBoolean() @ApiProperty({ required: true }) isVerified: boolean
+}

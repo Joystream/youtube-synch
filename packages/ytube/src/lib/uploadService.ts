@@ -1,9 +1,7 @@
 import { createType } from '@joystream/types'
 import { Channel, getConfig, Video } from '@youtube-sync/domain'
-import { AssetUploadInput, getThumbnailAsset, JoystreamClient } from '@youtube-sync/joy-api'
+import { AssetUploadInput, getThumbnailAsset, JoystreamClient, Uploader } from '@youtube-sync/joy-api'
 import { BN } from 'bn.js'
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Uploader } from 'packages/joy-api/storage/uploader'
 import ytdl from 'ytdl-core'
 
 export interface ISyncService {

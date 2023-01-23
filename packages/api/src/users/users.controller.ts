@@ -42,7 +42,7 @@ export class UsersController {
 
       // Ensure 1. selected YT channel is not already registered for YPP program
       // OR 2. even if registered previously it has opted out.
-      if (registeredChannel?.yppStatus === 'Active') {
+      if (registeredChannel?.yppStatus === 'Verified' || registeredChannel?.yppStatus === 'Unverified') {
         throw new YoutubeAuthorizationError(
           ExitCodes.CHANNEL_ALREADY_REGISTERED,
           `Selected Youtube channel is already registered for YPP program`,

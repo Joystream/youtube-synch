@@ -1,25 +1,21 @@
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import {
   Channel,
   ChannelSpotted,
   IngestChannel,
+  Logger,
   User,
   Video,
   VideoEvent,
   VideoStates,
   toPrettyJSON,
 } from '@youtube-sync/domain'
-import { JoystreamClient } from '@youtube-sync/joy-api'
+import { JoystreamClient, Uploader } from '@youtube-sync/joy-api'
 import { GaxiosError } from 'gaxios/build/src/common'
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Uploader } from 'packages/joy-api/storage/uploader'
 import { ChannelsRepository, UsersRepository, VideosRepository } from './database'
 import { Frequency } from './frequency'
 import { SnsClient } from './messageBus'
 import { ISyncService, JoystreamSyncService } from './uploadService'
 import { IYoutubeClient } from './youtubeClient'
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Logger } from 'packages/joy-api/src/logger'
 
 export class SyncService {
   private syncService: ISyncService

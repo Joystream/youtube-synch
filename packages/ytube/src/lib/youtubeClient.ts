@@ -257,7 +257,7 @@ class YoutubeClient implements IYoutubeClient {
           frequency: 0,
           publishedAt: channel.snippet?.publishedAt,
           shouldBeIngested: true,
-          yppStatus: 'Active',
+          yppStatus: 'Unverified',
           createdAt: Date.now(),
           lastActedAt: Date.now(),
           phantomKey: 'phantomData',

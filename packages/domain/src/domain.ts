@@ -169,25 +169,6 @@ export type Thumbnails = {
   standard: string
 }
 
-const readOnlyVideoStates = [
-  // Newly tracked youtube video (in the backend syncing system)
-  'New',
-  // Video is being creating on Joystream network (by calling extrinsics, but not yet uploaded)
-  'CreatingVideo',
-  // Video has been created on Joystream network (by calling extrinsics, but not yet uploaded)
-  'VideoCreated',
-  // `create_video` extrinsic errored
-  'VideoCreationFailed',
-  // Video is being uploaded to Joystream
-  'UploadStarted',
-  // Video upload to Joystream failed
-  'UploadFailed',
-  // Video upload to Joystream succeeded
-  'UploadSucceeded',
-  // Video was deleted from joystream, so it should not be synced again
-  'NotToBeSyncedAgain',
-] as const
-
 export enum VideoStates {
   New = 1,
   // `create_video` extrinsic errored
@@ -206,7 +187,7 @@ export enum VideoStates {
   NotToBeSyncedAgain = 8,
 }
 
-const readonlyChannelYppStatus = ['Active', 'Suspended', 'OptedOut'] as const
+const readonlyChannelYppStatus = ['Unverified', 'Verified', 'Suspended', 'OptedOut'] as const
 
 export const videoStates = Object.keys(VideoStates).filter((v) => isNaN(Number(v)))
 

@@ -38,7 +38,7 @@
     },
     "/channels": {
       "post": {
-        "operationId": "ChannelsController_addVerifiedChannel",
+        "operationId": "ChannelsController_saveChannel",
         "summary": "",
         "description": "Creates user from the supplied google authorization code and fetches\n     user's channel and if it satisfies YPP induction criteria it saves the record",
         "parameters": [],
@@ -211,6 +211,44 @@
         "operationId": "ChannelsController_suspendChannels",
         "summary": "",
         "description": "Authenticated endpoint to suspend given channel/s from YPP program",
+        "parameters": [
+          {
+            "name": "authorization",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SuspendChannelDto"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
+    "/channels/verify": {
+      "put": {
+        "operationId": "ChannelsController_verifyChannels",
+        "summary": "",
+        "description": "Authenticated endpoint to verify given channel/s in YPP program",
         "parameters": [
           {
             "name": "authorization",
@@ -643,6 +681,17 @@
           "channel"
         ]
       },
+      "IngestChannelMessage": {
+        "type": "object",
+        "properties": {
+          "videoCategoryId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "videoCategoryId"
+        ]
+      },
       "IngestChannelDto": {
         "type": "object",
         "properties": {
@@ -650,13 +699,17 @@
             "type": "string"
           },
           "message": {
-            "type": "object"
+            "$ref": "#/components/schemas/IngestChannelMessage"
           }
         },
         "required": [
           "signature",
           "message"
         ]
+      },
+      "OptoutChannelMessage": {
+        "type": "object",
+        "properties": {}
       },
       "OptoutChannelDto": {
         "type": "object",
@@ -665,7 +718,7 @@
             "type": "string"
           },
           "message": {
-            "type": "object"
+            "$ref": "#/components/schemas/OptoutChannelMessage"
           }
         },
         "required": [

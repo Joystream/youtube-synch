@@ -1,7 +1,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 
 import { JoystreamLibError } from './errors'
-import { Logger } from './logger'
+import { Logger } from '@youtube-sync/domain'
 
 import { JoystreamLibExtrinsics } from './extrinsics'
 import { AccountId } from '@polkadot/types/interfaces'
