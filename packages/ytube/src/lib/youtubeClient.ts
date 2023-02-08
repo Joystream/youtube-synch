@@ -10,6 +10,7 @@ import {
 } from '@youtube-sync/domain'
 import { OAuth2Client } from 'google-auth-library'
 import { GetTokenResponse } from 'google-auth-library/build/src/auth/oauth2client'
+import { GaxiosError } from 'googleapis-common'
 import { parse, toSeconds } from 'iso8601-duration'
 import { Readable } from 'stream'
 import ytdl from 'ytdl-core'
@@ -71,7 +72,8 @@ class YoutubeClient implements IYoutubeClient {
 
       return { access_token: token.tokens.access_token, refresh_token: token.tokens.refresh_token }
     } catch (error) {
-      throw new Error(`Could not get User's access token using authorization code ${error}`)
+      const message = error instanceof GaxiosError ? error.response?.data : error
+      throw new Error(`Could not get User's access token using authorization code ${toPrettyJSON(message)}`)
     }
   }
 

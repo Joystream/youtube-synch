@@ -13,7 +13,6 @@ interface CommonInfraOutput {
   usersTableArn: string
   channelsTableArn: string
   videosTableArn: string
-  videoLogsTableArn: string
   statsTableArn: string
 }
 
