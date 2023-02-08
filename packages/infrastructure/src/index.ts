@@ -1,7 +1,7 @@
 import * as aws from '@pulumi/aws'
 // pulumi doesn't work properly with monorepos atm
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { User, Channel, Video, VideoEvent, Stats } from '../../domain/src'
+import { User, Channel, Video, Stats } from '../../domain/src'
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { AvailableTopic } from '../../ytube/src'
 import * as awsx from '@pulumi/awsx'
@@ -157,28 +157,8 @@ const videosTable = new aws.dynamodb.Table('videos', {
     },
   ],
   billingMode: 'PROVISIONED',
-  readCapacity: 1,
-  writeCapacity: 1,
-  tags: { environment: resourceSuffix },
-})
-
-const videoLogsTable = new aws.dynamodb.Table('videoLogs', {
-  attributes: [
-    {
-      name: 'videoId',
-      type: 'S',
-    },
-    {
-      name: 'channelId',
-      type: 'S',
-    },
-  ],
-  name: 'videoLogs',
-  hashKey: nameof<VideoEvent>('channelId'), // we'll have a single partition for users
-  rangeKey: nameof<VideoEvent>('videoId'),
-  billingMode: 'PROVISIONED',
-  readCapacity: 1,
-  writeCapacity: 1,
+  readCapacity: 10,
+  writeCapacity: 10,
   tags: { environment: resourceSuffix },
 })
 
@@ -219,7 +199,6 @@ const uploadVideoEvents = new aws.sns.Topic(<AvailableTopic>'uploadVideoEvents',
 export const usersTableArn = userTable.arn
 export const channelsTableArn = channelsTable.arn
 export const videosTableArn = videosTable.arn
-export const videoLogsTableArn = videoLogsTable.arn
 export const statsTableArn = statsTable.arn
 
 export const createVideosTopicArn = createVideoEvents.arn
