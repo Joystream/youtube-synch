@@ -252,7 +252,7 @@ export class Video {
   createdAt: Date
 
   // youtube video license
-  license: string
+  license: 'creativeCommon' | 'youtube'
 
   // Joystream video category to be assigned to synced videos
   category: string
