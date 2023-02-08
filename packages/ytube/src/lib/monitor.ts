@@ -172,11 +172,13 @@ export class SyncService {
       throw new Error(`Video with id ${videoId} not found in channel ${channelId}`)
     }
 
-    // if video hasn't finished processing on Youtube, it's a private
-    // video, or it has been already created, then don't sync it yet
+    // DON'T sync a video if
+    // 1. if it hasn't finished processing on Youtube
+    // 2. it's not a public video
+    // 3. it has already been synced
     if (
       video.uploadStatus !== 'processed' ||
-      video.privacyStatus === 'private' ||
+      video.privacyStatus !== 'public' ||
       VideoStates[video.state] >= VideoStates.VideoCreated
     ) {
       return
