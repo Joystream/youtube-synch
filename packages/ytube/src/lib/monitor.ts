@@ -70,7 +70,16 @@ export class SyncService {
     // 1. `yppStatus` flag should be set to  `Active`
     // 2. `shouldBeIngested` flag should be set to true
     const channelsToBeIngested = await this.channelsRepository.scan('frequency', (s) =>
-      s.in(frequencies).filter('yppStatus').eq('Active').and().filter('shouldBeIngested').eq(true)
+      s
+        .in(frequencies)
+        .filter('yppStatus')
+        .eq('Verified')
+        .or()
+        .filter('yppStatus')
+        .eq('Unverified')
+        .and()
+        .filter('shouldBeIngested')
+        .eq(true)
     )
 
     // updated channel objects with latest subscriber count info
@@ -92,7 +101,7 @@ export class SyncService {
               ...ch,
               yppStatus: 'OptedOut',
               shouldBeIngested: false,
-              lastActedAt: Date.now(),
+              lastActedAt: new Date(),
             }
           }
 
@@ -105,7 +114,7 @@ export class SyncService {
     await this.channelsRepository.upsertAll(updatedChannels)
 
     // create channels event
-    const channelsEvent = channelsToBeIngested.map((ch) => new IngestChannel(ch, Date.now()))
+    const channelsEvent = channelsToBeIngested.map((ch) => new IngestChannel(ch, new Date()))
 
     // publish events
     return this.snsClient.publishAll(channelsEvent, 'channelEvents')
@@ -122,7 +131,7 @@ export class SyncService {
     this.usersRepository.save(user)
 
     // create channel events
-    const channelEvents = channels.map((ch) => new ChannelSpotted(ch, Date.now()))
+    const channelEvents = channels.map((ch) => new ChannelSpotted(ch, new Date()))
 
     // publish events
     return this.snsClient.publishAll(channelEvents, 'channelEvents')
@@ -141,7 +150,7 @@ export class SyncService {
     // create video events
     const videoEvents = updatedVideos.reduce((events: VideoEvent[], v) => {
       if (v.state === 'New' || v.state === 'VideoCreationFailed') {
-        events.push(new VideoEvent(v.state, v.id, v.title, v.channelId, Date.now()))
+        events.push(new VideoEvent(v.state, v.id, v.title, v.channelId, new Date()))
       }
       return events
     }, [])
@@ -186,7 +195,7 @@ export class SyncService {
       await this.videosRepository.save({ ...video, joystreamVideo, state: 'VideoCreated' })
 
       // upload video event
-      const videoCreatedEvent = new VideoEvent('VideoCreated', video.id, video.title, video.channelId, Date.now())
+      const videoCreatedEvent = new VideoEvent('VideoCreated', video.id, video.title, video.channelId, new Date())
 
       // publish upload video event
       return this.snsClient.publish(videoCreatedEvent, 'uploadVideoEvents')
@@ -200,7 +209,7 @@ export class SyncService {
         video.id,
         video.title,
         video.channelId,
-        Date.now()
+        new Date()
       )
 
       // publish video creation failed event
@@ -234,7 +243,7 @@ export class SyncService {
       await this.videosRepository.save({ ...video, state: 'UploadFailed' })
 
       // upload video event
-      const uploadFailedEvent = new VideoEvent('UploadFailed', video.id, video.title, video.channelId, Date.now())
+      const uploadFailedEvent = new VideoEvent('UploadFailed', video.id, video.title, video.channelId, new Date())
 
       // publish upload video event
       return this.snsClient.publish(uploadFailedEvent, 'uploadVideoEvents')

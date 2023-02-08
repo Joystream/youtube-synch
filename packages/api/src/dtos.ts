@@ -2,14 +2,9 @@ import { MemberId } from '@joystream/types/primitives'
 import { ApiProperty } from '@nestjs/swagger'
 import { Channel, JoystreamVideo, User, Video, VideoState, getConfig as config } from '@youtube-sync/domain'
 import { Type } from 'class-transformer'
-import { IsBoolean, IsEmail, IsNumber, IsString, IsUrl, ValidateIf, ValidateNested } from 'class-validator'
+import { IsBoolean, IsDate, IsEmail, IsNumber, IsString, IsUrl, ValidateIf, ValidateNested } from 'class-validator'
 
 // NestJS Data Transfer Objects (DTO)s
-
-export class MembershipDto {
-  @ApiProperty() memberId: MemberId
-  @ApiProperty() address: string
-}
 
 export class ThumbnailsDto {
   @ApiProperty() default: string
@@ -148,12 +143,14 @@ class IngestChannelMessage {
   @ApiProperty({ required: true })
   videoCategoryId: string
 
-  @IsNumber() timestamp: number
+  @Type(() => Date)
+  @IsDate()
+  timestamp: Date
 }
 
 class OptoutChannelMessage {
   @IsBoolean() optout: boolean
-  @IsNumber() timestamp: number
+  @IsDate() timestamp: Date
 }
 
 export class IngestChannelDto {

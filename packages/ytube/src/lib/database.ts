@@ -1,17 +1,17 @@
 import { Channel, Stats, User, Video, channelYppStatus, videoStates } from '@youtube-sync/domain'
 import * as dynamoose from 'dynamoose'
-import { ConditionInitalizer as ConditionInitializer } from 'dynamoose/dist/Condition'
-import { AnyDocument } from 'dynamoose/dist/Document'
-import { Query, Scan } from 'dynamoose/dist/DocumentRetriever'
+import { ConditionInitializer } from 'dynamoose/dist/Condition'
+import { AnyItem, Item } from 'dynamoose/dist/Item'
+import { Query, Scan } from 'dynamoose/dist/ItemRetriever'
 import { DeepPartial, ModelType } from 'dynamoose/dist/General'
-import { ModelOptions } from 'dynamoose/dist/Model'
+import { TableOptions } from 'dynamoose/dist/Table'
 import { omit } from 'ramda'
 
 // Schemas defined here are only for modeling purpose and not for creating tables itself,
 // as Pulumi is responsible all sort of infrastructure provisioning and deployment.
-const DYNAMO_MODEL_OPTIONS: DeepPartial<ModelOptions> = { create: false }
+const DYNAMO_MODEL_OPTIONS: DeepPartial<TableOptions> = { create: false }
 
-export function createChannelModel(): ModelType<AnyDocument> {
+export function createChannelModel() {
   const channelSchema = new dynamoose.Schema(
     {
       // ID of the Youtube channel
@@ -50,6 +50,19 @@ export function createChannelModel(): ModelType<AnyDocument> {
       // Youtube channel creation date
       publishedAt: String,
 
+      // Timestamp of the last action performed by channel owner (using its owner controller keys)
+      lastActedAt: {
+        type: {
+          value: Date,
+          settings: {
+            storage: 'iso',
+          },
+        },
+        get: (value: any) => {
+          return new Date(value)
+        },
+      },
+
       // Channel's statistics
       statistics: {
         type: Object,
@@ -72,7 +85,7 @@ export function createChannelModel(): ModelType<AnyDocument> {
       frequency: {
         type: Number,
         index: {
-          global: true,
+          type: 'global',
           rangeKey: 'id',
           name: 'frequency-id-index',
         },
@@ -113,15 +126,33 @@ export function createChannelModel(): ModelType<AnyDocument> {
     {
       saveUnknown: true,
       timestamps: {
-        createdAt: 'createdAt',
-        updatedAt: 'updatedAt',
+        createdAt: {
+          createdAt: {
+            type: {
+              value: Date,
+              settings: {
+                storage: 'iso',
+              },
+            },
+          },
+        },
+        updatedAt: {
+          updatedAt: {
+            type: {
+              value: Date,
+              settings: {
+                storage: 'iso',
+              },
+            },
+          },
+        },
       },
     }
   )
   return dynamoose.model('channels', channelSchema, DYNAMO_MODEL_OPTIONS)
 }
 
-export function createUserModel(): ModelType<AnyDocument> {
+export function createUserModel() {
   const userSchema = new dynamoose.Schema(
     {
       id: {
@@ -156,8 +187,26 @@ export function createUserModel(): ModelType<AnyDocument> {
     {
       saveUnknown: true,
       timestamps: {
-        createdAt: 'createdAt',
-        updatedAt: 'updatedAt',
+        createdAt: {
+          createdAt: {
+            type: {
+              value: Date,
+              settings: {
+                storage: 'iso',
+              },
+            },
+          },
+        },
+        updatedAt: {
+          updatedAt: {
+            type: {
+              value: Date,
+              settings: {
+                storage: 'iso',
+              },
+            },
+          },
+        },
       },
     }
   )
@@ -225,6 +274,9 @@ export function videoRepository() {
       // The privacy status of the youtube
       privacyStatus: String,
 
+      // License of the youtube video
+      license: String,
+
       // Video's container
       container: String,
 
@@ -247,15 +299,33 @@ export function videoRepository() {
     {
       saveUnknown: true,
       timestamps: {
-        createdAt: 'createdAt',
-        updatedAt: 'updatedAt',
+        createdAt: {
+          createdAt: {
+            type: {
+              value: Date,
+              settings: {
+                storage: 'iso',
+              },
+            },
+          },
+        },
+        updatedAt: {
+          updatedAt: {
+            type: {
+              value: Date,
+              settings: {
+                storage: 'iso',
+              },
+            },
+          },
+        },
       },
     }
   )
   return dynamoose.model('videos', videoSchema, DYNAMO_MODEL_OPTIONS)
 }
 
-export function videoStateRepository(): ModelType<AnyDocument> {
+export function videoStateRepository(): ModelType<AnyItem> {
   const videoStateSchema = new dynamoose.Schema(
     {
       // ID of the video
@@ -284,7 +354,7 @@ export function videoStateRepository(): ModelType<AnyDocument> {
   return dynamoose.model('videoLogs', videoStateSchema, DYNAMO_MODEL_OPTIONS)
 }
 
-export function statsRepository(): ModelType<AnyDocument> {
+export function statsRepository() {
   const schema = new dynamoose.Schema({
     partition: {
       type: String,
@@ -300,21 +370,21 @@ export function statsRepository(): ModelType<AnyDocument> {
   return dynamoose.model('stats', schema, DYNAMO_MODEL_OPTIONS)
 }
 
-export function mapTo<TEntity>(doc: AnyDocument) {
-  return doc.original() as TEntity
+export function mapTo<TEntity>(doc: AnyItem) {
+  return doc.serialize() as TEntity
 }
 
 export interface IRepository<T> {
   get(partition: string, id: string): Promise<T | undefined>
   save(model: T, partition: string): Promise<T>
   delete(partition: string, id: string): Promise<void>
-  query(init: ConditionInitializer, f: (q: Query<AnyDocument>) => Query<AnyDocument>): Promise<T[]>
-  scan(init: ConditionInitializer, f: (q: Scan<AnyDocument>) => Scan<AnyDocument>): Promise<T[]>
+  query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>): Promise<T[]>
+  scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<T[]>
   upsertAll(items: T[]): Promise<T[]>
 }
 
 export class UsersRepository implements IRepository<User> {
-  private model: ModelType<AnyDocument>
+  private model
   constructor() {
     this.model = createUserModel()
   }
@@ -324,7 +394,7 @@ export class UsersRepository implements IRepository<User> {
     return results
   }
 
-  async scan(init: ConditionInitializer, f: (q: Scan<AnyDocument>) => Scan<AnyDocument>): Promise<User[]> {
+  async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<User[]> {
     const results = await f(this.model.scan(init)).exec()
     return results.map((r) => mapTo<User>(r))
   }
@@ -334,9 +404,9 @@ export class UsersRepository implements IRepository<User> {
     return result ? mapTo<User>(result) : undefined
   }
 
-  async save(model: User): Promise<User> {
-    const update = omit(['id', 'updatedAt'], model)
-    const result = await this.model.update({ id: model.id }, update)
+  async save(user: User): Promise<User> {
+    const update = omit(['id', 'updatedAt'], user)
+    const result = await this.model.update({ id: user.id }, update)
     return mapTo<User>(result)
   }
 
@@ -345,14 +415,14 @@ export class UsersRepository implements IRepository<User> {
     return
   }
 
-  async query(init: ConditionInitializer, f: (q: Query<AnyDocument>) => Query<AnyDocument>) {
+  async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>) {
     const results = await f(this.model.query(init)).exec()
     return results.map((r) => mapTo<User>(r))
   }
 }
 
 export class ChannelsRepository implements IRepository<Channel> {
-  private model: ModelType<AnyDocument>
+  private model
   constructor() {
     this.model = createChannelModel()
   }
@@ -362,7 +432,7 @@ export class ChannelsRepository implements IRepository<Channel> {
     return results
   }
 
-  async scan(init: ConditionInitializer, f: (q: Scan<AnyDocument>) => Scan<AnyDocument>): Promise<Channel[]> {
+  async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<Channel[]> {
     const results = await f(this.model.scan(init)).exec()
     return results.map((r) => mapTo<Channel>(r))
   }
@@ -383,17 +453,14 @@ export class ChannelsRepository implements IRepository<Channel> {
     return
   }
 
-  async query(init: ConditionInitializer, f: (q: Query<AnyDocument>) => Query<AnyDocument>) {
+  async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>) {
     const results = await f(this.model.query(init)).exec()
     return results.map((r) => mapTo<Channel>(r))
   }
 }
 
 export class VideosRepository implements IRepository<Video> {
-  /**
-   *
-   */
-  private model: ModelType<AnyDocument>
+  private model
   constructor() {
     this.model = videoRepository()
   }
@@ -403,7 +470,7 @@ export class VideosRepository implements IRepository<Video> {
     return results
   }
 
-  async scan(init: ConditionInitializer, f: (q: Scan<AnyDocument>) => Scan<AnyDocument>): Promise<Video[]> {
+  async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<Video[]> {
     const results = await f(this.model.scan(init)).exec()
     return results.map((r) => mapTo<Video>(r))
   }
@@ -430,13 +497,13 @@ export class VideosRepository implements IRepository<Video> {
     return
   }
 
-  async query(init: ConditionInitializer, f: (q: Query<AnyDocument>) => Query<AnyDocument>): Promise<Video[]> {
+  async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>): Promise<Video[]> {
     const results = await f(this.model.query(init)).exec()
     return results.map((r) => mapTo<Video>(r))
   }
 }
 export class StatsRepository implements IRepository<Stats> {
-  private model: ModelType<AnyDocument>
+  private model
   constructor() {
     this.model = statsRepository()
   }
@@ -472,7 +539,7 @@ export class StatsRepository implements IRepository<Stats> {
     throw new Error('Not implemented')
   }
 
-  async scan(init: ConditionInitializer, f: (q: Scan<AnyDocument>) => Scan<AnyDocument>): Promise<Stats[]> {
+  async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<Stats[]> {
     const results = await f(this.model.scan(init)).exec()
     return results.map((r) => mapTo<Stats>(r))
   }
@@ -492,7 +559,7 @@ export class StatsRepository implements IRepository<Stats> {
     throw Error('Deleting Youtube Quota stats is not implemented')
   }
 
-  async query(init: ConditionInitializer, f: (q: Query<AnyDocument>) => Query<AnyDocument>) {
+  async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>) {
     const results = await f(this.model.query(init)).exec()
     return results.map((r) => mapTo<Stats>(r))
   }

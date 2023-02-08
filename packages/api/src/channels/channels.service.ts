@@ -49,7 +49,7 @@ export class ChannelsService {
     // TODO: scan operation here, and figure out why it's not working now
 
     const allChannels = await this.channelsRepository.scan('id', (s) => s)
-    return allChannels.sort((a, b) => b.createdAt - a.createdAt).slice(0, count)
+    return allChannels.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, count)
   }
 
   async getAllWithFrequency(frequency: number): Promise<Channel[]> {
