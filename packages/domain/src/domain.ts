@@ -35,7 +35,7 @@ export class Channel {
   publishedAt: string
 
   // record creation time
-  createdAt: number
+  createdAt: Date
 
   // channel thumbnails
   thumbnails: Thumbnails
@@ -72,14 +72,14 @@ export class Channel {
 
   // Timestamp of the last time this channel changed its syncing/ypp status.
   // This field serves the purpose of nonce to avoid playback attacks
-  lastActedAt: number
+  lastActedAt: Date
 
   // Needs a dummy partition key on GSI to be able to query by createdAt fields
   phantomKey: string
 }
 
 export interface IEvent {
-  timestamp: number
+  timestamp: Date
   subject: string
 }
 
@@ -87,12 +87,12 @@ export class ChannelSpotted implements IEvent {
   /**
    *
    */
-  constructor(public channel: Channel, public timestamp: number) {}
+  constructor(public channel: Channel, public timestamp: Date) {}
   subject = 'channelSpotted'
 }
 
 export class IngestChannel implements IEvent {
-  constructor(public channel: Channel, public timestamp: number) {
+  constructor(public channel: Channel, public timestamp: Date) {
     this.channel = channel
     this.timestamp = timestamp
   }
@@ -101,7 +101,7 @@ export class IngestChannel implements IEvent {
 }
 
 export class UserCreated implements IEvent {
-  constructor(public user: User, public timestamp: number) {
+  constructor(public user: User, public timestamp: Date) {
     this.user = user
     this.timestamp = timestamp
   }
@@ -110,7 +110,7 @@ export class UserCreated implements IEvent {
 }
 
 export class UserIngestionTriggered implements IEvent {
-  constructor(public user: User, public timestamp: number) {
+  constructor(public user: User, public timestamp: Date) {
     this.user = user
     this.timestamp = timestamp
   }
@@ -125,7 +125,7 @@ export class VideoEvent implements IEvent {
     public videoId: string,
     public videoTitle: string,
     public channelId: string,
-    public timestamp: number
+    public timestamp: Date
   ) {
     this.subject = state
   }
@@ -139,27 +139,23 @@ export type Membership = {
 }
 
 export class User {
-  constructor(
-    // Youtube user ID
-    public id: string,
+  // Youtube user ID
+  id: string
 
-    // Youtube User email
-    public email: string,
+  // Youtube User email
+  email: string
 
-    // User access token
-    public accessToken: string,
+  // User access token
+  accessToken: string
 
-    // User refresh token
-    public refreshToken: string,
+  // User refresh token
+  refreshToken: string
 
-    // User authorization code
-    public authorizationCode: string,
+  // User authorization code
+  authorizationCode: string
 
-    // Record created At timestamp
-    public createdAt: number
-  ) {}
-
-  membership: Membership
+  // Record created At timestamp
+  createdAt: Date
 }
 
 export type Thumbnails = {
@@ -253,7 +249,7 @@ export class Video {
   privacyStatus: 'public' | 'private' | 'unlisted'
 
   // record creation time
-  createdAt: number
+  createdAt: Date
 
   // youtube video license
   license: string

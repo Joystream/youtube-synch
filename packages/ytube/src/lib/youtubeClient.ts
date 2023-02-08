@@ -92,14 +92,14 @@ class YoutubeClient implements IYoutubeClient {
       )
     }
 
-    const user = new User(
-      tokenInfo.sub,
-      tokenInfo.email,
-      tokenResponse.access_token,
-      tokenResponse.refresh_token,
-      code,
-      Date.now()
-    )
+    const user: User = {
+      id: tokenInfo.sub,
+      email: tokenInfo.email,
+      accessToken: tokenResponse.access_token,
+      refreshToken: tokenResponse.refresh_token,
+      authorizationCode: code,
+      createdAt: new Date(),
+    }
     return user
   }
 
@@ -258,8 +258,8 @@ class YoutubeClient implements IYoutubeClient {
           publishedAt: channel.snippet?.publishedAt,
           shouldBeIngested: true,
           yppStatus: 'Unverified',
-          createdAt: Date.now(),
-          lastActedAt: Date.now(),
+          createdAt: new Date(),
+          lastActedAt: new Date(),
           phantomKey: 'phantomData',
         }
     )
@@ -282,7 +282,7 @@ class YoutubeClient implements IYoutubeClient {
           url: `https://youtube.com/watch?v=${video.snippet?.resourceId?.videoId}`,
           resourceId: video.snippet?.resourceId?.videoId,
           publishedAt: video.contentDetails?.videoPublishedAt,
-          createdAt: Date.now(),
+          createdAt: new Date(),
           category: channel.videoCategoryId,
           language: channel.joystreamChannelLanguageId,
           privacyStatus: video.status?.privacyStatus,

@@ -104,7 +104,7 @@ const channelsTable = new aws.dynamodb.Table('channels', {
     },
     {
       name: nameof<Channel>('createdAt'),
-      type: 'N',
+      type: 'S',
     },
     {
       name: nameof<Channel>('phantomKey'),

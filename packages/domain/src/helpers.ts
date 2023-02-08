@@ -1,4 +1,5 @@
 import { config } from 'aws-sdk'
+import * as dynamoose from 'dynamoose'
 import { getConfig } from './config'
 
 export function setAwsConfig() {
@@ -6,10 +7,14 @@ export function setAwsConfig() {
   DEPLOYMENT_ENV === 'local' &&
     config.update({
       region: process.env.AWS_REGION,
-      dynamodb: { endpoint: AWS_ENDPOINT },
+      dynamodb: { endpoint: AWS_ENDPOINT }, // -> doesn't seem to not work
       sns: { endpoint: AWS_ENDPOINT },
       s3: { endpoint: AWS_ENDPOINT },
     })
+
+  // Separately configure dynamoose with local endpoint
+  // because somehow it doesn't work with aws-sdk config
+  DEPLOYMENT_ENV === 'local' && dynamoose.aws.ddb.local(AWS_ENDPOINT)
 }
 
 export function toPrettyJSON(obj: unknown) {
