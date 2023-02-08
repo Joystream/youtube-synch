@@ -7,6 +7,7 @@ import {
   WithRequired,
   YoutubeAuthorizationError,
   getConfig,
+  toPrettyJSON,
 } from '@youtube-sync/domain'
 import { OAuth2Client } from 'google-auth-library'
 import { GetTokenResponse } from 'google-auth-library/build/src/auth/oauth2client'
@@ -288,6 +289,7 @@ class YoutubeClient implements IYoutubeClient {
           category: channel.videoCategoryId,
           language: channel.joystreamChannelLanguageId,
           privacyStatus: video.status?.privacyStatus,
+          license: videosDetails[i].status?.license,
           duration: toSeconds(parse(videosDetails[i].contentDetails?.duration ?? 'PT0S')),
           container: videosDetails[i].fileDetails?.container,
           uploadStatus: videosDetails[i].status?.uploadStatus,

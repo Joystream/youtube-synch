@@ -1,7 +1,7 @@
-import { IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
+import { ILicense, IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
 import { ChannelId, MemberId } from '@joystream/types/primitives'
-import { Channel, Thumbnails, Video } from '@youtube-sync/domain'
+import { Channel, Logger, Thumbnails, Video } from '@youtube-sync/domain'
 import axios from 'axios'
 import { BN } from 'bn.js'
 import { Readable } from 'stream'
@@ -58,9 +58,9 @@ export class JoystreamClient {
 
 async function parseVideoInputs(video: Video): Promise<[IVideoMetadata, VideoInputAssets]> {
   const assets: VideoInputAssets = {}
-  const hashVideoStream = ytdl(video.url, { quality: 'highest' })
-  // const metadataVideoStream = ytdl(video.url, { quality: 'highest' })
-  const { hash: videoHash, size: videoSize } = await computeFileHashAndSize(hashVideoStream)
+  const videoHashStream = ytdl(video.url, { quality: 'highest' })
+  // const videoMetadataStream = ytdl(video.url, { quality: 'highest' })
+  const { hash: videoHash, size: videoSize } = await computeFileHashAndSize(videoHashStream)
   console.log(`Hash ${videoHash}, size: ${videoSize}`)
   const videoAssetMeta: DataObjectMetadata = {
     ipfsHash: videoHash,
@@ -81,6 +81,7 @@ async function parseVideoInputs(video: Video): Promise<[IVideoMetadata, VideoInp
     language: video.language,
     isPublic: true,
     duration: video.duration,
+    license: getVideoLicense(video),
   }
   const videoMetadata = asValidatedMetadata(VideoMetadata, videoInputParameters)
 
@@ -111,5 +112,20 @@ function setVideoMetadataDefaults(metadata: IVideoMetadata, videoFileMetadata: V
       mimeMediaType: videoFileMetadata.mimeType,
     },
     ...metadata,
+  }
+}
+
+function getVideoLicense(video: Video): ILicense {
+  // FROM https://github.com/Joystream/atlas/blob/master/packages/atlas/src/data/knownLicenses.json
+  // `creativeCommon` license video gets `CCO` license on joystream (code 1002)
+  if (video.license === 'creativeCommon') {
+    return {
+      code: 1002,
+    }
+  }
+
+  // `youtube` license video gets `joystream` license on joystream (code 1009)
+  return {
+    code: 1009,
   }
 }
