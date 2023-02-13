@@ -74,7 +74,7 @@ export class ChannelsController {
       }
 
       // get channel from user
-      const [channel] = await this.youtube.getChannels(user)
+      const channel = await this.youtube.getChannel(user)
 
       // reset authorization code to prevent repeated save channel requests by authorization code re-use
       const updatedUser: User = { ...user, email, authorizationCode: cryptoRandomString({ length: 10 }) }

@@ -15,8 +15,8 @@ export class AccountsUtil {
   constructor() {
     cryptoWaitReady().then(() => {
       this.keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
-      const seed = getConfig().JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_SEED
-      seed && this.keyring.addFromUri(seed)
+      const mnemonic = getConfig().JOYSTREAM_CHANNEL_COLLABORATOR_ACCOUNT_MNEMONIC
+      mnemonic && this.keyring.addFromMnemonic(mnemonic)
     })
   }
 

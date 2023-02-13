@@ -51,19 +51,21 @@ import {
 } from './generated/queries'
 import { Maybe } from './generated/schema'
 import { StorageNodeInfo } from '../types'
+import { Logger } from '@youtube-sync/domain'
 
 export default class QueryNodeApi {
   private _qnClient: ApolloClient<NormalizedCacheObject>
+  private logger: typeof Logger
 
-  public constructor(uri: string, errorHandler?: ErrorLink.ErrorHandler) {
-    const links: ApolloLink[] = []
-    if (errorHandler) {
-      links.push(onError(errorHandler))
-    }
-    links.push(new HttpLink({ uri, fetch }))
+  public constructor(endpoint: string, exitOnError = false) {
+    const errorLink = onError(({ graphQLErrors, networkError }) => {
+      const message = networkError?.message || 'Graphql syntax errors found'
+      this.logger.error('Error when trying to execute a query!', { err: { message, graphQLErrors, networkError } })
+      exitOnError && process.exit(-1)
+    })
     this._qnClient = new ApolloClient({
-      link: from(links),
-      cache: new InMemoryCache({ addTypename: false }),
+      link: from([errorLink, new HttpLink({ uri: endpoint, fetch })]),
+      cache: new InMemoryCache(),
       defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
     })
   }

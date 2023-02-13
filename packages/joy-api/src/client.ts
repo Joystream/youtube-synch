@@ -28,6 +28,22 @@ export class JoystreamClient {
     this.accounts = new AccountsUtil()
   }
 
+  async getApi() {
+    return this.lib.api
+  }
+
+  async channelById(id: number) {
+    return this.lib.api.query.content.channelById(id)
+  }
+
+  async hasChannelCollaborator(channelId: number, memberId: string) {
+    const { collaborators } = await this.channelById(channelId)
+    const isCollaboratorSet = [...collaborators].some(
+      ([member, permissions]) => member.toString() === memberId && [...permissions].some((p) => p.isAddVideo)
+    )
+    return isCollaboratorSet
+  }
+
   async createVideo(memberId: MemberId, channel: Channel, video: Video): Promise<Video> {
     const member = await this.qnApi.memberById(memberId)
     if (!member) {
