@@ -28,7 +28,7 @@ const MINIMUM_CHANNEL_AGE_HOURS = parseFloat(config.MINIMUM_CHANNEL_AGE_HOURS)
 
 export interface IYoutubeClient {
   getUserFromCode(code: string, youtubeRedirectUri: string): Promise<User>
-  getChannels(user: Pick<User, 'id' | 'accessToken' | 'refreshToken'>): Promise<Channel[]>
+  getChannel(user: Pick<User, 'id' | 'accessToken' | 'refreshToken'>): Promise<Channel>
   getVerifiedChannel(user: User): Promise<Channel>
   getVideos(channel: Channel, top: number): Promise<Video[]>
   getAllVideos(channel: Channel, max: number): Promise<Video[]>
@@ -106,25 +106,25 @@ class YoutubeClient implements IYoutubeClient {
     return user
   }
 
-  async getChannels(user: Pick<User, 'id' | 'accessToken' | 'refreshToken'>) {
+  async getChannel(user: Pick<User, 'id' | 'accessToken' | 'refreshToken'>) {
     const yt = this.getYoutube(user.accessToken, user.refreshToken)
 
     const channelResponse = await yt.channels.list({
       part: ['snippet', 'contentDetails', 'statistics'],
       mine: true,
     })
-    const channels = this.mapChannels(user, channelResponse.data.items ?? [])
-
-    return channels
-  }
-
-  async getVerifiedChannel(user: User): Promise<Channel> {
-    const [channel] = await this.getChannels(user)
+    const [channel] = this.mapChannels(user, channelResponse.data.items ?? [])
 
     // Ensure channel exists
     if (!channel) {
       throw new YoutubeAuthorizationError(ExitCodes.CHANNEL_NOT_FOUND, `No Youtube Channel exists for given user`)
     }
+
+    return channel
+  }
+
+  async getVerifiedChannel(user: User): Promise<Channel> {
+    const channel = await this.getChannel(user)
 
     const errors: YoutubeAuthorizationError[] = []
     if (channel.statistics.subscriberCount < MINIMUM_SUBSCRIBERS_COUNT) {
@@ -289,6 +289,7 @@ class YoutubeClient implements IYoutubeClient {
           category: channel.videoCategoryId,
           language: channel.joystreamChannelLanguageId,
           privacyStatus: video.status?.privacyStatus,
+          liveBroadcastContent: videosDetails[i].snippet?.liveBroadcastContent,
           license: videosDetails[i].status?.license,
           duration: toSeconds(parse(videosDetails[i].contentDetails?.duration ?? 'PT0S')),
           container: videosDetails[i].fileDetails?.container,
@@ -333,14 +334,17 @@ class QuotaTrackingClient implements IYoutubeClient {
     }
   }
 
-  async getChannels(user: Pick<User, 'id' | 'accessToken' | 'refreshToken'>) {
+  async getChannel(user: Pick<User, 'id' | 'accessToken' | 'refreshToken'>) {
     // ensure have some left api quota
     if (!(await this.canCallYoutube('sync'))) {
-      return []
+      throw new YoutubeAuthorizationError(
+        ExitCodes.YOUTUBE_QUOTA_LIMIT_EXCEEDED,
+        'No more quota left for signup. Please try again later.'
+      )
     }
 
     // get channels from api
-    const channels = await this.decorated.getChannels(user)
+    const channels = await this.decorated.getChannel(user)
 
     // increase used quota count by 1 because only one page is returned
     await this.increaseUsedQuota({ syncQuotaIncrement: 1 })

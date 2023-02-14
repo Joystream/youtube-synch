@@ -248,6 +248,9 @@ export class Video {
   // The video's privacy status. `private`, `public`, or `unlisted`.
   privacyStatus: 'public' | 'private' | 'unlisted'
 
+  // Indicates if the video is an upcoming/active live broadcast. else it's "none"
+  liveBroadcastContent: 'upcoming' | 'live' | 'none'
+
   // record creation time
   createdAt: Date
 

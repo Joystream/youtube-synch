@@ -150,7 +150,9 @@ class IngestChannelMessage {
 
 class OptoutChannelMessage {
   @IsBoolean() optout: boolean
-  @IsDate() timestamp: Date
+  @Type(() => Date)
+  @IsDate()
+  timestamp: Date
 }
 
 export class IngestChannelDto {

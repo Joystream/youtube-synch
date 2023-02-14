@@ -60,7 +60,7 @@ export class VideoStateKeeper {
     const videosByChannel = await videosRepo.query({ channelId: videoEvent.channelId }, (q) => q)
 
     const unSyncedVideosByChannel = videosByChannel.filter(
-      (v) => VideoStates[v.state] <= VideoStates.VideoCreationFailed
+      (v) => VideoStates[v.state] <= VideoStates.VideoCreationFailed && v.privacyStatus === 'public'
     )
     const percentageOfCreatorBacklogNotSynched = (unSyncedVideosByChannel.length * 100) / videosByChannel.length
 

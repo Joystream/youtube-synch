@@ -7,6 +7,7 @@ import {
   Video,
   VideoEvent,
   VideoStates,
+  getConfig,
   toPrettyJSON,
 } from '@youtube-sync/domain'
 import { JoystreamClient, Uploader } from '@youtube-sync/joy-api'
@@ -86,16 +87,30 @@ export class SyncService {
     const updatedChannels = await Promise.all(
       channelsToBeIngested.map(async (ch): Promise<Channel> => {
         try {
-          const [channel] = await this.youtube.getChannels({
+          const channel = await this.youtube.getChannel({
             id: ch.userId,
             accessToken: ch.userAccessToken,
             refreshToken: ch.userRefreshToken,
           })
 
+          // ensure that Ypp collaborator member is still set as channel's collaborator
+          const isCollaboratorSet = await this.joystreamClient.hasChannelCollaborator(
+            ch.joystreamChannelId,
+            getConfig().JOYSTREAM_CHANNEL_COLLABORATOR_MEMBER_ID
+          )
+          if (!isCollaboratorSet) {
+            return {
+              ...ch,
+              yppStatus: 'OptedOut',
+              shouldBeIngested: false,
+              lastActedAt: new Date(),
+            }
+          }
+
           return { ...ch, statistics: channel.statistics }
         } catch (error: unknown) {
-          // set `shouldBeIngested` to false, if app permission is revoked by user from Google account, because
-          // then trying to fetch user channel will throw error with code 400 and 'invalid_grant' message
+          // set `shouldBeIngested` to false & OptOut channel from Ypp program, if app permission is revoked by user from
+          // Google account, because then trying to fetch user channel will throw error with code 400 and 'invalid_grant' message
           if (error instanceof GaxiosError && error.code === '400' && error.response?.data?.error === 'invalid_grant') {
             return {
               ...ch,
@@ -121,20 +136,20 @@ export class SyncService {
   }
 
   async ingestChannels(user: User) {
-    // fetch all channels of user from youtube API
-    const channels = await this.youtube.getChannels(user)
+    // fetch channels of user from youtube API
+    const channel = await this.youtube.getChannel(user)
 
     // save channels
-    await this.channelsRepository.upsertAll(channels)
+    await this.channelsRepository.save(channel)
 
     // update user channels count
     this.usersRepository.save(user)
 
     // create channel events
-    const channelEvents = channels.map((ch) => new ChannelSpotted(ch, new Date()))
+    const channelEvent = new ChannelSpotted(channel, new Date())
 
     // publish events
-    return this.snsClient.publishAll(channelEvents, 'channelEvents')
+    return this.snsClient.publish(channelEvent, 'channelEvents')
   }
 
   async ingestAllVideos(channel: Channel, top: number) {
@@ -175,10 +190,12 @@ export class SyncService {
     // DON'T sync a video if
     // 1. if it hasn't finished processing on Youtube
     // 2. it's not a public video
-    // 3. it has already been synced
+    // 3. it's a live stream/broadcast
+    // 4. it has already been synced
     if (
       video.uploadStatus !== 'processed' ||
       video.privacyStatus !== 'public' ||
+      video.liveBroadcastContent !== 'none' ||
       VideoStates[video.state] >= VideoStates.VideoCreated
     ) {
       return
@@ -202,6 +219,8 @@ export class SyncService {
       // publish upload video event
       return this.snsClient.publish(videoCreatedEvent, 'uploadVideoEvents')
     } catch (error) {
+      Logger.error('VideoCreationFailed:', error instanceof Error ? error.message : error)
+
       // Update video state and save to DB
       await this.videosRepository.save({ ...video, state: 'VideoCreationFailed' })
 
@@ -241,6 +260,8 @@ export class SyncService {
       // Update video state and save to DB
       await this.videosRepository.save({ ...video, state: 'UploadSucceeded' })
     } catch (error) {
+      Logger.error('UploadFailed:', error instanceof Error ? error.message : error)
+
       // Update video state and save to DB
       await this.videosRepository.save({ ...video, state: 'UploadFailed' })
 
