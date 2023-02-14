@@ -289,6 +289,7 @@ class YoutubeClient implements IYoutubeClient {
           category: channel.videoCategoryId,
           language: channel.joystreamChannelLanguageId,
           privacyStatus: video.status?.privacyStatus,
+          liveBroadcastContent: videosDetails[i].snippet?.liveBroadcastContent,
           license: videosDetails[i].status?.license,
           duration: toSeconds(parse(videosDetails[i].contentDetails?.duration ?? 'PT0S')),
           container: videosDetails[i].fileDetails?.container,

@@ -190,10 +190,12 @@ export class SyncService {
     // DON'T sync a video if
     // 1. if it hasn't finished processing on Youtube
     // 2. it's not a public video
-    // 3. it has already been synced
+    // 3. it's a live stream/broadcast
+    // 4. it has already been synced
     if (
       video.uploadStatus !== 'processed' ||
       video.privacyStatus !== 'public' ||
+      video.liveBroadcastContent !== 'none' ||
       VideoStates[video.state] >= VideoStates.VideoCreated
     ) {
       return
@@ -217,6 +219,8 @@ export class SyncService {
       // publish upload video event
       return this.snsClient.publish(videoCreatedEvent, 'uploadVideoEvents')
     } catch (error) {
+      Logger.error('VideoCreationFailed:', error instanceof Error ? error.message : error)
+
       // Update video state and save to DB
       await this.videosRepository.save({ ...video, state: 'VideoCreationFailed' })
 
@@ -256,6 +260,8 @@ export class SyncService {
       // Update video state and save to DB
       await this.videosRepository.save({ ...video, state: 'UploadSucceeded' })
     } catch (error) {
+      Logger.error('UploadFailed:', error instanceof Error ? error.message : error)
+
       // Update video state and save to DB
       await this.videosRepository.save({ ...video, state: 'UploadFailed' })
 
