@@ -1,5 +1,5 @@
 import { Channel } from '@youtube-sync/domain'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import FormData from 'form-data'
 import _ from 'lodash'
 import QueryNodeApi from './graphql/QueryNodeApi'
@@ -25,22 +25,32 @@ export class Uploader {
     }
 
     for (const { dataObjectId, file } of assets) {
-      const formData = new FormData()
-      formData.append('file', file, 'video.mp4')
-      const res = await axios.post<VideoUploadResponse>(`${operator.apiEndpoint}/files`, formData, {
-        params: {
-          dataObjectId: dataObjectId.toString(),
-          storageBucketId: operator.bucketId,
-          bagId,
-        },
-        maxBodyLength: Infinity,
-        maxContentLength: Infinity,
-        headers: {
-          'content-type': 'multipart/form-data',
-          ...formData.getHeaders(),
-        },
-      })
-      console.log('Video asset uploaded', res.data)
+      try {
+        const formData = new FormData()
+        formData.append('file', file, 'video.mp4')
+        await axios.post<VideoUploadResponse>(`${operator.apiEndpoint}/files`, formData, {
+          params: {
+            dataObjectId: dataObjectId.toString(),
+            storageBucketId: operator.bucketId,
+            bagId,
+          },
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+          headers: {
+            'content-type': 'multipart/form-data',
+            ...formData.getHeaders(),
+          },
+        })
+      } catch (error) {
+        console.log(`AxiosError:`, error)
+        const msg: string = (error as AxiosError).response?.data?.message
+        if (msg.includes(`Data object ${dataObjectId} has already been accepted by storage node`)) {
+          // No need to throw an error, we can continue with the next asset
+          continue
+        }
+
+        throw error
+      }
     }
   }
 

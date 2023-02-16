@@ -339,7 +339,7 @@ class QuotaTrackingClient implements IYoutubeClient {
     if (!(await this.canCallYoutube('sync'))) {
       throw new YoutubeAuthorizationError(
         ExitCodes.YOUTUBE_QUOTA_LIMIT_EXCEEDED,
-        'No more quota left for signup. Please try again later.'
+        'No more quota left. Please try again later.'
       )
     }
 
@@ -355,7 +355,10 @@ class QuotaTrackingClient implements IYoutubeClient {
   async getVideos(channel: Channel, top: number) {
     // ensure have some left api quota
     if (!(await this.canCallYoutube('sync'))) {
-      return []
+      throw new YoutubeAuthorizationError(
+        ExitCodes.YOUTUBE_QUOTA_LIMIT_EXCEEDED,
+        'No more quota left for signup. Please try again later.'
+      )
     }
 
     // get videos from api
@@ -370,7 +373,10 @@ class QuotaTrackingClient implements IYoutubeClient {
   async getAllVideos(channel: Channel, max: number) {
     // ensure have some left api quota
     if (!(await this.canCallYoutube('sync'))) {
-      return []
+      throw new YoutubeAuthorizationError(
+        ExitCodes.YOUTUBE_QUOTA_LIMIT_EXCEEDED,
+        'No more quota left. Please try again later.'
+      )
     }
 
     // get videos from api

@@ -1,7 +1,7 @@
 import { Channel, Stats, User, Video, channelYppStatus, videoStates } from '@youtube-sync/domain'
 import * as dynamoose from 'dynamoose'
 import { ConditionInitializer } from 'dynamoose/dist/Condition'
-import { AnyItem, Item } from 'dynamoose/dist/Item'
+import { AnyItem } from 'dynamoose/dist/Item'
 import { Query, Scan } from 'dynamoose/dist/ItemRetriever'
 import { DeepPartial, ModelType } from 'dynamoose/dist/General'
 import { TableOptions } from 'dynamoose/dist/Table'
@@ -30,8 +30,14 @@ export function createChannelModel() {
       email: String,
 
       // ID of the corresponding Joystream Channel
-      joystreamChannelId: Number,
-
+      joystreamChannelId: {
+        type: Number,
+        index: {
+          type: 'global',
+          rangeKey: 'createdAt',
+          name: 'joystreamChannelId-createdAt-index',
+        },
+      },
       // video category ID to be added to all synced videos
       videoCategoryId: String,
 
@@ -120,6 +126,15 @@ export function createChannelModel() {
       yppStatus: {
         type: String,
         enum: channelYppStatus,
+      },
+
+      phantomKey: {
+        type: String,
+        index: {
+          type: 'global',
+          rangeKey: 'createdAt',
+          name: 'phantomKey-createdAt-index',
+        },
       },
     },
 

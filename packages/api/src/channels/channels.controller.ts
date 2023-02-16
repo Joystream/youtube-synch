@@ -106,7 +106,7 @@ export class ChannelsController {
   @ApiResponse({ type: ChannelDto })
   async get(@Param('joystreamChannelId', ParseIntPipe) id: number) {
     try {
-      const channel = await this.channelsService.get(id)
+      const channel = await this.channelsService.getByJoystreamChannelId(id)
       return new ChannelDto(channel)
     } catch (error) {
       const message = error instanceof Error ? error.message : error
@@ -138,7 +138,7 @@ export class ChannelsController {
     @Body() { message, signature }: IngestChannelDto
   ) {
     try {
-      const channel = await this.channelsService.get(id)
+      const channel = await this.channelsService.getByJoystreamChannelId(id)
 
       // Ensure channel is not suspended or opted out
       if (channel.yppStatus === 'Suspended' || channel.yppStatus === 'OptedOut') {
@@ -182,7 +182,7 @@ export class ChannelsController {
     @Body() { message, signature }: OptoutChannelDto
   ) {
     try {
-      const channel = await this.channelsService.get(id)
+      const channel = await this.channelsService.getByJoystreamChannelId(id)
 
       // Ensure channel is not suspended
       if (channel.yppStatus === 'Suspended') {
@@ -231,7 +231,7 @@ export class ChannelsController {
 
     try {
       for (const { joystreamChannelId, isSuspended } of channels) {
-        const channel = await this.channelsService.get(joystreamChannelId)
+        const channel = await this.channelsService.getByJoystreamChannelId(joystreamChannelId)
 
         // if channel is being suspended then its YT ingestion/syncing should also be stopped
         if (isSuspended) {
@@ -267,7 +267,7 @@ export class ChannelsController {
 
     try {
       for (const { joystreamChannelId, isVerified } of channels) {
-        const channel = await this.channelsService.get(joystreamChannelId)
+        const channel = await this.channelsService.getByJoystreamChannelId(joystreamChannelId)
 
         // channel is being verified
         if (isVerified) {
@@ -290,7 +290,7 @@ export class ChannelsController {
   })
   async getVideos(@Param('joystreamChannelId', ParseIntPipe) id: number): Promise<Video[]> {
     try {
-      const channelId = (await this.channelsService.get(id)).id
+      const channelId = (await this.channelsService.getByJoystreamChannelId(id)).id
       const result = await this.videosRepository.query({ channelId }, (q) => q.sort('descending'))
       return result
     } catch (error) {

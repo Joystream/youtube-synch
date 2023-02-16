@@ -9,14 +9,10 @@ export async function ingestionScheduler(event: EventRuleEvent) {
 
   console.log('event: ', event)
 
-  // const date = new Date(event.time)
-  // const frequencies = getMatchingFrequenciesForDate(date)
-  // if (frequencies.length === 0) return
-
   const { YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, JOYSTREAM_WEBSOCKET_RPC, JOYSTREAM_QUERY_NODE_URL } = getConfig()
   const youtubeClient = YtClient.create(YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET)
   const joystreamClient = new JoystreamClient(JOYSTREAM_WEBSOCKET_RPC, JOYSTREAM_QUERY_NODE_URL)
   const storageClient = new Uploader(JOYSTREAM_QUERY_NODE_URL)
 
-  await new SyncService(youtubeClient, joystreamClient, storageClient, new SnsClient()).startIngestionFor([0])
+  await new SyncService(youtubeClient, joystreamClient, storageClient, new SnsClient()).startChannelsIngestion()
 }

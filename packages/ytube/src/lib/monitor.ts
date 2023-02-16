@@ -1,9 +1,7 @@
 import {
   Channel,
-  ChannelSpotted,
   IngestChannel,
   Logger,
-  User,
   Video,
   VideoEvent,
   VideoStates,
@@ -12,8 +10,7 @@ import {
 } from '@youtube-sync/domain'
 import { JoystreamClient, Uploader } from '@youtube-sync/joy-api'
 import { GaxiosError } from 'gaxios/build/src/common'
-import { ChannelsRepository, UsersRepository, VideosRepository } from './database'
-import { Frequency } from './frequency'
+import { ChannelsRepository, VideosRepository } from './database'
 import { SnsClient } from './messageBus'
 import { ISyncService, JoystreamSyncService } from './uploadService'
 import { IYoutubeClient } from './youtubeClient'
@@ -21,7 +18,6 @@ import { IYoutubeClient } from './youtubeClient'
 export class SyncService {
   private syncService: ISyncService
   private channelsRepository: ChannelsRepository
-  private usersRepository: UsersRepository
   private videosRepository: VideosRepository
 
   constructor(
@@ -32,7 +28,6 @@ export class SyncService {
   ) {
     this.syncService = new JoystreamSyncService(this.joystreamClient, this.storageClient)
     this.channelsRepository = new ChannelsRepository()
-    this.usersRepository = new UsersRepository()
     this.videosRepository = new VideosRepository()
   }
 
@@ -66,22 +61,9 @@ export class SyncService {
     })
   }
 
-  async startIngestionFor(frequencies: Frequency[]) {
-    // get all channels that need to be ingested based on following conditions:
-    // 1. `yppStatus` flag should be set to  `Active`
-    // 2. `shouldBeIngested` flag should be set to true
-    const channelsToBeIngested = await this.channelsRepository.scan('frequency', (s) =>
-      s
-        .in(frequencies)
-        .filter('yppStatus')
-        .eq('Verified')
-        .or()
-        .filter('yppStatus')
-        .eq('Unverified')
-        .and()
-        .filter('shouldBeIngested')
-        .eq(true)
-    )
+  async startChannelsIngestion() {
+    // get all channels that need to be ingested
+    const channelsToBeIngested = await this.channelsRepository.scan('shouldBeIngested', (s) => s.eq(true))
 
     // updated channel objects with latest subscriber count info
     const updatedChannels = await Promise.all(
@@ -133,23 +115,6 @@ export class SyncService {
 
     // publish events
     return this.snsClient.publishAll(channelsEvent, 'channelEvents')
-  }
-
-  async ingestChannels(user: User) {
-    // fetch channels of user from youtube API
-    const channel = await this.youtube.getChannel(user)
-
-    // save channels
-    await this.channelsRepository.save(channel)
-
-    // update user channels count
-    this.usersRepository.save(user)
-
-    // create channel events
-    const channelEvent = new ChannelSpotted(channel, new Date())
-
-    // publish events
-    return this.snsClient.publish(channelEvent, 'channelEvents')
   }
 
   async ingestAllVideos(channel: Channel, top: number) {

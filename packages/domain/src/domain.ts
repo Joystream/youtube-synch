@@ -75,7 +75,7 @@ export class Channel {
   lastActedAt: Date
 
   // Needs a dummy partition key on GSI to be able to query by createdAt fields
-  phantomKey: string
+  phantomKey: 'phantomData'
 }
 
 export interface IEvent {

@@ -10,9 +10,9 @@ export class ChannelsService {
    * @param joystreamChannelId
    * @returns Returns channel by joystreamChannelId
    */
-  async get(joystreamChannelId: number): Promise<Channel> {
-    const [result] = await this.channelsRepository.scan('id', (q) =>
-      q.filter('joystreamChannelId').eq(joystreamChannelId)
+  async getByJoystreamChannelId(joystreamChannelId: number): Promise<Channel> {
+    const [result] = await this.channelsRepository.query({ joystreamChannelId }, (q) =>
+      q.sort('descending').using('joystreamChannelId-createdAt-index')
     )
     if (!result) {
       throw new Error(`Could not find channel with id ${joystreamChannelId}`)
@@ -45,11 +45,9 @@ export class ChannelsService {
    * @returns List of `n` recent verified channels
    */
   async getRecent(count: number): Promise<Channel[]> {
-    // TODO: Use query using phantomKey-createdAt-index instead of
-    // TODO: scan operation here, and figure out why it's not working now
-
-    const allChannels = await this.channelsRepository.scan('id', (s) => s)
-    return allChannels.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, count)
+    return this.channelsRepository.query({ phantomKey: 'phantomData' }, (q) =>
+      q.sort('descending').limit(count).using('phantomKey-createdAt-index')
+    )
   }
 
   async getAllWithFrequency(frequency: number): Promise<Channel[]> {
