@@ -1,0 +1,32 @@
+overwrite: true
+
+schema: https://atlas-dev.joystream.org/query-node/server/graphql
+
+documents:
+  - './queries/*.graphql'
+
+config:
+  scalars:
+    Date: Date
+  preResolveTypes: true # avoid using Pick
+  skipTypename: true # skip __typename field in typings unless it's part of the query
+
+generates:
+  generated/schema.ts:
+    hooks:
+      afterOneFileWrite:
+        - prettier --write
+        - eslint --fix
+    plugins:
+      - typescript
+  generated/queries.ts:
+    preset: import-types
+    presetConfig:
+      typesPath: ./schema
+    hooks:
+      afterOneFileWrite:
+        - prettier --write
+        - eslint --fix
+    plugins:
+      - typescript-operations
+      - typescript-document-nodes
