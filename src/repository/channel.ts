@@ -82,16 +82,6 @@ export function createChannelModel() {
         },
       },
 
-      // Channel Ingestion frequency
-      frequency: {
-        type: Number,
-        index: {
-          type: 'global',
-          rangeKey: 'id',
-          name: 'frequency-id-index',
-        },
-      },
-
       thumbnails: {
         type: Object,
         schema: {
@@ -115,6 +105,12 @@ export function createChannelModel() {
       shouldBeIngested: {
         type: Boolean,
         default: true,
+      },
+
+      // Should this channel be ingested for automated Youtube/Joystream syncing without explicit authorization granted to app?
+      performUnauthorizedSync: {
+        type: Boolean,
+        default: false,
       },
 
       // Channel's YPP program participation status
@@ -257,10 +253,6 @@ export class ChannelsService {
     return this.channelsRepository.query({ phantomKey: 'phantomData' }, (q) =>
       q.sort('descending').limit(count).using('phantomKey-createdAt-index')
     )
-  }
-
-  async getAllWithFrequency(frequency: number): Promise<YtChannel[]> {
-    return await this.channelsRepository.scan('frequency', (s) => s.in([frequency]))
   }
 
   /**

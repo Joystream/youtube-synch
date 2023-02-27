@@ -1,6 +1,6 @@
-import { Service } from '../app'
-import { Config } from '../types'
-import DefaultCommandBase from './base/default'
+import { Service } from '../../app'
+import { Config } from '../../types'
+import DefaultCommandBase from '../base/default'
 
 export default class StartYoutubeSyncService extends DefaultCommandBase {
   static description = 'Start the node'

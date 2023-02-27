@@ -218,4 +218,13 @@ export class VideosService {
       ...(await this.videosRepository.query('state', (q) => q.eq('UploadFailed').using('state-channelId-index'))),
     ]
   }
+
+  /**
+   *
+   * @param video
+   * @returns Updated video
+   */
+  async save(video: YtVideo): Promise<YtVideo> {
+    return await this.videosRepository.save(video)
+  }
 }

@@ -5,9 +5,6 @@ import { cryptoWaitReady } from '@polkadot/util-crypto'
 import * as fs from 'fs'
 import { ApiModule } from './api.module'
 import { toPrettyJSON } from '../../types'
-import { QueryNodeApi } from '../query-node/api'
-import { IDynamodbService } from '../../repository'
-import { IYoutubeApi } from '../youtube/api'
 import path from 'path'
 
 // Set AWS config in case we are running locally
@@ -30,11 +27,7 @@ function setupSwagger(app: INestApplication) {
   fs.writeFileSync(path.join(__dirname, './api-spec.json'), toPrettyJSON(document))
 }
 
-export async function bootstrapHttpApi(
-  queryNodeApi: QueryNodeApi,
-  dynamodbService: IDynamodbService,
-  youtubeApi: IYoutubeApi
-) {
+export async function bootstrapHttpApi() {
   // make sure WASM crypto module is ready
   await cryptoWaitReady()
 

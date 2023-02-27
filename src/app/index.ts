@@ -92,7 +92,7 @@ export class Service {
   public async start(): Promise<void> {
     try {
       this.checkConfigDirectories()
-      await bootstrapHttpApi(this.queryNodeApi, this.dynamodbService, this.youtubeApi)
+      await bootstrapHttpApi()
       this.logger.verbose('Starting the YT-synch service', { config: this.hideSecrets(this.config) })
       await this.youtubePollingService.start()
       await this.contentCreationService.start()
@@ -118,69 +118,4 @@ export class Service {
 
     return true
   }
-
-  // private async exitGracefully(): Promise<void> {
-  //   // Async exit handler - ideally should not take more than 10 sec
-  //   // We can try to wait until some pending downloads are finished here etc.
-  //   this.logger.info('Graceful exit initialized')
-
-  //   // Try to process remaining downloads
-  //   const MAX_RETRY_ATTEMPTS = 3
-  //   let retryCounter = 0
-  //   while (retryCounter < MAX_RETRY_ATTEMPTS && this.stateCache.getPendingDownloadsCount()) {
-  //     const pendingDownloadsCount = this.stateCache.getPendingDownloadsCount()
-  //     this.logger.info(`${pendingDownloadsCount} pending downloads in progress... Retrying exit in 5 sec...`, {
-  //       retryCounter,
-  //       pendingDownloadsCount,
-  //     })
-  //     await new Promise((resolve) => setTimeout(resolve, 5000))
-  //     this.stateCache.saveSync()
-  //     ++retryCounter
-  //   }
-
-  //   if (this.stateCache.getPendingDownloadsCount()) {
-  //     this.logger.warn('Limit reached: Could not finish all pending downloads.', {
-  //       pendingDownloadsCount: this.stateCache.getPendingDownloadsCount(),
-  //     })
-  //   }
-
-  //   this.logger.info('Graceful exit finished')
-  //   await this.logging.end()
-  // }
-
-  // private exitCritically(): void {
-  //   // Some additional synchronous work if required...
-  //   this.logger.info('Critical exit finished')
-  // }
-
-  // private exitHandler(exitCode: number | null, signal: string | null): boolean | undefined {
-  //   this.logger.info('Exiting...')
-  //   // Clear intervals
-  //   this.clearIntervals()
-
-  //   // Save cache
-  //   try {
-  //     this.stateCache.saveSync()
-  //   } catch (err) {
-  //     this.logger.error('Failed to save the cache state on exit!', { err })
-  //   }
-  //   if (signal) {
-  //     // Async exit can be executed
-  //     this.exitGracefully()
-  //       .then(() => {
-  //         process.kill(process.pid, signal)
-  //       })
-  //       .catch((err) => {
-  //         this.logger.error('Graceful exit error', { err })
-  //         this.logging.end().finally(() => {
-  //           process.kill(process.pid, signal)
-  //         })
-  //       })
-  //     nodeCleanup.uninstall()
-  //     return false
-  //   } else {
-  //     // Only synchronous work can be done here
-  //     this.exitCritically()
-  //   }
-  // }
 }

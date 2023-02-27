@@ -17,6 +17,7 @@ export default abstract class ApiCommandBase extends DefaultCommandBase {
   async init(): Promise<void> {
     await super.init()
     this.api = new RuntimeApi(this.appConfig.endpoints.joystreamNodeWs, this.logging)
+    await this.api.ensureApi()
   }
 
   async sendAndFollowTx(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SubmittableResult> {

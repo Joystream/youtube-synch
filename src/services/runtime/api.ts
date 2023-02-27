@@ -160,7 +160,7 @@ export class RuntimeApi {
     })
   }
 
-  private async ensureApi() {
+  async ensureApi() {
     try {
       await this.api.isReady
     } catch (e) {

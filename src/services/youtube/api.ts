@@ -262,7 +262,7 @@ class YoutubeClient implements IYoutubeApi {
           },
           uploadsPlaylistId: channel.contentDetails?.relatedPlaylists?.uploads,
           language: channel.snippet?.defaultLanguage,
-          frequency: 0,
+          performUnauthorizedSync: false,
           publishedAt: channel.snippet?.publishedAt,
           shouldBeIngested: true,
           yppStatus: 'Unverified',

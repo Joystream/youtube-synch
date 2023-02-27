@@ -130,7 +130,6 @@ export class VideoDto extends YtVideo {
   @ApiProperty() channelId: string
   @ApiProperty() thumbnails: ThumbnailsDto
   @ApiProperty() state: VideoState
-  @ApiProperty() destinationUrl: string
   @ApiProperty() duration: number
   @ApiProperty() language: string
   @ApiProperty() joystreamVideo: JoystreamVideo

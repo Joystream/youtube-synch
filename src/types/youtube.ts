@@ -20,8 +20,6 @@ export class YtChannel {
   // Channel title
   title: string
 
-  frequency: number
-
   // Channel description
   description: string
 
@@ -66,6 +64,9 @@ export class YtChannel {
 
   // Should this channel be ingested for automated Youtube/Joystream syncing?
   shouldBeIngested: boolean
+
+  // Should this channel be ingested for automated Youtube/Joystream syncing without explicit authorization granted to app?
+  performUnauthorizedSync: boolean
 
   // Channel's YPP program participation status
   yppStatus: ChannelYppStatus
@@ -169,8 +170,6 @@ export class YtVideo {
 
   // current state of the video
   state: VideoState
-
-  destinationUrl: string
 
   // Video duration in seconds
   duration: number
