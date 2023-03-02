@@ -774,9 +774,6 @@
           "state": {
             "type": "object"
           },
-          "destinationUrl": {
-            "type": "string"
-          },
           "duration": {
             "type": "number"
           },
@@ -798,7 +795,6 @@
           "channelId",
           "thumbnails",
           "state",
-          "destinationUrl",
           "duration",
           "language",
           "joystreamVideo"

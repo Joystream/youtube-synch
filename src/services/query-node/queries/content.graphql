@@ -19,3 +19,18 @@ query getChannelById($channelId: ID!) {
     ...ChannelFields
   }
 }
+
+fragment VideoFields on Video {
+  id
+  ytVideoId
+  entryApp {
+    id
+    name
+  }
+}
+
+query getVideoByYtResourceIdAndEntryAppName($ytVideoId: String!, $entryAppName: String!) {
+  videos(where: { ytVideoId_eq: $ytVideoId, entryApp: { name_eq: $entryAppName } }) {
+    ...VideoFields
+  }
+}

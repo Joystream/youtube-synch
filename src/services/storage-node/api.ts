@@ -136,7 +136,7 @@ export class StorageNodeApi {
         }
       }
       if (i !== retryCount) {
-        console.log(
+        this.logger.warn(
           `No storage provider can serve the request yet, retrying in ${retryTime}s (${i + 1}/${retryCount})...`
         )
         await new Promise((resolve) => setTimeout(resolve, retryTime * 1000))

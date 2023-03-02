@@ -1,6 +1,35 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
+export type AppFieldsFragment = {
+  id: string
+  name: string
+  websiteUrl?: Types.Maybe<string>
+  useUri?: Types.Maybe<string>
+  smallIcon?: Types.Maybe<string>
+  mediumIcon?: Types.Maybe<string>
+  bigIcon?: Types.Maybe<string>
+  oneLiner?: Types.Maybe<string>
+  description?: Types.Maybe<string>
+  termsOfService?: Types.Maybe<string>
+  category?: Types.Maybe<string>
+  authKey?: Types.Maybe<string>
+  platforms?: Types.Maybe<Array<string>>
+  ownerMember: { id: string }
+}
+
+export type GetAppByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
+
+export type GetAppByIdQuery = { appByUniqueInput?: Types.Maybe<AppFieldsFragment> }
+
+export type GetAppsByNameQueryVariables = Types.Exact<{
+  name: Types.Scalars['String']
+}>
+
+export type GetAppsByNameQuery = { apps: Array<AppFieldsFragment> }
+
 export type ChannelFieldsFragment = {
   id: string
   videos: Array<{ id: string; videoStateBloatBond: any }>
@@ -14,6 +43,19 @@ export type GetChannelByIdQueryVariables = Types.Exact<{
 
 export type GetChannelByIdQuery = { channelByUniqueInput?: Types.Maybe<ChannelFieldsFragment> }
 
+export type VideoFieldsFragment = {
+  id: string
+  ytVideoId?: Types.Maybe<string>
+  entryApp?: Types.Maybe<{ id: string; name: string }>
+}
+
+export type GetVideoByYtResourceIdAndEntryAppNameQueryVariables = Types.Exact<{
+  ytVideoId: Types.Scalars['String']
+  entryAppName: Types.Scalars['String']
+}>
+
+export type GetVideoByYtResourceIdAndEntryAppNameQuery = { videos: Array<VideoFieldsFragment> }
+
 export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
 
 export type MembershipFieldsFragment = {
@@ -21,6 +63,7 @@ export type MembershipFieldsFragment = {
   handle: string
   controllerAccount: string
   rootAccount: string
+  totalVideosCreated: number
   metadata: MemberMetadataFieldsFragment
 }
 
@@ -176,6 +219,26 @@ export type UpcomingWorkingGroupOpeningByIdQuery = {
   upcomingWorkingGroupOpeningByUniqueInput?: Types.Maybe<UpcomingWorkingGroupOpeningDetailsFragment>
 }
 
+export const AppFields = gql`
+  fragment AppFields on App {
+    id
+    name
+    ownerMember {
+      id
+    }
+    websiteUrl
+    useUri
+    smallIcon
+    mediumIcon
+    bigIcon
+    oneLiner
+    description
+    termsOfService
+    category
+    authKey
+    platforms
+  }
+`
 export const ChannelFields = gql`
   fragment ChannelFields on Channel {
     id
@@ -193,6 +256,16 @@ export const ChannelFields = gql`
     }
   }
 `
+export const VideoFields = gql`
+  fragment VideoFields on Video {
+    id
+    ytVideoId
+    entryApp {
+      id
+      name
+    }
+  }
+`
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
     name
@@ -205,6 +278,7 @@ export const MembershipFields = gql`
     handle
     controllerAccount
     rootAccount
+    totalVideosCreated
     metadata {
       ...MemberMetadataFields
     }
@@ -315,6 +389,22 @@ export const UpcomingWorkingGroupOpeningDetails = gql`
   }
   ${WorkingGroupOpeningMetadataFields}
 `
+export const GetAppById = gql`
+  query getAppById($id: ID!) {
+    appByUniqueInput(where: { id: $id }) {
+      ...AppFields
+    }
+  }
+  ${AppFields}
+`
+export const GetAppsByName = gql`
+  query getAppsByName($name: String!) {
+    apps(where: { name_eq: $name }) {
+      ...AppFields
+    }
+  }
+  ${AppFields}
+`
 export const GetChannelById = gql`
   query getChannelById($channelId: ID!) {
     channelByUniqueInput(where: { id: $channelId }) {
@@ -322,6 +412,14 @@ export const GetChannelById = gql`
     }
   }
   ${ChannelFields}
+`
+export const GetVideoByYtResourceIdAndEntryAppName = gql`
+  query getVideoByYtResourceIdAndEntryAppName($ytVideoId: String!, $entryAppName: String!) {
+    videos(where: { ytVideoId_eq: $ytVideoId, entryApp: { name_eq: $entryAppName } }) {
+      ...VideoFields
+    }
+  }
+  ${VideoFields}
 `
 export const GetMembersByIds = gql`
   query getMembersByIds($ids: [ID!]) {

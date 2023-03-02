@@ -15,7 +15,6 @@ export const MIME_TYPE_DETECTION_CHUNK_SIZE = 4100
 export class YoutubePollingService {
   private config: ReadonlyConfig
   private logger: Logger
-  private logging: LoggingService
   private youtubeApi: IYoutubeApi
   private joystreamClient: JoystreamClient
   private dynamodbService: IDynamodbService
@@ -29,7 +28,6 @@ export class YoutubePollingService {
   ) {
     this.config = config
     this.logger = logging.createLogger('YoutubePollingService')
-    this.logging = logging
     this.youtubeApi = youtubeApi
     this.dynamodbService = dynamodbService
     this.joystreamClient = joystreamClient
@@ -65,10 +63,10 @@ export class YoutubePollingService {
     })
   }
 
-  private async hasChannelCollaborator(channelId: number, memberId: number) {
+  private async hasChannelCollaborator(channelId: number, memberId: string) {
     const { collaborators } = await this.joystreamClient.channelById(channelId)
     const isCollaboratorSet = [...collaborators].some(
-      ([member, permissions]) => member.toString() === memberId.toString() && [...permissions].some((p) => p.isAddVideo)
+      ([member, permissions]) => member.toString() === memberId && [...permissions].some((p) => p.isAddVideo)
     )
     return isCollaboratorSet
   }
@@ -104,7 +102,11 @@ export class YoutubePollingService {
    */
   private async performChannelsIngestion(): Promise<YtChannel[]> {
     // get all channels that need to be ingested
-    const channelsToBeIngested = await this.dynamodbService.repo.channels.scan('shouldBeIngested', (s) => s.eq(true))
+    const channelsToBeIngested = await this.dynamodbService.repo.channels.scan('shouldBeIngested', (s) =>
+      // * Unauthorized channels add by infra operator are exempted from periodic
+      // * ingestion as we don't have access to their access/refresh tokens
+      s.eq(true).and().filter('performUnauthorizedSync').eq(false)
+    )
 
     // updated channel objects with uptodate info (e.g. subscriber count)
     const updatedChannels: YtChannel[] = []
@@ -119,9 +121,13 @@ export class YoutubePollingService {
         // ensure that Ypp collaborator member is still set as channel's collaborator
         const isCollaboratorSet = await this.hasChannelCollaborator(
           ch.joystreamChannelId,
-          this.config.joystreamChannelCollaborator.memberId
+          this.config.joystream.channelCollaborator.memberId
         )
         if (!isCollaboratorSet) {
+          this.logger.warn(
+            `Joystream Channel ${ch.joystreamChannelId} has either not set or revoked Ypp collaborator member ` +
+              `as channel's collaborator. Corresponding Youtube Channel '${ch.id}' is being opted out from Ypp program.`
+          )
           updatedChannels.push({
             ...ch,
             yppStatus: 'OptedOut',
@@ -136,6 +142,9 @@ export class YoutubePollingService {
         // if app permission is revoked by user from Google account then set `shouldBeIngested` to false & OptOut channel from
         // Ypp program,  because then trying to fetch user channel will throw error with code 400 and 'invalid_grant' message
         if (err instanceof GaxiosError && err.code === '400' && err.response?.data?.error === 'invalid_grant') {
+          this.logger.warn(
+            `Opting out '${ch.id}' from YPP program as their owner has revoked the permissions from Google settings`
+          )
           updatedChannels.push({
             ...ch,
             yppStatus: 'OptedOut',

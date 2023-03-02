@@ -58,15 +58,33 @@ export class ContentCreationService {
   async start() {
     this.logger.info(`Starting Video processing (download/creation) service.`)
 
+    await this.ensureContentStateConsistency()
+
     // start video creation worker service
     setTimeout(async () => this.processContentWithInterval(this.config.intervals.youtubePolling), 0)
   }
 
   /**
-   * Whenever the service exits unexpectedly, we need to ensure that the state of the videos is consistent.
+   * Whenever the service exits unexpectedly and starts again, we need to ensure that the state of the videos
+   * is consistent, since task processing function isn't an atomic operation. For example, if the service is
+   * killed while processing the video, it may happen that the video is in the `CreatingVideo` state, but it
+   * was actually created on the chain. So for this video we need to update the state to `VideoCreated`.
    */
-  private ensureStateConsistency(video: VideoProcessingTask) {
-    // TODO: Implement using apps attribution
+  private async ensureContentStateConsistency() {
+    const videosInProcessingState = await this.dynamodbService.repo.videos.query({ state: 'CreatingVideo' }, (q) =>
+      q.using('state-channelId-index')
+    )
+
+    for (const v of videosInProcessingState) {
+      const qnVideo = await this.joystreamClient.getVideoByYtResourceId(v.resourceId)
+      if (qnVideo) {
+        // If QN return a video with given YT video ID attribution, then it means that
+        // video was already created so video state should be updated accordingly.
+        await this.dynamodbService.videos.updateState(v, 'VideoCreated')
+      } else {
+        await this.dynamodbService.videos.updateState(v, 'New')
+      }
+    }
   }
 
   /**

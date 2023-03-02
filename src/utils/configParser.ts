@@ -27,13 +27,6 @@ export class ConfigParserService {
     return _.mapValues(paths, (p) => this.resolvePath(p))
   }
 
-  private parseBytesize(bytesize: string) {
-    const intValue = parseInt(bytesize)
-    const unit = bytesize[bytesize.length - 1]
-
-    return intValue
-  }
-
   private schemaTypeOf(schema: JSONSchema4, path: string[]): JSONSchema4['type'] {
     if (schema.properties && schema.properties[path[0]]) {
       const item = schema.properties[path[0]]
@@ -112,10 +105,10 @@ export class ConfigParserService {
 
   private mergeEnvConfigWith(config: Record<string, unknown>) {
     Object.entries(process.env)
-      .filter(([envKey]) => envKey.startsWith('JOYSTREAM_DISTRIBUTOR__'))
+      .filter(([envKey]) => envKey.startsWith('YT_SYNCH__'))
       .forEach(([envKey, envValue]) => {
         const configPath = envKey
-          .replace('JOYSTREAM_DISTRIBUTOR__', '')
+          .replace('YT_SYNCH__', '')
           .split('__')
           .map((key) => _.camelCase(key))
         this.setConfigEnvValue(config, configPath, envKey, envValue)
@@ -150,19 +143,19 @@ export class ConfigParserService {
 
     // Normalize values
     const directories = this.resolveConfigDirectoryPaths(configJson.directories)
-    const storageLimit = this.parseBytesize(configJson.limits.storage)
-    const maxCachedItemSize = configJson.limits.maxCachedItemSize
-      ? this.parseBytesize(configJson.limits.maxCachedItemSize)
-      : undefined
+    // const storageLimit = this.parseBytesize(configJson.limits.storage)
+    // const maxCachedItemSize = configJson.limits.maxCachedItemSize
+    //   ? this.parseBytesize(configJson.limits.maxCachedItemSize)
+    //   : undefined
 
-    // Additional validation:
-    if (storageLimit < this.parseBytesize(MIN_CACHE_SIZE)) {
-      throw new Error(`Config.limits.storage should be at least ${MIN_CACHE_SIZE}!`)
-    }
+    // // Additional validation:
+    // if (storageLimit < this.parseBytesize(MIN_CACHE_SIZE)) {
+    //   throw new Error(`Config.limits.storage should be at least ${MIN_CACHE_SIZE}!`)
+    // }
 
-    if (maxCachedItemSize && maxCachedItemSize < this.parseBytesize(MIN_MAX_CACHED_ITEM_SIZE)) {
-      throw new Error(`Config.limits.maxCachedItemSize should be at least ${MIN_MAX_CACHED_ITEM_SIZE}!`)
-    }
+    // if (maxCachedItemSize && maxCachedItemSize < this.parseBytesize(MIN_MAX_CACHED_ITEM_SIZE)) {
+    //   throw new Error(`Config.limits.maxCachedItemSize should be at least ${MIN_MAX_CACHED_ITEM_SIZE}!`)
+    // }
 
     const parsedConfig: Config = {
       ...configJson,

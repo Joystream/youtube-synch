@@ -12,6 +12,7 @@ export namespace ExitCodes {
 
   export enum RuntimeApi {
     API_NOT_CONNECTED = 'API_NOT_CONNECTED',
+    APP_NOT_FOUND = 'APP_NOT_FOUND',
     UNKNOWN_ERROR = 'UNKNOWN_ERROR',
     FAILED_ERROR = 'FAILED_ERROR',
     SIGN_CANCELLED = 'SIGN_CANCELLED',

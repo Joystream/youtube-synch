@@ -22,21 +22,24 @@ export interface IYoutubeApi {
   getVideos(channel: YtChannel, top: number): Promise<YtVideo[]>
   getAllVideos(channel: YtChannel, max: number): Promise<YtVideo[]>
   downloadVideo(videoUrl: string): Promise<Readable>
+  getCreatorOnboardingRequirements(): ReadonlyConfig['creatorOnboardingRequirements']
 }
 
 class YoutubeClient implements IYoutubeApi {
-  private config: ReadonlyConfig['youtubeConfig'] & ReadonlyConfig['ypp']
-  private logger: Logger
+  private config: ReadonlyConfig
 
-  constructor(config: ReadonlyConfig['youtubeConfig'] & ReadonlyConfig['ypp'], logging: LoggingService) {
-    this.logger = logging.createLogger('QueryNodeApi')
+  constructor(config: ReadonlyConfig) {
     this.config = config
+  }
+
+  getCreatorOnboardingRequirements() {
+    return this.config.creatorOnboardingRequirements
   }
 
   private getAuth(youtubeRedirectUri?: string) {
     return new OAuth2Client({
-      clientId: this.config.clientId,
-      clientSecret: this.config.clientSecret,
+      clientId: this.config.youtube.clientId,
+      clientSecret: this.config.youtube.clientSecret,
       redirectUri: youtubeRedirectUri,
     })
   }
@@ -309,8 +312,12 @@ class YoutubeClient implements IYoutubeApi {
 class QuotaTrackingClient implements IYoutubeApi {
   private statsRepo
 
-  constructor(private decorated: IYoutubeApi, private dailyApiQuota: ReadonlyConfig['ypp']['dailyApiQuota']) {
+  constructor(private decorated: IYoutubeApi, private dailyApiQuota: ReadonlyConfig['limits']['dailyApiQuota']) {
     this.statsRepo = new StatsRepository()
+  }
+
+  getCreatorOnboardingRequirements() {
+    return this.decorated.getCreatorOnboardingRequirements()
   }
 
   getUserFromCode(code: string, youtubeRedirectUri: string) {
@@ -421,7 +428,7 @@ class QuotaTrackingClient implements IYoutubeApi {
 }
 
 export const YoutubeApi = {
-  create(config: ReadonlyConfig['youtubeConfig'] & ReadonlyConfig['ypp'], logging: LoggingService): IYoutubeApi {
-    return new QuotaTrackingClient(new YoutubeClient(config, logging), config.dailyApiQuota)
+  create(config: ReadonlyConfig): IYoutubeApi {
+    return new QuotaTrackingClient(new YoutubeClient(config), config.limits.dailyApiQuota)
   },
 }

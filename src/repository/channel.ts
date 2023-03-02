@@ -39,6 +39,9 @@ export function createChannelModel() {
       // default language of youtube channel
       language: String,
 
+      // language of corresponding Joystream channel
+      joystreamChannelLanguageId: String,
+
       // Referrer's Joystream Channel ID
       referrerChannelId: Number,
 
@@ -130,7 +133,7 @@ export function createChannelModel() {
     },
 
     {
-      saveUnknown: true,
+      saveUnknown: false,
       timestamps: {
         createdAt: {
           createdAt: {

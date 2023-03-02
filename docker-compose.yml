@@ -1,0 +1,44 @@
+version: '3.4'
+services:
+  yt-synch-service:
+    image: node:14
+    container_name: yt-synch-service
+    restart: on-failure
+    networks:
+      - backend
+    volumes:
+      - yt-synch-logs:/logs
+      - yt-synch-data:/data
+      # mount the AWS credentials file to docker container home directory
+      - ~/.aws/:/root/.aws:ro
+      - type: bind
+        source: .
+        target: /youtube-synch
+    working_dir: /youtube-synch
+    ports:
+      - ${YT_SYNCH__HTTP_API__PORT}:${YT_SYNCH__HTTP_API__PORT}
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
+    # environment:
+    #   YT_SYNCH__ENDPOINTS__QUERY_NODE: ${YT_SYNCH__ENDPOINTS__QUERY_NODE}
+    #   YT_SYNCH__ENDPOINTS__JOYSTREAM_NODE_WS: ${YT_SYNCH__ENDPOINTS__JOYSTREAM_NODE_WS}
+    #   AWS_PROFILE: ${AWS_PROFILE}
+    #   YT_SYNCH__HTTP_API__PORT: ${YT_SYNCH__HTTP_API__PORT}
+    #   YT_SYNCH__HTTP_API__OWNER_KEY: ${YT_SYNCH__HTTP_API__OWNER_KEY}
+    #   YT_SYNCH__YOUTUBE__CLIENT_ID: ${YT_SYNCH__YOUTUBE__CLIENT_ID}
+    #   YT_SYNCH__YOUTUBE__CLIENT_SECRET: ${YT_SYNCH__YOUTUBE__CLIENT_SECRET}
+    #   YT_SYNCH__JOYSTREAM__CHANNEL_COLLABORATOR__ACCOUNT: ${YT_SYNCH__JOYSTREAM__CHANNEL_COLLABORATOR__ACCOUNT}
+    #   YT_SYNCH__JOYSTREAM__CHANNEL_COLLABORATOR__MEMBER_ID: ${YT_SYNCH__JOYSTREAM__CHANNEL_COLLABORATOR__MEMBER_ID}
+    #   YT_SYNCH__JOYSTREAM__APP__NAME: ${YT_SYNCH__JOYSTREAM__APP__NAME}
+    #   YT_SYNCH__JOYSTREAM__APP__ACCOUNT: ${YT_SYNCH__JOYSTREAM__APP__ACCOUNT}
+    command: [ './bin/run', 'start' ]
+
+volumes:
+  yt-synch-logs:
+    driver: local
+  yt-synch-data:
+    driver: local
+
+networks:
+  backend:

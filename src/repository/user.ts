@@ -39,7 +39,7 @@ export function createUserModel() {
       channelsCount: Number,
     },
     {
-      saveUnknown: true,
+      saveUnknown: false,
       timestamps: {
         createdAt: {
           createdAt: {

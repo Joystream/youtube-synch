@@ -16,7 +16,7 @@
     "baseUrl": ".",
     "strict": true,
     "strictPropertyInitialization": false,
-    "outDir": "dist/",
+    "outDir": "lib/",
     "types": ["node"]
   },
   "include": ["src/**/*"],

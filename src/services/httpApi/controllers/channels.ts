@@ -73,7 +73,7 @@ export class ChannelsController {
       const channel = await this.youtubeApi.getChannel(user)
 
       // reset authorization code to prevent repeated save channel requests by authorization code re-use
-      const updatedUser: YtUser = { ...user, email, authorizationCode: randomBytes(256).toString('hex') }
+      const updatedUser: YtUser = { ...user, email, authorizationCode: randomBytes(10).toString('hex') }
 
       const joystreamChannelLanguageId = (await this.qnApi.getChannelById(joystreamChannelId.toString()))?.language?.id
       const updatedChannel: YtChannel = {
@@ -307,12 +307,8 @@ export class ChannelsController {
   @ApiResponse({ type: ChannelInductionRequirementsDto })
   @ApiOperation({ description: 'Retrieves Youtube Partner program induction requirements' })
   async inductionRequirements() {
-    // TODO: implement
     return new ChannelInductionRequirementsDto({
-      minimumSubscribersCount: 0,
-      minimumVideoCount: 0,
-      minimumVideoAgeHours: 0,
-      minimumChannelAgeHours: 0,
+      ...this.youtubeApi.getCreatorOnboardingRequirements(),
     })
   }
 

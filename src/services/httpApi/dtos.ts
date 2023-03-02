@@ -19,7 +19,7 @@ export class ChannelInductionRequirementsDto {
   @ApiProperty() MINIMUM_VIDEO_AGE_HOURS: number
   @ApiProperty() MINIMUM_CHANNEL_AGE_HOURS: number
 
-  constructor(requirements: Config['ypp']['creatorOnboardingRequirements']) {
+  constructor(requirements: Config['creatorOnboardingRequirements']) {
     this.MINIMUM_SUBSCRIBERS_COUNT = requirements.minimumSubscribersCount
     this.MINIMUM_VIDEO_COUNT = requirements.minimumVideoCount
     this.MINIMUM_VIDEO_AGE_HOURS = requirements.minimumVideoAgeHours

@@ -1,6 +1,6 @@
 import { createType } from '@joystream/types'
 import { DataObjectId, VideoId } from '@joystream/types/primitives'
-import { Bytes } from '@polkadot//types'
+import { Bytes, Option } from '@polkadot//types'
 import { ApiPromise, SubmittableResult, WsProvider } from '@polkadot/api'
 import { AugmentedEvent, SubmittableExtrinsic } from '@polkadot/api/types'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -173,7 +173,7 @@ export class RuntimeApi {
     memberId: string,
     channelId: number,
     meta: Bytes | undefined,
-    assets: PalletContentStorageAssetsRecord | undefined
+    assets: Option<PalletContentStorageAssetsRecord>
   ): Promise<{ videoId: VideoId; assetsIds: DataObjectId[] }> {
     await this.ensureApi()
 
@@ -195,7 +195,7 @@ export class RuntimeApi {
 
     const [, , videoId, , assetsIds] = this.getEvent(result, 'content', 'VideoCreated').data
 
-    if (assetsIds.size !== (assets?.objectCreationList.length || 0)) {
+    if (assetsIds.size !== (assets.isSome ? assets.unwrap().objectCreationList.length : 0)) {
       throw new Error('Unexpected number of video assets in VideoCreated event!')
     }
 

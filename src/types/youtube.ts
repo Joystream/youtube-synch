@@ -148,6 +148,9 @@ export class YtVideo {
   // Video ID
   id: string
 
+  // Video's channel ID
+  channelId: string
+
   // Video URL
   url: string
 
@@ -162,8 +165,8 @@ export class YtVideo {
 
   resourceId: string
 
-  // Video's channel ID
-  channelId: string
+  // video views count
+  viewCount: number
 
   // Video thumbnails
   thumbnails: Thumbnails
@@ -171,17 +174,14 @@ export class YtVideo {
   // current state of the video
   state: VideoState
 
+  // Joystream video category to be assigned to synced videos
+  category: string
+
+  // language of the synced video (derived from corresponding Youtube channel)
+  language: string
+
   // Video duration in seconds
   duration: number
-
-  // Media container format
-  container: string
-
-  // video views count
-  viewCount: number
-
-  // Youtube video creation date
-  publishedAt: string
 
   // The status of the uploaded video on Youtube.
   uploadStatus: string
@@ -189,23 +189,23 @@ export class YtVideo {
   // The video's privacy status. `private`, `public`, or `unlisted`.
   privacyStatus: 'public' | 'private' | 'unlisted'
 
-  // Indicates if the video is an upcoming/active live broadcast. else it's "none"
-  liveBroadcastContent: 'upcoming' | 'live' | 'none'
-
-  // record creation time
-  createdAt: Date
-
   // youtube video license
   license: 'creativeCommon' | 'youtube'
 
-  // Joystream video category to be assigned to synced videos
-  category: string
+  // Media container format
+  container: string
 
-  // language of the synced video (derived from corresponding Youtube channel)
-  language: string
+  // Indicates if the video is an upcoming/active live broadcast. else it's "none"
+  liveBroadcastContent: 'upcoming' | 'live' | 'none'
 
   // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
   joystreamVideo: JoystreamVideo
+
+  // Youtube video creation date
+  publishedAt: string
+
+  // record creation time
+  createdAt: Date
 }
 
 export class Stats {

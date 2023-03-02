@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { DynamodbService } from '../../repository'
-import { LoggingService } from '../logging'
+import { ReadonlyConfig } from '../../types'
 import { ConfigParserService } from '../../utils/configParser'
+import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
 import { YoutubeApi } from '../youtube/api'
 import { ChannelsController } from './controllers/channels'
@@ -37,10 +38,11 @@ import { YoutubeController } from './controllers/youtube'
     {
       provide: 'youtube',
       useFactory: (configService: ConfigService) => {
-        return YoutubeApi.create(
-          { ...configService.get('ypp')!, ...configService.get('youtubeConfig')! },
-          LoggingService.withAppConfig(configService.get('logs')!)
-        )
+        return YoutubeApi.create({
+          youtube: configService.get('youtube'),
+          limits: configService.get('limits'),
+          creatorOnboardingRequirements: configService.get('creatorOnboardingRequirements'),
+        } as ReadonlyConfig)
       },
       inject: [ConfigService],
     },

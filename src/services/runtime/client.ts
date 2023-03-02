@@ -1,22 +1,30 @@
-import { QueryNodeApi } from '../query-node/api'
-import { RuntimeApi } from './api'
-import { ContentMetadata, ILicense, IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
-import { Readable } from 'stream'
-import axios from 'axios'
-import ytdl from 'ytdl-core'
-import { DataObjectMetadata, VideoFileMetadata, VideoInputAssets, VideoInputParameters } from './types'
-import { asValidatedMetadata, metadataToBytes } from './serialization'
-import { AccountsUtil } from './signer'
+import {
+  AppAction,
+  AppActionMetadata,
+  ContentMetadata,
+  IAppAction,
+  ILicense,
+  IVideoMetadata,
+  VideoMetadata,
+} from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
 import { Bytes } from '@polkadot/types'
+import { Option } from '@polkadot/types/'
 import { PalletContentStorageAssetsRecord } from '@polkadot/types/lookup'
-import { ReadonlyConfig, VideoProcessingTask } from '../../types'
-import { YtVideo, Thumbnails } from '../../types/youtube'
-import { ExitCodes, RuntimeApiError } from '../../types/errors'
+import axios from 'axios'
+import { Readable } from 'stream'
 import { Logger } from 'winston'
+import { ReadonlyConfig, VideoProcessingTask } from '../../types'
+import { ExitCodes, RuntimeApiError } from '../../types/errors'
+import { Thumbnails, YtVideo } from '../../types/youtube'
+import { AppActionSignatureInput, computeFileHashAndSize, generateAndSignAppActionCommitment } from '../../utils/hasher'
 import { LoggingService } from '../logging'
-import { IYoutubeApi, YoutubeApi } from '../youtube/api'
-import { computeFileHashAndSize } from '../../utils/hasher'
+import { QueryNodeApi } from '../query-node/api'
+import { IYoutubeApi } from '../youtube/api'
+import { RuntimeApi } from './api'
+import { asValidatedMetadata, metadataToBytes } from './serialization'
+import { AccountsUtil } from './signer'
+import { DataObjectMetadata, VideoFileMetadata, VideoInputAssets, VideoInputParameters } from './types'
 
 export class JoystreamClient {
   private runtimeApi: RuntimeApi
@@ -26,21 +34,27 @@ export class JoystreamClient {
   private config: ReadonlyConfig
   private logger: Logger
 
-  constructor(config: ReadonlyConfig, qnApi: QueryNodeApi, logging: LoggingService) {
+  constructor(config: ReadonlyConfig, youtubeApi: IYoutubeApi, qnApi: QueryNodeApi, logging: LoggingService) {
     this.logger = logging.createLogger('JoystreamClient')
     this.qnApi = qnApi
     this.config = config
-    this.youtubeApi = YoutubeApi.create({ ...config.youtubeConfig, ...config.ypp }, logging)
+    this.youtubeApi = youtubeApi
     this.runtimeApi = new RuntimeApi(this.config.endpoints.joystreamNodeWs, logging)
-    this.accounts = new AccountsUtil(this.config.joystreamChannelCollaborator)
+    this.accounts = new AccountsUtil(this.config.joystream)
   }
 
   async channelById(id: number) {
     return this.runtimeApi.query.content.channelById(id)
   }
 
+  // Get Joystream video by by Youtube resource id/attribution synced by the app (if any)
+  async getVideoByYtResourceId(ytVideoId: string) {
+    const appName = this.config.joystream.app.name
+    return this.qnApi.getVideoByYtResourceIdAndEntryAppName(ytVideoId, appName)
+  }
+
   async ensureCollaboratorHasPermission(channelId: number) {
-    const collaborator = this.config.joystreamChannelCollaborator.memberId.toString()
+    const collaborator = this.config.joystream.channelCollaborator.memberId.toString()
     const member = await this.qnApi.memberById(collaborator)
     if (!member) {
       throw new Error(`Joystream member with id ${collaborator} not found`)
@@ -64,15 +78,27 @@ export class JoystreamClient {
   async createVideo(video: VideoProcessingTask): Promise<YtVideo> {
     const collaborator = await this.ensureCollaboratorHasPermission(video.joystreamChannelId)
 
+    // Video metadata & assets
+    const { meta: rawAction, assets } = await this.prepareVideoInput(this.runtimeApi, video)
+
+    const creatorId = video.joystreamChannelId.toString()
+    const jsChannel = await this.qnApi.getChannelById(creatorId)
+    const nonce = (await this.qnApi.memberById(jsChannel?.ownerMember?.id || ''))?.totalVideosCreated || -1
+    const appActionMetadata = metadataToBytes(AppActionMetadata, { videoId: video.resourceId })
+    const appAction = await this.prepareAppActionInput({
+      rawAction,
+      assets,
+      nonce,
+      creatorId,
+      appActionMetadata,
+    })
+
     const keyPair = this.accounts.getPair(collaborator.controllerAccount)
-
-    const { meta, assets } = await this.prepareVideoInput(this.runtimeApi, video)
-
     const createdVideo = await this.runtimeApi.createVideo(
       keyPair,
       collaborator.id,
       video.joystreamChannelId,
-      meta,
+      appAction,
       assets
     )
 
@@ -85,10 +111,30 @@ export class JoystreamClient {
     }
   }
 
+  private async prepareAppActionInput(appActionSignatureInput: AppActionSignatureInput): Promise<Bytes> {
+    const appName = this.config.joystream.app.name
+    const app = await this.qnApi.getAppByName(appName)
+    if (!app || !app.authKey) {
+      throw new RuntimeApiError(ExitCodes.RuntimeApi.APP_NOT_FOUND, `Either App(${appName}), or its authKey not found`)
+    }
+    const keyPair = this.accounts.getPair(app.authKey)
+    const appActionSignature = await generateAndSignAppActionCommitment(appActionSignatureInput, keyPair)
+
+    const appActionInput: IAppAction = {
+      appId: app.id,
+      rawAction: appActionSignatureInput.rawAction,
+      signature: appActionSignature,
+      metadata: appActionSignatureInput.appActionMetadata,
+      nonce: appActionSignatureInput.nonce,
+    }
+    const appAction = metadataToBytes(AppAction, appActionInput)
+    return appAction
+  }
+
   private async prepareVideoInput(
     api: RuntimeApi,
     video: YtVideo
-  ): Promise<{ meta: Bytes; assets: PalletContentStorageAssetsRecord | undefined }> {
+  ): Promise<{ meta: Bytes; assets: Option<PalletContentStorageAssetsRecord> }> {
     const inputAssets: VideoInputAssets = {}
     const videoHashStream = await this.youtubeApi.downloadVideo(video.url)
     const videoMetadataStream = await this.youtubeApi.downloadVideo(video.url)
@@ -148,11 +194,10 @@ export async function getThumbnailAsset(thumbnails: Thumbnails) {
   return response.data
 }
 
-async function prepareAssetsForExtrinsic(api: RuntimeApi, dataObjectsMetadata: DataObjectMetadata[]) {
-  if (!dataObjectsMetadata.length) {
-    return undefined
-  }
-
+async function prepareAssetsForExtrinsic(
+  api: RuntimeApi,
+  dataObjectsMetadata: DataObjectMetadata[]
+): Promise<Option<PalletContentStorageAssetsRecord>> {
   const feePerMB = await api.query.storage.dataObjectPerMegabyteFee()
 
   const objectCreationList = dataObjectsMetadata.map((metadata) => ({
@@ -160,10 +205,15 @@ async function prepareAssetsForExtrinsic(api: RuntimeApi, dataObjectsMetadata: D
     ipfsContentId: metadata.ipfsHash,
   }))
 
-  return createType('PalletContentStorageAssetsRecord', {
-    expectedDataSizeFee: feePerMB,
-    objectCreationList: objectCreationList,
-  })
+  return createType(
+    'Option<PalletContentStorageAssetsRecord>',
+    dataObjectsMetadata.length
+      ? {
+          expectedDataSizeFee: feePerMB,
+          objectCreationList: objectCreationList,
+        }
+      : null
+  )
 }
 
 function setVideoMetadataDefaults(metadata: IVideoMetadata, videoFileMetadata: VideoFileMetadata): IVideoMetadata {

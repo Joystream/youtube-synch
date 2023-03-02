@@ -34,7 +34,7 @@ export default class AddUnauthorizedChannelForSyncing extends ApiCommandBase {
   }
 
   async isCollaboratorSet(jsChannel: PalletContentChannelRecord) {
-    const collaborator = this.appConfig.joystreamChannelCollaborator.memberId.toString()
+    const collaborator = this.appConfig.joystream.channelCollaborator.memberId.toString()
     const member = await this.api.query.members.membershipById(collaborator)
     if (member.isNone) {
       throw new Error(`Joystream member with id ${collaborator} not found`)
@@ -166,6 +166,7 @@ export default class AddUnauthorizedChannelForSyncing extends ApiCommandBase {
         privacyStatus: 'public',
         liveBroadcastContent: video.isLive ? 'live' : 'none',
         state: 'New',
+        viewCount: 0,
       } as YtVideo)
     }
 

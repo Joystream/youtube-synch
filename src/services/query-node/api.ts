@@ -49,6 +49,16 @@ import {
   StorageBucketsCountQuery,
   StorageBucketsCountQueryVariables,
   StorageNodeInfoFragment,
+  AppFields,
+  AppFieldsFragment,
+  GetAppsByNameQuery,
+  GetAppByIdQueryVariables,
+  GetAppsByName,
+  GetAppsByNameQueryVariables,
+  VideoFieldsFragment,
+  GetVideoByYtResourceIdAndEntryAppNameQuery,
+  GetVideoByYtResourceIdAndEntryAppNameQueryVariables,
+  GetVideoByYtResourceIdAndEntryAppName,
 } from './generated/queries'
 import { Maybe } from './generated/schema'
 import { MemberId } from '@joystream/types/primitives'
@@ -283,6 +293,33 @@ export class QueryNodeApi {
         id: id.toString(),
       },
       'membershipByUniqueInput'
+    )
+  }
+
+  async getAppByName(name: string): Promise<AppFieldsFragment | null> {
+    return this.firstEntityQuery<GetAppsByNameQuery, GetAppsByNameQueryVariables>(
+      GetAppsByName,
+      {
+        name,
+      },
+      'apps'
+    )
+  }
+
+  async getVideoByYtResourceIdAndEntryAppName(
+    ytVideoId: string,
+    entryAppName: string
+  ): Promise<VideoFieldsFragment | null> {
+    return this.firstEntityQuery<
+      GetVideoByYtResourceIdAndEntryAppNameQuery,
+      GetVideoByYtResourceIdAndEntryAppNameQueryVariables
+    >(
+      GetVideoByYtResourceIdAndEntryAppName,
+      {
+        ytVideoId,
+        entryAppName,
+      },
+      'videos'
     )
   }
 

@@ -1,9 +1,9 @@
 overwrite: true
 
-schema: https://atlas-dev.joystream.org/query-node/server/graphql
+schema: https://18.195.31.204.nip.io/query-node/server/graphql
 
 documents:
-  - './queries/*.graphql'
+  - './src/services/query-node/queries/*.graphql'
 
 config:
   scalars:
@@ -12,14 +12,14 @@ config:
   skipTypename: true # skip __typename field in typings unless it's part of the query
 
 generates:
-  generated/schema.ts:
+  src/services/query-node/generated/schema.ts:
     hooks:
       afterOneFileWrite:
         - prettier --write
         - eslint --fix
     plugins:
       - typescript
-  generated/queries.ts:
+  src/services/query-node/generated/queries.ts:
     preset: import-types
     presetConfig:
       typesPath: ./schema

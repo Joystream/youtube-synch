@@ -17,22 +17,92 @@ export const configSchema: JSONSchema4 = objectSchema({
   title: 'Youtube Sync node configuration',
   description: 'Configuration schema for Youtube synch service node',
   required: [
-    'appId',
+    'joystream',
     'endpoints',
     'directories',
     'limits',
     'intervals',
-    'youtubeConfig',
-    'ypp',
-    'joystreamChannelCollaborator',
+    'youtube',
     'env',
+    'creatorOnboardingRequirements',
+    'httpApi',
   ],
   properties: {
-    appId: {
-      type: 'string',
-      description: 'Joystream Metaprotocol App ID that will be used for content attribution',
-      minLength: 1,
-    },
+    joystream: objectSchema({
+      description: 'Joystream network related configuration',
+      properties: {
+        app: objectSchema({
+          description: 'Joystream metaprotocol application specific configuration',
+          properties: {
+            name: { type: 'string', description: 'Name of the application' },
+            account: {
+              description: 'Specifies the available application auth keys.',
+              type: 'array',
+              items: {
+                oneOf: [
+                  objectSchema({
+                    title: 'Substrate uri',
+                    description: "Keypair's substrate uri (for example: //Alice)",
+                    properties: {
+                      type: { type: 'string', enum: ['ed25519'], default: 'ed25519' },
+                      suri: { type: 'string' },
+                    },
+                    required: ['suri'],
+                  }),
+                  objectSchema({
+                    title: 'Mnemonic phrase',
+                    description: 'Mnemonic phrase',
+                    properties: {
+                      type: { type: 'string', enum: ['ed25519', 'sr25519', 'ecdsa'], default: 'sr25519' },
+                      mnemonic: { type: 'string' },
+                    },
+                    required: ['mnemonic'],
+                  }),
+                ],
+              },
+              minItems: 1,
+            },
+          },
+          required: ['name', 'account'],
+        }),
+        channelCollaborator: objectSchema({
+          title: 'Joystream channel collaborator used for syncing the content',
+          description: 'Joystream channel collaborators used for syncing the content',
+          properties: {
+            memberId: { type: 'string' },
+            account: {
+              description: 'Specifies the available application auth keys.',
+              type: 'array',
+              items: {
+                oneOf: [
+                  objectSchema({
+                    title: 'Substrate uri',
+                    description: "Keypair's substrate uri (for example: //Alice)",
+                    properties: {
+                      type: { type: 'string', enum: ['ed25519'], default: 'ed25519' },
+                      suri: { type: 'string' },
+                    },
+                    required: ['suri'],
+                  }),
+                  objectSchema({
+                    title: 'Mnemonic phrase',
+                    description: 'Mnemonic phrase',
+                    properties: {
+                      type: { type: 'string', enum: ['ed25519', 'sr25519', 'ecdsa'], default: 'sr25519' },
+                      mnemonic: { type: 'string' },
+                    },
+                    required: ['mnemonic'],
+                  }),
+                ],
+              },
+              minItems: 1,
+            },
+          },
+          required: ['memberId', 'account'],
+        }),
+      },
+      required: ['app', 'channelCollaborator'],
+    }),
     env: {
       type: 'string',
       description: 'Development environment of the node',
@@ -120,47 +190,19 @@ export const configSchema: JSONSchema4 = objectSchema({
       required: [],
     }),
     limits: objectSchema({
-      description: 'Specifies node limits w.r.t. storage, outbound connections etc.',
+      description: 'Specifies YT-synch service limits.',
       properties: {
-        storage: {
-          description: 'Maximum total size of all (cached) assets stored in `directories.assets`',
-          type: 'string',
-          pattern: byteSizeRegex.source,
-        },
-        maxConcurrentStorageNodeUploads: {
-          description: 'Maximum number of concurrent downloads from the storage node(s)',
-          type: 'integer',
-          minimum: 1,
-        },
-        maxConcurrentOutboundConnections: {
-          description:
-            'Maximum number of total simultaneous outbound connections to storage node(s) (excluding proxy connections)',
-          type: 'integer',
-          minimum: 1,
-        },
-        outboundRequestsTimeoutMs: {
-          description: 'Timeout for all outbound storage node http requests in milliseconds',
-          type: 'integer',
-          minimum: 1000,
-        },
-        youtubePendingDownloadTimeoutSec: {
-          description: 'Timeout for pending storage node downloads in seconds',
-          type: 'integer',
-          minimum: 60,
-        },
-        maxCachedItemSize: {
-          description: 'Maximum size of a data object allowed to be cached by the node',
-          type: 'string',
-          pattern: byteSizeRegex.source,
-        },
+        dailyApiQuota: objectSchema({
+          title: 'Specifies daily Youtube API quota rationing scheme for Youtube Partner Program',
+          description: 'Specifies daily Youtube API quota rationing scheme for Youtube Partner Program',
+          properties: {
+            sync: { type: 'number', default: 9500 },
+            signup: { type: 'number', default: 500 },
+          },
+          required: ['sync', 'signup'],
+        }),
       },
-      required: [
-        'storage',
-        'maxConcurrentStorageNodeUploads',
-        'maxConcurrentOutboundConnections',
-        'outboundRequestsTimeoutMs',
-        'youtubePendingDownloadTimeoutSec',
-      ],
+      required: ['dailyApiQuota'],
     }),
     intervals: objectSchema({
       description: 'Specifies how often periodic tasks (for example youtube state polling) are executed.',
@@ -181,13 +223,7 @@ export const configSchema: JSONSchema4 = objectSchema({
       },
       required: ['youtubePolling', 'checkStorageNodeResponseTimes'],
     }),
-    joystreamChannelCollaborator: objectSchema({
-      title: 'Joystream channel collaborators',
-      description: 'Joystream channel collaborators used for syncing the content',
-      properties: { memberId: { type: 'number' }, accountMnemonic: { type: 'string' } },
-      required: ['memberId', 'accountMnemonic'],
-    }),
-    youtubeConfig: objectSchema({
+    youtube: objectSchema({
       title: 'Youtube Oauth2 Client configuration',
       description: 'Youtube Oauth2 Client configuration',
       properties: {
@@ -196,45 +232,36 @@ export const configSchema: JSONSchema4 = objectSchema({
       },
       required: ['clientId', 'clientSecret'],
     }),
-    ypp: objectSchema({
-      title: 'Youtube Partner Program app',
-      description: 'Youtube Partner Program app configuration',
+    creatorOnboardingRequirements: objectSchema({
+      description: 'Specifies creator onboarding requirements for Youtube Partner Program',
       properties: {
-        appPort: { type: 'number' },
-        ownerKey: { type: 'string' },
-        dailyApiQuota: objectSchema({
-          title: 'Specifies daily Youtube API quota rationing scheme for Youtube Partner Program',
-          description: 'Specifies daily Youtube API quota rationing scheme for Youtube Partner Program',
-          properties: {
-            sync: { type: 'number' },
-            signup: { type: 'number' },
-          },
-          required: ['sync', 'signup'],
-        }),
-        creatorOnboardingRequirements: objectSchema({
-          description: 'Specifies creator onboarding requirements for Youtube Partner Program',
-          properties: {
-            minimumSubscribersCount: {
-              description: 'Minimum number of subscribers required to onboard a creator',
-              type: 'number',
-            },
-            minimumVideoCount: {
-              description: 'Minimum number of videos required to onboard a creator',
-              type: 'number',
-            },
-            minimumVideoAgeHours: {
-              description: 'All videos must be at least this old to onboard a creator',
-              type: 'number',
-            },
-            minimumChannelAgeHours: {
-              description: 'The channel must be at least this old to onboard a creator',
-              type: 'number',
-            },
-          },
-          required: ['minimumSubscribersCount', 'minimumVideoCount', 'minimumVideoAgeHours', 'minimumChannelAgeHours'],
-        }),
+        minimumSubscribersCount: {
+          description: 'Minimum number of subscribers required to onboard a creator',
+          type: 'number',
+        },
+        minimumVideoCount: {
+          description: 'Minimum number of videos required to onboard a creator',
+          type: 'number',
+        },
+        minimumVideoAgeHours: {
+          description: 'All videos must be at least this old to onboard a creator',
+          type: 'number',
+        },
+        minimumChannelAgeHours: {
+          description: 'The channel must be at least this old to onboard a creator',
+          type: 'number',
+        },
       },
-      required: ['appPort', 'ownerKey', 'creatorOnboardingRequirements', 'dailyApiQuota'],
+      required: ['minimumSubscribersCount', 'minimumVideoCount', 'minimumVideoAgeHours', 'minimumChannelAgeHours'],
+    }),
+    httpApi: objectSchema({
+      title: 'Public api configuration',
+      description: 'Public api configuration',
+      properties: {
+        port: { type: 'number' },
+        ownerKey: { type: 'string' },
+      },
+      required: ['port', 'ownerKey'],
     }),
   },
 })

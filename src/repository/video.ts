@@ -37,9 +37,6 @@ export function videoRepository() {
 
       viewCount: Number,
 
-      // Video creation date on youtube
-      publishedAt: String,
-
       thumbnails: {
         type: Object,
         schema: {
@@ -83,6 +80,9 @@ export function videoRepository() {
       // Video's container
       container: String,
 
+      // Indicates if the video is an upcoming/active live broadcast. else it's "none"
+      liveBroadcastContent: String,
+
       // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
       joystreamVideo: {
         type: Object,
@@ -98,6 +98,9 @@ export function videoRepository() {
           },
         },
       },
+
+      // Video creation date on youtube
+      publishedAt: String,
     },
     {
       saveUnknown: false,
@@ -202,21 +205,33 @@ export class VideosService {
     return parseInt(videosCountByChannel.count)
   }
 
+  async getVideosInState(state: VideoState): Promise<YtVideo[]> {
+    return this.videosRepository.query({ state }, (q) => q.using('state-channelId-index'))
+  }
+
   async getAllUnsyncedVideos(): Promise<YtVideo[]> {
     return [
+      // Only sync a video if
+      // 1. it's a public video
+      // 2. if it has finished processing on Youtube
+      // 3. it's not a live stream/broadcast
       ...(await this.videosRepository.query({ state: 'New' }, (q) =>
-        q.and().filter('privacyStatus').eq('public').using('state-channelId-index')
+        q
+          .filter('privacyStatus')
+          .eq('public')
+          .filter('uploadStatus')
+          .eq('processed')
+          .filter('liveBroadcastContent')
+          .eq('none')
+          .using('state-channelId-index')
       )),
-      ...(await this.videosRepository.query({ state: 'VideoCreationFailed' }, (q) => q.using('state-channelId-index'))),
+      ...(await this.getVideosInState('VideoCreationFailed')),
     ]
   }
 
   async getAllVideosWithPendingAssets(): Promise<YtVideo[]> {
     // only handle upload for videos that has been created or upload failed previously
-    return [
-      ...(await this.videosRepository.query({ state: 'VideoCreated' }, (q) => q.using('state-channelId-index'))),
-      ...(await this.videosRepository.query('state', (q) => q.eq('UploadFailed').using('state-channelId-index'))),
-    ]
+    return [...(await this.getVideosInState('VideoCreated')), ...(await this.getVideosInState('UploadFailed'))]
   }
 
   /**

@@ -3,7 +3,6 @@ import { LoggingService } from '../services/logging'
 import { Logger } from 'winston'
 import fs from 'fs'
 import nodeCleanup from 'node-cleanup'
-import { AppIntervals } from '../types/app'
 import _ from 'lodash'
 import { DynamodbService, IDynamodbService } from '../repository'
 import { YoutubePollingService } from '../services/syncProcessing/YoutubePollingService'
@@ -32,9 +31,9 @@ export class Service {
     this.logging = LoggingService.withAppConfig(config.logs)
     this.logger = this.logging.createLogger('Server')
     this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
-    this.youtubeApi = YoutubeApi.create({ ...config.youtubeConfig, ...config.ypp }, this.logging)
+    this.youtubeApi = YoutubeApi.create(this.config)
     this.dynamodbService = DynamodbService.init()
-    this.joystreamClient = new JoystreamClient(config, this.queryNodeApi, this.logging)
+    this.joystreamClient = new JoystreamClient(config, this.youtubeApi, this.queryNodeApi, this.logging)
     this.contentUploadService = new ContentUploadService(config, this.logging, this.dynamodbService, this.queryNodeApi)
     this.youtubePollingService = new YoutubePollingService(
       config,
@@ -92,7 +91,7 @@ export class Service {
   public async start(): Promise<void> {
     try {
       this.checkConfigDirectories()
-      await bootstrapHttpApi()
+      await bootstrapHttpApi(this.config.httpApi.port, this.logging)
       this.logger.verbose('Starting the YT-synch service', { config: this.hideSecrets(this.config) })
       await this.youtubePollingService.start()
       await this.contentCreationService.start()

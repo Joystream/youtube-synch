@@ -1,12 +1,9 @@
-appId: gleev
 env: local
 endpoints:
-  queryNode: https://atlas-dev.joystream.org/query-node/server/graphql
-  joystreamNodeWs: wss://atlas-dev.joystream.org/ws-rpc
-
+  queryNode: http://localhost:8080/graphql
+  joystreamNodeWs: ws://localhost:9944
 directories:
   assets: ./local/data
-
 logs:
   file:
     level: debug
@@ -18,41 +15,39 @@ logs:
   # elastic:
   #   level: info
   #   endpoint: http://localhost:9200
-
-limits:
-  storage: 100G
-  maxConcurrentStorageNodeUploads: 100
-  maxConcurrentOutboundConnections: 300
-  outboundRequestsTimeoutMs: 5000
-  youtubePendingDownloadTimeoutSec: 3600
-  maxCachedItemSize: 1G
-
 intervals:
-  youtubePolling: 3
+  youtubePolling: 30
   checkStorageNodeResponseTimes: 1
-
-joystreamChannelCollaborator:
-  memberId: 71
-  accountMnemonic: 'distance skirt silk intact thank copy small often whip drift join pottery'
-
-youtubeConfig:
+youtube:
   clientId: google-client-id
   clientSecret: google-client-secret
-
-ypp:
-  ownerKey: jheWClOJ8e_uBPLUqBVBqPqtECi9
-  appPort: 3335
+limits:
   # Total daily Youtube quota is 10,000 which is shared between signup(5%) and sync(98%) services
   dailyApiQuota:
     sync: 9500
     signup: 500
-  creatorOnboardingRequirements:
-    minimumSubscribersCount: 1
-    minimumVideoCount: 2
-    minimumVideoAgeHours: 1
-    minimumChannelAgeHours: 1
-    # ! Production values
-    # minimumSubscribersCount: 50
-    # minimumVideoCount: 10
-    # minimumVideoAgeHours: 720 # (24 hours x 30 days) 1 month
-    # minimumChannelAgeHours: 2160 # (3 x 24 hours x 30 days) 3 months
+httpApi:
+  port: 3001
+  ownerKey: ypp-owner-key
+joystream:
+  app:
+    name: app-name
+    # App auth key used for signing App Actions
+    account:
+      - mnemonic: 'escape naive annual throw tragic achieve grunt verify cram note harvest problem'
+      # - suri: //Alice
+  channelCollaborator:
+    memberId: collaborator-member-id
+    account:
+      - mnemonic: 'escape naive annual throw tragic achieve grunt verify cram note harvest problem'
+      # - suri: //Alice
+creatorOnboardingRequirements:
+  minimumSubscribersCount: 1
+  minimumVideoCount: 2
+  minimumVideoAgeHours: 1
+  minimumChannelAgeHours: 1
+  # ! Production values
+  # minimumSubscribersCount: 50
+  # minimumVideoCount: 10
+  # minimumVideoAgeHours: 720 # (24 hours x 30 days) 1 month
+  # minimumChannelAgeHours: 2160 # (3 x 24 hours x 30 days) 3 months
