@@ -1,0 +1,36 @@
+fragment ChannelFields on Channel {
+  id
+  videos {
+    id
+    videoStateBloatBond
+  }
+  language {
+    id
+    iso
+  }
+  ownerMember {
+    id
+    controllerAccount
+  }
+}
+
+query getChannelById($channelId: ID!) {
+  channelByUniqueInput(where: { id: $channelId }) {
+    ...ChannelFields
+  }
+}
+
+fragment VideoFields on Video {
+  id
+  ytVideoId
+  entryApp {
+    id
+    name
+  }
+}
+
+query getVideoByYtResourceIdAndEntryAppName($ytVideoId: String!, $entryAppName: String!) {
+  videos(where: { ytVideoId_eq: $ytVideoId, entryApp: { name_eq: $entryAppName } }) {
+    ...VideoFields
+  }
+}
