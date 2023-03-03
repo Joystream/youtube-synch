@@ -1,4 +1,5 @@
 import { generateAppActionCommitment } from '@joystream/js/utils'
+import { AppAction } from '@joystream/metadata-protobuf'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Bytes, Option } from '@polkadot/types/'
 import { PalletContentStorageAssetsRecord } from '@polkadot/types/lookup'
@@ -26,14 +27,22 @@ export interface AppActionSignatureInput {
   nonce: number
   creatorId: string
   assets: Option<PalletContentStorageAssetsRecord>
-  rawAction: Bytes
-  appActionMetadata: Bytes
+  rawAction: Uint8Array
+  appActionMetadata: Uint8Array
 }
 
-export async function generateAndSignAppActionCommitment(
+export async function signAppActionCommitmentForVideo(
   { appActionMetadata, rawAction, assets, creatorId, nonce }: AppActionSignatureInput,
   signer: KeyringPair
 ) {
-  const appCommitment = generateAppActionCommitment(nonce, creatorId, assets.toU8a(), rawAction, appActionMetadata)
+  const appCommitment = generateAppActionCommitment(
+    nonce,
+    creatorId,
+    AppAction.ActionType.CREATE_VIDEO,
+    AppAction.CreatorType.CHANNEL,
+    assets.toU8a(),
+    rawAction,
+    appActionMetadata
+  )
   return signer.sign(appCommitment)
 }

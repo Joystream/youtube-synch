@@ -1,0 +1,48 @@
+name: build
+on: [pull_request, push]
+
+jobs:
+  build_ubuntu:
+    name: Ubuntu Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [14.x]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: checks
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+      - name: yarn pack test
+        run: |
+          yarn pack pack --filename yt-synch-test.tgz
+          tar zxvf ./yt-synch-test.tgz -C yt-synch
+          cd ./yt-synch/package && yarn link
+
+  # cli_build_osx:
+  #   name: MacOS Checks
+  #   runs-on: macos-latest
+  #   strategy:
+  #     matrix:
+  #       node-version: [14.x]
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Use Node.js ${{ matrix.node-version }}
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: ${{ matrix.node-version }}
+  #     - name: checks
+  #       run: |
+  #         yarn install --frozen-lockfile --network-timeout 120000
+  #         yarn workspace @joystream/types build
+  #         yarn workspace @joystream/metadata-protobuf build
+  #     - name: yarn pack test
+  #       run: |
+  #         yarn workspace @joystream/cli pack --filename cli-pack-test.tgz
+  #         tar zxvf ./cli/cli-pack-test.tgz -C cli
+  #         cd ./cli/package && yarn link

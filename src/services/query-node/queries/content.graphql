@@ -12,6 +12,7 @@ fragment ChannelFields on Channel {
     id
     controllerAccount
   }
+  totalVideosCreated
 }
 
 query getChannelById($channelId: ID!) {
