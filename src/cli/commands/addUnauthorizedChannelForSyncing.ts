@@ -99,7 +99,7 @@ export default class AddUnauthorizedChannelForSyncing extends ApiCommandBase {
       channelPlaylistId = await ytpl.getPlaylistID(youtubeChannelId)
     }
 
-    const dynamo = DynamodbService.init()
+    const dynamo = DynamodbService.init(this.appConfig.aws)
     const ytChannel = await ytpl(channelPlaylistId || '', { limit: videosLimit })
 
     // Ensure Youtube Channel is not already being synced.

@@ -116,8 +116,8 @@ export class JoystreamClient {
     if (!app || !app.authKey) {
       throw new RuntimeApiError(ExitCodes.RuntimeApi.APP_NOT_FOUND, `Either App(${appName}), or its authKey not found`)
     }
-    const keyPair = this.accounts.getPair(app.authKey)
-    const appActionSignature = await signAppActionCommitmentForVideo(appActionSignatureInput, keyPair)
+
+    const appActionSignature = await signAppActionCommitmentForVideo(appActionSignatureInput, this.accounts.appAuthKey)
 
     const appActionInput: IAppAction = {
       appId: app.id,

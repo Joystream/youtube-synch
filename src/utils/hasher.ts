@@ -6,6 +6,8 @@ import { PalletContentStorageAssetsRecord } from '@polkadot/types/lookup'
 import { createHash } from 'blake3'
 import { encode as encodeHash, toB58String } from 'multihashes'
 import { Readable } from 'stream'
+import { Keypair } from '@polkadot/util-crypto/types'
+import { ed25519Sign } from '@polkadot/util-crypto'
 
 type FileMetadata = { size: number; hash: string }
 
@@ -33,7 +35,7 @@ export interface AppActionSignatureInput {
 
 export async function signAppActionCommitmentForVideo(
   { appActionMetadata, rawAction, assets, creatorId, nonce }: AppActionSignatureInput,
-  signer: KeyringPair
+  keypair: Keypair
 ) {
   const appCommitment = generateAppActionCommitment(
     nonce,
@@ -44,5 +46,5 @@ export async function signAppActionCommitmentForVideo(
     rawAction,
     appActionMetadata
   )
-  return signer.sign(appCommitment)
+  return ed25519Sign(appCommitment, keypair)
 }
