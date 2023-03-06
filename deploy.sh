@@ -11,9 +11,8 @@ CONTAINER=ypp-localaws
 # source .env
 
 set -a
-. .env
-if [ -f .env.prod ]; then
-    . .env.prod
+if [ -f .env ]; then
+    . .env
 fi
 set +a
 
@@ -26,29 +25,11 @@ if ! docker ps -a --format '{{.Names}}' | grep ${CONTAINER} >/dev/null; then
 fi
 
 #####################################
-# Build lambda functions
-#####################################
-
-./build.sh
-
-#####################################
 # Depolyment of common AWS resources
 #####################################
 
 echo "${GREEN}Initializing common infrastructure stack${NC}"
-pulumi stack init ${DEPLOYMENT_ENV} --cwd packages/infrastructure >/dev/null 2>&1
+pulumi stack init ${DEPLOYMENT_ENV} --cwd src/infrastructure >/dev/null 2>&1
 
 echo "${GREEN}Deploying common resources for Youtube Partner Program & Syncing service${NC}"
-pulumi up --skip-preview --stack ${DEPLOYMENT_ENV} --cwd packages/infrastructure
-
-######################################################
-# Depolyment of youtube sync monitoring AWS resources
-######################################################
-
-if [[ "$RESOURCES" == "all" ]]; then
-    echo "${GREEN}Initializing monitoring infrastructure stack${NC}"
-    pulumi stack init ${DEPLOYMENT_ENV} --cwd packages/monitor >/dev/null 2>&1
-
-    echo "${GREEN} Deploying monitoring & syncing resources Youtube Syncing service ${NC}"
-    pulumi up --skip-preview --stack ${DEPLOYMENT_ENV} --cwd packages/monitor
-fi
+pulumi up --skip-preview --stack ${DEPLOYMENT_ENV} --cwd src/infrastructure

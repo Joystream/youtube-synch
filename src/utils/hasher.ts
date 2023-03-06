@@ -1,7 +1,7 @@
 import { generateAppActionCommitment } from '@joystream/js/utils'
 import { AppAction } from '@joystream/metadata-protobuf'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { Bytes, Option } from '@polkadot/types/'
+import { Option } from '@polkadot/types/'
 import { PalletContentStorageAssetsRecord } from '@polkadot/types/lookup'
 import { createHash } from 'blake3'
 import { encode as encodeHash, toB58String } from 'multihashes'

@@ -100,7 +100,7 @@ export class LoggingService {
         hourly: 'YYYY-MM-DD-HH',
       }
       const fileTransport = new winston.transports.DailyRotateFile({
-        filename: path.join(logs.file.path, 'yt-sync-%DATE%.log'),
+        filename: path.join(logs.file.path, 'youtube-sync-%DATE%.log'),
         datePattern: datePatternByFrequency[logs.file.frequency || 'daily'],
         zippedArchive: logs.file.archive,
         maxSize: logs.file.maxSize,

@@ -29,10 +29,6 @@ export interface YoutubeSyncNodeConfiguration {
     channelCollaborator: JoystreamChannelCollaboratorUsedForSyncingTheContent
   }
   /**
-   * Development environment of the node
-   */
-  env: 'local' | 'dev' | 'prod' | 'test'
-  /**
    * Specifies external endpoints that the distributor node will connect to
    */
   endpoints: {
@@ -63,7 +59,7 @@ export interface YoutubeSyncNodeConfiguration {
     elastic?: ElasticsearchLoggingOptions
   }
   /**
-   * Specifies YT-synch service limits.
+   * Specifies youtube-synch service limits.
    */
   limits: {
     dailyApiQuota: SpecifiesDailyYoutubeAPIQuotaRationingSchemeForYoutubePartnerProgram
@@ -77,7 +73,7 @@ export interface YoutubeSyncNodeConfiguration {
      */
     youtubePolling: number
     /**
-     * How often, in seconds, will the YT-sync service attempt to send requests to all current storage node endpoints in order to check how quickly they respond. The node will never make more than 0 such requests concurrently.
+     * How often, in seconds, will the youtube-sync service attempt to send requests to all current storage node endpoints in order to check how quickly they respond. The node will never make more than 0 such requests concurrently.
      */
     checkStorageNodeResponseTimes: number
   }

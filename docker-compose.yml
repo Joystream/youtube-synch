@@ -1,14 +1,14 @@
 version: '3.4'
 services:
-  yt-synch-service:
+  youtube-synch-service:
     image: node:14
-    container_name: yt-synch-service
+    container_name: youtube-synch-service
     restart: on-failure
     networks:
       - backend
     volumes:
-      - yt-synch-logs:/logs
-      - yt-synch-data:/data
+      - youtube-synch-logs:/logs
+      - youtube-synch-data:/data
       # mount the AWS credentials file to docker container home directory
       - ~/.aws/:/root/.aws:ro
       - type: bind
@@ -35,9 +35,9 @@ services:
     command: [ './bin/run', 'start' ]
 
 volumes:
-  yt-synch-logs:
+  youtube-synch-logs:
     driver: local
-  yt-synch-data:
+  youtube-synch-data:
     driver: local
 
 networks:

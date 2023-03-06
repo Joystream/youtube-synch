@@ -8,9 +8,12 @@ import { DynamodbService } from '../../repository'
 import { Thumbnails, YtChannel, YtVideo } from '../../types/youtube'
 import ApiCommandBase from '../base/api'
 import CLIExitCodes from '../base/ExitCodes'
+import { ChannelCreationInputParameters } from '@joystream/cli/lib/Types'
 
 export default class AddUnauthorizedChannelForSyncing extends ApiCommandBase {
-  static description = 'Add Unauthorized Channel For Syncing, this command will also '
+  static description =
+    `Add Unauthorized Youtube Channel For Syncing, this command will also create` +
+    ` corresponding Joystream Channel if --joystreamChannelId  flag is not provided`
 
   static flags = {
     channelUrl: flags.string({
@@ -28,9 +31,28 @@ export default class AddUnauthorizedChannelForSyncing extends ApiCommandBase {
     }),
     joystreamChannelId: flags.integer({
       description: 'Joystream Channel ID where Youtube videos will be replicated',
-      required: true,
+      required: false,
     }),
     ...ApiCommandBase.flags,
+  }
+
+  async createJoystreamChannel(ytChannel: ytpl.Result) {
+    const channelOwnerKeypair = await this.prepareDevAccount(ytChannel.author.name)
+    const memberId = await this.buyMembership(channelOwnerKeypair)
+
+    // Import & select channel owner key
+    await this.joystreamCli.importAccount(channelOwnerKeypair)
+    const channelInput: ChannelCreationInputParameters = {
+      title: ytChannel.author.name,
+      isPublic: true,
+      language: 'en',
+      collaborators: [
+        { memberId: Number(this.appConfig.joystream.channelCollaborator.memberId), permissions: ['AddVideo'] },
+      ],
+    }
+
+    const memberContextFlags = ['--context', 'Member', '--useMemberId', memberId.toString()]
+    return this.joystreamCli.createChannel(channelInput, memberContextFlags)
   }
 
   async isCollaboratorSet(jsChannel: PalletContentChannelRecord) {
@@ -48,10 +70,8 @@ export default class AddUnauthorizedChannelForSyncing extends ApiCommandBase {
   }
 
   async run(): Promise<void> {
-    const { channelUrl, ytChannelId, videosLimit, joystreamChannelId } = this.parse(
-      AddUnauthorizedChannelForSyncing
-    ).flags
-
+    const { channelUrl, ytChannelId, videosLimit } = this.parse(AddUnauthorizedChannelForSyncing).flags
+    let { joystreamChannelId } = this.parse(AddUnauthorizedChannelForSyncing).flags
     let channelPlaylistId: string | undefined
 
     if (!channelUrl && !ytChannelId) {
@@ -79,47 +99,13 @@ export default class AddUnauthorizedChannelForSyncing extends ApiCommandBase {
       channelPlaylistId = await ytpl.getPlaylistID(youtubeChannelId)
     }
 
-    const result = await ytpl(channelPlaylistId || '', { limit: videosLimit })
-
-    // Get Joystream Channel
-    const jsChannel = await this.api.query.content.channelById(joystreamChannelId)
-
-    // Ensure joystream channel exists
-    if (jsChannel.isEmpty) {
-      throw new CLIError(`Channel ${joystreamChannelId} does not exist`, {
-        exit: CLIExitCodes.InvalidInput,
-      })
-    }
-
-    // Ensure joystream channel has collaborator set
-    if (!(await this.isCollaboratorSet(jsChannel))) {
-      throw new CLIError(`Channel ${joystreamChannelId} does not have collaborator member to manage syncing`, {
-        exit: CLIExitCodes.InvalidInput,
-      })
-    }
-
-    // Init dynamo client
     const dynamo = DynamodbService.init()
-
-    // Ensure Joystream Channel is not already associated with some other Youtube channel.
-    try {
-      await dynamo.channels.getByJoystreamChannelId(joystreamChannelId)
-      throw new CLIError(
-        `Joystream Channel ${joystreamChannelId} is already associated with another Youtube channel. Try again with different --joystreamChannelId`,
-        {
-          exit: CLIExitCodes.InvalidInput,
-        }
-      )
-    } catch (error) {
-      if (error instanceof CLIError) {
-        throw error
-      }
-    }
+    const ytChannel = await ytpl(channelPlaylistId || '', { limit: videosLimit })
 
     // Ensure Youtube Channel is not already being synced.
     try {
-      const ytChannel = await dynamo.channels.getByChannelId(result.author.channelID)
-      if (ytChannel.performUnauthorizedSync) {
+      const ytCh = await dynamo.channels.getByChannelId(ytChannel.author.channelID)
+      if (ytCh.performUnauthorizedSync) {
         await this.requireConfirmation(
           'This youtube channel is already being synced. Do you want to redo the syncing?',
           false
@@ -135,41 +121,91 @@ export default class AddUnauthorizedChannelForSyncing extends ApiCommandBase {
       }
     }
 
+    // Ensure Joystream Channel is not already associated with some other Youtube channel.
+    if (joystreamChannelId) {
+      // Get Joystream Channel
+      const jsChannel = await this.api.query.content.channelById(joystreamChannelId)
+
+      // Ensure joystream channel exists
+      if (jsChannel.isEmpty) {
+        throw new CLIError(`Channel ${joystreamChannelId} does not exist`, {
+          exit: CLIExitCodes.InvalidInput,
+        })
+      }
+
+      // Ensure joystream channel has collaborator set
+      if (!(await this.isCollaboratorSet(jsChannel))) {
+        throw new CLIError(`Channel ${joystreamChannelId} does not have collaborator member to manage syncing`, {
+          exit: CLIExitCodes.InvalidInput,
+        })
+      }
+      try {
+        const { title } = await dynamo.channels.getByJoystreamChannelId(joystreamChannelId)
+        // Allow to re-sync the same JS channel with the same YT channel
+        if (title !== ytChannel.author.name) {
+          throw new CLIError(
+            `Joystream Channel ${joystreamChannelId} is already associated with another Youtube channel. Try again with different --joystreamChannelId`,
+            {
+              exit: CLIExitCodes.InvalidInput,
+            }
+          )
+        }
+      } catch (error) {
+        if (error instanceof CLIError) {
+          throw error
+        }
+      }
+    }
+
     this.jsonPrettyPrint(JSON.stringify({ channelUrl, ytChannelId, videosLimit, joystreamChannelId }))
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
+    if (!joystreamChannelId) {
+      await this.requireConfirmation(
+        'No --joystreamChannelId was provided, so by default a new Joystream channel will be created ',
+        true
+      )
+      joystreamChannelId = await this.createJoystreamChannel(ytChannel)
+    }
+
     // Save channel to DB
     const c = await dynamo.channels.save({
-      id: result.author.channelID,
-      title: result.author.name,
-      userId: `UnauthorizedUser-${result.author.channelID}`,
+      id: ytChannel.author.channelID,
+      title: ytChannel.author.name,
+      userId: `UnauthorizedUser-${ytChannel.author.channelID}`,
       joystreamChannelId,
       createdAt: new Date(),
       lastActedAt: new Date(),
       shouldBeIngested: true,
       yppStatus: 'Unverified',
+      videoCategoryId: '868-2',
       performUnauthorizedSync: true,
     } as YtChannel)
 
     // Save videos to DB
-    for (const video of result.items) {
+    for (const video of ytChannel.items) {
       await dynamo.videos.save({
         id: video.id,
-        channelId: result.author.channelID,
+        channelId: ytChannel.author.channelID,
         title: video.title,
         thumbnails: { default: video.thumbnails[0]?.url, medium: video.thumbnails[1]?.url } as Thumbnails,
         duration: video.durationSec || 0,
         createdAt: new Date(),
         resourceId: video.id,
         url: video.shortUrl,
-        playlistId: channelPlaylistId,
         privacyStatus: 'public',
+        uploadStatus: 'processed',
         liveBroadcastContent: video.isLive ? 'live' : 'none',
         state: 'New',
         viewCount: 0,
       } as YtVideo)
     }
 
-    this.log(`Successfully added Channel "${result.author.name}" to DB for unauthorized syncing`)
+    this.log(
+      `Successfully added Channel ${JSON.stringify({
+        ytChannel: ytChannel.author.name,
+        joystreamChannel: joystreamChannelId,
+      })} to DB for unauthorized syncing`
+    )
   }
 }
