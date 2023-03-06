@@ -22,9 +22,9 @@ export interface YoutubeSyncNodeConfiguration {
        */
       name: string
       /**
-       * Specifies the available application auth keys.
+       * Specifies the application auth key's string seed for generating ed25519 keypair
        */
-      account: (SubstrateUri | MnemonicPhrase)[]
+      accountSeed: string
     }
     channelCollaborator: JoystreamChannelCollaboratorUsedForSyncingTheContent
   }
@@ -78,6 +78,7 @@ export interface YoutubeSyncNodeConfiguration {
     checkStorageNodeResponseTimes: number
   }
   youtube: YoutubeOauth2ClientConfiguration
+  aws?: AWSConfigurationsNeededToConnectWithDynamoDBInstance
   /**
    * Specifies creator onboarding requirements for Youtube Partner Program
    */
@@ -102,6 +103,16 @@ export interface YoutubeSyncNodeConfiguration {
   httpApi: PublicApiConfiguration
 }
 /**
+ * Joystream channel collaborators used for syncing the content
+ */
+export interface JoystreamChannelCollaboratorUsedForSyncingTheContent {
+  memberId: string
+  /**
+   * Specifies the available application auth keys.
+   */
+  account: (SubstrateUri | MnemonicPhrase)[]
+}
+/**
  * Keypair's substrate uri (for example: //Alice)
  */
 export interface SubstrateUri {
@@ -112,30 +123,6 @@ export interface SubstrateUri {
  * Mnemonic phrase
  */
 export interface MnemonicPhrase {
-  type?: 'ed25519' | 'sr25519' | 'ecdsa'
-  mnemonic: string
-}
-/**
- * Joystream channel collaborators used for syncing the content
- */
-export interface JoystreamChannelCollaboratorUsedForSyncingTheContent {
-  memberId: string
-  /**
-   * Specifies the available application auth keys.
-   */
-  account: (SubstrateUri1 | MnemonicPhrase1)[]
-}
-/**
- * Keypair's substrate uri (for example: //Alice)
- */
-export interface SubstrateUri1 {
-  type?: 'ed25519'
-  suri: string
-}
-/**
- * Mnemonic phrase
- */
-export interface MnemonicPhrase1 {
   type?: 'ed25519' | 'sr25519' | 'ecdsa'
   mnemonic: string
 }
@@ -194,6 +181,27 @@ export interface SpecifiesDailyYoutubeAPIQuotaRationingSchemeForYoutubePartnerPr
 export interface YoutubeOauth2ClientConfiguration {
   clientId: string
   clientSecret: string
+}
+/**
+ * AWS configurations needed to connect with DynamoDB instance
+ */
+export interface AWSConfigurationsNeededToConnectWithDynamoDBInstance {
+  /**
+   * DynamoDB endpoint to connect with the instance, only set if node is connecting to local DynamoDB instance
+   */
+  endpoint?: string
+  /**
+   * DynamoDB endpoint to connect with the instance, only set if node is connecting to AWS DynamoDB instance
+   */
+  region?: string
+  credentials?: AWSCredentials
+}
+/**
+ * Youtube Oauth2 Client configuration
+ */
+export interface AWSCredentials {
+  accessKeyId: string
+  secretAccessKey: string
 }
 /**
  * Public api configuration

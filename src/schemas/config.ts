@@ -1,6 +1,5 @@
 import { JSONSchema4 } from 'json-schema'
 import * as winston from 'winston'
-// import { MAX_CONCURRENT_RESPONSE_TIME_CHECKS } from '../services/networking/NetworkingService'
 import { objectSchema } from './utils'
 
 export const byteSizeUnits = ['B', 'K', 'M', 'G', 'T']
@@ -34,35 +33,12 @@ export const configSchema: JSONSchema4 = objectSchema({
           description: 'Joystream metaprotocol application specific configuration',
           properties: {
             name: { type: 'string', description: 'Name of the application' },
-            account: {
-              description: 'Specifies the available application auth keys.',
-              type: 'array',
-              items: {
-                oneOf: [
-                  objectSchema({
-                    title: 'Substrate uri',
-                    description: "Keypair's substrate uri (for example: //Alice)",
-                    properties: {
-                      type: { type: 'string', enum: ['ed25519'], default: 'ed25519' },
-                      suri: { type: 'string' },
-                    },
-                    required: ['suri'],
-                  }),
-                  objectSchema({
-                    title: 'Mnemonic phrase',
-                    description: 'Mnemonic phrase',
-                    properties: {
-                      type: { type: 'string', enum: ['ed25519', 'sr25519', 'ecdsa'], default: 'sr25519' },
-                      mnemonic: { type: 'string' },
-                    },
-                    required: ['mnemonic'],
-                  }),
-                ],
-              },
-              minItems: 1,
+            accountSeed: {
+              description: `Specifies the application auth key's string seed for generating ed25519 keypair`,
+              type: 'string',
             },
           },
-          required: ['name', 'account'],
+          required: ['name', 'accountSeed'],
         }),
         channelCollaborator: objectSchema({
           title: 'Joystream channel collaborator used for syncing the content',
@@ -223,6 +199,33 @@ export const configSchema: JSONSchema4 = objectSchema({
         clientSecret: { type: 'string' },
       },
       required: ['clientId', 'clientSecret'],
+    }),
+    aws: objectSchema({
+      title: 'AWS configurations needed to connect with DynamoDB instance',
+      description: 'AWS configurations needed to connect with DynamoDB instance',
+
+      properties: {
+        endpoint: {
+          type: 'string',
+          description:
+            'DynamoDB endpoint to connect with the instance, only set if node is connecting to local DynamoDB instance',
+        },
+        region: {
+          type: 'string',
+          description:
+            'DynamoDB endpoint to connect with the instance, only set if node is connecting to AWS DynamoDB instance',
+        },
+        credentials: objectSchema({
+          title: 'AWS credentials',
+          description: 'Youtube Oauth2 Client configuration',
+          properties: {
+            accessKeyId: { type: 'string' },
+            secretAccessKey: { type: 'string' },
+          },
+          required: ['accessKeyId', 'secretAccessKey'],
+        }),
+      },
+      required: [],
     }),
     creatorOnboardingRequirements: objectSchema({
       description: 'Specifies creator onboarding requirements for Youtube Partner Program',

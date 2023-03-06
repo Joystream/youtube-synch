@@ -21,9 +21,10 @@ import { YoutubeController } from './controllers/youtube'
   providers: [
     {
       provide: 'dynamodbService',
-      useFactory: () => {
-        return DynamodbService.init()
+      useFactory: (configService: ConfigService) => {
+        return DynamodbService.init(configService.get('aws'))
       },
+      inject: [ConfigService],
     },
     {
       provide: QueryNodeApi,

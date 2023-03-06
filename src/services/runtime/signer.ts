@@ -5,6 +5,8 @@ import { AccountId } from '@polkadot/types/interfaces'
 import { u8aToHex } from '@polkadot/util'
 import { cryptoWaitReady, mnemonicGenerate } from '@polkadot/util-crypto'
 import { ReadonlyConfig } from '../../types'
+import { ed25519PairFromString } from '@polkadot/util-crypto'
+import { Keypair } from '@polkadot/util-crypto/types'
 
 export type Account = {
   address: string
@@ -13,10 +15,12 @@ export type Account = {
 
 export class AccountsUtil {
   private keyring: Keyring
+  readonly appAuthKey: Keypair
   private config: ReadonlyConfig['joystream']
 
   constructor(config: ReadonlyConfig['joystream']) {
     this.config = config
+    this.appAuthKey = ed25519PairFromString(this.config.app.accountSeed)
     cryptoWaitReady().then(() => {
       this.initKeyring()
     })
@@ -24,15 +28,6 @@ export class AccountsUtil {
 
   private initKeyring(): void {
     this.keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
-    this.config.app.account?.forEach((keyData) => {
-      if ('suri' in keyData) {
-        this.keyring.addFromUri(keyData.suri, undefined, keyData.type)
-      }
-      if ('mnemonic' in keyData) {
-        this.keyring.addFromMnemonic(keyData.mnemonic, { name: 'app-auth-key' }, 'ed25519')
-      }
-    })
-
     this.config.channelCollaborator.account?.forEach((keyData) => {
       if ('suri' in keyData) {
         this.keyring.addFromUri(keyData.suri)
