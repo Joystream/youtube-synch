@@ -1,71 +1,8 @@
 import * as aws from '@pulumi/aws'
-import * as awsx from '@pulumi/awsx'
-import * as pulumi from '@pulumi/pulumi'
-import { ConfigParserService } from '../utils/configParser'
-import { ReadonlyConfig } from '../types'
 import { Stats, YtChannel, YtUser, YtVideo } from '../types/youtube'
 
 const nameof = <T>(name: keyof T) => <string>name
-const config = new ConfigParserService('./config.yml').parse()
-const resourceSuffix = config.env
-
-function lambdaFunction(name: string, resourceSuffix: ReadonlyConfig['env'], handler: string, source: string) {
-  // IAM role
-  const role = new aws.iam.Role(`${name}Role`, {
-    assumeRolePolicy: {
-      Version: '2012-10-17',
-      Statement: [
-        {
-          Action: 'sts:AssumeRole',
-          Principal: {
-            Service: 'lambda.amazonaws.com',
-          },
-          Effect: 'Allow',
-          Sid: '',
-        },
-      ],
-    },
-  })
-
-  // IAM policy attachments
-  new aws.iam.RolePolicyAttachment(`${name}Attach`, {
-    role: role,
-    policyArn: aws.iam.ManagedPolicies.AWSLambdaExecute,
-  })
-
-  new aws.iam.RolePolicyAttachment(`${name}DynamoAttach`, {
-    role: role,
-    policyArn: aws.iam.ManagedPolicies.AmazonDynamoDBFullAccess,
-  })
-
-  // Next, create the Lambda function itself:
-  const func = new aws.lambda.Function(name, {
-    code: new pulumi.asset.AssetArchive({
-      '.': new pulumi.asset.FileArchive(source),
-    }),
-    runtime: 'nodejs14.x',
-    role: role.arn,
-    handler: handler,
-    name: name,
-    tags: { environment: resourceSuffix },
-    memorySize: 1024,
-    timeout: 60,
-    environment: {
-      // variables: config,
-    },
-  })
-  return func
-}
-
-const yppEndpoint = new awsx.apigateway.API('ypp-api', {
-  routes: [
-    {
-      path: '{proxy+}',
-      method: 'ANY',
-      eventHandler: lambdaFunction('ypp-api', resourceSuffix, 'main.handler', '../../../dist/packages/api-lambda'),
-    },
-  ],
-})
+const resourceSuffix = String(process.env.DEPLOYMENT_ENV)
 
 const userTable = new aws.dynamodb.Table('users', {
   name: 'users',
@@ -191,5 +128,3 @@ export const usersTableArn = userTable.arn
 export const channelsTableArn = channelsTable.arn
 export const videosTableArn = videosTable.arn
 export const statsTableArn = statsTable.arn
-
-export const url = yppEndpoint.url

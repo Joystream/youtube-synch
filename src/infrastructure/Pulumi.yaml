@@ -1,5 +1,5 @@
 name: youtube-partner-program
 runtime:
   name: nodejs
-main: 'src/index.ts'
-description: Common infrastructure of youtube partner program & youtube-sync project
+main: 'index.ts'
+description: Dynamodb Infrastructure of youtube partner program

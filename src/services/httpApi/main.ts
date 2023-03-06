@@ -9,9 +9,6 @@ import { toPrettyJSON } from '../../types'
 import { LoggingService } from '../logging'
 import { ApiModule } from './api.module'
 
-// Set AWS config in case we are running locally
-// setAwsConfig()
-
 // Create Swagger API documentation
 function setupSwagger(app: INestApplication) {
   const documentConfig = new DocumentBuilder()

@@ -8,15 +8,13 @@
     "build": "tsc --build tsconfig.json",
     "start": "./bin/run start",
     "start:api": "DEPLOYMENT_ENV=local yarn nx run api:serve",
-    "deploy-all:local": "export DEPLOYMENT_ENV=local && RESOURCES=all ./deploy.sh",
-    "destroy-all:local": "export DEPLOYMENT_ENV=local && ./destroy.sh",
-    "deploy-ypp:local": "export DEPLOYMENT_ENV=local && ./deploy.sh",
-    "deploy-all:dev": "export DEPLOYMENT_ENV=development && RESOURCES=all ./deploy.sh",
-    "destroy-all:dev": "export DEPLOYMENT_ENV=development && ./destroy.sh",
-    "deploy-ypp:dev": "export DEPLOYMENT_ENV=development && ./deploy.sh",
-    "deploy-all:test": "export DEPLOYMENT_ENV=testing && RESOURCES=all ./deploy.sh",
-    "destroy-all:test": "export DEPLOYMENT_ENV=testing && ./destroy.sh",
-    "deploy-ypp:test": "export DEPLOYMENT_ENV=testing && ./deploy.sh",
+    "deploy-infra:local": "export DEPLOYMENT_ENV=local && ./destroy.sh && ./deploy.sh",
+    "destroy-infra:local": "export DEPLOYMENT_ENV=local && ./destroy.sh",
+    "deploy-infra:dev": "export DEPLOYMENT_ENV=development && ./deploy.sh",
+    "deploy-infra:test": "export DEPLOYMENT_ENV=testing && ./deploy.sh",
+    "deploy-infra:prod": "export DEPLOYMENT_ENV=production && ./deploy.sh",
+    "generate:docs:cli": "yarn oclif-dev readme --multi --dir ./src/cli/docs",
+    "generate:docs:config": "yarn ts-node --transpile-only ./src/schemas/scripts/generateConfigDoc.ts",
     "generate:all": "yarn generate:types:json-schema && yarn generate:types:graphql",
     "generate:types:graphql": "npx graphql-codegen --config ./src/services/query-node/codegen.yml",
     "generate:types:json-schema": "yarn ts-node ./src/schemas/scripts/generateTypes.ts"
@@ -33,17 +31,19 @@
   ],
   "main": "lib/index.js",
   "oclif": {
+    "repositoryPrefix": "<%- repo %>/blob/main/src/cli/<%- commandPath %>",
     "commands": "./lib/cli/commands",
-    "bin": "yt-sync",
+    "bin": "youtube-synch",
     "plugins": [
       "@oclif/plugin-help"
     ],
     "topics": {}
   },
   "bin": {
-    "yt-synch-service": "./bin/run"
+    "youtube-synch-service": "./bin/run"
   },
   "devDependencies": {
+    "@adobe/jsonschema2md": "^7.1.5",
     "@graphql-codegen/cli": "^1.21.4",
     "@graphql-codegen/import-types-preset": "^1.18.1",
     "@graphql-codegen/typescript": "^1.22.0",
@@ -67,8 +67,8 @@
     "@apollo/client": "^3.2.5",
     "@elastic/ecs-winston-format": "^1.3.1",
     "@googleapis/youtube": "^2.0.0",
-    "@joystream/js": "^1.3.0",
-    "@joystream/metadata-protobuf": "2.8.0",
+    "@joystream/cli": "^0.10.0",
+    "@joystream/js": "^1.4.0",
     "@joystream/prettier-config": "^1.0.0",
     "@joystream/types": "0.20.5",
     "@nestjs/common": "^8.0.0",
@@ -88,6 +88,7 @@
     "@types/inquirer": "^8.1.1",
     "@types/mime-types": "^2.1.0",
     "@types/node-cleanup": "^2.1.2",
+    "@types/uuid": "^9.0.1",
     "@vendia/serverless-express": "^4.5.3",
     "ajv": "7.2.4",
     "aws-lambda": "^1.0.7",
@@ -116,6 +117,7 @@
     "rxjs": "^7.5.2",
     "sleep-promise": "^9.1.0",
     "swagger-ui-express": "^4.3.0",
+    "uuid": "^9.0.0",
     "winston": "^3.8.2",
     "winston-daily-rotate-file": "^4.7.1",
     "winston-elasticsearch": "^0.17.2",

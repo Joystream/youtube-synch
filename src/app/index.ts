@@ -92,12 +92,12 @@ export class Service {
     try {
       this.checkConfigDirectories()
       await bootstrapHttpApi(this.config.httpApi.port, this.logging)
-      this.logger.verbose('Starting the YT-synch service', { config: this.hideSecrets(this.config) })
+      this.logger.verbose('Starting the Youtube-Synch service', { config: this.hideSecrets(this.config) })
       await this.youtubePollingService.start()
       await this.contentCreationService.start()
       await this.contentUploadService.start()
     } catch (err) {
-      this.logger.error('YT-synch service initialization failed!', { err })
+      this.logger.error('Youtube-Synch service initialization failed!', { err })
       process.exit(-1)
     }
     nodeCleanup()

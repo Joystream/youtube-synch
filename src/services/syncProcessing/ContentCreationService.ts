@@ -71,9 +71,7 @@ export class ContentCreationService {
    * was actually created on the chain. So for this video we need to update the state to `VideoCreated`.
    */
   private async ensureContentStateConsistency() {
-    const videosInProcessingState = await this.dynamodbService.repo.videos.query({ state: 'CreatingVideo' }, (q) =>
-      q.using('state-channelId-index')
-    )
+    const videosInProcessingState = await this.dynamodbService.videos.getVideosInState('CreatingVideo')
 
     for (const v of videosInProcessingState) {
       const qnVideo = await this.joystreamClient.getVideoByYtResourceId(v.resourceId)

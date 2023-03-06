@@ -231,7 +231,7 @@ export class VideosService {
 
   async getAllVideosWithPendingAssets(): Promise<YtVideo[]> {
     // only handle upload for videos that has been created or upload failed previously
-    return [...(await this.getVideosInState('VideoCreated')), ...(await this.getVideosInState('UploadFailed'))]
+    return [...(await this.getVideosInState('UploadFailed')), ...(await this.getVideosInState('VideoCreated'))]
   }
 
   /**

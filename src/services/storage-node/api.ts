@@ -43,25 +43,6 @@ export class StorageNodeApi {
     ]
   }
 
-  // public async isObjectAvailable(objectId: string): Promise<boolean> {
-  //   const [options, timeout] = this.reqConfigWithTimeout({}, this.config.limits.outboundRequestsTimeoutMs)
-  //   this.logger.debug('Checking object availibility', { objectId })
-  //   try {
-  //     await this.filesApi.filesApiGetFileHeaders(objectId, options)
-  //     this.logger.debug('Data object available', { objectId })
-  //     return true
-  //   } catch (err) {
-  //     if (axios.isAxiosError(err)) {
-  //       this.logger.debug('Data object not available', { objectId, err: parseAxiosError(err) })
-  //       return false
-  //     }
-  //     this.logger.error('Unexpected error while requesting data object', { objectId, err })
-  //     throw err
-  //   } finally {
-  //     clearTimeout(timeout)
-  //   }
-  // }
-
   async uploadVideo(video: YtVideo): Promise<void> {
     const assetsInput: AssetUploadInput[] = [
       {

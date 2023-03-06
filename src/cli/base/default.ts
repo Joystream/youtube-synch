@@ -1,4 +1,4 @@
-import Command, { flags as oclifFlags } from '@oclif/command'
+import Command, { flags } from '@oclif/command'
 import ExitCodes from './ExitCodes'
 import { ConfigParserService } from '../../utils/configParser'
 import { LoggingService } from '../../services/logging'
@@ -6,24 +6,12 @@ import { Logger } from 'winston'
 import { ReadonlyConfig } from '../../types'
 import inquirer, { DistinctQuestion } from 'inquirer'
 import chalk from 'chalk'
+import { JoystreamCLI, TmpFileManager } from './joystreamCli'
 
-export const flags = {
-  ...oclifFlags,
-  integerArr: oclifFlags.build({
-    parse: (value: string) => {
-      const arr: number[] = value.split(',').map((v) => {
-        if (!/^-?\d+$/.test(v)) {
-          throw new Error(`Expected comma-separated integers, but received: ${value}`)
-        }
-        return parseInt(v)
-      })
-      return arr
-    },
-  }),
-}
 export default abstract class DefaultCommandBase extends Command {
   protected appConfig!: ReadonlyConfig
   protected logging!: LoggingService
+  protected joystreamCli!: JoystreamCLI
   protected autoConfirm!: boolean
   private logger!: Logger
   protected jsonPrettyIdent = ''
@@ -51,7 +39,17 @@ export default abstract class DefaultCommandBase extends Command {
     this.appConfig = configParser.parse() as ReadonlyConfig
     this.logging = LoggingService.withCLIConfig()
     this.logger = this.logging.createLogger('CLI')
+    this.joystreamCli = await this.createJoystreamCli()
     this.autoConfirm = !!(process.env.AUTO_CONFIRM === 'true' || parseInt(process.env.AUTO_CONFIRM || '') || yes)
+  }
+
+  private async createJoystreamCli(): Promise<JoystreamCLI> {
+    const tmpFileManager = new TmpFileManager()
+    // create Joystream CLI
+    const joystreamCli = new JoystreamCLI(tmpFileManager, this.appConfig)
+    // init CLI
+    await joystreamCli.init()
+    return joystreamCli
   }
 
   public log(message: string, ...meta: unknown[]): void {

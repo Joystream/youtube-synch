@@ -168,6 +168,7 @@ export class YoutubePollingService {
   }
 
   private async performVideosIngestion(channel: YtChannel, top = 100) {
+    // TODO: only update `New` videos
     // get all videos of the channel
     const allVideos = await this.youtubeApi.getAllVideos(channel, top)
 

@@ -1,5 +1,5 @@
 import { JSONSchema4 } from 'json-schema'
-import winston from 'winston'
+import * as winston from 'winston'
 // import { MAX_CONCURRENT_RESPONSE_TIME_CHECKS } from '../services/networking/NetworkingService'
 import { objectSchema } from './utils'
 
@@ -23,7 +23,6 @@ export const configSchema: JSONSchema4 = objectSchema({
     'limits',
     'intervals',
     'youtube',
-    'env',
     'creatorOnboardingRequirements',
     'httpApi',
   ],
@@ -103,13 +102,6 @@ export const configSchema: JSONSchema4 = objectSchema({
       },
       required: ['app', 'channelCollaborator'],
     }),
-    env: {
-      type: 'string',
-      description: 'Development environment of the node',
-      minLength: 1,
-      default: 'local',
-      enum: ['local', 'dev', 'prod', 'test'],
-    },
     endpoints: objectSchema({
       description: 'Specifies external endpoints that the distributor node will connect to',
       properties: {
@@ -190,7 +182,7 @@ export const configSchema: JSONSchema4 = objectSchema({
       required: [],
     }),
     limits: objectSchema({
-      description: 'Specifies YT-synch service limits.',
+      description: 'Specifies youtube-synch service limits.',
       properties: {
         dailyApiQuota: objectSchema({
           title: 'Specifies daily Youtube API quota rationing scheme for Youtube Partner Program',
@@ -214,7 +206,7 @@ export const configSchema: JSONSchema4 = objectSchema({
         },
         checkStorageNodeResponseTimes: {
           description:
-            'How often, in seconds, will the YT-sync service attempt to send requests to all current storage node endpoints ' +
+            'How often, in seconds, will the youtube-sync service attempt to send requests to all current storage node endpoints ' +
             'in order to check how quickly they respond. ' +
             `The node will never make more than ${0} such requests concurrently.`,
           type: 'integer',
