@@ -8,7 +8,6 @@ fragment MembershipFields on Membership {
   handle
   controllerAccount
   rootAccount
-  totalVideosCreated
   metadata {
     ...MemberMetadataFields
   }

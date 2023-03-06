@@ -17,7 +17,7 @@ import { Logger } from 'winston'
 import { ReadonlyConfig, VideoProcessingTask } from '../../types'
 import { ExitCodes, RuntimeApiError } from '../../types/errors'
 import { Thumbnails, YtVideo } from '../../types/youtube'
-import { AppActionSignatureInput, computeFileHashAndSize, generateAndSignAppActionCommitment } from '../../utils/hasher'
+import { AppActionSignatureInput, computeFileHashAndSize, signAppActionCommitmentForVideo } from '../../utils/hasher'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
 import { IYoutubeApi } from '../youtube/api'
@@ -82,8 +82,7 @@ export class JoystreamClient {
     const { meta: rawAction, assets } = await this.prepareVideoInput(this.runtimeApi, video)
 
     const creatorId = video.joystreamChannelId.toString()
-    const jsChannel = await this.qnApi.getChannelById(creatorId)
-    const nonce = (await this.qnApi.memberById(jsChannel?.ownerMember?.id || ''))?.totalVideosCreated || -1
+    const nonce = (await this.qnApi.getChannelById(creatorId || ''))?.totalVideosCreated || 0
     const appActionMetadata = metadataToBytes(AppActionMetadata, { videoId: video.resourceId })
     const appAction = await this.prepareAppActionInput({
       rawAction,
@@ -118,14 +117,13 @@ export class JoystreamClient {
       throw new RuntimeApiError(ExitCodes.RuntimeApi.APP_NOT_FOUND, `Either App(${appName}), or its authKey not found`)
     }
     const keyPair = this.accounts.getPair(app.authKey)
-    const appActionSignature = await generateAndSignAppActionCommitment(appActionSignatureInput, keyPair)
+    const appActionSignature = await signAppActionCommitmentForVideo(appActionSignatureInput, keyPair)
 
     const appActionInput: IAppAction = {
       appId: app.id,
       rawAction: appActionSignatureInput.rawAction,
       signature: appActionSignature,
       metadata: appActionSignatureInput.appActionMetadata,
-      nonce: appActionSignatureInput.nonce,
     }
     const appAction = metadataToBytes(AppAction, appActionInput)
     return appAction

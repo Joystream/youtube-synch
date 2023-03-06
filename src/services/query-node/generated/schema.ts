@@ -6523,6 +6523,8 @@ export type Channel = BaseGraphQlObject & {
   channelStateBloatBond: Scalars['BigInt']
   /** Channel's privilege level */
   privilegeLevel?: Maybe<Scalars['Int']>
+  /** Number of videos ever created in this channel */
+  totalVideosCreated: Scalars['Int']
   commentcreatedeventvideoChannel?: Maybe<Array<CommentCreatedEvent>>
   commentdeletedeventvideoChannel?: Maybe<Array<CommentDeletedEvent>>
   commentmoderatedeventvideoChannel?: Maybe<Array<CommentModeratedEvent>>
@@ -6705,6 +6707,7 @@ export type ChannelCreateInput = {
   rewardAccount: Scalars['String']
   channelStateBloatBond: Scalars['String']
   privilegeLevel?: Maybe<Scalars['Float']>
+  totalVideosCreated: Scalars['Float']
 }
 
 export type ChannelDeletedByModeratorEvent = BaseGraphQlObject & {
@@ -7006,6 +7009,8 @@ export enum ChannelOrderByInput {
   ChannelStateBloatBondDesc = 'channelStateBloatBond_DESC',
   PrivilegeLevelAsc = 'privilegeLevel_ASC',
   PrivilegeLevelDesc = 'privilegeLevel_DESC',
+  TotalVideosCreatedAsc = 'totalVideosCreated_ASC',
+  TotalVideosCreatedDesc = 'totalVideosCreated_DESC',
 }
 
 export type ChannelUpdateInput = {
@@ -7024,6 +7029,7 @@ export type ChannelUpdateInput = {
   rewardAccount?: Maybe<Scalars['String']>
   channelStateBloatBond?: Maybe<Scalars['String']>
   privilegeLevel?: Maybe<Scalars['Float']>
+  totalVideosCreated?: Maybe<Scalars['Float']>
 }
 
 export type ChannelVisibilitySetByModeratorEvent = BaseGraphQlObject & {
@@ -7244,6 +7250,12 @@ export type ChannelWhereInput = {
   privilegeLevel_lt?: Maybe<Scalars['Int']>
   privilegeLevel_lte?: Maybe<Scalars['Int']>
   privilegeLevel_in?: Maybe<Array<Scalars['Int']>>
+  totalVideosCreated_eq?: Maybe<Scalars['Int']>
+  totalVideosCreated_gt?: Maybe<Scalars['Int']>
+  totalVideosCreated_gte?: Maybe<Scalars['Int']>
+  totalVideosCreated_lt?: Maybe<Scalars['Int']>
+  totalVideosCreated_lte?: Maybe<Scalars['Int']>
+  totalVideosCreated_in?: Maybe<Array<Scalars['Int']>>
   entryApp?: Maybe<AppWhereInput>
   ownerMember?: Maybe<MembershipWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
@@ -14024,8 +14036,6 @@ export type Membership = BaseGraphQlObject & {
   nftCollectorInChannels: Array<ChannelNftCollectors>
   /** Number of channels ever created by this member */
   totalChannelsCreated: Scalars['Int']
-  /** Number of videos ever created by this member */
-  totalVideosCreated: Scalars['Int']
   memberEnglishAuctionSettledEvents: Array<EnglishAuctionSettledEvent>
   memberOpenAuctionAcceptedBidEvents: Array<OpenAuctionBidAcceptedEvent>
   memberBidMadeCompletingAuctionEvents: Array<BidMadeCompletingAuctionEvent>
@@ -14287,7 +14297,6 @@ export type MembershipCreateInput = {
   isFoundingMember: Scalars['Boolean']
   isCouncilMember: Scalars['Boolean']
   totalChannelsCreated: Scalars['Float']
-  totalVideosCreated: Scalars['Float']
 }
 
 export type MembershipEdge = {
@@ -14635,8 +14644,6 @@ export enum MembershipOrderByInput {
   IsCouncilMemberDesc = 'isCouncilMember_DESC',
   TotalChannelsCreatedAsc = 'totalChannelsCreated_ASC',
   TotalChannelsCreatedDesc = 'totalChannelsCreated_DESC',
-  TotalVideosCreatedAsc = 'totalVideosCreated_ASC',
-  TotalVideosCreatedDesc = 'totalVideosCreated_DESC',
 }
 
 export type MembershipPriceUpdatedEvent = Event &
@@ -14782,7 +14789,6 @@ export type MembershipUpdateInput = {
   isFoundingMember?: Maybe<Scalars['Boolean']>
   isCouncilMember?: Maybe<Scalars['Boolean']>
   totalChannelsCreated?: Maybe<Scalars['Float']>
-  totalVideosCreated?: Maybe<Scalars['Float']>
 }
 
 export type MembershipWhereInput = {
@@ -14847,12 +14853,6 @@ export type MembershipWhereInput = {
   totalChannelsCreated_lt?: Maybe<Scalars['Int']>
   totalChannelsCreated_lte?: Maybe<Scalars['Int']>
   totalChannelsCreated_in?: Maybe<Array<Scalars['Int']>>
-  totalVideosCreated_eq?: Maybe<Scalars['Int']>
-  totalVideosCreated_gt?: Maybe<Scalars['Int']>
-  totalVideosCreated_gte?: Maybe<Scalars['Int']>
-  totalVideosCreated_lt?: Maybe<Scalars['Int']>
-  totalVideosCreated_lte?: Maybe<Scalars['Int']>
-  totalVideosCreated_in?: Maybe<Array<Scalars['Int']>>
   metadata?: Maybe<MemberMetadataWhereInput>
   invitees_none?: Maybe<MembershipWhereInput>
   invitees_some?: Maybe<MembershipWhereInput>

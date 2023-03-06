@@ -32,6 +32,7 @@ export type GetAppsByNameQuery = { apps: Array<AppFieldsFragment> }
 
 export type ChannelFieldsFragment = {
   id: string
+  totalVideosCreated: number
   videos: Array<{ id: string; videoStateBloatBond: any }>
   language?: Types.Maybe<{ id: string; iso: string }>
   ownerMember?: Types.Maybe<{ id: string; controllerAccount: string }>
@@ -63,7 +64,6 @@ export type MembershipFieldsFragment = {
   handle: string
   controllerAccount: string
   rootAccount: string
-  totalVideosCreated: number
   metadata: MemberMetadataFieldsFragment
 }
 
@@ -254,6 +254,7 @@ export const ChannelFields = gql`
       id
       controllerAccount
     }
+    totalVideosCreated
   }
 `
 export const VideoFields = gql`
@@ -278,7 +279,6 @@ export const MembershipFields = gql`
     handle
     controllerAccount
     rootAccount
-    totalVideosCreated
     metadata {
       ...MemberMetadataFields
     }
