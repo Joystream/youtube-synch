@@ -23,6 +23,10 @@ export namespace ExitCodes {
   export enum StorageApi {
     NO_ACTIVE_STORAGE_PROVIDER = 'NO_ACTIVE_STORAGE_PROVIDER',
   }
+
+  export enum QueryNodeApi {
+    OUTDATED_STATE = 'OUTDATED_STATE',
+  }
 }
 
 export class YoutubeApiError extends Error {
@@ -50,6 +54,17 @@ export class RuntimeApiError extends Error {
 export class StorageApiError extends Error {
   constructor(
     public code: ExitCodes.StorageApi,
+    public message: string,
+    public result?: number | string | Date,
+    public expected?: number | string | Date
+  ) {
+    super(message)
+  }
+}
+
+export class QueryNodeApiError extends Error {
+  constructor(
+    public code: ExitCodes.QueryNodeApi,
     public message: string,
     public result?: number | string | Date,
     public expected?: number | string | Date

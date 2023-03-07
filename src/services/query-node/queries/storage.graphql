@@ -108,3 +108,14 @@ query getStorageBagInfoForAsset($assetId: ID!) {
     ...DataObjectInfo
   }
 }
+
+fragment QueryNodeStateFields on ProcessorState {
+  chainHead
+  lastCompleteBlock
+}
+
+subscription queryNodeState {
+  stateSubscription {
+    ...QueryNodeStateFields
+  }
+}

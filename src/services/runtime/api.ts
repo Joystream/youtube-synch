@@ -8,9 +8,10 @@ import { Balance, Call } from '@polkadot/types/interfaces'
 import { DispatchError } from '@polkadot/types/interfaces/system'
 import { PalletContentStorageAssetsRecord, SpRuntimeDispatchError } from '@polkadot/types/lookup'
 import { IEvent } from '@polkadot/types/types'
+import BN from 'bn.js'
 import { Logger } from 'winston'
-import { LoggingService } from '../logging'
 import { ExitCodes, RuntimeApiError } from '../../types/errors'
+import { LoggingService } from '../logging'
 
 export class ExtrinsicFailedError extends Error {}
 
@@ -174,7 +175,7 @@ export class RuntimeApi {
     channelId: number,
     meta: Bytes | undefined,
     assets: Option<PalletContentStorageAssetsRecord>
-  ): Promise<{ videoId: VideoId; assetsIds: DataObjectId[] }> {
+  ): Promise<{ createdInBlock: BN; videoId: VideoId; assetsIds: DataObjectId[] }> {
     await this.ensureApi()
 
     const channelBag = await this.api.query.storage.bags(
@@ -200,6 +201,7 @@ export class RuntimeApi {
     }
 
     return {
+      createdInBlock: (await this.api.rpc.chain.getHeader(result.status.asInBlock)).number.toBn(),
       videoId,
       assetsIds: [...assetsIds],
     }

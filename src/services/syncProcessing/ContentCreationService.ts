@@ -1,10 +1,12 @@
+import Queue from 'better-queue'
+import BN from 'bn.js'
+import _ from 'lodash'
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
-import { ReadonlyConfig, VideoProcessingTask, toPrettyJSON } from '../../types'
-import { LoggingService } from '../logging'
-import Queue from 'better-queue'
-import _ from 'lodash'
 import { IDynamodbService } from '../../repository'
+import { ReadonlyConfig, VideoProcessingTask } from '../../types'
+import { ExitCodes, QueryNodeApiError } from '../../types/errors'
+import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
 
 // Video content creation/processing service
@@ -19,6 +21,7 @@ export class ContentCreationService {
   private joystreamClient: JoystreamClient
   private dynamodbService: IDynamodbService
   private queue: Queue<VideoProcessingTask>
+  private lastVideoCreationBlockByChannelId: Map<number, BN> // JsChannelId -> Last video creation block number
 
   public constructor(
     config: ReadonlyConfig,
@@ -30,17 +33,33 @@ export class ContentCreationService {
     this.logger = logging.createLogger('ContentCreationService')
     this.dynamodbService = dynamodbService
     this.joystreamClient = joystreamClient
+    this.lastVideoCreationBlockByChannelId = new Map()
+
     this.queue = new Queue(
       /// Process a single task (video) based on its priority.
       async (video: VideoProcessingTask, cb: (error?: any, result?: null) => void) => {
         try {
+          // * Pre-validation
+          /**
+           * If the last synced video of the same channel is still being processed by the QN, then skip creating the next video
+           * of that channel because  QN will return outdated `totalVideosCreated` field and incorrect AppAction message will be
+           * constructed for the next video, which would lead to youtube attribution information missing in the QN video metadata.
+           */
+          const isQueryNodeUptodate = await this.joystreamClient.hasQueryNodeProcessedBlock(
+            this.lastVideoCreationBlockByChannelId.get(video.joystreamChannelId) || new BN(0)
+          )
+          if (!isQueryNodeUptodate) {
+            throw new QueryNodeApiError(ExitCodes.QueryNodeApi.OUTDATED_STATE, 'Query Node is not up to date')
+          }
+
           await this.dynamodbService.videos.updateState(video, 'CreatingVideo')
-          const createdVideo = await this.joystreamClient.createVideo(video)
+          const [createdVideo, createdInBlock] = await this.joystreamClient.createVideo(video)
+          this.lastVideoCreationBlockByChannelId.set(video.joystreamChannelId, createdInBlock)
           await this.dynamodbService.videos.updateState(createdVideo, 'VideoCreated')
           // Signal that the task is done
           cb(null, null)
         } catch (error) {
-          this.logger.error(`Got error processing video: ${video.id}, error: ${error}`)
+          this.logger.error(`Got error processing video: ${video.resourceId}, error: ${error}`)
 
           await this.dynamodbService.videos.updateState(video, 'VideoCreationFailed')
 
@@ -117,11 +136,12 @@ export class ContentCreationService {
       .value()
 
     for (const { channelId, unsyncedVideos } of unsyncedVideosByChannel) {
-      // Get channel & total number of videos of that channel
-      const videosCount = await this.dynamodbService.videos.getCountByChannel(channelId)
+      // Get channel
       const channel = await this.dynamodbService.channels.getByChannelId(channelId)
-
+      // Get total videos of channel
+      const videosCount = await this.dynamodbService.videos.getCountByChannel(channelId)
       const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / videosCount
+
       for (const v of unsyncedVideos) {
         const rank = this.calculateVideoRank(
           this.DEFAULT_SUDO_PRIORITY,
