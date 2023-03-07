@@ -152,6 +152,15 @@ export class YoutubePollingService {
             lastActedAt: new Date(),
           })
           continue
+        } else if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.CHANNEL_NOT_FOUND) {
+          this.logger.warn(`Opting out '${ch.id}' from YPP program as Channel is not found on Youtube.`)
+          updatedChannels.push({
+            ...ch,
+            yppStatus: 'OptedOut',
+            shouldBeIngested: false,
+            lastActedAt: new Date(),
+          })
+          continue
         } else if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED) {
           this.logger.info('Youtube quota limit exceeded, skipping polling for now.')
           return []
