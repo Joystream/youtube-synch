@@ -21,8 +21,8 @@ jobs:
       - name: yarn pack test
         run: |
           yarn pack --filename youtube-synch-test.tgz
-          tar zxvf ./youtube-synch-test.tgz -C youtube-synch
-          cd ./youtube-synch/package && yarn link
+          tar zxvf ./youtube-synch-test.tgz
+          cd ./package && yarn link
 
   cli_build_osx:
     name: MacOS Checks
@@ -43,5 +43,5 @@ jobs:
       - name: yarn pack test
         run: |
           yarn pack --filename youtube-synch-test.tgz
-          tar zxvf ./youtube-synch-test.tgz -C youtube-synch
-          cd ./youtube-synch/package && yarn link
+          tar zxvf ./youtube-synch-test.tgz
+          cd ./package && yarn link
