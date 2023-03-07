@@ -1,19 +1,31 @@
 import {
   ApolloClient,
+  defaultDataIdFromObject,
   DocumentNode,
+  from,
   HttpLink,
   InMemoryCache,
   NormalizedCacheObject,
-  defaultDataIdFromObject,
-  from,
+  split,
 } from '@apollo/client/core'
 import { onError } from '@apollo/client/link/error'
+import { WebSocketLink } from '@apollo/client/link/ws'
+import { getMainDefinition } from '@apollo/client/utilities'
+import { MemberId } from '@joystream/types/primitives'
+import BN from 'bn.js'
 import fetch from 'cross-fetch'
 import { Logger } from 'winston'
+import ws from 'ws'
+import { LoggingService } from '../logging'
+import { StorageNodeInfo } from '../runtime/types'
 import {
+  AppFieldsFragment,
   ChannelFieldsFragment,
   DataObjectInfoFragment,
   DistributionBucketFamilyFieldsFragment,
+  GetAppsByName,
+  GetAppsByNameQuery,
+  GetAppsByNameQueryVariables,
   GetChannelById,
   GetChannelByIdQuery,
   GetChannelByIdQueryVariables,
@@ -44,27 +56,22 @@ import {
   GetStorageNodesInfoByBagId,
   GetStorageNodesInfoByBagIdQuery,
   GetStorageNodesInfoByBagIdQueryVariables,
+  GetVideoByYtResourceIdAndEntryAppName,
+  GetVideoByYtResourceIdAndEntryAppNameQuery,
+  GetVideoByYtResourceIdAndEntryAppNameQueryVariables,
   MembershipFieldsFragment,
+  QueryNodeState,
+  QueryNodeStateFields,
+  QueryNodeStateFieldsFragment,
+  QueryNodeStateSubscription,
+  QueryNodeStateSubscriptionVariables,
   StorageBucketsCount,
   StorageBucketsCountQuery,
   StorageBucketsCountQueryVariables,
   StorageNodeInfoFragment,
-  AppFields,
-  AppFieldsFragment,
-  GetAppsByNameQuery,
-  GetAppByIdQueryVariables,
-  GetAppsByName,
-  GetAppsByNameQueryVariables,
   VideoFieldsFragment,
-  GetVideoByYtResourceIdAndEntryAppNameQuery,
-  GetVideoByYtResourceIdAndEntryAppNameQueryVariables,
-  GetVideoByYtResourceIdAndEntryAppName,
 } from './generated/queries'
 import { Maybe } from './generated/schema'
-import { MemberId } from '@joystream/types/primitives'
-import BN from 'bn.js'
-import { StorageNodeInfo } from '../runtime/types'
-import { LoggingService } from '../logging'
 
 const MAX_RESULTS_PER_QUERY = 1000
 
@@ -94,8 +101,24 @@ export class QueryNodeApi {
     })
 
     const queryLink = from([errorLink, new HttpLink({ uri: endpoint, fetch })])
+    const wsLink = new WebSocketLink({
+      uri: endpoint,
+      options: {
+        reconnect: true,
+      },
+      webSocketImpl: ws,
+    })
+    const splitLink = split(
+      ({ query }) => {
+        const definition = getMainDefinition(query)
+        return definition.kind === 'OperationDefinition' && definition.operation === 'subscription'
+      },
+      wsLink,
+      queryLink
+    )
+
     this.apolloClient = new ApolloClient({
-      link: queryLink,
+      link: splitLink,
       cache: new InMemoryCache({
         dataIdFromObject: (object) => {
           // setup cache object id for ProcessorState entity type
@@ -340,5 +363,28 @@ export class QueryNodeApi {
     }
 
     return result.storageBagId
+  }
+
+  public async getQueryNodeState(): Promise<QueryNodeStateFieldsFragment | null> {
+    // fetch cached state
+    const cachedState = this.apolloClient.readFragment<
+      QueryNodeStateSubscription['stateSubscription'],
+      QueryNodeStateSubscriptionVariables
+    >({
+      id: 'ProcessorState',
+      fragment: QueryNodeStateFields,
+    })
+
+    // If we have the state in cache, return it
+    if (cachedState) {
+      return cachedState
+    }
+
+    // Otherwise setup the subscription (which will periodically update the cache) and return for the first result
+    return this.uniqueEntitySubscription<QueryNodeStateSubscription, QueryNodeStateSubscriptionVariables>(
+      QueryNodeState,
+      {},
+      'stateSubscription'
+    )
   }
 }

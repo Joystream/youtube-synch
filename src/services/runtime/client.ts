@@ -12,6 +12,7 @@ import { Bytes } from '@polkadot/types'
 import { Option } from '@polkadot/types/'
 import { PalletContentStorageAssetsRecord } from '@polkadot/types/lookup'
 import axios from 'axios'
+import BN from 'bn.js'
 import { Readable } from 'stream'
 import { Logger } from 'winston'
 import { ReadonlyConfig, VideoProcessingTask } from '../../types'
@@ -47,6 +48,26 @@ export class JoystreamClient {
     return this.runtimeApi.query.content.channelById(id)
   }
 
+  async hasQueryNodeProcessedBlock(blockNumber: BN) {
+    const qnState = await this.qnApi.getQueryNodeState()
+
+    if (!qnState) {
+      this.logger.error('Could not fetch connected Query Node state')
+      return false
+    }
+
+    if (blockNumber.gtn(qnState.lastCompleteBlock)) {
+      this.logger.warn(
+        `Query Node has not processed block ${blockNumber.toString()} yet. Last processed block: ${
+          qnState.lastCompleteBlock
+        }`
+      )
+      return false
+    }
+
+    return true
+  }
+
   // Get Joystream video by by Youtube resource id/attribution synced by the app (if any)
   async getVideoByYtResourceId(ytVideoId: string) {
     const appName = this.config.joystream.app.name
@@ -75,7 +96,7 @@ export class JoystreamClient {
     return member
   }
 
-  async createVideo(video: VideoProcessingTask): Promise<YtVideo> {
+  async createVideo(video: VideoProcessingTask): Promise<[YtVideo, BN]> {
     const collaborator = await this.ensureCollaboratorHasPermission(video.joystreamChannelId)
 
     // Video metadata & assets
@@ -101,13 +122,16 @@ export class JoystreamClient {
       assets
     )
 
-    return {
-      ...video,
-      joystreamVideo: {
-        id: createdVideo.videoId.toString(),
-        assetIds: createdVideo.assetsIds.map((a) => a.toString()),
+    return [
+      {
+        ...video,
+        joystreamVideo: {
+          id: createdVideo.videoId.toString(),
+          assetIds: createdVideo.assetsIds.map((a) => a.toString()),
+        },
       },
-    }
+      createdVideo.createdInBlock,
+    ]
   }
 
   private async prepareAppActionInput(appActionSignatureInput: AppActionSignatureInput): Promise<Bytes> {
