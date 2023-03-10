@@ -99,7 +99,7 @@ export type VideoFFProbeMetadata = {
 }
 
 export type VideoFileMetadata = VideoFFProbeMetadata & {
-  size?: number
-  container?: string
-  mimeType?: string
+  size: number
+  container: string
+  mimeType: string
 }

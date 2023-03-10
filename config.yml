@@ -31,6 +31,9 @@ limits:
   dailyApiQuota:
     sync: 9500
     signup: 500
+  # How many videos should be concurrently downloaded from Youtube to be prepared for upload to Joystream
+  concurrentDownloads: 50
+  storage: 100G
 httpApi:
   port: 3001
   ownerKey: ypp-owner-key

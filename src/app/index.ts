@@ -12,6 +12,7 @@ import { ContentUploadService } from '../services/syncProcessing/ContentUploadSe
 import { QueryNodeApi } from '../services/query-node/api'
 import { JoystreamClient } from '../services/runtime/client'
 import { bootstrapHttpApi } from '../services/httpApi/main'
+import { ContentDownloadService } from '../services/syncProcessing/ContentDownloadService'
 
 export class Service {
   private config: Config
@@ -22,6 +23,7 @@ export class Service {
   private dynamodbService: IDynamodbService
   private joystreamClient: JoystreamClient
   private youtubePollingService: YoutubePollingService
+  private contentDownloadService: ContentDownloadService
   private contentCreationService: ContentCreationService
   private contentUploadService: ContentUploadService
   private isStopping = false
@@ -34,7 +36,6 @@ export class Service {
     this.youtubeApi = YoutubeApi.create(this.config)
     this.dynamodbService = DynamodbService.init(this.config.aws)
     this.joystreamClient = new JoystreamClient(config, this.youtubeApi, this.queryNodeApi, this.logging)
-    this.contentUploadService = new ContentUploadService(config, this.logging, this.dynamodbService, this.queryNodeApi)
     this.youtubePollingService = new YoutubePollingService(
       config,
       this.logging,
@@ -42,11 +43,25 @@ export class Service {
       this.dynamodbService,
       this.joystreamClient
     )
+    this.contentDownloadService = new ContentDownloadService(
+      config,
+      this.logging,
+      this.dynamodbService,
+      this.youtubeApi
+    )
     this.contentCreationService = new ContentCreationService(
       config,
       this.logging,
       this.dynamodbService,
+      this.contentDownloadService,
       this.joystreamClient
+    )
+    this.contentUploadService = new ContentUploadService(
+      config,
+      this.logging,
+      this.dynamodbService,
+      this.contentDownloadService,
+      this.queryNodeApi
     )
   }
 
@@ -94,6 +109,7 @@ export class Service {
       await bootstrapHttpApi(this.config.httpApi.port, this.logging)
       this.logger.verbose('Starting the Youtube-Synch service', { config: this.hideSecrets(this.config) })
       await this.youtubePollingService.start()
+      await this.contentDownloadService.start()
       await this.contentCreationService.start()
       await this.contentUploadService.start()
     } catch (err) {
