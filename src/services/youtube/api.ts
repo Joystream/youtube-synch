@@ -1,16 +1,15 @@
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 import { youtube_v3 } from '@googleapis/youtube'
 import { OAuth2Client } from 'google-auth-library'
 import { GetTokenResponse } from 'google-auth-library/build/src/auth/oauth2client'
 import { GaxiosError } from 'googleapis-common'
 import { parse, toSeconds } from 'iso8601-duration'
-import { Readable } from 'stream'
-import { Logger } from 'winston'
-import ytdl from 'ytdl-core'
+import ytdl from 'youtube-dl-exec'
 import { StatsRepository } from '../../repository'
-import { ReadonlyConfig, WithRequired, toPrettyJSON } from '../../types'
+import { ReadonlyConfig, toPrettyJSON, WithRequired } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
 import { YtChannel, YtUser, YtVideo } from '../../types/youtube'
-import { LoggingService } from '../logging'
+
 import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
 import Schema$Video = youtube_v3.Schema$Video
 import Schema$Channel = youtube_v3.Schema$Channel
@@ -21,7 +20,7 @@ export interface IYoutubeApi {
   getVerifiedChannel(user: YtUser): Promise<YtChannel>
   getVideos(channel: YtChannel, top: number): Promise<YtVideo[]>
   getAllVideos(channel: YtChannel, max: number): Promise<YtVideo[]>
-  downloadVideo(videoUrl: string): Promise<Readable>
+  downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl>
   getCreatorOnboardingRequirements(): ReadonlyConfig['creatorOnboardingRequirements']
 }
 
@@ -202,16 +201,15 @@ class YoutubeClient implements IYoutubeApi {
     }
   }
 
-  downloadVideo(videoUrl: string, quality = 'highest'): Promise<Readable> {
-    return new Promise((resolve, reject) => {
-      const stream = ytdl(videoUrl, { quality })
-      stream.on('info', (info) => {
-        if (info.length_seconds > 3600) {
-          reject(new YoutubeApiError(ExitCodes.YoutubeApi.VIDEO_NOT_FOUND, 'Video too long'))
-        }
-      })
-      resolve(stream)
+  // TODO: check for non-existent videos
+  async downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
+    const response = await ytdl(videoUrl, {
+      printJson: true,
+      format: 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
+      output: `${outPath}/%(id)s.%(ext)s`,
+      ffmpegLocation: ffmpegInstaller.path,
     })
+    return response
   }
 
   private async iterateVideos(youtube: youtube_v3.Youtube, channel: YtChannel, max: number) {
@@ -296,6 +294,7 @@ class YoutubeClient implements IYoutubeApi {
           createdAt: new Date(),
           category: channel.videoCategoryId,
           language: channel.joystreamChannelLanguageId,
+          joystreamChannelId: channel.joystreamChannelId,
           privacyStatus: video.status?.privacyStatus,
           liveBroadcastContent: videosDetails[i].snippet?.liveBroadcastContent,
           license: videosDetails[i].status?.license,
@@ -399,8 +398,8 @@ class QuotaTrackingClient implements IYoutubeApi {
     return videos
   }
 
-  downloadVideo(videoUrl: string): Promise<Readable> {
-    return this.decorated.downloadVideo(videoUrl)
+  downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
+    return this.decorated.downloadVideo(videoUrl, outPath)
   }
 
   private async increaseUsedQuota({ syncQuotaIncrement = 0, signupQuotaIncrement = 0 }) {

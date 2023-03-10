@@ -195,6 +195,7 @@ export default class AddUnauthorizedChannelForSyncing extends ApiCommandBase {
         url: video.shortUrl,
         privacyStatus: 'public',
         uploadStatus: 'processed',
+        joystreamChannelId: c.joystreamChannelId,
         liveBroadcastContent: video.isLive ? 'live' : 'none',
         state: 'New',
         viewCount: 0,

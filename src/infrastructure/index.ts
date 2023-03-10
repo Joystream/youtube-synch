@@ -49,7 +49,7 @@ const channelsTable = new aws.dynamodb.Table('channels', {
   globalSecondaryIndexes: [
     {
       name: 'joystreamChannelId-createdAt-index',
-      hashKey: nameof<YtChannel>('joystreamChannelId'), // we'll have a single value partition
+      hashKey: nameof<YtChannel>('joystreamChannelId'),
       rangeKey: nameof<YtChannel>('createdAt'),
       projectionType: 'ALL',
       readCapacity: 1,
@@ -93,12 +93,16 @@ const videosTable = new aws.dynamodb.Table('videos', {
       name: nameof<YtVideo>('state'),
       type: 'S',
     },
+    {
+      name: 'updatedAt',
+      type: 'S',
+    },
   ],
   globalSecondaryIndexes: [
     {
       hashKey: nameof<YtVideo>('state'),
-      rangeKey: nameof<YtVideo>('channelId'),
-      name: 'state-channelId-index',
+      rangeKey: 'updatedAt',
+      name: 'state-updatedAt-index',
       projectionType: 'ALL',
       readCapacity: 1,
       writeCapacity: 1,

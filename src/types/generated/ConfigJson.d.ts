@@ -63,6 +63,14 @@ export interface YoutubeSyncNodeConfiguration {
    */
   limits: {
     dailyApiQuota: SpecifiesDailyYoutubeAPIQuotaRationingSchemeForYoutubePartnerProgram
+    /**
+     * No. of videos that should be concurrently downloaded from Youtube to be prepared for upload to Joystream
+     */
+    concurrentDownloads: number
+    /**
+     * Maximum total size of all downloaded assets stored in `directories.assets`
+     */
+    storage: string
   }
   /**
    * Specifies how often periodic tasks (for example youtube state polling) are executed.

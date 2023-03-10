@@ -1,3 +1,4 @@
+import ffprobeInstaller from '@ffprobe-installer/ffprobe'
 import {
   AppAction,
   AppActionMetadata,
@@ -13,9 +14,13 @@ import { Option } from '@polkadot/types/'
 import { PalletContentStorageAssetsRecord } from '@polkadot/types/lookup'
 import axios from 'axios'
 import BN from 'bn.js'
+import ffmpeg from 'fluent-ffmpeg'
+import fs from 'fs'
+import mimeTypes from 'mime-types'
+import path from 'path'
 import { Readable } from 'stream'
 import { Logger } from 'winston'
-import { ReadonlyConfig, VideoProcessingTask } from '../../types'
+import { ReadonlyConfig } from '../../types'
 import { ExitCodes, RuntimeApiError } from '../../types/errors'
 import { Thumbnails, YtVideo } from '../../types/youtube'
 import { AppActionSignatureInput, computeFileHashAndSize, signAppActionCommitmentForVideo } from '../../utils/hasher'
@@ -25,7 +30,15 @@ import { IYoutubeApi } from '../youtube/api'
 import { RuntimeApi } from './api'
 import { asValidatedMetadata, metadataToBytes } from './serialization'
 import { AccountsUtil } from './signer'
-import { DataObjectMetadata, VideoFileMetadata, VideoInputAssets, VideoInputParameters } from './types'
+import {
+  DataObjectMetadata,
+  VideoFFProbeMetadata,
+  VideoFileMetadata,
+  VideoInputAssets,
+  VideoInputParameters,
+} from './types'
+
+ffmpeg.setFfprobePath(ffprobeInstaller.path)
 
 export class JoystreamClient {
   private runtimeApi: RuntimeApi
@@ -96,11 +109,11 @@ export class JoystreamClient {
     return member
   }
 
-  async createVideo(video: VideoProcessingTask): Promise<[YtVideo, BN]> {
+  async createVideo(video: YtVideo, videoFilePath: string): Promise<[YtVideo, BN]> {
     const collaborator = await this.ensureCollaboratorHasPermission(video.joystreamChannelId)
 
     // Video metadata & assets
-    const { meta: rawAction, assets } = await this.prepareVideoInput(this.runtimeApi, video)
+    const { meta: rawAction, assets } = await this.prepareVideoInput(this.runtimeApi, video, videoFilePath)
 
     const creatorId = video.joystreamChannelId.toString()
     const nonce = (await this.qnApi.getChannelById(creatorId || ''))?.totalVideosCreated || 0
@@ -155,11 +168,11 @@ export class JoystreamClient {
 
   private async prepareVideoInput(
     api: RuntimeApi,
-    video: YtVideo
+    video: YtVideo,
+    filePath: string
   ): Promise<{ meta: Bytes; assets: Option<PalletContentStorageAssetsRecord> }> {
     const inputAssets: VideoInputAssets = {}
-    const videoHashStream = await this.youtubeApi.downloadVideo(video.url)
-    const videoMetadataStream = await this.youtubeApi.downloadVideo(video.url)
+    const videoHashStream = fs.createReadStream(filePath)
     const { hash: videoHash, size: videoSize } = await computeFileHashAndSize(videoHashStream)
     const videoAssetMeta: DataObjectMetadata = {
       ipfsHash: videoHash,
@@ -184,9 +197,8 @@ export class JoystreamClient {
     }
     let videoMetadata = asValidatedMetadata(VideoMetadata, videoInputParameters)
 
-    // const videoFileMetadata = await getVideoFileMetadata(videoMetadataStream)
-    // this.logger.info('Video media file parameters established:', videoFileMetadata)
-    // videoMetadata = setVideoMetadataDefaults(videoMetadata, videoFileMetadata)
+    const videoFileMetadata = await getVideoFileMetadata(filePath)
+    videoMetadata = setVideoMetadataDefaults(videoMetadata, videoFileMetadata)
 
     inputAssets.video = videoAssetMeta
     inputAssets.thumbnailPhoto = thumbnailPhotoAssetMeta
@@ -264,5 +276,48 @@ function getVideoLicense(video: YtVideo): ILicense {
   // `youtube` license video gets `joystream` license on joystream (code 1009)
   return {
     code: 1009,
+  }
+}
+
+function getVideoFFProbeMetadata(filePath: string): Promise<VideoFFProbeMetadata> {
+  return new Promise<VideoFFProbeMetadata>((resolve, reject) => {
+    ffmpeg.ffprobe(filePath, (err, data) => {
+      if (err) {
+        reject(err)
+        return
+      }
+      const videoStream = data.streams.find((s) => s.codec_type === 'video')
+      if (videoStream) {
+        resolve({
+          width: videoStream.width,
+          height: videoStream.height,
+          codecName: videoStream.codec_name,
+          codecFullName: videoStream.codec_long_name,
+          duration: videoStream.duration !== undefined ? Math.ceil(Number(videoStream.duration)) || 0 : undefined,
+        })
+      } else {
+        reject(new Error('No video stream found in file'))
+      }
+    })
+  })
+}
+
+async function getVideoFileMetadata(filePath: string): Promise<VideoFileMetadata> {
+  let ffProbeMetadata: VideoFFProbeMetadata = {}
+  try {
+    ffProbeMetadata = await getVideoFFProbeMetadata(filePath)
+  } catch (e) {
+    const message = e instanceof Error ? e.message : e
+    console.warn(`Failed to get video metadata via ffprobe (${message})`)
+  }
+
+  const size = fs.statSync(filePath).size
+  const container = path.extname(filePath).slice(1)
+  const mimeType = mimeTypes.lookup(container) || `unknown`
+  return {
+    size,
+    container,
+    mimeType,
+    ...ffProbeMetadata,
   }
 }

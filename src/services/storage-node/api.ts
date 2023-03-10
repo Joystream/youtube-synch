@@ -2,9 +2,9 @@ import { createType } from '@joystream/types'
 import axios, { AxiosError, AxiosRequestConfig } from 'axios'
 import BN from 'bn.js'
 import FormData from 'form-data'
+import fs from 'fs'
 import _ from 'lodash'
 import { Logger } from 'winston'
-import ytdl from 'ytdl-core'
 import { ExitCodes, StorageApiError } from '../../types/errors'
 import { YtVideo } from '../../types/youtube'
 import { LoggingService } from '../logging'
@@ -43,11 +43,11 @@ export class StorageNodeApi {
     ]
   }
 
-  async uploadVideo(video: YtVideo): Promise<void> {
+  async uploadVideo(video: YtVideo, videoFilePath: string): Promise<void> {
     const assetsInput: AssetUploadInput[] = [
       {
         dataObjectId: createType('u64', new BN(video.joystreamVideo.assetIds[0])),
-        file: ytdl(video.url, { quality: 'highest' }),
+        file: fs.createReadStream(videoFilePath),
       },
       {
         dataObjectId: createType('u64', new BN(video.joystreamVideo.assetIds[1])),

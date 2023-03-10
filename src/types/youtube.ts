@@ -178,7 +178,7 @@ export class YtVideo {
   category: string
 
   // language of the synced video (derived from corresponding Youtube channel)
-  language: string
+  language?: string
 
   // Video duration in seconds
   duration: number
@@ -200,6 +200,9 @@ export class YtVideo {
 
   // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
   joystreamVideo: JoystreamVideo
+
+  // ID of the corresponding Joystream Channel (De-normalized from Channel table)
+  joystreamChannelId: number
 
   // Youtube video creation date
   publishedAt: string
@@ -225,3 +228,7 @@ export const getImages = (channel: YtChannel) => {
 }
 
 const urlAsArray = (url: string) => (url ? [url] : [])
+
+export type VideoDownloadTask = YtVideo & {
+  priorityScore: number
+}

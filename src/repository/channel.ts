@@ -33,6 +33,7 @@ export function createChannelModel() {
           name: 'joystreamChannelId-createdAt-index',
         },
       },
+
       // video category ID to be added to all synced videos
       videoCategoryId: String,
 

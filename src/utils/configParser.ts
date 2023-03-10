@@ -5,7 +5,7 @@ import _ from 'lodash'
 import { JSONSchema4, JSONSchema4TypeName } from 'json-schema'
 import { ValidationError, ValidationService } from './validation'
 import { Config } from '../types'
-import configSchema from '../schemas/config'
+import configSchema, { byteSizeUnits } from '../schemas/config'
 
 const MIN_CACHE_SIZE = '20G'
 const MIN_MAX_CACHED_ITEM_SIZE = '1M'
@@ -25,6 +25,13 @@ export class ConfigParserService {
 
   public resolveConfigDirectoryPaths(paths: Config['directories']): Config['directories'] {
     return _.mapValues(paths, (p) => this.resolvePath(p))
+  }
+
+  private parseByteSize(byteSize: string) {
+    const intValue = parseInt(byteSize)
+    const unit = byteSize[byteSize.length - 1]
+
+    return intValue * Math.pow(1024, byteSizeUnits.indexOf(unit))
   }
 
   private schemaTypeOf(schema: JSONSchema4, path: string[]): JSONSchema4['type'] {
@@ -116,7 +123,7 @@ export class ConfigParserService {
   }
 
   public getNodeVersion(): string {
-    const packageJSON = JSON.parse(fs.readFileSync(path.join(__dirname, '../../../package.json')).toString())
+    const packageJSON = JSON.parse(fs.readFileSync(path.join(__dirname, '../../package.json')).toString())
     return String(packageJSON.version)
   }
 
@@ -143,25 +150,15 @@ export class ConfigParserService {
 
     // Normalize values
     const directories = this.resolveConfigDirectoryPaths(configJson.directories)
-    // const storageLimit = this.parseBytesize(configJson.limits.storage)
-    // const maxCachedItemSize = configJson.limits.maxCachedItemSize
-    //   ? this.parseBytesize(configJson.limits.maxCachedItemSize)
-    //   : undefined
-
-    // // Additional validation:
-    // if (storageLimit < this.parseBytesize(MIN_CACHE_SIZE)) {
-    //   throw new Error(`Config.limits.storage should be at least ${MIN_CACHE_SIZE}!`)
-    // }
-
-    // if (maxCachedItemSize && maxCachedItemSize < this.parseBytesize(MIN_MAX_CACHED_ITEM_SIZE)) {
-    //   throw new Error(`Config.limits.maxCachedItemSize should be at least ${MIN_MAX_CACHED_ITEM_SIZE}!`)
-    // }
+    const storageLimit = this.parseByteSize(configJson.limits.storage)
 
     const parsedConfig: Config = {
       ...configJson,
+      version: this.getNodeVersion(),
       directories,
       limits: {
         ...configJson.limits,
+        storage: storageLimit,
       },
     }
 

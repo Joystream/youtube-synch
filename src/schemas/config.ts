@@ -169,8 +169,19 @@ export const configSchema: JSONSchema4 = objectSchema({
           },
           required: ['sync', 'signup'],
         }),
+        concurrentDownloads: {
+          description:
+            'No. of videos that should be concurrently downloaded from Youtube to be prepared for upload to Joystream',
+          type: 'number',
+          default: 50,
+        },
+        storage: {
+          description: 'Maximum total size of all downloaded assets stored in `directories.assets`',
+          type: 'string',
+          pattern: byteSizeRegex.source,
+        },
       },
-      required: ['dailyApiQuota'],
+      required: ['dailyApiQuota', 'concurrentDownloads', 'storage'],
     }),
     intervals: objectSchema({
       description: 'Specifies how often periodic tasks (for example youtube state polling) are executed.',

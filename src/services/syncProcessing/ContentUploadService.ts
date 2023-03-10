@@ -1,25 +1,28 @@
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
+import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
 import { LoggingService } from '../logging'
-import _ from 'lodash'
-import { IDynamodbService } from '../../repository'
-import { StorageNodeApi } from '../storage-node/api'
 import { QueryNodeApi } from '../query-node/api'
+import { StorageNodeApi } from '../storage-node/api'
+import { ContentDownloadService } from './ContentDownloadService'
 
-// Video content creation/processing service
+// TODO:  fix inconsistency for `uploadStarted` state
+// Video content upload service
 export class ContentUploadService {
   private config: ReadonlyConfig
   private logger: Logger
   private logging: LoggingService
   private dynamodbService: IDynamodbService
   private storageNodeApi: StorageNodeApi
+  private contentDownloadService: ContentDownloadService
   private queryNodeApi: QueryNodeApi
 
   public constructor(
     config: ReadonlyConfig,
     logging: LoggingService,
     dynamodbService: IDynamodbService,
+    contentDownloadService: ContentDownloadService,
     queryNodeApi: QueryNodeApi
   ) {
     this.config = config
@@ -27,11 +30,12 @@ export class ContentUploadService {
     this.logging = logging
     this.dynamodbService = dynamodbService
     this.queryNodeApi = queryNodeApi
+    this.contentDownloadService = contentDownloadService
     this.storageNodeApi = new StorageNodeApi(this.logging, this.queryNodeApi)
   }
 
   async start() {
-    this.logger.info(`Starting Video assets upload (to storage-node) service.`)
+    this.logger.info(`Starting service to upload video assets to storage-node.`)
 
     // start assets upload service
     setTimeout(async () => this.uploadAssetsWithInterval(this.config.intervals.youtubePolling), 0)
@@ -57,25 +61,29 @@ export class ContentUploadService {
   }
 
   private async uploadPendingAssets() {
-    const videosWithPendingAssets = await this.dynamodbService.videos.getAllVideosWithPendingAssets()
-
-    this.logger.verbose(`Found ${videosWithPendingAssets.length} videos with pending assets.`, {
+    const videosWithPendingAssets = await this.dynamodbService.videos.getAllVideosInPendingUploadState()
+    this.logger.verbose(`Found ${videosWithPendingAssets.length} videos with upload still pending to storage-node.`, {
       videos: videosWithPendingAssets.map((v) => v.resourceId),
     })
 
-    await Promise.all(
+    await Promise.allSettled(
       videosWithPendingAssets.map(async (video) => {
         try {
           // Update video state and save to DB
           await this.dynamodbService.videos.updateState(video, 'UploadStarted')
 
+          const videoFilePath = this.contentDownloadService.getVideoFilePath(video.resourceId)
+
           // Upload the video assets
-          await this.storageNodeApi.uploadVideo(video)
+          await this.storageNodeApi.uploadVideo(video, videoFilePath || '')
 
           // Update video state and save to DB
           await this.dynamodbService.videos.updateState(video, 'UploadSucceeded')
+
+          // After upload is successful, remove the video file from local storage
+          this.contentDownloadService.removeVideoFile(video.resourceId)
         } catch (error) {
-          this.logger.error(`Got error uploading assets for video: ${video.id}, error: ${error}`)
+          this.logger.error(`Got error uploading assets for video: ${video.resourceId}, error: ${error}`)
           // Update video state and save to DB
           await this.dynamodbService.videos.updateState(video, 'UploadFailed')
         }

@@ -54,8 +54,8 @@ export function videoRepository() {
         enum: videoStates,
         index: {
           type: 'global',
-          rangeKey: 'channelId',
-          name: 'state-channelId-index',
+          rangeKey: 'updatedAt',
+          name: 'state-updatedAt-index',
         },
       },
 
@@ -98,6 +98,9 @@ export function videoRepository() {
           },
         },
       },
+
+      // ID of the corresponding Joystream Channel (De-normalized from Channel table)
+      joystreamChannelId: Number,
 
       // Video creation date on youtube
       publishedAt: String,
@@ -206,7 +209,7 @@ export class VideosService {
   }
 
   async getVideosInState(state: VideoState): Promise<YtVideo[]> {
-    return this.videosRepository.query({ state }, (q) => q.using('state-channelId-index'))
+    return this.videosRepository.query({ state }, (q) => q.sort('ascending').using('state-updatedAt-index'))
   }
 
   async getAllUnsyncedVideos(): Promise<YtVideo[]> {
@@ -223,13 +226,15 @@ export class VideosService {
           .eq('processed')
           .filter('liveBroadcastContent')
           .eq('none')
-          .using('state-channelId-index')
+          .sort('ascending')
+          .using('state-updatedAt-index')
       )),
       ...(await this.getVideosInState('VideoCreationFailed')),
+      ...(await this.getVideosInState('UploadFailed')),
     ]
   }
 
-  async getAllVideosWithPendingAssets(): Promise<YtVideo[]> {
+  async getAllVideosInPendingUploadState(): Promise<YtVideo[]> {
     // only handle upload for videos that has been created or upload failed previously
     return [...(await this.getVideosInState('UploadFailed')), ...(await this.getVideosInState('VideoCreated'))]
   }
