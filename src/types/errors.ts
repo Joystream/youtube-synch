@@ -8,6 +8,7 @@ export namespace ExitCodes {
     CHANNEL_CRITERIA_UNMET_VIDEOS = 'CHANNEL_CRITERIA_UNMET_VIDEOS',
     CHANNEL_CRITERIA_UNMET_CREATION_DATE = 'CHANNEL_CRITERIA_UNMET_CREATION_DATE',
     YOUTUBE_QUOTA_LIMIT_EXCEEDED = 'YOUTUBE_QUOTA_LIMIT_EXCEEDED',
+    YOUTUBE_API_NOT_CONNECTED = 'YOUTUBE_API_NOT_CONNECTED',
   }
 
   export enum RuntimeApi {
@@ -26,49 +27,42 @@ export namespace ExitCodes {
 
   export enum QueryNodeApi {
     OUTDATED_STATE = 'OUTDATED_STATE',
+    QUERY_NODE_NOT_CONNECTED = 'QUERY_NODE_NOT_CONNECTED',
   }
 }
 
-export class YoutubeApiError extends Error {
+export class YoutubeApiError {
   constructor(
     public code: ExitCodes.YoutubeApi,
-    public message: string,
+    public message?: string,
     public result?: number | string | Date,
     public expected?: number | string | Date
-  ) {
-    super(message)
-  }
+  ) {}
 }
 
-export class RuntimeApiError extends Error {
+export class RuntimeApiError {
   constructor(
     public code: ExitCodes.RuntimeApi,
-    public message: string,
+    public message?: string,
     public result?: number | string | Date,
     public expected?: number | string | Date
-  ) {
-    super(message)
-  }
+  ) {}
 }
 
-export class StorageApiError extends Error {
+export class StorageApiError {
   constructor(
     public code: ExitCodes.StorageApi,
-    public message: string,
+    public message?: string,
     public result?: number | string | Date,
     public expected?: number | string | Date
-  ) {
-    super(message)
-  }
+  ) {}
 }
 
-export class QueryNodeApiError extends Error {
+export class QueryNodeApiError {
   constructor(
     public code: ExitCodes.QueryNodeApi,
-    public message: string,
+    public message?: string,
     public result?: number | string | Date,
     public expected?: number | string | Date
-  ) {
-    super(message)
-  }
+  ) {}
 }

@@ -4,6 +4,7 @@ import { OAuth2Client } from 'google-auth-library'
 import { GetTokenResponse } from 'google-auth-library/build/src/auth/oauth2client'
 import { GaxiosError } from 'googleapis-common'
 import { parse, toSeconds } from 'iso8601-duration'
+import { FetchError } from 'node-fetch'
 import ytdl from 'youtube-dl-exec'
 import { StatsRepository } from '../../repository'
 import { ReadonlyConfig, toPrettyJSON, WithRequired } from '../../types'
@@ -106,10 +107,18 @@ class YoutubeClient implements IYoutubeApi {
   async getChannel(user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>) {
     const yt = this.getYoutube(user.accessToken, user.refreshToken)
 
-    const channelResponse = await yt.channels.list({
-      part: ['snippet', 'contentDetails', 'statistics'],
-      mine: true,
-    })
+    const channelResponse = await yt.channels
+      .list({
+        part: ['snippet', 'contentDetails', 'statistics'],
+        mine: true,
+      })
+      .catch((err) => {
+        if (err instanceof FetchError && err.code === 'ENOTFOUND') {
+          throw new YoutubeApiError(ExitCodes.YoutubeApi.YOUTUBE_API_NOT_CONNECTED, err.message)
+        }
+        throw err
+      })
+
     const [channel] = this.mapChannels(user, channelResponse.data.items ?? [])
 
     // Ensure channel exists
@@ -217,19 +226,33 @@ class YoutubeClient implements IYoutubeApi {
     let continuation: string
 
     do {
-      const nextPage = await youtube.playlistItems.list({
-        part: ['contentDetails', 'snippet', 'id', 'status'],
-        playlistId: channel.uploadsPlaylistId,
-        maxResults: 50,
-      })
+      const nextPage = await youtube.playlistItems
+        .list({
+          part: ['contentDetails', 'snippet', 'id', 'status'],
+          playlistId: channel.uploadsPlaylistId,
+          maxResults: 50,
+        })
+        .catch((err) => {
+          if (err instanceof FetchError && err.code === 'ENOTFOUND') {
+            throw new YoutubeApiError(ExitCodes.YoutubeApi.YOUTUBE_API_NOT_CONNECTED, err.message)
+          }
+          throw err
+        })
       continuation = nextPage.data.nextPageToken ?? ''
 
       const videosDetails = nextPage.data.items?.length
         ? (
-            await youtube.videos.list({
-              id: nextPage.data.items?.map((v) => v.snippet?.resourceId?.videoId ?? ``),
-              part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status', 'statistics'],
-            })
+            await youtube.videos
+              .list({
+                id: nextPage.data.items?.map((v) => v.snippet?.resourceId?.videoId ?? ``),
+                part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status', 'statistics'],
+              })
+              .catch((err) => {
+                if (err instanceof FetchError && err.code === 'ENOTFOUND') {
+                  throw new YoutubeApiError(ExitCodes.YoutubeApi.YOUTUBE_API_NOT_CONNECTED, err.message)
+                }
+                throw err
+              })
           ).data?.items
         : []
 
