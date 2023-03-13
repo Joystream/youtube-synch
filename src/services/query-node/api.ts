@@ -1,5 +1,6 @@
 import {
   ApolloClient,
+  ApolloError,
   defaultDataIdFromObject,
   DocumentNode,
   from,
@@ -16,6 +17,7 @@ import BN from 'bn.js'
 import fetch from 'cross-fetch'
 import { Logger } from 'winston'
 import ws from 'ws'
+import { ExitCodes, QueryNodeApiError } from '../../types/errors'
 import { LoggingService } from '../logging'
 import { StorageNodeInfo } from '../runtime/types'
 import {
@@ -141,7 +143,14 @@ export class QueryNodeApi {
     variables: VariablesT,
     resultKey: keyof QueryT
   ): Promise<Required<QueryT>[keyof QueryT] | null> {
-    return (await this.apolloClient.query<QueryT, VariablesT>({ query, variables })).data[resultKey] || null
+    try {
+      return (await this.apolloClient.query<QueryT, VariablesT>({ query, variables })).data[resultKey] || null
+    } catch (error) {
+      if (error instanceof ApolloError && (error.networkError as any).code === 'ECONNREFUSED') {
+        throw new QueryNodeApiError(ExitCodes.QueryNodeApi.QUERY_NODE_NOT_CONNECTED, error.message)
+      }
+      throw error
+    }
   }
 
   // Get entities by "non-unique" input and return first result
@@ -149,7 +158,14 @@ export class QueryNodeApi {
     QueryT extends { [k: string]: unknown[] },
     VariablesT extends Record<string, unknown>
   >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT][number] | null> {
-    return (await this.apolloClient.query<QueryT, VariablesT>({ query, variables })).data[resultKey][0] || null
+    try {
+      return (await this.apolloClient.query<QueryT, VariablesT>({ query, variables })).data[resultKey][0] || null
+    } catch (error) {
+      if (error instanceof ApolloError && (error.networkError as any).code === 'ECONNREFUSED') {
+        throw new QueryNodeApiError(ExitCodes.QueryNodeApi.QUERY_NODE_NOT_CONNECTED, error.message)
+      }
+      throw error
+    }
   }
 
   // Query-node: get multiple entities
@@ -157,7 +173,14 @@ export class QueryNodeApi {
     QueryT extends { [k: string]: unknown[] },
     VariablesT extends Record<string, unknown>
   >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT]> {
-    return (await this.apolloClient.query<QueryT, VariablesT>({ query, variables })).data[resultKey]
+    try {
+      return (await this.apolloClient.query<QueryT, VariablesT>({ query, variables })).data[resultKey]
+    } catch (error) {
+      if (error instanceof ApolloError && (error.networkError as any).code === 'ECONNREFUSED') {
+        throw new QueryNodeApiError(ExitCodes.QueryNodeApi.QUERY_NODE_NOT_CONNECTED, error.message)
+      }
+      throw error
+    }
   }
 
   protected async multipleEntitiesWithPagination<
@@ -170,23 +193,30 @@ export class QueryNodeApi {
     resultKey: keyof QueryT,
     itemsPerPage = MAX_RESULTS_PER_QUERY
   ): Promise<NodeT[]> {
-    let hasNextPage = true
-    let results: NodeT[] = []
-    let lastCursor: string | undefined
-    while (hasNextPage) {
-      const paginationVariables = { limit: itemsPerPage, lastCursor }
-      const queryVariables = { ...variables, ...paginationVariables }
-      const page = (
-        await this.apolloClient.query<QueryT, PaginationQueryVariables & CustomVariablesT>({
-          query,
-          variables: queryVariables,
-        })
-      ).data[resultKey]
-      results = results.concat(page.edges.map((e) => e.node))
-      hasNextPage = page.pageInfo.hasNextPage
-      lastCursor = page.pageInfo.endCursor || undefined
+    try {
+      let hasNextPage = true
+      let results: NodeT[] = []
+      let lastCursor: string | undefined
+      while (hasNextPage) {
+        const paginationVariables = { limit: itemsPerPage, lastCursor }
+        const queryVariables = { ...variables, ...paginationVariables }
+        const page = (
+          await this.apolloClient.query<QueryT, PaginationQueryVariables & CustomVariablesT>({
+            query,
+            variables: queryVariables,
+          })
+        ).data[resultKey]
+        results = results.concat(page.edges.map((e) => e.node))
+        hasNextPage = page.pageInfo.hasNextPage
+        lastCursor = page.pageInfo.endCursor || undefined
+      }
+      return results
+    } catch (error) {
+      if (error instanceof ApolloError && (error.networkError as any).code === 'ECONNREFUSED') {
+        throw new QueryNodeApiError(ExitCodes.QueryNodeApi.QUERY_NODE_NOT_CONNECTED, error.message)
+      }
+      throw error
     }
-    return results
   }
 
   protected async uniqueEntitySubscription<
