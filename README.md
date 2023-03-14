@@ -83,5 +83,6 @@ For running Youtube-synch service as a docker container, run `docker-compose up 
 
 # Doing Unauthorized replication/syncing of Youtube Channel's videos on joystream
 
-There is a CLI command for doing unauthorized replication/syncing of Youtube Channel's videos on joystream. For more information see
-[addUnauthorizedChannelForSyncing](./src/cli/docs/addUnauthorizedChannelForSyncing.md)
+There is a CLI command for doing unauthorized replication/syncing of Youtube Channel's videos on joystream. For more information see [addUnauthorizedChannelForSyncing](./src/cli/docs/addUnauthorizedChannelForSyncing.md)
+
+Also, if you want to sync multiple unauthorized channels, you can use [syncMultipleUnauthorizedChannels](./src/cli/docs/syncMultipleUnauthorizedChannels.md) command
