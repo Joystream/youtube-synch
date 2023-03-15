@@ -120,10 +120,8 @@ export enum VideoStates {
   UploadStarted = 6,
   // Video upload to Joystream succeeded
   UploadSucceeded = 7,
-  // Video was deleted from joystream, so it should not be synced again
-  NotToBeSyncedAgain = 8,
   // Video was deleted from Youtube, so it should not be synced
-  DeletedFromYoutube = 9,
+  VideoUnavailable = 8,
 }
 
 const readonlyChannelYppStatus = ['Unverified', 'Verified', 'Suspended', 'OptedOut'] as const

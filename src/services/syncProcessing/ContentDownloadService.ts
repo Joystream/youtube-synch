@@ -56,7 +56,12 @@ export class ContentDownloadService {
               this.setVideoFilePath(video.resourceId, fileExt)
               this.contentSizeSum += this.fileSize(video.resourceId)
             } catch (error) {
-              this.logger.error(`Got error downloading video: ${video.resourceId}, error: ${error}. Retrying...`)
+              if (error instanceof Error && error.message.includes('Video unavailable')) {
+                this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
+                this.logger.warn(`Video ${video.resourceId} not found. Skipping from syncing...`)
+              } else {
+                this.logger.error(`Got error downloading video: ${video.resourceId}, error: ${error}. Retrying...`)
+              }
             }
           })
         )
