@@ -61,6 +61,10 @@ export class ChannelsController {
         referrerChannelId,
       } = channelInfo
 
+      if (referrerChannelId === joystreamChannelId) {
+        throw new Error('Referrer channel cannot be the same as the channel being verified.')
+      }
+
       // get user from userId
       const user = await this.dynamodbService.users.get(userId)
 
