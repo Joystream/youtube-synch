@@ -36,7 +36,15 @@ export const DynamodbService = {
     // configure Dynamoose to use DynamoDB Local.
     if (aws?.endpoint) {
       console.log(`Using local DynamoDB at ${process.env.AWS_ENDPOINT || `http://localhost:4566`}`)
-      dynamoose.aws.ddb.local(process.env.AWS_ENDPOINT || `http://localhost:4566`)
+      const ddb = new dynamoose.aws.ddb.DynamoDB({
+        credentials: {
+          accessKeyId: aws.credentials?.accessKeyId || 'test',
+          secretAccessKey: aws.credentials?.secretAccessKey || 'test',
+        },
+        endpoint: process.env.AWS_ENDPOINT || `http://localhost:4566`,
+        region: aws.region,
+      })
+      dynamoose.aws.ddb.set(ddb)
     } else if (aws?.credentials) {
       // Create new AWS DynamoDB instance with credentials
       const ddb = new dynamoose.aws.ddb.DynamoDB({
