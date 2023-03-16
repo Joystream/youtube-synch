@@ -62,8 +62,8 @@ export function videoRepository() {
       // Joystream video category to be assigned to synced videos
       category: String,
 
-      // language of the synced video (derived from corresponding Youtube channel)
-      language: String,
+      // language of the synced video (derived from corresponding Joystream channel)
+      languageIso: String,
 
       // video duration in seconds
       duration: Number,

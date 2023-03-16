@@ -26,8 +26,8 @@ export class YtChannel {
   // default language of youtube channel
   language: string
 
-  // language of corresponding Joystream channel
-  joystreamChannelLanguageId?: string
+  // language ISO of corresponding Joystream channel
+  joystreamChannelLanguageIso?: string
 
   // Youtube channel creation date
   publishedAt: string
@@ -175,8 +175,8 @@ export class YtVideo {
   // Joystream video category to be assigned to synced videos
   category: string
 
-  // language of the synced video (derived from corresponding Youtube channel)
-  language?: string
+  // language of the synced video (derived from corresponding Joystream channel)
+  languageIso?: string
 
   // Video duration in seconds
   duration: number

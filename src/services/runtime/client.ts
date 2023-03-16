@@ -190,7 +190,7 @@ export class JoystreamClient {
       title: video.title,
       description: video.description,
       category: video.category,
-      language: video.language,
+      language: video.languageIso,
       isPublic: true,
       duration: video.duration,
       license: getVideoLicense(video),

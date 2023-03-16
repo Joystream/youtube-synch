@@ -210,7 +210,6 @@ class YoutubeClient implements IYoutubeApi {
     }
   }
 
-  // TODO: check for non-existent videos
   async downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
     const response = await ytdl(videoUrl, {
       printJson: true,
@@ -316,7 +315,7 @@ class YoutubeClient implements IYoutubeApi {
           publishedAt: video.contentDetails?.videoPublishedAt,
           createdAt: new Date(),
           category: channel.videoCategoryId,
-          language: channel.joystreamChannelLanguageId,
+          languageIso: channel.joystreamChannelLanguageIso,
           joystreamChannelId: channel.joystreamChannelId,
           privacyStatus: video.status?.privacyStatus,
           liveBroadcastContent: videosDetails[i].snippet?.liveBroadcastContent,

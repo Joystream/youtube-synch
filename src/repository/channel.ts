@@ -41,7 +41,7 @@ export function createChannelModel() {
       language: String,
 
       // language of corresponding Joystream channel
-      joystreamChannelLanguageId: String,
+      joystreamChannelLanguageIso: String,
 
       // Referrer's Joystream Channel ID
       referrerChannelId: Number,
