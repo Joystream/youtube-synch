@@ -28,10 +28,22 @@ fragment VideoFields on Video {
     id
     name
   }
+  media {
+    isAccepted
+  }
+  thumbnailPhoto {
+    isAccepted
+  }
 }
 
 query getVideoByYtResourceIdAndEntryAppName($ytVideoId: String!, $entryAppName: String!) {
   videos(where: { ytVideoId_eq: $ytVideoId, entryApp: { name_eq: $entryAppName } }) {
+    ...VideoFields
+  }
+}
+
+query getVideoById($id: ID!) {
+  videoByUniqueInput(where: { id: $id }) {
     ...VideoFields
   }
 }

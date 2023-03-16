@@ -234,9 +234,12 @@ export class VideosService {
     ]
   }
 
-  async getAllVideosInPendingUploadState(): Promise<YtVideo[]> {
+  async getAllVideosInPendingUploadState(limit: number): Promise<YtVideo[]> {
     // only handle upload for videos that has been created or upload failed previously
-    return [...(await this.getVideosInState('UploadFailed')), ...(await this.getVideosInState('VideoCreated'))]
+    return [...(await this.getVideosInState('UploadFailed')), ...(await this.getVideosInState('VideoCreated'))].slice(
+      0,
+      limit
+    )
   }
 
   /**

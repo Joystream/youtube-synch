@@ -37,8 +37,30 @@ export class ContentUploadService {
   async start() {
     this.logger.info(`Starting service to upload video assets to storage-node.`)
 
+    await this.ensureUploadStateConsistency()
+
     // start assets upload service
     setTimeout(async () => this.uploadAssetsWithInterval(this.config.intervals.youtubePolling), 0)
+  }
+
+  /**
+   * Whenever the service exits unexpectedly and starts again, we need to ensure that the state of the videos
+   * is consistent w.r.t its assets, since upload function isn't an atomic operation. It may happen that the
+   * video is in the `UploadStarted` state, but its assets were actually accepted by the storage-node.
+   * So for all these videos we need to update the state to `UploadSucceeded`.
+   */
+  private async ensureUploadStateConsistency() {
+    const videosInUploadState = await this.dynamodbService.videos.getVideosInState('UploadStarted')
+
+    for (const v of videosInUploadState) {
+      const qnVideo = await this.queryNodeApi.videoById(v.joystreamVideo.id)
+      if (qnVideo?.media?.isAccepted && qnVideo.thumbnailPhoto?.isAccepted) {
+        await this.dynamodbService.videos.updateState(v, 'UploadSucceeded')
+      } else {
+        // If QN return a video that was synced, but its assets are not accepted, then need to retry the upload
+        await this.dynamodbService.videos.updateState(v, 'UploadFailed')
+      }
+    }
   }
 
   /**
@@ -53,15 +75,15 @@ export class ContentUploadService {
       await sleep(sleepInterval)
       try {
         this.logger.info(`Resume service....`)
-        await this.uploadPendingAssets()
+        await this.uploadPendingAssets(this.config.limits.maxConcurrentUploads)
       } catch (err) {
         this.logger.error(`Critical Upload error: ${err}`)
       }
     }
   }
 
-  private async uploadPendingAssets() {
-    const videosWithPendingAssets = await this.dynamodbService.videos.getAllVideosInPendingUploadState()
+  private async uploadPendingAssets(limit: number) {
+    const videosWithPendingAssets = await this.dynamodbService.videos.getAllVideosInPendingUploadState(limit)
     this.logger.verbose(`Found ${videosWithPendingAssets.length} videos with upload still pending to storage-node.`, {
       videos: videosWithPendingAssets.map((v) => v.resourceId),
     })
@@ -72,10 +94,10 @@ export class ContentUploadService {
           // Update video state and save to DB
           await this.dynamodbService.videos.updateState(video, 'UploadStarted')
 
-          const videoFilePath = this.contentDownloadService.getVideoFilePath(video.resourceId)
+          const videoFilePath = this.contentDownloadService.expectedVideoFilePath(video.resourceId)
 
           // Upload the video assets
-          await this.storageNodeApi.uploadVideo(video, videoFilePath || '')
+          await this.storageNodeApi.uploadVideo(video, videoFilePath)
 
           // Update video state and save to DB
           await this.dynamodbService.videos.updateState(video, 'UploadSucceeded')

@@ -12,7 +12,7 @@ import {
 import { onError } from '@apollo/client/link/error'
 import { WebSocketLink } from '@apollo/client/link/ws'
 import { getMainDefinition } from '@apollo/client/utilities'
-import { MemberId } from '@joystream/types/primitives'
+import { MemberId, VideoId } from '@joystream/types/primitives'
 import BN from 'bn.js'
 import fetch from 'cross-fetch'
 import { Logger } from 'winston'
@@ -58,6 +58,9 @@ import {
   GetStorageNodesInfoByBagId,
   GetStorageNodesInfoByBagIdQuery,
   GetStorageNodesInfoByBagIdQueryVariables,
+  GetVideoById,
+  GetVideoByIdQuery,
+  GetVideoByIdQueryVariables,
   GetVideoByYtResourceIdAndEntryAppName,
   GetVideoByYtResourceIdAndEntryAppNameQuery,
   GetVideoByYtResourceIdAndEntryAppNameQueryVariables,
@@ -346,6 +349,16 @@ export class QueryNodeApi {
         id: id.toString(),
       },
       'membershipByUniqueInput'
+    )
+  }
+
+  async videoById(id: VideoId | string): Promise<VideoFieldsFragment | null> {
+    return this.uniqueEntityQuery<GetVideoByIdQuery, GetVideoByIdQueryVariables>(
+      GetVideoById,
+      {
+        id: id.toString(),
+      },
+      'videoByUniqueInput'
     )
   }
 

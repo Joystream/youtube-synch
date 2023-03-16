@@ -77,7 +77,7 @@ export class ContentCreationService {
           }
         }
       } catch (err) {
-        this.logger.error(`Critical content download error: ${err}`)
+        this.logger.error(`Critical content creation error: ${err}`)
       }
     }
   }

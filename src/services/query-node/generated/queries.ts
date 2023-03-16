@@ -48,6 +48,8 @@ export type VideoFieldsFragment = {
   id: string
   ytVideoId?: Types.Maybe<string>
   entryApp?: Types.Maybe<{ id: string; name: string }>
+  media?: Types.Maybe<{ isAccepted: boolean }>
+  thumbnailPhoto?: Types.Maybe<{ isAccepted: boolean }>
 }
 
 export type GetVideoByYtResourceIdAndEntryAppNameQueryVariables = Types.Exact<{
@@ -56,6 +58,12 @@ export type GetVideoByYtResourceIdAndEntryAppNameQueryVariables = Types.Exact<{
 }>
 
 export type GetVideoByYtResourceIdAndEntryAppNameQuery = { videos: Array<VideoFieldsFragment> }
+
+export type GetVideoByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
+
+export type GetVideoByIdQuery = { videoByUniqueInput?: Types.Maybe<VideoFieldsFragment> }
 
 export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
 
@@ -206,6 +214,12 @@ export const VideoFields = gql`
       id
       name
     }
+    media {
+      isAccepted
+    }
+    thumbnailPhoto {
+      isAccepted
+    }
   }
 `
 export const MemberMetadataFields = gql`
@@ -319,6 +333,14 @@ export const GetChannelById = gql`
 export const GetVideoByYtResourceIdAndEntryAppName = gql`
   query getVideoByYtResourceIdAndEntryAppName($ytVideoId: String!, $entryAppName: String!) {
     videos(where: { ytVideoId_eq: $ytVideoId, entryApp: { name_eq: $entryAppName } }) {
+      ...VideoFields
+    }
+  }
+  ${VideoFields}
+`
+export const GetVideoById = gql`
+  query getVideoById($id: ID!) {
+    videoByUniqueInput(where: { id: $id }) {
       ...VideoFields
     }
   }
