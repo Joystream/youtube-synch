@@ -1,6 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsBoolean, IsDate, IsEmail, IsNumber, IsString, IsUrl, ValidateIf, ValidateNested } from 'class-validator'
+import {
+  IsBoolean,
+  IsDate,
+  IsEmail,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+  ValidateIf,
+  ValidateNested,
+} from 'class-validator'
 import { Config } from '../../types'
 import { JoystreamVideo, VideoState, YtChannel, YtUser, YtVideo } from '../../types/youtube'
 
@@ -105,7 +115,7 @@ export class SaveChannelRequest {
   videoCategoryId: string
 
   // referrer Channel ID
-  @ApiProperty({ required: false }) @IsNumber() referrerChannelId: number
+  @ApiProperty({ required: false }) @IsOptional() @IsNumber() referrerChannelId: number
 }
 
 // Dto for save channel response
