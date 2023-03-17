@@ -56,7 +56,12 @@ export class ContentDownloadService {
               this.setVideoFilePath(video.resourceId, fileExt)
               this.contentSizeSum += this.fileSize(video.resourceId)
             } catch (error) {
-              this.logger.error(`Got error downloading video: ${video.resourceId}, error: ${error}. Retrying...`)
+              if (error instanceof Error && error.message.includes('Video unavailable')) {
+                this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
+                this.logger.warn(`Video ${video.resourceId} not found. Skipping from syncing...`)
+              } else {
+                this.logger.error(`Got error downloading video: ${video.resourceId}, error: ${error}. Retrying...`)
+              }
             }
           })
         )
@@ -68,7 +73,7 @@ export class ContentDownloadService {
           cb(null, video.priorityScore)
         },
 
-        batchSize: this.config.limits.concurrentDownloads,
+        batchSize: this.config.limits.maxConcurrentDownloads,
       }
     )
   }
@@ -87,22 +92,27 @@ export class ContentDownloadService {
     return this.downloadedVideoPathByResourceId.get(resourceId)
   }
 
-  public removeVideoFile(resourceId: string) {
-    const videoFilePath = this.getVideoFilePath(resourceId)
-    if (!videoFilePath) {
-      this.logger.error(`Failed to delete video file: ${videoFilePath}. File not found.`)
-      return
+  public expectedVideoFilePath(resourceId: string): string {
+    const filePath = this.downloadedVideoPathByResourceId.get(resourceId)
+    if (filePath && fs.existsSync(filePath)) {
+      return filePath
     }
-    const size = this.fileSize(resourceId)
-    fs.unlinkSync(videoFilePath)
-    this.contentSizeSum -= size
+    throw new Error(`Failed to get video file path: ${resourceId}. File not found.`)
+  }
+
+  public removeVideoFile(resourceId: string) {
+    try {
+      const videoFilePath = this.expectedVideoFilePath(resourceId)
+      const size = this.fileSize(resourceId)
+      fs.unlinkSync(videoFilePath)
+      this.contentSizeSum -= size
+    } catch (error) {
+      this.logger.error(`Failed to delete video file for: ${resourceId}. File not found.`)
+    }
   }
 
   private fileSize(resourceId: string): number {
-    const videoFilePath = this.getVideoFilePath(resourceId)
-    if (!videoFilePath) {
-      throw new Error(`Failed to get video file path: ${resourceId}. File not found.`)
-    }
+    const videoFilePath = this.expectedVideoFilePath(resourceId)
     return fs.statSync(videoFilePath).size
   }
 

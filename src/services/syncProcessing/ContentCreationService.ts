@@ -66,7 +66,7 @@ export class ContentCreationService {
         if (this.queue.length === 0) {
           const videos = [
             ...(await this.dynamodbService.videos.getVideosInState('VideoCreationFailed')),
-            ...(await this.dynamodbService.videos.getVideosInState('New')),
+            ...(await this.dynamodbService.videos.getVideosInState('New')), // TODO: only get public/processed videos
           ]
 
           for (const v of videos) {
@@ -77,7 +77,7 @@ export class ContentCreationService {
           }
         }
       } catch (err) {
-        this.logger.error(`Critical content download error: ${err}`)
+        this.logger.error(`Critical content creation error: ${err}`)
       }
     }
   }

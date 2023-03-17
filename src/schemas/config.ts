@@ -169,9 +169,14 @@ export const configSchema: JSONSchema4 = objectSchema({
           },
           required: ['sync', 'signup'],
         }),
-        concurrentDownloads: {
+        maxConcurrentDownloads: {
           description:
-            'No. of videos that should be concurrently downloaded from Youtube to be prepared for upload to Joystream',
+            'Max no. of videos that should be concurrently downloaded from Youtube to be prepared for upload to Joystream',
+          type: 'number',
+          default: 50,
+        },
+        maxConcurrentUploads: {
+          description: `Max no. of videos that should be concurrently uploaded to Joystream's storage node`,
           type: 'number',
           default: 50,
         },
@@ -181,7 +186,7 @@ export const configSchema: JSONSchema4 = objectSchema({
           pattern: byteSizeRegex.source,
         },
       },
-      required: ['dailyApiQuota', 'concurrentDownloads', 'storage'],
+      required: ['dailyApiQuota', 'maxConcurrentDownloads', 'maxConcurrentUploads', 'storage'],
     }),
     intervals: objectSchema({
       description: 'Specifies how often periodic tasks (for example youtube state polling) are executed.',
@@ -191,16 +196,8 @@ export const configSchema: JSONSchema4 = objectSchema({
           type: 'integer',
           minimum: 1,
         },
-        checkStorageNodeResponseTimes: {
-          description:
-            'How often, in seconds, will the youtube-sync service attempt to send requests to all current storage node endpoints ' +
-            'in order to check how quickly they respond. ' +
-            `The node will never make more than ${0} such requests concurrently.`,
-          type: 'integer',
-          minimum: 1,
-        },
       },
-      required: ['youtubePolling', 'checkStorageNodeResponseTimes'],
+      required: ['youtubePolling'],
     }),
     youtube: objectSchema({
       title: 'Youtube Oauth2 Client configuration',

@@ -64,9 +64,13 @@ export interface YoutubeSyncNodeConfiguration {
   limits: {
     dailyApiQuota: SpecifiesDailyYoutubeAPIQuotaRationingSchemeForYoutubePartnerProgram
     /**
-     * No. of videos that should be concurrently downloaded from Youtube to be prepared for upload to Joystream
+     * Max no. of videos that should be concurrently downloaded from Youtube to be prepared for upload to Joystream
      */
-    concurrentDownloads: number
+    maxConcurrentDownloads: number
+    /**
+     * Max no. of videos that should be concurrently uploaded to Joystream's storage node
+     */
+    maxConcurrentUploads: number
     /**
      * Maximum total size of all downloaded assets stored in `directories.assets`
      */
@@ -80,10 +84,6 @@ export interface YoutubeSyncNodeConfiguration {
      * After how many minutes, the service should poll the Youtube api for channels state update
      */
     youtubePolling: number
-    /**
-     * How often, in seconds, will the youtube-sync service attempt to send requests to all current storage node endpoints in order to check how quickly they respond. The node will never make more than 0 such requests concurrently.
-     */
-    checkStorageNodeResponseTimes: number
   }
   youtube: YoutubeOauth2ClientConfiguration
   aws?: AWSConfigurationsNeededToConnectWithDynamoDBInstance

@@ -16,7 +16,6 @@ logs:
   #   endpoint: http://localhost:9200
 intervals:
   youtubePolling: 30
-  checkStorageNodeResponseTimes: 1
 youtube:
   clientId: google-client-id
   clientSecret: google-client-secret
@@ -32,7 +31,9 @@ limits:
     sync: 9500
     signup: 500
   # How many videos should be concurrently downloaded from Youtube to be prepared for upload to Joystream
-  concurrentDownloads: 50
+  maxConcurrentDownloads: 50
+  # Max no. of videos that should be concurrently uploaded to Joystream's storage node
+  maxConcurrentUploads: 50
   storage: 100G
 httpApi:
   port: 3001
