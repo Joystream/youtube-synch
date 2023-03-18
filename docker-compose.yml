@@ -4,8 +4,7 @@ services:
     image: node:14
     container_name: youtube-synch-service
     restart: on-failure
-    networks:
-      - backend
+    network_mode: "host"
     volumes:
       - youtube-synch-logs:/logs
       - youtube-synch-data:/data
@@ -15,8 +14,6 @@ services:
         source: .
         target: /youtube-synch
     working_dir: /youtube-synch
-    ports:
-      - ${YT_SYNCH__HTTP_API__PORT}:${YT_SYNCH__HTTP_API__PORT}
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -41,6 +38,3 @@ volumes:
     driver: local
   youtube-synch-data:
     driver: local
-
-networks:
-  backend:
