@@ -104,7 +104,7 @@ export class ContentCreationService {
         this.lastVideoCreationBlockByChannelId.set(video.joystreamChannelId, createdInBlock)
         await this.dynamodbService.videos.updateState(createdVideo, 'VideoCreated')
       } catch (error) {
-        this.logger.error(`Got error processing video: ${video.resourceId}, error: ${error}`)
+        this.logger.error(`Got error processing video: ${video.resourceId}, error: ${JSON.stringify(error)}`)
         await this.dynamodbService.videos.updateState(video, 'VideoCreationFailed')
       }
     })

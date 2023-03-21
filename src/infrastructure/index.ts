@@ -1,11 +1,10 @@
 import * as aws from '@pulumi/aws'
-import { Stats, YtChannel, YtUser, YtVideo } from '../types/youtube'
+import { resourcePrefix, Stats, YtChannel, YtUser, YtVideo } from '../types/youtube'
 
 const nameof = <T>(name: keyof T) => <string>name
-const resourceSuffix = String(process.env.DEPLOYMENT_ENV)
 
 const userTable = new aws.dynamodb.Table('users', {
-  name: 'users',
+  name: `${resourcePrefix}users`,
   hashKey: nameof<YtUser>('id'),
   attributes: [
     {
@@ -16,11 +15,10 @@ const userTable = new aws.dynamodb.Table('users', {
   billingMode: 'PROVISIONED',
   readCapacity: 1,
   writeCapacity: 1,
-  tags: { environment: resourceSuffix },
 })
 
 const channelsTable = new aws.dynamodb.Table('channels', {
-  name: 'channels',
+  name: `${resourcePrefix}channels`,
   hashKey: nameof<YtChannel>('userId'),
   rangeKey: nameof<YtChannel>('id'),
   attributes: [
@@ -73,11 +71,10 @@ const channelsTable = new aws.dynamodb.Table('channels', {
   ],
   readCapacity: 1,
   writeCapacity: 1,
-  tags: { environment: resourceSuffix },
 })
 
 const videosTable = new aws.dynamodb.Table('videos', {
-  name: 'videos',
+  name: `${resourcePrefix}videos`,
   hashKey: nameof<YtVideo>('channelId'),
   rangeKey: nameof<YtVideo>('id'),
   attributes: [
@@ -111,11 +108,10 @@ const videosTable = new aws.dynamodb.Table('videos', {
   billingMode: 'PROVISIONED',
   readCapacity: 10,
   writeCapacity: 10,
-  tags: { environment: resourceSuffix },
 })
 
 const statsTable = new aws.dynamodb.Table('stats', {
-  name: 'stats',
+  name: `${resourcePrefix}stats`,
   hashKey: nameof<Stats>('partition'),
   rangeKey: nameof<Stats>('date'),
   attributes: [
@@ -125,7 +121,6 @@ const statsTable = new aws.dynamodb.Table('stats', {
   billingMode: 'PROVISIONED',
   readCapacity: 1,
   writeCapacity: 1,
-  tags: { environment: resourceSuffix },
 })
 
 export const usersTableArn = userTable.arn

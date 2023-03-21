@@ -331,11 +331,11 @@ class YoutubeClient implements IYoutubeApi {
 }
 
 class QuotaTrackingClient implements IYoutubeApi {
-  private statsRepo
-
-  constructor(private decorated: IYoutubeApi, private dailyApiQuota: ReadonlyConfig['limits']['dailyApiQuota']) {
-    this.statsRepo = new StatsRepository()
-  }
+  constructor(
+    private decorated: IYoutubeApi,
+    private dailyApiQuota: ReadonlyConfig['limits']['dailyApiQuota'],
+    private statsRepo: StatsRepository
+  ) {}
 
   getCreatorOnboardingRequirements() {
     return this.decorated.getCreatorOnboardingRequirements()
@@ -449,7 +449,7 @@ class QuotaTrackingClient implements IYoutubeApi {
 }
 
 export const YoutubeApi = {
-  create(config: ReadonlyConfig): IYoutubeApi {
-    return new QuotaTrackingClient(new YoutubeClient(config), config.limits.dailyApiQuota)
+  create(config: ReadonlyConfig, statsRepo: StatsRepository): IYoutubeApi {
+    return new QuotaTrackingClient(new YoutubeClient(config), config.limits.dailyApiQuota, statsRepo)
   },
 }

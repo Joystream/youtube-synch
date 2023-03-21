@@ -30,7 +30,7 @@ import {
 } from '../dtos'
 import { IYoutubeApi } from '../../youtube/api'
 import { QueryNodeApi } from '../../query-node/api'
-import { IDynamodbService } from '../../../repository'
+import { DynamodbService } from '../../../repository'
 import { YtChannel, YtUser, YtVideo } from '../../../types/youtube'
 
 @Controller('channels')
@@ -39,7 +39,7 @@ export class ChannelsController {
   constructor(
     @Inject('youtube') private youtubeApi: IYoutubeApi,
     private qnApi: QueryNodeApi,
-    @Inject('dynamodbService') private dynamodbService: IDynamodbService
+    private dynamodbService: DynamodbService
   ) {}
 
   @ApiOperation({

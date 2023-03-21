@@ -1,12 +1,12 @@
 import { Controller, Get, Inject, NotFoundException, Param } from '@nestjs/common'
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
-import { IDynamodbService } from '../../../repository'
+import { DynamodbService } from '../../../repository'
 import { YtVideo } from '../../../types/youtube'
 
 @Controller('users/:userId/videos')
 @ApiTags('channels')
 export class VideosController {
-  constructor(@Inject('dynamodbService') private dynamodbService: IDynamodbService) {}
+  constructor(private dynamodbService: DynamodbService) {}
 
   @Get()
   @ApiResponse({ type: YtVideo, isArray: true })

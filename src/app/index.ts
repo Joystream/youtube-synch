@@ -33,8 +33,8 @@ export class Service {
     this.logging = LoggingService.withAppConfig(config.logs)
     this.logger = this.logging.createLogger('Server')
     this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
-    this.youtubeApi = YoutubeApi.create(this.config)
-    this.dynamodbService = DynamodbService.init(this.config.aws)
+    this.dynamodbService = new DynamodbService(this.config.aws)
+    this.youtubeApi = YoutubeApi.create(this.config, this.dynamodbService.repo.stats)
     this.joystreamClient = new JoystreamClient(config, this.youtubeApi, this.queryNodeApi, this.logging)
     this.youtubePollingService = new YoutubePollingService(
       config,

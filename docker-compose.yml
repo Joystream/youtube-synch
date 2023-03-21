@@ -17,7 +17,8 @@ services:
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
-    # environment:
+    environment:
+      DEPLOYMENT_ENV: ${DEPLOYMENT_ENV}
     #   YT_SYNCH__ENDPOINTS__QUERY_NODE: ${YT_SYNCH__ENDPOINTS__QUERY_NODE}
     #   YT_SYNCH__ENDPOINTS__JOYSTREAM_NODE_WS: ${YT_SYNCH__ENDPOINTS__JOYSTREAM_NODE_WS}
     #   YT_SYNCH__HTTP_API__PORT: ${YT_SYNCH__HTTP_API__PORT}

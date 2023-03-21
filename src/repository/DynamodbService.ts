@@ -1,10 +1,10 @@
-import { ChannelsService, ChannelsRepository } from './channel'
-import { UsersService } from './user'
-import { UsersRepository } from './user'
-import { VideosRepository, VideosService } from './video'
-import { StatsRepository } from './stats'
 import * as dynamoose from 'dynamoose'
 import { ReadonlyConfig } from '../types'
+import { ResourcePrefix, resourcePrefix } from '../types/youtube'
+import { ChannelsRepository, ChannelsService } from './channel'
+import { StatsRepository } from './stats'
+import { UsersRepository, UsersService } from './user'
+import { VideosRepository, VideosService } from './video'
 
 interface IDynamodbClient {
   channels: ChannelsRepository
@@ -14,12 +14,12 @@ interface IDynamodbClient {
 }
 
 const DynamodbClient = {
-  create(): IDynamodbClient {
+  create(tablePrefix: ResourcePrefix): IDynamodbClient {
     return {
-      channels: new ChannelsRepository(),
-      users: new UsersRepository(),
-      videos: new VideosRepository(),
-      stats: new StatsRepository(),
+      channels: new ChannelsRepository(tablePrefix),
+      users: new UsersRepository(tablePrefix),
+      videos: new VideosRepository(tablePrefix),
+      stats: new StatsRepository(tablePrefix),
     }
   },
 }
@@ -31,8 +31,21 @@ export interface IDynamodbService {
   videos: VideosService
 }
 
-export const DynamodbService = {
-  init(aws?: ReadonlyConfig['aws']): IDynamodbService {
+export class DynamodbService implements IDynamodbService {
+  readonly repo: IDynamodbClient
+  readonly channels: ChannelsService
+  readonly users: UsersService
+  readonly videos: VideosService
+
+  constructor(aws?: ReadonlyConfig['aws']) {
+    const { repo, channels, users, videos } = this.init(aws)
+    this.repo = repo
+    this.channels = channels
+    this.users = users
+    this.videos = videos
+  }
+
+  private init(aws?: ReadonlyConfig['aws']): IDynamodbService {
     // configure Dynamoose to use DynamoDB Local.
     if (aws?.endpoint) {
       console.log(`Using local DynamoDB at ${aws.endpoint || `http://localhost:4566`}`)
@@ -59,7 +72,7 @@ export const DynamodbService = {
       dynamoose.aws.ddb.set(ddb)
     }
 
-    const repo = DynamodbClient.create()
+    const repo = DynamodbClient.create(aws?.endpoint ? 'local_' : resourcePrefix)
     const channels = new ChannelsService(repo.channels)
     const users = new UsersService(repo.users)
     const videos = new VideosService(repo.videos)
@@ -69,5 +82,5 @@ export const DynamodbService = {
       users,
       videos,
     }
-  },
+  }
 }
