@@ -4,9 +4,9 @@ import { AnyItem } from 'dynamoose/dist/Item'
 import { Query, Scan } from 'dynamoose/dist/ItemRetriever'
 import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
-import { YtUser } from '../types/youtube'
+import { ResourcePrefix, YtUser } from '../types/youtube'
 
-export function createUserModel() {
+export function createUserModel(tablePrefix: ResourcePrefix) {
   const userSchema = new dynamoose.Schema(
     {
       id: {
@@ -64,13 +64,13 @@ export function createUserModel() {
       },
     }
   )
-  return dynamoose.model('users', userSchema, DYNAMO_MODEL_OPTIONS)
+  return dynamoose.model(`${tablePrefix}users`, userSchema, DYNAMO_MODEL_OPTIONS)
 }
 
 export class UsersRepository implements IRepository<YtUser> {
   private model
-  constructor() {
-    this.model = createUserModel()
+  constructor(tablePrefix: ResourcePrefix) {
+    this.model = createUserModel(tablePrefix)
   }
 
   async upsertAll(users: YtUser[]): Promise<YtUser[]> {

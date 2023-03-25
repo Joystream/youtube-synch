@@ -20,9 +20,9 @@ import { YoutubeController } from './controllers/youtube'
   controllers: [VideosController, ChannelsController, UsersController, YoutubeController],
   providers: [
     {
-      provide: 'dynamodbService',
+      provide: DynamodbService,
       useFactory: (configService: ConfigService) => {
-        return DynamodbService.init(configService.get('aws'))
+        return new DynamodbService(configService.get('aws'))
       },
       inject: [ConfigService],
     },
@@ -39,11 +39,15 @@ import { YoutubeController } from './controllers/youtube'
     {
       provide: 'youtube',
       useFactory: (configService: ConfigService) => {
-        return YoutubeApi.create({
-          youtube: configService.get('youtube'),
-          limits: configService.get('limits'),
-          creatorOnboardingRequirements: configService.get('creatorOnboardingRequirements'),
-        } as ReadonlyConfig)
+        const dynamodbService = new DynamodbService(configService.get('aws'))
+        return YoutubeApi.create(
+          {
+            youtube: configService.get('youtube'),
+            limits: configService.get('limits'),
+            creatorOnboardingRequirements: configService.get('creatorOnboardingRequirements'),
+          } as ReadonlyConfig,
+          dynamodbService.repo.stats
+        )
       },
       inject: [ConfigService],
     },

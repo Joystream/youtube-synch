@@ -1,3 +1,9 @@
+type DeploymentEnv = 'dev' | 'local' | 'testing' | 'prod'
+const deploymentEnv = process.env.DEPLOYMENT_ENV as DeploymentEnv | undefined
+
+export type ResourcePrefix = `${Exclude<DeploymentEnv, 'prod'>}_` | ''
+export const resourcePrefix = (deploymentEnv && deploymentEnv !== 'prod' ? `${deploymentEnv}_` : '') as ResourcePrefix
+
 export class YtChannel {
   // Channel ID
   id: string

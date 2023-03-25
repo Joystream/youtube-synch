@@ -4,9 +4,9 @@ import { AnyItem } from 'dynamoose/dist/Item'
 import { Query, Scan } from 'dynamoose/dist/ItemRetriever'
 import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
-import { Stats } from '../types/youtube'
+import { ResourcePrefix, Stats } from '../types/youtube'
 
-export function statsRepository() {
+export function statsRepository(tablePrefix: ResourcePrefix) {
   const schema = new dynamoose.Schema({
     partition: {
       type: String,
@@ -19,13 +19,13 @@ export function statsRepository() {
     syncQuotaUsed: Number,
     signupQuotaUsed: Number,
   })
-  return dynamoose.model('stats', schema, DYNAMO_MODEL_OPTIONS)
+  return dynamoose.model(`${tablePrefix}stats`, schema, DYNAMO_MODEL_OPTIONS)
 }
 
 export class StatsRepository implements IRepository<Stats> {
   private model
-  constructor() {
-    this.model = statsRepository()
+  constructor(tablePrefix: ResourcePrefix) {
+    this.model = statsRepository(tablePrefix)
   }
 
   async getModel() {

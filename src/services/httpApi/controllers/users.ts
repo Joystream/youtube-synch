@@ -12,16 +12,13 @@ import {
 import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { UserDto, VerifyChannelRequest, VerifyChannelResponse } from '../dtos'
 import { IYoutubeApi } from '../../youtube/api'
-import { IDynamodbService } from '../../../repository'
+import { DynamodbService } from '../../../repository'
 import { ExitCodes, YoutubeApiError } from '../../../types/errors'
 
 @Controller('users')
 @ApiTags('channels')
 export class UsersController {
-  constructor(
-    @Inject('youtube') private youtube: IYoutubeApi,
-    @Inject('dynamodbService') private dynamodbService: IDynamodbService
-  ) {}
+  constructor(@Inject('youtube') private youtube: IYoutubeApi, private dynamodbService: DynamodbService) {}
 
   @ApiOperation({
     description: `fetches user's channel from the supplied google authorization code, and verifies if it satisfies YPP induction criteria`,

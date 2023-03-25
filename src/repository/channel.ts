@@ -4,9 +4,9 @@ import { AnyItem } from 'dynamoose/dist/Item'
 import { Query, Scan } from 'dynamoose/dist/ItemRetriever'
 import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
-import { YtChannel, channelYppStatus } from '../types/youtube'
+import { channelYppStatus, ResourcePrefix, YtChannel } from '../types/youtube'
 
-export function createChannelModel() {
+export function createChannelModel(tablePrefix: ResourcePrefix) {
   const channelSchema = new dynamoose.Schema(
     {
       // ID of the Youtube channel
@@ -159,13 +159,13 @@ export function createChannelModel() {
       },
     }
   )
-  return dynamoose.model('channels', channelSchema, DYNAMO_MODEL_OPTIONS)
+  return dynamoose.model(`${tablePrefix}channels`, channelSchema, DYNAMO_MODEL_OPTIONS)
 }
 
 export class ChannelsRepository implements IRepository<YtChannel> {
   private model
-  constructor() {
-    this.model = createChannelModel()
+  constructor(tablePrefix: ResourcePrefix) {
+    this.model = createChannelModel(tablePrefix)
   }
 
   async upsertAll(channels: YtChannel[]): Promise<YtChannel[]> {

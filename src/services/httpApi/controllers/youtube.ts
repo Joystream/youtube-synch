@@ -1,12 +1,12 @@
-import { Controller, Get, Inject, NotFoundException } from '@nestjs/common'
+import { Controller, Get, NotFoundException } from '@nestjs/common'
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { DynamodbService } from '../../../repository'
 import { Stats } from '../../../types/youtube'
-import { IDynamodbService } from '../../../repository'
 
 @Controller('youtube')
 @ApiTags('youtube')
 export class YoutubeController {
-  constructor(@Inject('dynamodbService') private dynamodbService: IDynamodbService) {}
+  constructor(private dynamodbService: DynamodbService) {}
 
   @Get('quota-usage')
   @ApiResponse({ type: Stats, isArray: true })

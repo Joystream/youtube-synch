@@ -1,0 +1,7 @@
+name: youtube-partner-program
+runtime:
+  name: nodejs
+main: '../index.js'
+# Running pulumi on a typescript file results in type errors, so we use a js file
+# from /lib/infrastructure instead of the typescript file in /src/infrastructure
+description: Dynamodb Infrastructure of youtube partner program

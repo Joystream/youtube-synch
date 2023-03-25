@@ -4,9 +4,9 @@ import { AnyItem } from 'dynamoose/dist/Item'
 import { Query, Scan } from 'dynamoose/dist/ItemRetriever'
 import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
-import { VideoState, YtVideo, videoStates } from '../types/youtube'
+import { ResourcePrefix, VideoState, videoStates, YtVideo } from '../types/youtube'
 
-export function videoRepository() {
+export function videoRepository(tablePrefix: ResourcePrefix) {
   const videoSchema = new dynamoose.Schema(
     {
       // ID of the video
@@ -131,13 +131,13 @@ export function videoRepository() {
       },
     }
   )
-  return dynamoose.model('videos', videoSchema, DYNAMO_MODEL_OPTIONS)
+  return dynamoose.model(`${tablePrefix}videos`, videoSchema, DYNAMO_MODEL_OPTIONS)
 }
 
 export class VideosRepository implements IRepository<YtVideo> {
   private model
-  constructor() {
-    this.model = videoRepository()
+  constructor(tablePrefix: ResourcePrefix) {
+    this.model = videoRepository(tablePrefix)
   }
 
   async getModel() {
