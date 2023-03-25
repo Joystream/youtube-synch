@@ -1,18 +1,17 @@
-import { Config } from '../types'
-import { LoggingService } from '../services/logging'
-import { Logger } from 'winston'
 import fs from 'fs'
 import nodeCleanup from 'node-cleanup'
-import _ from 'lodash'
-import { DynamodbService, IDynamodbService } from '../repository'
-import { YoutubePollingService } from '../services/syncProcessing/YoutubePollingService'
-import { IYoutubeApi, YoutubeApi } from '../services/youtube/api'
-import { ContentCreationService } from '../services/syncProcessing/ContentCreationService'
-import { ContentUploadService } from '../services/syncProcessing/ContentUploadService'
+import { Logger } from 'winston'
+import { DynamodbService } from '../repository'
+import { bootstrapHttpApi } from '../services/httpApi/main'
+import { LoggingService } from '../services/logging'
 import { QueryNodeApi } from '../services/query-node/api'
 import { JoystreamClient } from '../services/runtime/client'
-import { bootstrapHttpApi } from '../services/httpApi/main'
+import { ContentCreationService } from '../services/syncProcessing/ContentCreationService'
 import { ContentDownloadService } from '../services/syncProcessing/ContentDownloadService'
+import { ContentUploadService } from '../services/syncProcessing/ContentUploadService'
+import { YoutubePollingService } from '../services/syncProcessing/YoutubePollingService'
+import { IYoutubeApi, YoutubeApi } from '../services/youtube/api'
+import { Config } from '../types'
 
 export class Service {
   private config: Config
@@ -20,7 +19,7 @@ export class Service {
   private logger: Logger
   private youtubeApi: IYoutubeApi
   private queryNodeApi: QueryNodeApi
-  private dynamodbService: IDynamodbService
+  private dynamodbService: DynamodbService
   private joystreamClient: JoystreamClient
   private youtubePollingService: YoutubePollingService
   private contentDownloadService: ContentDownloadService
@@ -106,7 +105,7 @@ export class Service {
   public async start(): Promise<void> {
     try {
       this.checkConfigDirectories()
-      await bootstrapHttpApi(this.config.httpApi.port, this.logging)
+      await bootstrapHttpApi(this.config, this.logging, this.dynamodbService, this.queryNodeApi, this.youtubeApi)
       this.logger.verbose('Starting the Youtube-Synch service', { config: this.hideSecrets(this.config) })
       await this.youtubePollingService.start()
       await this.contentDownloadService.start()

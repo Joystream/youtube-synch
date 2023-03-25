@@ -6,7 +6,7 @@ import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
 import { ResourcePrefix, VideoState, videoStates, YtVideo } from '../types/youtube'
 
-export function videoRepository(tablePrefix: ResourcePrefix) {
+function videoRepository(tablePrefix: ResourcePrefix) {
   const videoSchema = new dynamoose.Schema(
     {
       // ID of the video

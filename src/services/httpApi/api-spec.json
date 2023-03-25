@@ -483,6 +483,7 @@
         "operationId": "YoutubeController_getAll",
         "summary": "",
         "description": "Get youtube quota usage information",
+        "deprecated": true,
         "parameters": [],
         "responses": {
           "default": {
@@ -509,6 +510,7 @@
         "operationId": "YoutubeController_get",
         "summary": "",
         "description": "Get youtube quota usage information for today",
+        "deprecated": true,
         "parameters": [],
         "responses": {
           "default": {
@@ -524,6 +526,78 @@
         },
         "tags": [
           "youtube"
+        ]
+      }
+    },
+    "/status/quota-usage": {
+      "get": {
+        "operationId": "StatusController_getQuotaStats",
+        "summary": "",
+        "description": "Get youtube quota usage information",
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Stats"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "status"
+        ]
+      }
+    },
+    "/status/quota-usage/today": {
+      "get": {
+        "operationId": "StatusController_getQuotaStatsForToday",
+        "summary": "",
+        "description": "Get youtube quota usage information for today",
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stats"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "status"
+        ]
+      }
+    },
+    "/status/collaborator": {
+      "get": {
+        "operationId": "StatusController_getCollaboratorStatus",
+        "summary": "",
+        "description": "Get youtube quota usage information for today",
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stats"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "status"
         ]
       }
     }

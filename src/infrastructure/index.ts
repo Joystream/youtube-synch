@@ -101,13 +101,9 @@ const videosTable = new aws.dynamodb.Table('videos', {
       rangeKey: 'updatedAt',
       name: 'state-updatedAt-index',
       projectionType: 'ALL',
-      readCapacity: 1,
-      writeCapacity: 1,
     },
   ],
-  billingMode: 'PROVISIONED',
-  readCapacity: 10,
-  writeCapacity: 10,
+  billingMode: 'PAY_PER_REQUEST',
 })
 
 const statsTable = new aws.dynamodb.Table('stats', {

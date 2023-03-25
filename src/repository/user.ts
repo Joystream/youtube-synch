@@ -6,7 +6,7 @@ import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
 import { ResourcePrefix, YtUser } from '../types/youtube'
 
-export function createUserModel(tablePrefix: ResourcePrefix) {
+function createUserModel(tablePrefix: ResourcePrefix) {
   const userSchema = new dynamoose.Schema(
     {
       id: {

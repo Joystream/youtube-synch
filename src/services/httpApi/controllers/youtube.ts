@@ -10,7 +10,7 @@ export class YoutubeController {
 
   @Get('quota-usage')
   @ApiResponse({ type: Stats, isArray: true })
-  @ApiOperation({ description: `Get youtube quota usage information` })
+  @ApiOperation({ description: `Get youtube quota usage information`, deprecated: true })
   async getAll(): Promise<Stats[]> {
     try {
       // Get complete quota usage stats
@@ -24,7 +24,7 @@ export class YoutubeController {
 
   @Get('quota-usage/today')
   @ApiResponse({ type: Stats })
-  @ApiOperation({ description: `Get youtube quota usage information for today` })
+  @ApiOperation({ description: `Get youtube quota usage information for today`, deprecated: true })
   async get(): Promise<Stats> {
     try {
       const stats = this.dynamodbService.repo.stats.getOrSetTodaysStats()
