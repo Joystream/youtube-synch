@@ -6,7 +6,7 @@ import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
 import { ResourcePrefix, Stats } from '../types/youtube'
 
-export function statsRepository(tablePrefix: ResourcePrefix) {
+function statsRepository(tablePrefix: ResourcePrefix) {
   const schema = new dynamoose.Schema({
     partition: {
       type: String,

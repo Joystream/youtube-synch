@@ -23,6 +23,12 @@ export class ThumbnailsDto {
   @ApiProperty() standard: string
 }
 
+export class CollaboratorStatusDto {
+  @ApiProperty() memberId: string
+  @ApiProperty() controllerAccount: string
+  @ApiProperty() balance: string
+}
+
 export class ChannelInductionRequirementsDto {
   @ApiProperty() MINIMUM_SUBSCRIBERS_COUNT: number
   @ApiProperty() MINIMUM_VIDEO_COUNT: number
