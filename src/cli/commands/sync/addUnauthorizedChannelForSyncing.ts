@@ -4,13 +4,13 @@ import { PalletContentChannelRecord } from '@polkadot/types/lookup'
 import axios from 'axios'
 import { load } from 'cheerio'
 import ytpl from 'ytpl'
-import { DynamodbService } from '../../repository'
-import { Thumbnails, YtChannel, YtVideo } from '../../types/youtube'
-import ApiCommandBase from '../base/api'
-import CLIExitCodes from '../base/ExitCodes'
+import { DynamodbService } from '../../../repository'
+import { Thumbnails, YtChannel, YtVideo } from '../../../types/youtube'
+import RuntimeApiCommandBase from '../../base/runtimeApi'
+import CLIExitCodes from '../../base/ExitCodes'
 import { ChannelCreationInputParameters } from '@joystream/cli/lib/Types'
 
-export default class AddUnauthorizedChannelForSyncing extends ApiCommandBase {
+export default class AddUnauthorizedChannelForSyncing extends RuntimeApiCommandBase {
   static description =
     `Add Unauthorized Youtube Channel For Syncing, this command will also create` +
     ` corresponding Joystream Channel if --joystreamChannelId  flag is not provided`
@@ -33,7 +33,7 @@ export default class AddUnauthorizedChannelForSyncing extends ApiCommandBase {
       description: 'Joystream Channel ID where Youtube videos will be replicated',
       required: false,
     }),
-    ...ApiCommandBase.flags,
+    ...RuntimeApiCommandBase.flags,
   }
 
   async createJoystreamChannel(ytChannel: ytpl.Result) {

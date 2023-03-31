@@ -7,6 +7,7 @@ import { ReadonlyConfig } from '../../types'
 import inquirer, { DistinctQuestion } from 'inquirer'
 import chalk from 'chalk'
 import { JoystreamCLI, TmpFileManager } from './joystreamCli'
+import DatePrompt from 'inquirer-date-prompt'
 
 export default abstract class DefaultCommandBase extends Command {
   protected appConfig!: ReadonlyConfig
@@ -165,5 +166,25 @@ export default abstract class DefaultCommandBase extends Command {
       console.error(err)
     }
     super.finally(err as Error)
+  }
+
+  async datePrompt(question: DistinctQuestion): Promise<Date> {
+    inquirer.registerPrompt('date', DatePrompt as any)
+    const { result } = await inquirer.prompt([
+      {
+        ...question,
+        type: 'date',
+        name: 'result',
+        clearable: true,
+        // prefix = 2 spaces for each group - 1 (because 1 is always added by default)
+        prefix: Array.from(new Array(this.indentGroupsOpened))
+          .map(() => '  ')
+          .join('')
+          .slice(1),
+      },
+    ])
+
+    const date = new Date(result)
+    return date
   }
 }

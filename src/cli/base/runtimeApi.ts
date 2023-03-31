@@ -16,9 +16,9 @@ import { cryptoWaitReady } from '@polkadot/util-crypto'
 import { randomBytes } from 'crypto'
 
 /**
- * Abstract base class for commands that require access to the API.
+ * Abstract base class for commands that require access to the Joystream Runtime API.
  */
-export default abstract class ApiCommandBase extends DefaultCommandBase {
+export default abstract class RuntimeApiCommandBase extends DefaultCommandBase {
   protected api!: RuntimeApi
   private keyring: Keyring
   private treasuryAccount: string
@@ -82,7 +82,7 @@ export default abstract class ApiCommandBase extends DefaultCommandBase {
       return res
     } catch (e) {
       if (e instanceof ExtrinsicFailedError) {
-        throw new CLIError(`Extrinsic failed! ${e.message}`, { exit: ExitCodes.ApiError })
+        throw new CLIError(`Extrinsic failed! ${e.message}`, { exit: ExitCodes.RuntimeApiError })
       }
       throw e
     }
