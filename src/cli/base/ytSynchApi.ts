@@ -43,7 +43,9 @@ export default abstract class YtSynchCommandBase extends DefaultCommandBase {
       return response.data
     } catch (error) {
       throw new CLIError(
-        `Failed to fetch channels from HttpApi, msg: ${(error as AxiosError).response?.data.message}`,
+        `Failed to fetch channels from HttpApi, code: ${(error as AxiosError).code} msg: ${
+          (error as AxiosError).response?.data.message
+        }`,
         {
           exit: ExitCodes.HttpApiError,
         }

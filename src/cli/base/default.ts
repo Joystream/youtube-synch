@@ -169,7 +169,7 @@ export default abstract class DefaultCommandBase extends Command {
   }
 
   async datePrompt(question: DistinctQuestion): Promise<Date> {
-    inquirer.registerPrompt('date', DatePrompt as any)
+    // inquirer.registerPrompt('date', DatePrompt as any)
     const { result } = await inquirer.prompt([
       {
         ...question,

@@ -29,7 +29,6 @@ export default class ChannelStats extends YtSynchCommandBase {
 
     const channelRecords: ChannelStatsRecord<typeof appDomain>[] = channels
       .filter((c) => {
-        console.log(c.youtubeChannelId, c.joystreamChannelId, c.referrerChannelId)
         return new Date(c.createdAt) >= startDate && new Date(c.createdAt) <= endDate
       })
       .map(({ youtubeChannelId, joystreamChannelId, referrerChannelId }) => ({
