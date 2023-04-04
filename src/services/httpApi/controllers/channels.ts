@@ -226,7 +226,8 @@ export class ChannelsController {
     @Body(new ParseArrayPipe({ items: SuspendChannelDto, whitelist: true })) channels: SuspendChannelDto[]
   ) {
     const yppOwnerKey = authorizationHeader ? authorizationHeader.split(' ')[1] : ''
-    if (yppOwnerKey !== process.env.YPP_OWNER_KEY) {
+    // TODO: fix this YT_SYNCH__HTTP_API__OWNER_KEY config value
+    if (yppOwnerKey !== process.env.YT_SYNCH__HTTP_API__OWNER_KEY) {
       throw new UnauthorizedException('Invalid YPP owner key')
     }
 
@@ -262,7 +263,8 @@ export class ChannelsController {
     @Body(new ParseArrayPipe({ items: VerifyChannelDto, whitelist: true })) channels: VerifyChannelDto[]
   ) {
     const yppOwnerKey = authorizationHeader ? authorizationHeader.split(' ')[1] : ''
-    if (yppOwnerKey !== process.env.YPP_OWNER_KEY) {
+    // TODO: fix this YT_SYNCH__HTTP_API__OWNER_KEY config value
+    if (yppOwnerKey !== process.env.YT_SYNCH__HTTP_API__OWNER_KEY) {
       throw new UnauthorizedException('Invalid YPP owner key')
     }
 

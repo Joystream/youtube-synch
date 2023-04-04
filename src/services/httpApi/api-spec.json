@@ -691,6 +691,9 @@
       "ChannelDto": {
         "type": "object",
         "properties": {
+          "youtubeChannelId": {
+            "type": "string"
+          },
           "title": {
             "type": "string"
           },
@@ -707,6 +710,9 @@
             "type": "string"
           },
           "joystreamChannelId": {
+            "type": "number"
+          },
+          "referrerChannelId": {
             "type": "number"
           },
           "videoCategoryId": {
@@ -727,12 +733,14 @@
           }
         },
         "required": [
+          "youtubeChannelId",
           "title",
           "description",
           "aggregatedStats",
           "shouldBeIngested",
           "yppStatus",
           "joystreamChannelId",
+          "referrerChannelId",
           "videoCategoryId",
           "language",
           "thumbnails",

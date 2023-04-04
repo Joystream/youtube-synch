@@ -8157,6 +8157,11 @@ ini@~1.3.0:
   resolved "https://registry.yarnpkg.com/ini/-/ini-1.3.8.tgz#a29da425b48806f34767a4efce397269af28432c"
   integrity sha512-JV/yugV2uzW5iMRSiZAyDtQd+nxtUnjeLt0acNdw98kKLrvuRVyB80tsREOE7yvGVgalhZ6RNXCmEHkUKBKxew==
 
+inquirer-date-prompt@^2.0.0:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/inquirer-date-prompt/-/inquirer-date-prompt-2.0.1.tgz#38dc7dbc19774513fd32a47fe8958ea5a9d67eb6"
+  integrity sha512-1Rp9h8FJnORK6J+76jBbN4cULueGrI3vzY1yvH8M2dJ6cYm2/6ZNkOB3O7uf4LeiZUEZK14UTORrwxNGb9y/CA==
+
 inquirer-datepicker-prompt@^0.4.2:
   version "0.4.3"
   resolved "https://registry.yarnpkg.com/inquirer-datepicker-prompt/-/inquirer-datepicker-prompt-0.4.3.tgz#a7db5a40cc02967896c6fd8f223cdd2c456a19f8"

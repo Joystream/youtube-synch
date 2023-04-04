@@ -1,7 +1,8 @@
 enum CLIExitCodes {
   OK = 0,
   Error = 1,
-  ApiError = 20,
+  RuntimeApiError = 20,
+  HttpApiError = 30,
   InvalidInput = 40,
   FileNotFound = 41,
   InvalidFile = 42,

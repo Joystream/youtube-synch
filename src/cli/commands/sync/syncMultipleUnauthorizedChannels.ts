@@ -2,11 +2,11 @@ import { getInputJson } from '@joystream/js/utils'
 import { flags } from '@oclif/command'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
-import ApiCommandBase from '../base/api'
-import { SyncMultipleChannelsInputSchema } from '../utils/jsonSchemas'
-import { SyncMultipleChannelsInput } from '../utils/types'
+import RuntimeApiCommandBase from '../../base/runtimeApi'
+import { SyncMultipleChannelsInputSchema } from '../../utils/jsonSchemas'
+import { SyncMultipleChannelsInput } from '../../utils/types'
 
-export default class SyncMultipleUnauthorizedChannels extends ApiCommandBase {
+export default class SyncMultipleUnauthorizedChannels extends RuntimeApiCommandBase {
   static description = 'Sync multiple unauthorized channels, this command internally uses.'
   static flags = {
     input: flags.string({
@@ -14,7 +14,7 @@ export default class SyncMultipleUnauthorizedChannels extends ApiCommandBase {
       required: true,
       description: `Path to JSON file to use as input`,
     }),
-    ...ApiCommandBase.flags,
+    ...RuntimeApiCommandBase.flags,
   }
 
   async run(): Promise<void> {
