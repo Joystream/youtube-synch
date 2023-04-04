@@ -6,7 +6,7 @@ import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
 import { channelYppStatus, ResourcePrefix, YtChannel } from '../types/youtube'
 
-export function createChannelModel(tablePrefix: ResourcePrefix) {
+function createChannelModel(tablePrefix: ResourcePrefix) {
   const channelSchema = new dynamoose.Schema(
     {
       // ID of the Youtube channel

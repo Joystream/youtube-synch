@@ -1,4 +1,5 @@
 export * from './channels'
-export * from './videos'
+export * from './status'
 export * from './users'
+export * from './videos'
 export * from './youtube'

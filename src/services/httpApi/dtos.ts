@@ -23,6 +23,12 @@ export class ThumbnailsDto {
   @ApiProperty() standard: string
 }
 
+export class CollaboratorStatusDto {
+  @ApiProperty() memberId: string
+  @ApiProperty() controllerAccount: string
+  @ApiProperty() balance: string
+}
+
 export class ChannelInductionRequirementsDto {
   @ApiProperty() MINIMUM_SUBSCRIBERS_COUNT: number
   @ApiProperty() MINIMUM_VIDEO_COUNT: number
@@ -38,12 +44,14 @@ export class ChannelInductionRequirementsDto {
 }
 
 export class ChannelDto {
+  @ApiProperty() youtubeChannelId: string
   @ApiProperty() title: string
   @ApiProperty() description: string
   @ApiProperty() aggregatedStats: number
   @ApiProperty() shouldBeIngested: boolean
   @ApiProperty() yppStatus: string
   @ApiProperty() joystreamChannelId: number
+  @ApiProperty() referrerChannelId?: number
   @ApiProperty() videoCategoryId: string
   @ApiProperty() language: string
   @ApiProperty() thumbnails: ThumbnailsDto
@@ -51,10 +59,12 @@ export class ChannelDto {
   @ApiProperty() createdAt: Date
 
   constructor(channel: YtChannel) {
+    this.youtubeChannelId = channel.id
     this.title = channel.title
     this.description = channel.description
     this.subscribersCount = channel.statistics.subscriberCount
     this.joystreamChannelId = channel.joystreamChannelId
+    this.referrerChannelId = channel.referrerChannelId
     this.videoCategoryId = channel.videoCategoryId
     this.language = channel.language
     this.shouldBeIngested = channel.shouldBeIngested

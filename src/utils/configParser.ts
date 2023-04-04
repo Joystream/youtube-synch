@@ -15,6 +15,9 @@ export class ConfigParserService {
   private validator: ValidationService
 
   constructor(configPath: string) {
+    // Automatically load environment variables form .env file upon process initialization (if any)
+    require('dotenv').config()
+
     this.validator = new ValidationService()
     this.configPath = configPath
   }
