@@ -1,6 +1,6 @@
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
-import { Bytes } from '@polkadot/types/primitive'
 import { createType } from '@joystream/types'
+import { Bytes } from '@polkadot/types/primitive'
 
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 

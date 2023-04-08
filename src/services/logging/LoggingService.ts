@@ -1,13 +1,13 @@
-import winston, { Logger, LoggerOptions } from 'winston'
 import escFormat from '@elastic/ecs-winston-format'
-import { ElasticsearchTransport } from 'winston-elasticsearch'
-import { ReadonlyConfig } from '../../types'
 import { blake2AsHex } from '@polkadot/util-crypto'
-import { Format } from 'logform'
 import stringify from 'fast-safe-stringify'
+import { Format } from 'logform'
 import NodeCache from 'node-cache'
 import path from 'path'
+import winston, { Logger, LoggerOptions } from 'winston'
 import 'winston-daily-rotate-file'
+import { ElasticsearchTransport } from 'winston-elasticsearch'
+import { ReadonlyConfig } from '../../types'
 
 const colors = {
   error: 'red',

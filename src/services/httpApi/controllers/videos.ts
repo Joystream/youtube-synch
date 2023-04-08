@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, NotFoundException, Param } from '@nestjs/common'
+import { Controller, Get, NotFoundException, Param } from '@nestjs/common'
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { DynamodbService } from '../../../repository'
 import { YtVideo } from '../../../types/youtube'

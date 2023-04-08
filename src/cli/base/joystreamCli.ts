@@ -1,12 +1,12 @@
 import ExitCodes from '@joystream/cli/lib/ExitCodes'
 import { ChannelCreationInputParameters } from '@joystream/cli/lib/Types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import path from 'path'
-import { ReadonlyConfig } from '../../types'
 import { execFile, ExecFileException } from 'child_process'
 import fs, { mkdirSync, rmdirSync } from 'fs'
+import path from 'path'
 import { promisify } from 'util'
 import { v4 as uuid } from 'uuid'
+import { ReadonlyConfig } from '../../types'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../node_modules/@joystream/cli')
 

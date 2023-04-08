@@ -1,8 +1,8 @@
 import { flags } from '@oclif/command'
 import { CLIError } from '@oclif/errors'
 import Ajv from 'ajv'
-import ExitCodes from '../base/ExitCodes'
 import fs from 'fs'
+import ExitCodes from '../base/ExitCodes'
 
 export const IOFlags = {
   input: flags.string({

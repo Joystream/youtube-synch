@@ -13,9 +13,9 @@ import { RuntimeApi } from '../runtime/api'
 import { IYoutubeApi } from '../youtube/api'
 import {
   ChannelsController,
+  StatusController,
   UsersController,
   VideosController,
-  StatusController,
   YoutubeController,
 } from './controllers'
 

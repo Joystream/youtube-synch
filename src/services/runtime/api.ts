@@ -29,6 +29,7 @@ export class RuntimeApi {
     this.logger = logging.createLogger('RuntimeApi')
     const provider = new WsProvider(endpoint)
     provider.on('connected', () => {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.logConnectionData(endpoint)
       this.onNodeConnectionUpdate?.(true)
     })
@@ -169,6 +170,7 @@ export class RuntimeApi {
       throw new RuntimeApiError(ExitCodes.RuntimeApi.API_NOT_CONNECTED, 'Failed to initialize Polkadot API')
     }
   }
+
   async createVideo(
     accountId: KeyringPair,
     memberId: string,

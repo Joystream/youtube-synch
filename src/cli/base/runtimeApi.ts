@@ -1,19 +1,18 @@
-import DefaultCommandBase from './default'
-import { CLIError } from '@oclif/errors'
-import { SubmittableResult } from '@polkadot/api'
-import { KeyringPair } from '@polkadot/keyring/types'
-import chalk from 'chalk'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { formatBalance } from '@polkadot/util'
-import ExitCodes from './ExitCodes'
-import { ExtrinsicFailedError, RuntimeApi } from '../../services/runtime/api'
-import { Keyring } from '@polkadot/api'
-import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 import { EventMethod, EventSection, EventType } from '@joystream/cli/lib/Types'
+import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 import { MemberId } from '@joystream/types/primitives'
-import { BN } from 'bn.js'
+import { CLIError } from '@oclif/errors'
+import { Keyring, SubmittableResult } from '@polkadot/api'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { formatBalance } from '@polkadot/util'
 import { cryptoWaitReady } from '@polkadot/util-crypto'
+import { BN } from 'bn.js'
+import chalk from 'chalk'
 import { randomBytes } from 'crypto'
+import { ExtrinsicFailedError, RuntimeApi } from '../../services/runtime/api'
+import DefaultCommandBase from './default'
+import ExitCodes from './ExitCodes'
 
 /**
  * Abstract base class for commands that require access to the Joystream Runtime API.
@@ -63,6 +62,7 @@ export default abstract class RuntimeApiCommandBase extends DefaultCommandBase {
     const memberId: MemberId = this.getEvent(result, 'members', 'MembershipBought').data[0]
     return memberId
   }
+
   async sendAndFollowTx(
     account: KeyringPair,
     tx: SubmittableExtrinsic<'promise'>,

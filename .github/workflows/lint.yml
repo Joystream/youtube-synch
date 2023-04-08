@@ -1,8 +1,8 @@
-name: build
+name: lint
 on: [pull_request, push]
 
 jobs:
-  build_ubuntu:
+  lint_ubuntu:
     name: Ubuntu Checks
     runs-on: ubuntu-latest
     strategy:
@@ -14,17 +14,12 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - name: checks
+      - name: lint
         run: |
           yarn install --frozen-lockfile
-          yarn build
-      - name: yarn pack test
-        run: |
-          yarn pack --filename youtube-synch-test.tgz
-          tar zxvf ./youtube-synch-test.tgz
-          cd ./package && yarn link
+          yarn lint
 
-  build_osx:
+  lint_osx:
     name: MacOS Checks
     runs-on: macos-latest
     strategy:
@@ -36,12 +31,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - name: checks
+      - name: lint
         run: |
           yarn install --frozen-lockfile
-          yarn build
-      - name: yarn pack test
-        run: |
-          yarn pack --filename youtube-synch-test.tgz
-          tar zxvf ./youtube-synch-test.tgz
-          cd ./package && yarn link
+          yarn lint

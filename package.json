@@ -7,6 +7,7 @@
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "build": "tsc --build tsconfig.json && cp -R ./src/infrastructure/pulumi ./lib/infrastructure/pulumi",
     "start": "DEPLOYMENT_ENV=dev ./bin/run start",
+    "lint": "eslint ./src --ext .ts",
     "start:prod": "./bin/run start",
     "docker:start": "DEPLOYMENT_ENV=dev docker-compose up -d",
     "docker:start:prod": "docker-compose up -d",

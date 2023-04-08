@@ -1,13 +1,12 @@
 import { generateAppActionCommitment } from '@joystream/js/utils'
 import { AppAction } from '@joystream/metadata-protobuf'
-import { KeyringPair } from '@polkadot/keyring/types'
 import { Option } from '@polkadot/types/'
 import { PalletContentStorageAssetsRecord } from '@polkadot/types/lookup'
+import { ed25519Sign } from '@polkadot/util-crypto'
+import { Keypair } from '@polkadot/util-crypto/types'
 import { createHash } from 'blake3'
 import { encode as encodeHash, toB58String } from 'multihashes'
 import { Readable } from 'stream'
-import { Keypair } from '@polkadot/util-crypto/types'
-import { ed25519Sign } from '@polkadot/util-crypto'
 
 type FileMetadata = { size: number; hash: string }
 
