@@ -7,7 +7,6 @@ import { QueryNodeApi } from '../query-node/api'
 import { StorageNodeApi } from '../storage-node/api'
 import { ContentDownloadService } from './ContentDownloadService'
 
-// TODO:  fix inconsistency for `uploadStarted` state
 // Video content upload service
 export class ContentUploadService {
   private config: ReadonlyConfig
@@ -40,7 +39,7 @@ export class ContentUploadService {
     await this.ensureUploadStateConsistency()
 
     // start assets upload service
-    setTimeout(async () => this.uploadAssetsWithInterval(this.config.intervals.youtubePolling), 0)
+    setTimeout(async () => this.uploadAssetsWithInterval(this.config.intervals.contentProcessing), 0)
   }
 
   /**
@@ -65,7 +64,7 @@ export class ContentUploadService {
 
   /**
    * Processes new content after specified interval state.
-   * @param processingIntervalMinutes - defines an interval between polling runs
+   * @param processingIntervalMinutes - defines an interval between new uploads to storage nodes
    * @returns void promise.
    */
   private async uploadAssetsWithInterval(processingIntervalMinutes: number) {

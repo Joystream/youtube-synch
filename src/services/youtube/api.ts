@@ -7,7 +7,7 @@ import { parse, toSeconds } from 'iso8601-duration'
 import { FetchError } from 'node-fetch'
 import ytdl from 'youtube-dl-exec'
 import { StatsRepository } from '../../repository'
-import { ReadonlyConfig, toPrettyJSON, WithRequired } from '../../types'
+import { ReadonlyConfig, WithRequired, toPrettyJSON } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
 import { YtChannel, YtUser, YtVideo } from '../../types/youtube'
 
@@ -195,7 +195,7 @@ class YoutubeClient implements IYoutubeApi {
   async getVideos(channel: YtChannel, top: number) {
     const yt = this.getYoutube(channel.userAccessToken, channel.userRefreshToken)
     try {
-      return await this.iterateVideos(yt, channel, top)
+      return this.iterateVideos(yt, channel, top)
     } catch (error) {
       throw new Error(`Failed to fetch videos for channel ${channel.title}. Error: ${error}`)
     }
@@ -204,7 +204,7 @@ class YoutubeClient implements IYoutubeApi {
   async getAllVideos(channel: YtChannel, max = 500) {
     const yt = this.getYoutube(channel.userAccessToken, channel.userRefreshToken)
     try {
-      return await this.iterateVideos(yt, channel, max)
+      return this.iterateVideos(yt, channel, max)
     } catch (error) {
       throw new Error(`Failed to fetch videos for channel ${channel.title}. Error: ${error}`)
     }
@@ -296,36 +296,43 @@ class YoutubeClient implements IYoutubeApi {
     )
   }
 
-  private mapVideos(videos: Schema$PlaylistItem[], videosDetails: Schema$Video[], channel: YtChannel) {
-    return videos.map(
-      (video, i) =>
-        <YtVideo>{
-          id: video.id,
-          description: video.snippet?.description,
-          title: video.snippet?.title,
-          channelId: video.snippet?.channelId,
-          thumbnails: {
-            high: video.snippet?.thumbnails?.high?.url,
-            medium: video.snippet?.thumbnails?.medium?.url,
-            standard: video.snippet?.thumbnails?.standard?.url,
-            default: video.snippet?.thumbnails?.default?.url,
-          },
-          url: `https://youtube.com/watch?v=${video.snippet?.resourceId?.videoId}`,
-          resourceId: video.snippet?.resourceId?.videoId,
-          publishedAt: video.contentDetails?.videoPublishedAt,
-          createdAt: new Date(),
-          category: channel.videoCategoryId,
-          languageIso: channel.joystreamChannelLanguageIso,
-          joystreamChannelId: channel.joystreamChannelId,
-          privacyStatus: video.status?.privacyStatus,
-          liveBroadcastContent: videosDetails[i].snippet?.liveBroadcastContent,
-          license: videosDetails[i].status?.license,
-          duration: toSeconds(parse(videosDetails[i].contentDetails?.duration ?? 'PT0S')),
-          container: videosDetails[i].fileDetails?.container,
-          uploadStatus: videosDetails[i].status?.uploadStatus,
-          viewCount: parseInt(videosDetails[i].statistics?.viewCount ?? '0'),
-          state: 'New',
-        }
+  private mapVideos(videos: Schema$PlaylistItem[], videosDetails: Schema$Video[], channel: YtChannel): YtVideo[] {
+    return (
+      videos
+        .map(
+          (video, i) =>
+            <YtVideo>{
+              id: video.id,
+              description: video.snippet?.description,
+              title: video.snippet?.title,
+              channelId: video.snippet?.channelId,
+              thumbnails: {
+                high: video.snippet?.thumbnails?.high?.url,
+                medium: video.snippet?.thumbnails?.medium?.url,
+                standard: video.snippet?.thumbnails?.standard?.url,
+                default: video.snippet?.thumbnails?.default?.url,
+              },
+              url: `https://youtube.com/watch?v=${video.snippet?.resourceId?.videoId}`,
+              resourceId: video.snippet?.resourceId?.videoId,
+              publishedAt: video.contentDetails?.videoPublishedAt,
+              createdAt: new Date(),
+              category: channel.videoCategoryId,
+              languageIso: channel.joystreamChannelLanguageIso,
+              joystreamChannelId: channel.joystreamChannelId,
+              privacyStatus: video.status?.privacyStatus,
+              liveBroadcastContent: videosDetails[i].snippet?.liveBroadcastContent,
+              license: videosDetails[i].status?.license,
+              duration: toSeconds(parse(videosDetails[i].contentDetails?.duration ?? 'PT0S')),
+              container: videosDetails[i].fileDetails?.container,
+              uploadStatus: videosDetails[i].status?.uploadStatus,
+              viewCount: parseInt(videosDetails[i].statistics?.viewCount ?? '0'),
+              state: 'New',
+            }
+        )
+        // filter out videos that are not public, processed, or have live-stream, since those can't be synced yet
+        .filter(
+          (v) => v.uploadStatus === 'processed' && v.privacyStatus === 'public' && v.liveBroadcastContent === 'none'
+        )
     )
   }
 }

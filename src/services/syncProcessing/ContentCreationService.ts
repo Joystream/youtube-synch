@@ -1,11 +1,10 @@
 import BN from 'bn.js'
 import queue from 'queue'
 import sleep from 'sleep-promise'
-import { YtVideo } from 'src/types/youtube'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
-import { ExitCodes, QueryNodeApiError } from '../../types/errors'
+import { YtVideo } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
 import { ContentDownloadService } from './ContentDownloadService'
@@ -45,7 +44,7 @@ export class ContentCreationService {
     await this.ensureContentStateConsistency()
 
     // start video creation service
-    setTimeout(async () => this.createContentWithInterval(this.config.intervals.youtubePolling), 0)
+    setTimeout(async () => this.createContentWithInterval(this.config.intervals.contentProcessing), 0)
   }
 
   /**
@@ -66,7 +65,7 @@ export class ContentCreationService {
         if (this.queue.length === 0) {
           const videos = [
             ...(await this.dynamodbService.videos.getVideosInState('VideoCreationFailed')),
-            ...(await this.dynamodbService.videos.getVideosInState('New')), // TODO: only get public/processed videos
+            ...(await this.dynamodbService.videos.getVideosInState('New')),
           ]
 
           for (const v of videos) {
@@ -88,6 +87,19 @@ export class ContentCreationService {
       try {
         // * Pre-validation
         /**
+         * If the channel opted out of YPP program, then skip creating the video
+         */
+        const isCollaboratorSet = await this.joystreamClient.doesChannelHaveCollaborator(video.joystreamChannelId)
+        if (!isCollaboratorSet) {
+          this.logger.warn(
+            `Channel ${video.joystreamChannelId} opted out of YPP program. So skipping the video ` +
+              `${video.resourceId} from syncing & deleting it's record from the database.`
+          )
+          await this.dynamodbService.videos.delete(video)
+          return
+        }
+
+        /**
          * If the last synced video of the same channel is still being processed by the QN, then skip creating the next video
          * of that channel because  QN will return outdated `totalVideosCreated` field and incorrect AppAction message will be
          * constructed for the next video, which would lead to youtube attribution information missing in the QN video metadata.
@@ -96,7 +108,7 @@ export class ContentCreationService {
           this.lastVideoCreationBlockByChannelId.get(video.joystreamChannelId) || new BN(0)
         )
         if (!isQueryNodeUptodate) {
-          throw new QueryNodeApiError(ExitCodes.QueryNodeApi.OUTDATED_STATE, 'Query Node is not up to date')
+          return
         }
 
         await this.dynamodbService.videos.updateState(video, 'CreatingVideo')

@@ -14,8 +14,9 @@ logs:
   # elastic:
   #   level: info
   #   endpoint: http://localhost:9200
-intervals:
+intervals: # in minutes
   youtubePolling: 30
+  contentProcessing: 1
 youtube:
   clientId: google-client-id
   clientSecret: google-client-secret

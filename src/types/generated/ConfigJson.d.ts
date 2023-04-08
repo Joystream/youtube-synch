@@ -81,9 +81,13 @@ export interface YoutubeSyncNodeConfiguration {
    */
   intervals: {
     /**
-     * After how many minutes, the service should poll the Youtube api for channels state update
+     * After how many minutes, the polling service should poll the Youtube api for channels state update
      */
     youtubePolling: number
+    /**
+     * After how many minutes, the service should scan the database for new content to process downloading, on-chain creation & uploading to storage node
+     */
+    contentProcessing: number
   }
   youtube: YoutubeOauth2ClientConfiguration
   aws?: AWSConfigurationsNeededToConnectWithDynamoDBInstance
