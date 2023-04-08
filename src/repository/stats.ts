@@ -1,3 +1,4 @@
+import AsyncLock from 'async-lock'
 import * as dynamoose from 'dynamoose'
 import { ConditionInitializer } from 'dynamoose/dist/Condition'
 import { AnyItem } from 'dynamoose/dist/Item'
@@ -24,6 +25,11 @@ function statsRepository(tablePrefix: ResourcePrefix) {
 
 export class StatsRepository implements IRepository<Stats> {
   private model
+
+  // lock any updates on video table
+  private readonly ASYNC_LOCK_ID = 'stat'
+  private asyncLock: AsyncLock = new AsyncLock()
+
   constructor(tablePrefix: ResourcePrefix) {
     this.model = statsRepository(tablePrefix)
   }
@@ -60,19 +66,25 @@ export class StatsRepository implements IRepository<Stats> {
   }
 
   async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<Stats[]> {
-    const results = await f(this.model.scan(init)).exec()
-    return results.map((r) => mapTo<Stats>(r))
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const results = await f(this.model.scan(init)).exec()
+      return results.map((r) => mapTo<Stats>(r))
+    })
   }
 
   async get(date: string): Promise<Stats | undefined> {
-    const result = await this.model.get({ partition: 'stats', date })
-    return result ? mapTo<Stats>(result) : undefined
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const result = await this.model.get({ partition: 'stats', date })
+      return result ? mapTo<Stats>(result) : undefined
+    })
   }
 
   async save(model: Stats): Promise<Stats> {
-    const update = omit(['id', 'updatedAt'], model)
-    const result = await this.model.update({ partition: 'stats', date: model.date }, update)
-    return mapTo<Stats>(result)
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const update = omit(['id', 'updatedAt'], model)
+      const result = await this.model.update({ partition: 'stats', date: model.date }, update)
+      return mapTo<Stats>(result)
+    })
   }
 
   async delete(id: string): Promise<void> {
@@ -80,7 +92,9 @@ export class StatsRepository implements IRepository<Stats> {
   }
 
   async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>) {
-    const results = await f(this.model.query(init)).exec()
-    return results.map((r) => mapTo<Stats>(r))
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const results = await f(this.model.query(init)).exec()
+      return results.map((r) => mapTo<Stats>(r))
+    })
   }
 }

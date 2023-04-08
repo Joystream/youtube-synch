@@ -1,3 +1,4 @@
+import AsyncLock from 'async-lock'
 import * as dynamoose from 'dynamoose'
 import { ConditionInitializer } from 'dynamoose/dist/Condition'
 import { AnyItem } from 'dynamoose/dist/Item'
@@ -136,6 +137,11 @@ function videoRepository(tablePrefix: ResourcePrefix) {
 
 export class VideosRepository implements IRepository<YtVideo> {
   private model
+
+  // lock any updates on video table
+  private readonly ASYNC_LOCK_ID = 'video'
+  private asyncLock: AsyncLock = new AsyncLock()
+
   constructor(tablePrefix: ResourcePrefix) {
     this.model = videoRepository(tablePrefix)
   }
@@ -150,8 +156,10 @@ export class VideosRepository implements IRepository<YtVideo> {
   }
 
   async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<YtVideo[]> {
-    const results = await f(this.model.scan(init)).exec()
-    return results.map((r) => mapTo<YtVideo>(r))
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const results = await f(this.model.scan(init)).exec()
+      return results.map((r) => mapTo<YtVideo>(r))
+    })
   }
 
   /**
@@ -161,29 +169,38 @@ export class VideosRepository implements IRepository<YtVideo> {
    * @returns
    */
   async get(channelId: string, id: string): Promise<YtVideo | undefined> {
-    const result = await this.model.get({ channelId, id })
-    return result ? mapTo<YtVideo>(result) : undefined
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const result = await this.model.get({ channelId, id })
+      return result ? mapTo<YtVideo>(result) : undefined
+    })
   }
 
-  async save(model: YtVideo): Promise<YtVideo> {
-    const upd = omit(['id', 'channelId', 'updatedAt'], model)
-    const result = await this.model.update({ channelId: model.channelId, id: model.id }, upd)
-    return mapTo<YtVideo>(result)
+  async save(video: YtVideo): Promise<YtVideo> {
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const upd = omit(['id', 'channelId', 'updatedAt'], video)
+      const result = await this.model.update({ channelId: video.channelId, id: video.id }, upd)
+      return mapTo<YtVideo>(result)
+    })
   }
 
   async delete(partition: string, id: string): Promise<void> {
-    await this.model.delete({ id, channelId: partition })
-    return
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      await this.model.delete({ id, channelId: partition })
+    })
   }
 
   async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>): Promise<YtVideo[]> {
-    const results = await f(this.model.query(init)).exec()
-    return results.map((r) => mapTo<YtVideo>(r))
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const results = await f(this.model.query(init)).exec()
+      return results.map((r) => mapTo<YtVideo>(r))
+    })
   }
 
   async count(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>): Promise<YtVideo[]> {
-    const results = await f(this.model.query(init)).exec()
-    return results.map((r) => mapTo<YtVideo>(r))
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const results = await f(this.model.query(init)).exec()
+      return results.map((r) => mapTo<YtVideo>(r))
+    })
   }
 }
 
@@ -214,21 +231,7 @@ export class VideosService {
 
   async getAllUnsyncedVideos(): Promise<YtVideo[]> {
     return [
-      // Only sync a video if
-      // 1. it's a public video
-      // 2. if it has finished processing on Youtube
-      // 3. it's not a live stream/broadcast
-      ...(await this.videosRepository.query({ state: 'New' }, (q) =>
-        q
-          .filter('privacyStatus')
-          .eq('public')
-          .filter('uploadStatus')
-          .eq('processed')
-          .filter('liveBroadcastContent')
-          .eq('none')
-          .sort('ascending')
-          .using('state-updatedAt-index')
-      )),
+      ...(await this.getVideosInState('New')),
       ...(await this.getVideosInState('VideoCreationFailed')),
       ...(await this.getVideosInState('UploadFailed')),
     ]
@@ -248,6 +251,15 @@ export class VideosService {
    * @returns Updated video
    */
   async save(video: YtVideo): Promise<YtVideo> {
-    return await this.videosRepository.save(video)
+    return this.videosRepository.save(video)
+  }
+
+  /**
+   *
+   * @param video
+   * @returns delete video
+   */
+  async delete(video: YtVideo): Promise<void> {
+    return this.videosRepository.delete(video.channelId, video.id)
   }
 }
