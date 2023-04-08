@@ -37,7 +37,9 @@ export default class VideoByChannelStats extends YtSynchCommandBase {
         ? `https://${appDomain}/channel/${channel.joystreamChannelId}`
         : channel.joystreamChannelId,
       referrerChannelIdOrUrl: channel.referrerChannelId
-        ? `https://gleev.xyz/channel/${channel.referrerChannelId}`
+        ? appDomain
+          ? `https://${appDomain}/channel/${channel.referrerChannelId}`
+          : channel.referrerChannelId
         : undefined,
     }
     const videosRecords: VideoStatsRecord<typeof appDomain>[] = videos
@@ -48,14 +50,14 @@ export default class VideoByChannelStats extends YtSynchCommandBase {
         title,
         url,
         category,
-        joystreamVideoIdOrUrl: appDomain ? `https://gleev.xyz/video/${joystreamVideo.id}` : joystreamVideo.id,
+        joystreamVideoIdOrUrl: appDomain ? `https://${appDomain}/video/${joystreamVideo.id}` : joystreamVideo.id,
       }))
 
     displayCollapsedRow({
       'Youtube Channel ID or URL': channelRecord.youtubeChannelIdOrUrl,
       'Joystream Channel ID or URL': channelRecord.joystreamChannelIdOrUrl,
       'Referrer Channel ID or URL': channelRecord.referrerChannelIdOrUrl ?? '',
-      'Videos Count': videos.length.toString(),
+      'Videos Count': videosRecords.length.toString(),
     })
 
     displayHeader(
