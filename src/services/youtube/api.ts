@@ -222,7 +222,7 @@ class YoutubeClient implements IYoutubeApi {
 
   private async iterateVideos(youtube: youtube_v3.Youtube, channel: YtChannel, max: number) {
     let videos: YtVideo[] = []
-    let continuation: string
+    let continuation: string | undefined
 
     do {
       const nextPage = await youtube.playlistItems
@@ -230,6 +230,7 @@ class YoutubeClient implements IYoutubeApi {
           part: ['contentDetails', 'snippet', 'id', 'status'],
           playlistId: channel.uploadsPlaylistId,
           maxResults: 50,
+          pageToken: continuation,
         })
         .catch((err) => {
           if (err instanceof FetchError && err.code === 'ENOTFOUND') {
