@@ -31,6 +31,6 @@ export class ValidationService {
 
   errorsByProperty<T>(schemaKey: SchemaKey, path: string, input: T): Ajv['errors'] {
     this.ajv.validate(schemaKey, input)
-    return this.ajv.errors?.filter((e) => e.dataPath === `/${path}` || e.dataPath.startsWith(`/${path}/`))
+    return this.ajv.errors
   }
 }
