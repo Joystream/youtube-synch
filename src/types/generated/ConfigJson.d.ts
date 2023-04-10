@@ -85,7 +85,7 @@ export interface YoutubeSyncNodeConfiguration {
      */
     youtubePolling: number
     /**
-     * After how many minutes, the service should scan the database for new content to process downloading, on-chain creation & uploading to storage node
+     * After how many minutes, the service should scan the database for new content to start downloading, on-chain creation & uploading to storage node
      */
     contentProcessing: number
   }
