@@ -3,11 +3,11 @@ import { DeepPartial } from 'dynamoose/dist/General'
 import { AnyItem } from 'dynamoose/dist/Item'
 import { Query, Scan } from 'dynamoose/dist/ItemRetriever'
 import { TableOptions } from 'dynamoose/dist/Table'
+export * from './channel'
+export * from './DynamodbService'
+export * from './stats'
 export * from './user'
 export * from './video'
-export * from './channel'
-export * from './stats'
-export * from './DynamodbService'
 
 // Schemas defined here are only for modeling purpose and not for creating tables itself,
 // as Pulumi is responsible all sort of infrastructure provisioning and deployment.

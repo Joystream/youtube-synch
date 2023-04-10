@@ -1,3 +1,4 @@
+import AsyncLock from 'async-lock'
 import * as dynamoose from 'dynamoose'
 import { ConditionInitializer } from 'dynamoose/dist/Condition'
 import { AnyItem } from 'dynamoose/dist/Item'
@@ -69,6 +70,11 @@ function createUserModel(tablePrefix: ResourcePrefix) {
 
 export class UsersRepository implements IRepository<YtUser> {
   private model
+
+  // lock any updates on video table
+  private readonly ASYNC_LOCK_ID = 'user'
+  private asyncLock: AsyncLock = new AsyncLock()
+
   constructor(tablePrefix: ResourcePrefix) {
     this.model = createUserModel(tablePrefix)
   }
@@ -79,29 +85,39 @@ export class UsersRepository implements IRepository<YtUser> {
   }
 
   async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<YtUser[]> {
-    const results = await f(this.model.scan(init)).exec()
-    return results.map((r) => mapTo<YtUser>(r))
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const results = await f(this.model.scan(init)).exec()
+      return results.map((r) => mapTo<YtUser>(r))
+    })
   }
 
   async get(id: string): Promise<YtUser | undefined> {
-    const result = await this.model.get({ id })
-    return result ? mapTo<YtUser>(result) : undefined
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const result = await this.model.get({ id })
+      return result ? mapTo<YtUser>(result) : undefined
+    })
   }
 
   async save(user: YtUser): Promise<YtUser> {
-    const update = omit(['id', 'updatedAt'], user)
-    const result = await this.model.update({ id: user.id }, update)
-    return mapTo<YtUser>(result)
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const update = omit(['id', 'updatedAt'], user)
+      const result = await this.model.update({ id: user.id }, update)
+      return mapTo<YtUser>(result)
+    })
   }
 
   async delete(id: string): Promise<void> {
-    await this.model.delete({ id })
-    return
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      await this.model.delete({ id })
+      return
+    })
   }
 
   async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>) {
-    const results = await f(this.model.query(init)).exec()
-    return results.map((r) => mapTo<YtUser>(r))
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const results = await f(this.model.query(init)).exec()
+      return results.map((r) => mapTo<YtUser>(r))
+    })
   }
 }
 

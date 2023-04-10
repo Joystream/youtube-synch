@@ -10,10 +10,10 @@ import {
   Query,
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
-import { UserDto, VerifyChannelRequest, VerifyChannelResponse } from '../dtos'
-import { IYoutubeApi } from '../../youtube/api'
 import { DynamodbService } from '../../../repository'
 import { ExitCodes, YoutubeApiError } from '../../../types/errors'
+import { IYoutubeApi } from '../../youtube/api'
+import { UserDto, VerifyChannelRequest, VerifyChannelResponse } from '../dtos'
 
 @Controller('users')
 @ApiTags('channels')

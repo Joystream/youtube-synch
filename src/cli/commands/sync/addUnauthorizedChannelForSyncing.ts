@@ -1,3 +1,4 @@
+import { ChannelCreationInputParameters } from '@joystream/cli/lib/Types'
 import { flags } from '@oclif/command'
 import { CLIError } from '@oclif/errors'
 import { PalletContentChannelRecord } from '@polkadot/types/lookup'
@@ -6,9 +7,8 @@ import { load } from 'cheerio'
 import ytpl from 'ytpl'
 import { DynamodbService } from '../../../repository'
 import { Thumbnails, YtChannel, YtVideo } from '../../../types/youtube'
-import RuntimeApiCommandBase from '../../base/runtimeApi'
 import CLIExitCodes from '../../base/ExitCodes'
-import { ChannelCreationInputParameters } from '@joystream/cli/lib/Types'
+import RuntimeApiCommandBase from '../../base/runtimeApi'
 
 export default class AddUnauthorizedChannelForSyncing extends RuntimeApiCommandBase {
   static description =

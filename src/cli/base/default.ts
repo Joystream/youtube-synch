@@ -1,13 +1,12 @@
 import Command, { flags } from '@oclif/command'
-import ExitCodes from './ExitCodes'
-import { ConfigParserService } from '../../utils/configParser'
-import { LoggingService } from '../../services/logging'
-import { Logger } from 'winston'
-import { ReadonlyConfig } from '../../types'
-import inquirer, { DistinctQuestion } from 'inquirer'
 import chalk from 'chalk'
+import inquirer, { DistinctQuestion } from 'inquirer'
+import { Logger } from 'winston'
+import { LoggingService } from '../../services/logging'
+import { ReadonlyConfig } from '../../types'
+import { ConfigParserService } from '../../utils/configParser'
+import ExitCodes from './ExitCodes'
 import { JoystreamCLI, TmpFileManager } from './joystreamCli'
-import DatePrompt from 'inquirer-date-prompt'
 
 export default abstract class DefaultCommandBase extends Command {
   protected appConfig!: ReadonlyConfig

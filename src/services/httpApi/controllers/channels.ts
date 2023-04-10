@@ -16,6 +16,10 @@ import {
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { signatureVerify } from '@polkadot/util-crypto'
 import { randomBytes } from 'crypto'
+import { DynamodbService } from '../../../repository'
+import { YtChannel, YtUser, YtVideo } from '../../../types/youtube'
+import { QueryNodeApi } from '../../query-node/api'
+import { IYoutubeApi } from '../../youtube/api'
 import {
   ChannelDto,
   ChannelInductionRequirementsDto,
@@ -28,10 +32,6 @@ import {
   VerifyChannelDto,
   VideoDto,
 } from '../dtos'
-import { IYoutubeApi } from '../../youtube/api'
-import { QueryNodeApi } from '../../query-node/api'
-import { DynamodbService } from '../../../repository'
-import { YtChannel, YtUser, YtVideo } from '../../../types/youtube'
 
 @Controller('channels')
 @ApiTags('channels')

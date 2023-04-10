@@ -57,6 +57,10 @@ export class JoystreamClient {
     this.accounts = new AccountsUtil(this.config.joystream)
   }
 
+  private get collaboratorId() {
+    return this.config.joystream.channelCollaborator.memberId.toString()
+  }
+
   async channelById(id: number) {
     return this.runtimeApi.query.content.channelById(id)
   }
@@ -87,31 +91,25 @@ export class JoystreamClient {
     return this.qnApi.getVideoByYtResourceIdAndEntryAppName(ytVideoId, appName)
   }
 
-  async ensureCollaboratorHasPermission(channelId: number) {
-    const collaborator = this.config.joystream.channelCollaborator.memberId.toString()
-    const member = await this.qnApi.memberById(collaborator)
+  async doesChannelHaveCollaborator(channelId: number) {
+    const member = await this.qnApi.memberById(this.collaboratorId)
     if (!member) {
-      throw new Error(`Joystream member with id ${collaborator} not found`)
+      throw new Error(`Joystream member with id ${this.collaboratorId} not found`)
     }
 
     const { collaborators } = await this.channelById(channelId)
     const isCollaboratorSet = [...collaborators].some(
-      ([member, permissions]) => member.toString() === collaborator && [...permissions].some((p) => p.isAddVideo)
+      ([member, permissions]) => member.toString() === this.collaboratorId && [...permissions].some((p) => p.isAddVideo)
     )
 
-    if (!isCollaboratorSet) {
-      throw new RuntimeApiError(
-        ExitCodes.RuntimeApi.COLLABORATOR_NOT_FOUND,
-        `Member ${collaborator} does not have permission to add videos to channel ${channelId}`
-      )
-    }
-
-    return member
+    return isCollaboratorSet
   }
 
   async createVideo(video: YtVideo, videoFilePath: string): Promise<[YtVideo, BN]> {
-    const collaborator = await this.ensureCollaboratorHasPermission(video.joystreamChannelId)
-
+    const collaborator = await this.qnApi.memberById(this.collaboratorId)
+    if (!collaborator) {
+      throw new Error(`Joystream member with id ${this.collaboratorId} not found`)
+    }
     // Video metadata & assets
     const { meta: rawAction, assets } = await this.prepareVideoInput(this.runtimeApi, video, videoFilePath)
 

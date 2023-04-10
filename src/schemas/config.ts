@@ -192,12 +192,19 @@ export const configSchema: JSONSchema4 = objectSchema({
       description: 'Specifies how often periodic tasks (for example youtube state polling) are executed.',
       properties: {
         youtubePolling: {
-          description: 'After how many minutes, the service should poll the Youtube api for channels state update',
+          description:
+            'After how many minutes, the polling service should poll the Youtube api for channels state update',
+          type: 'integer',
+          minimum: 1,
+        },
+        contentProcessing: {
+          description:
+            'After how many minutes, the service should scan the database for new content to start downloading, on-chain creation & uploading to storage node',
           type: 'integer',
           minimum: 1,
         },
       },
-      required: ['youtubePolling'],
+      required: ['youtubePolling', 'contentProcessing'],
     }),
     youtube: objectSchema({
       title: 'Youtube Oauth2 Client configuration',
