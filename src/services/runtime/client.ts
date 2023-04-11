@@ -192,6 +192,7 @@ export class JoystreamClient {
       isPublic: true,
       duration: video.duration,
       license: getVideoLicense(video),
+      publishedBeforeJoystream: { isPublished: true, date: video.publishedAt },
     }
     let videoMetadata = asValidatedMetadata(VideoMetadata, videoInputParameters)
 

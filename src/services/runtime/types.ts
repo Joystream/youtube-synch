@@ -39,11 +39,7 @@ export type ExtrinsicResult<T = undefined> = T extends undefined
     }
   : { block: number } & T
 
-export type VideoInputParameters = Omit<
-  IVideoMetadata,
-  'thumbnailPhoto' | 'video' | 'mediaType' | 'publishedBeforeJoystream'
-> & {
-  publishedBeforeJoystream?: string
+export type VideoInputParameters = Omit<IVideoMetadata, 'thumbnailPhoto' | 'video' | 'mediaType'> & {
   mimeMediaType?: string
 }
 export type ChannelInputMetadata = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto' | 'category'>

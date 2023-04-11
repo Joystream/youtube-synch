@@ -191,7 +191,7 @@ export class ContentDownloadService {
           const rank = this.calculateVideoRank(
             this.DEFAULT_SUDO_PRIORITY,
             percentageOfCreatorBacklogNotSynched,
-            v.viewCount
+            Date.parse(v.publishedAt)
           )
           const task = {
             ...v,
@@ -203,11 +203,11 @@ export class ContentDownloadService {
     )
   }
 
-  private measure(sudoPriority: number, percentage: number, views: number) {
+  private measure(sudoPriority: number, percentage: number, publishedAt: number) {
     return (
       sudoPriority * (100 * (this.MAX_VIEWS_ON_YOUTUBE + 1) + this.MAX_VIEWS_ON_YOUTUBE + 1) +
       percentage * (this.MAX_VIEWS_ON_YOUTUBE + 1) +
-      views
+      publishedAt
     )
   }
 
