@@ -9,9 +9,6 @@ import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
 import { IYoutubeApi } from '../youtube/api'
 
-export const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
-export const MIME_TYPE_DETECTION_CHUNK_SIZE = 4100
-
 export class YoutubePollingService {
   private config: ReadonlyConfig
   private logger: Logger
@@ -41,34 +38,32 @@ export class YoutubePollingService {
     setTimeout(async () => this.runPollingWithInterval(this.config.intervals.youtubePolling), 0)
   }
 
-  // get all videos with updated state
-  private async getUpdatedVideos(channel: YtChannel, newVideos: YtVideo[]): Promise<YtVideo[]> {
+  // get all unsynced videos
+  private async getUnsyncedVideos(channel: YtChannel, newVideos: YtVideo[]): Promise<YtVideo[]> {
     // Get all the existing videos
     const existingVideos = await this.dynamodbService.repo.videos.query({ channelId: channel.id }, (q) => q)
 
-    // Return updated video objects
-    return newVideos.map((newVideo) => {
-      const existingVideo = existingVideos.find((v) => v.id === newVideo.id)
-      if (existingVideo) {
-        // If video already exists, return the existing video object with updated properties
-        return {
-          ...newVideo,
+    return newVideos.reduce((unSyncedVideos, video) => {
+      const existingVideo = existingVideos.find((v) => v.id === video.id)
+      if (!existingVideo) {
+        // Video is a new video, so add it to the list of unsynced videos
+        unSyncedVideos.push(video)
+      } else if (
+        existingVideo.state === 'New' ||
+        existingVideo.state === 'VideoCreationFailed' ||
+        existingVideo.state === 'UploadFailed'
+      ) {
+        // If video is already being tracked but hasn't been synced yet then we update it's fields (e.g. viewCount), which are
+        // being used to calculate it's syncing priority. After that add video to the list of unsynced videos for re/processing.
+        unSyncedVideos.push({
+          ...video,
           createdAt: existingVideo.createdAt,
           state: existingVideo.state,
           joystreamVideo: existingVideo.joystreamVideo,
-        }
-      } else {
-        return newVideo
+        })
       }
-    })
-  }
-
-  private async hasChannelCollaborator(channelId: number, memberId: string) {
-    const { collaborators } = await this.joystreamClient.channelById(channelId)
-    const isCollaboratorSet = [...collaborators].some(
-      ([member, permissions]) => member.toString() === memberId && [...permissions].some((p) => p.isAddVideo)
-    )
-    return isCollaboratorSet
+      return unSyncedVideos
+    }, [] as YtVideo[])
   }
 
   /**
@@ -119,10 +114,7 @@ export class YoutubePollingService {
         })
 
         // ensure that Ypp collaborator member is still set as channel's collaborator
-        const isCollaboratorSet = await this.hasChannelCollaborator(
-          ch.joystreamChannelId,
-          this.config.joystream.channelCollaborator.memberId
-        )
+        const isCollaboratorSet = await this.joystreamClient.doesChannelHaveCollaborator(ch.joystreamChannelId)
         if (!isCollaboratorSet) {
           this.logger.warn(
             `Joystream Channel ${ch.joystreamChannelId} has either not set or revoked Ypp collaborator member ` +
@@ -176,15 +168,14 @@ export class YoutubePollingService {
     return updatedChannels.filter((ch) => ch.shouldBeIngested)
   }
 
-  private async performVideosIngestion(channel: YtChannel, top = 100) {
-    // TODO: only update `New` videos
-    // get all videos of the channel
+  private async performVideosIngestion(channel: YtChannel, top = 1000) {
+    // get all sync-able videos of the channel
     const allVideos = await this.youtubeApi.getAllVideos(channel, top)
 
-    // get all updated videos
-    const updatedVideos = await this.getUpdatedVideos(channel, allVideos)
+    // get all unsynced videos
+    const unsyncedVideos = await this.getUnsyncedVideos(channel, allVideos)
 
-    // save all updated videos to DB as some fields might have changed, e.g. viewCount
-    await this.dynamodbService.repo.videos.upsertAll(updatedVideos)
+    // save all unsynced videos to DB including new + old(as some fields on old videos might have changed, e.g. viewCount)
+    await this.dynamodbService.repo.videos.upsertAll(unsyncedVideos)
   }
 }

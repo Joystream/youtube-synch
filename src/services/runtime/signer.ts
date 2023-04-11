@@ -3,10 +3,9 @@ import Keyring from '@polkadot/keyring'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { AccountId } from '@polkadot/types/interfaces'
 import { u8aToHex } from '@polkadot/util'
-import { cryptoWaitReady, mnemonicGenerate } from '@polkadot/util-crypto'
-import { ReadonlyConfig } from '../../types'
-import { ed25519PairFromString } from '@polkadot/util-crypto'
+import { cryptoWaitReady, ed25519PairFromString, mnemonicGenerate } from '@polkadot/util-crypto'
 import { Keypair } from '@polkadot/util-crypto/types'
+import { ReadonlyConfig } from '../../types'
 
 export type Account = {
   address: string
@@ -21,6 +20,7 @@ export class AccountsUtil {
   constructor(config: ReadonlyConfig['joystream']) {
     this.config = config
     this.appAuthKey = ed25519PairFromString(this.config.app.accountSeed)
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     cryptoWaitReady().then(() => {
       this.initKeyring()
     })

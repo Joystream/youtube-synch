@@ -126,7 +126,7 @@ export enum VideoStates {
   UploadStarted = 6,
   // Video upload to Joystream succeeded
   UploadSucceeded = 7,
-  // Video was deleted from Youtube, so it should not be synced
+  // Video was deleted from Youtube or set to private after being tracked by  YT-synch service
   VideoUnavailable = 8,
 }
 

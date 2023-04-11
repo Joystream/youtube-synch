@@ -3,10 +3,10 @@ import fs from 'fs'
 import _ from 'lodash'
 import path from 'path'
 import sleep from 'sleep-promise'
-import { VideoDownloadTask } from '../../types/youtube'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
+import { VideoDownloadTask } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { IYoutubeApi } from '../youtube/api'
 
@@ -56,9 +56,13 @@ export class ContentDownloadService {
               this.setVideoFilePath(video.resourceId, fileExt)
               this.contentSizeSum += this.fileSize(video.resourceId)
             } catch (error) {
-              if (error instanceof Error && error.message.includes('Video unavailable')) {
-                this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
+              const errorMsg = (error as Error).message
+              if (errorMsg.includes('Video unavailable')) {
+                await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
                 this.logger.warn(`Video ${video.resourceId} not found. Skipping from syncing...`)
+              } else if (errorMsg.includes('Private video')) {
+                await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
+                this.logger.warn(`Video ${video.resourceId} visibility was set to private. Skipping from syncing...`)
               } else {
                 this.logger.error(`Got error downloading video: ${video.resourceId}, error: ${error}. Retrying...`)
               }
@@ -85,7 +89,7 @@ export class ContentDownloadService {
     this.resolveDownloadedVideos()
 
     // start video creation service
-    setTimeout(async () => this.downloadContentWithInterval(this.config.intervals.youtubePolling), 0)
+    setTimeout(async () => this.downloadContentWithInterval(this.config.intervals.contentProcessing), 0)
   }
 
   public getVideoFilePath(resourceId: string): string | undefined {
@@ -105,6 +109,7 @@ export class ContentDownloadService {
       const videoFilePath = this.expectedVideoFilePath(resourceId)
       const size = this.fileSize(resourceId)
       fs.unlinkSync(videoFilePath)
+      this.downloadedVideoPathByResourceId.delete(resourceId)
       this.contentSizeSum -= size
     } catch (error) {
       this.logger.error(`Failed to delete video file for: ${resourceId}. File not found.`)

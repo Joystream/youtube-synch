@@ -1,14 +1,11 @@
 import fs from 'fs'
+import { JSONSchema4, JSONSchema4TypeName } from 'json-schema'
+import _ from 'lodash'
 import path from 'path'
 import YAML from 'yaml'
-import _ from 'lodash'
-import { JSONSchema4, JSONSchema4TypeName } from 'json-schema'
-import { ValidationError, ValidationService } from './validation'
-import { Config } from '../types'
 import configSchema, { byteSizeUnits } from '../schemas/config'
-
-const MIN_CACHE_SIZE = '20G'
-const MIN_MAX_CACHED_ITEM_SIZE = '1M'
+import { Config } from '../types'
+import { ValidationError, ValidationService } from './validation'
 
 export class ConfigParserService {
   private configPath: string
@@ -101,7 +98,7 @@ export class ConfigParserService {
         }
         const errors = this.validator.errorsByProperty('Config', path.join('.'), config)
         if (errors) {
-          throw new ValidationError(`Invalid env value of ${envKey}`, errors)
+          throw new ValidationError(`Invalid env value`, errors)
         }
         return
       } catch (e) {
