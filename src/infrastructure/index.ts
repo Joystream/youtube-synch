@@ -12,9 +12,7 @@ const userTable = new aws.dynamodb.Table('users', {
       type: 'S',
     },
   ],
-  billingMode: 'PROVISIONED',
-  readCapacity: 1,
-  writeCapacity: 1,
+  billingMode: 'PAY_PER_REQUEST',
 })
 
 const channelsTable = new aws.dynamodb.Table('channels', {
@@ -43,34 +41,26 @@ const channelsTable = new aws.dynamodb.Table('channels', {
       type: 'S',
     },
   ],
-  billingMode: 'PROVISIONED',
   globalSecondaryIndexes: [
     {
       name: 'joystreamChannelId-createdAt-index',
       hashKey: nameof<YtChannel>('joystreamChannelId'),
       rangeKey: nameof<YtChannel>('createdAt'),
       projectionType: 'ALL',
-      readCapacity: 1,
-      writeCapacity: 1,
     },
     {
       name: 'phantomKey-createdAt-index',
       hashKey: nameof<YtChannel>('phantomKey'), // we'll have a single value partition
       rangeKey: nameof<YtChannel>('createdAt'),
       projectionType: 'ALL',
-      readCapacity: 1,
-      writeCapacity: 1,
     },
     {
       hashKey: nameof<YtChannel>('id'),
       name: 'id-index',
       projectionType: 'ALL',
-      readCapacity: 1,
-      writeCapacity: 1,
     },
   ],
-  readCapacity: 1,
-  writeCapacity: 1,
+  billingMode: 'PAY_PER_REQUEST',
 })
 
 const videosTable = new aws.dynamodb.Table('videos', {
@@ -91,15 +81,15 @@ const videosTable = new aws.dynamodb.Table('videos', {
       type: 'S',
     },
     {
-      name: 'updatedAt',
+      name: 'publishedAt',
       type: 'S',
     },
   ],
   globalSecondaryIndexes: [
     {
       hashKey: nameof<YtVideo>('state'),
-      rangeKey: 'updatedAt',
-      name: 'state-updatedAt-index',
+      rangeKey: nameof<YtVideo>('publishedAt'),
+      name: 'state-publishedAt-index',
       projectionType: 'ALL',
     },
   ],
@@ -114,9 +104,7 @@ const statsTable = new aws.dynamodb.Table('stats', {
     { name: nameof<Stats>('partition'), type: 'S' },
     { name: nameof<Stats>('date'), type: 'S' },
   ],
-  billingMode: 'PROVISIONED',
-  readCapacity: 1,
-  writeCapacity: 1,
+  billingMode: 'PAY_PER_REQUEST',
 })
 
 export const usersTableArn = userTable.arn

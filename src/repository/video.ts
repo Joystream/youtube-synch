@@ -5,7 +5,7 @@ import { AnyItem } from 'dynamoose/dist/Item'
 import { Query, Scan } from 'dynamoose/dist/ItemRetriever'
 import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
-import { ResourcePrefix, VideoState, videoStates, YtVideo } from '../types/youtube'
+import { ResourcePrefix, VideoState, YtVideo, videoStates } from '../types/youtube'
 
 function videoRepository(tablePrefix: ResourcePrefix) {
   const videoSchema = new dynamoose.Schema(
@@ -55,8 +55,8 @@ function videoRepository(tablePrefix: ResourcePrefix) {
         enum: videoStates,
         index: {
           type: 'global',
-          rangeKey: 'updatedAt',
-          name: 'state-updatedAt-index',
+          rangeKey: 'publishedAt',
+          name: 'state-publishedAt-index',
         },
       },
 
@@ -226,7 +226,7 @@ export class VideosService {
   }
 
   async getVideosInState(state: VideoState): Promise<YtVideo[]> {
-    return this.videosRepository.query({ state }, (q) => q.sort('ascending').using('state-updatedAt-index'))
+    return this.videosRepository.query({ state }, (q) => q.sort('ascending').using('state-publishedAt-index'))
   }
 
   async getAllUnsyncedVideos(): Promise<YtVideo[]> {

@@ -14,8 +14,7 @@ import { IYoutubeApi } from '../youtube/api'
 export class ContentDownloadService {
   private readonly MAX_SUDO_PRIORITY = 100
   private readonly DEFAULT_SUDO_PRIORITY = 10
-  private readonly MAX_VIEWS_ON_YOUTUBE = 10000000 // 10 Million
-  private readonly MAX_VIDEO_RANK = this.measure(this.MAX_SUDO_PRIORITY, 100, this.MAX_VIEWS_ON_YOUTUBE)
+  private readonly OLDEST_PUBLISHED_DATE = 946684800 // Unix timestamp of year 2000
 
   private config: ReadonlyConfig
   private logger: Logger
@@ -204,11 +203,13 @@ export class ContentDownloadService {
   }
 
   private measure(sudoPriority: number, percentage: number, publishedAt: number) {
-    return (
-      sudoPriority * (100 * (this.MAX_VIEWS_ON_YOUTUBE + 1) + this.MAX_VIEWS_ON_YOUTUBE + 1) +
-      percentage * (this.MAX_VIEWS_ON_YOUTUBE + 1) +
-      publishedAt
-    )
+    const currentUnixTime = Date.now()
+    const normalizedPublishedDate =
+      (100 * (currentUnixTime - publishedAt)) / (currentUnixTime - this.OLDEST_PUBLISHED_DATE)
+    const percentageWeight = 1000
+    const sudoPriorityWeight = 2 * percentageWeight
+
+    return sudoPriorityWeight * sudoPriority + percentageWeight * percentage + normalizedPublishedDate
   }
 
   /**
@@ -232,19 +233,9 @@ export class ContentDownloadService {
       )
     } else if (!isIntegerInRange(percentageOfCreatorBacklogNotSynched, 0, 100)) {
       throw new Error(`Invalid percentageOfCreatorBacklogNotSynched value ${percentageOfCreatorBacklogNotSynched}`)
-    } else if (
-      viewsOnYouTube > this.MAX_VIEWS_ON_YOUTUBE
-        ? this.MAX_VIEWS_ON_YOUTUBE
-        : !isIntegerInRange(viewsOnYouTube, 0, this.MAX_VIEWS_ON_YOUTUBE)
-    ) {
-      throw new Error('Invalid viewsOnYouTube')
     }
 
     const rank = Math.ceil(this.measure(sudoPriority, percentageOfCreatorBacklogNotSynched, viewsOnYouTube))
-
-    if (!isIntegerInRange(rank, 0, this.MAX_VIDEO_RANK)) {
-      throw new Error(`Invalid rank: ${rank}, should be less than ${this.MAX_VIDEO_RANK}`)
-    }
 
     return rank
   }
