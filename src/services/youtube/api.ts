@@ -212,6 +212,7 @@ class YoutubeClient implements IYoutubeApi {
 
   async downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
     const response = await ytdl(videoUrl, {
+      noWarnings: true,
       printJson: true,
       format: 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
       output: `${outPath}/%(id)s.%(ext)s`,
