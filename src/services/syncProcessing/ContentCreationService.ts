@@ -111,6 +111,16 @@ export class ContentCreationService {
           return
         }
 
+        // Extra validation to check state consistency
+        const qnVideo = await this.joystreamClient.getVideoByYtResourceId(video.resourceId)
+        if (qnVideo) {
+          this.logger.error(
+            `Inconsistent state. Youtube video ${video.resourceId} was already created on Joystream but the service tried to recreate it.`,
+            { duplicateVideo: video.resourceId, chanelId: video.channelId }
+          )
+          process.exit(-1)
+        }
+
         await this.dynamodbService.videos.updateState(video, 'CreatingVideo')
         const [createdVideo, createdInBlock] = await this.joystreamClient.createVideo(video, videoFilePath)
         this.lastVideoCreationBlockByChannelId.set(video.joystreamChannelId, createdInBlock)

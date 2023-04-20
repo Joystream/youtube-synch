@@ -2,10 +2,10 @@ import AsyncLock from 'async-lock'
 import * as dynamoose from 'dynamoose'
 import { ConditionInitializer } from 'dynamoose/dist/Condition'
 import { AnyItem } from 'dynamoose/dist/Item'
-import { Query, Scan } from 'dynamoose/dist/ItemRetriever'
+import { Query, QueryResponse, Scan, ScanResponse } from 'dynamoose/dist/ItemRetriever'
 import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
-import { ResourcePrefix, VideoState, videoStates, YtVideo } from '../types/youtube'
+import { ResourcePrefix, VideoState, YtVideo, videoStates } from '../types/youtube'
 
 function videoRepository(tablePrefix: ResourcePrefix) {
   const videoSchema = new dynamoose.Schema(
@@ -55,8 +55,8 @@ function videoRepository(tablePrefix: ResourcePrefix) {
         enum: videoStates,
         index: {
           type: 'global',
-          rangeKey: 'updatedAt',
-          name: 'state-updatedAt-index',
+          rangeKey: 'publishedAt',
+          name: 'state-publishedAt-index',
         },
       },
 
@@ -157,8 +157,17 @@ export class VideosRepository implements IRepository<YtVideo> {
 
   async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<YtVideo[]> {
     return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
-      const results = await f(this.model.scan(init)).exec()
-      return results.map((r) => mapTo<YtVideo>(r))
+      let lastKey = undefined
+      const results = []
+      do {
+        let scannedBatch: ScanResponse<AnyItem> = await f(this.model.scan(init))
+          .startAt(lastKey as any)
+          .exec()
+        let batchResult = scannedBatch.map((b) => mapTo<YtVideo>(b))
+        results.push(...batchResult)
+        lastKey = scannedBatch.lastKey
+      } while (lastKey)
+      return results
     })
   }
 
@@ -191,15 +200,24 @@ export class VideosRepository implements IRepository<YtVideo> {
 
   async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>): Promise<YtVideo[]> {
     return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
-      const results = await f(this.model.query(init)).exec()
-      return results.map((r) => mapTo<YtVideo>(r))
+      let lastKey = undefined
+      const results = []
+      do {
+        let queriedBatch: QueryResponse<AnyItem> = await f(this.model.query(init))
+          .startAt(lastKey as any)
+          .exec()
+        let batchResult = queriedBatch.map((b) => mapTo<YtVideo>(b))
+        results.push(...batchResult)
+        lastKey = queriedBatch.lastKey
+      } while (lastKey)
+      return results
     })
   }
 
   async count(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>): Promise<YtVideo[]> {
     return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
-      const results = await f(this.model.query(init)).exec()
-      return results.map((r) => mapTo<YtVideo>(r))
+      const results = await this.query(init, f)
+      return results
     })
   }
 }
@@ -226,7 +244,7 @@ export class VideosService {
   }
 
   async getVideosInState(state: VideoState): Promise<YtVideo[]> {
-    return this.videosRepository.query({ state }, (q) => q.sort('ascending').using('state-updatedAt-index'))
+    return this.videosRepository.query({ state }, (q) => q.sort('ascending').using('state-publishedAt-index'))
   }
 
   async getAllUnsyncedVideos(): Promise<YtVideo[]> {

@@ -1,3 +1,10 @@
+### 1.2.0
+
+- Changed the order by which videos should be synced, now the videos are synced in the order of their `publishedAt` date instead of `views`. This is done to ensure that the videos are synced in the order they were published on Youtube.
+- Added --no-warning (`noWarning=true`) flag while downloading video using `yt-dlp` to correctly parse stdout response
+- Changed the billing mode of all DynamoDB tables from `PROVISIONED` to `PAY_PER_REQUEST` (On-demand)
+- Added pagination to dynamoDB `query` & `scan` operations
+
 ### 1.1.1
 
 - Fixed count of synced videos displayed in `stats:videosByChannel` CLI command.
