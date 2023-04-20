@@ -2,7 +2,7 @@ import AsyncLock from 'async-lock'
 import * as dynamoose from 'dynamoose'
 import { ConditionInitializer } from 'dynamoose/dist/Condition'
 import { AnyItem } from 'dynamoose/dist/Item'
-import { Query, Scan } from 'dynamoose/dist/ItemRetriever'
+import { Query, QueryResponse, Scan, ScanResponse } from 'dynamoose/dist/ItemRetriever'
 import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
 import { ResourcePrefix, Stats } from '../types/youtube'
@@ -67,8 +67,17 @@ export class StatsRepository implements IRepository<Stats> {
 
   async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<Stats[]> {
     return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
-      const results = await f(this.model.scan(init)).exec()
-      return results.map((r) => mapTo<Stats>(r))
+      let lastKey = undefined
+      const results = []
+      do {
+        let scannedBatch: ScanResponse<AnyItem> = await f(this.model.scan(init))
+          .startAt(lastKey as any)
+          .exec()
+        let batchResult = scannedBatch.map((b) => mapTo<Stats>(b))
+        results.push(...batchResult)
+        lastKey = scannedBatch.lastKey
+      } while (lastKey)
+      return results
     })
   }
 
@@ -93,8 +102,17 @@ export class StatsRepository implements IRepository<Stats> {
 
   async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>) {
     return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
-      const results = await f(this.model.query(init)).exec()
-      return results.map((r) => mapTo<Stats>(r))
+      let lastKey = undefined
+      const results = []
+      do {
+        let queriedBatch: QueryResponse<AnyItem> = await f(this.model.query(init))
+          .startAt(lastKey as any)
+          .exec()
+        let batchResult = queriedBatch.map((b) => mapTo<Stats>(b))
+        results.push(...batchResult)
+        lastKey = queriedBatch.lastKey
+      } while (lastKey)
+      return results
     })
   }
 }

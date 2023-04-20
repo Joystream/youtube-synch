@@ -1,6 +1,6 @@
 {
   "name": "youtube-sync",
-  "version": "1.1.1",
+  "version": "1.2.1",
   "license": "MIT",
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
