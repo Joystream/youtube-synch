@@ -6,7 +6,7 @@ import express from 'express'
 import * as fs from 'fs'
 import path from 'path'
 import { DynamodbService } from '../../repository'
-import { ReadonlyConfig, toPrettyJSON } from '../../types'
+import { ReadonlyConfig, formattedJSON } from '../../types'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
 import { RuntimeApi } from '../runtime/api'
@@ -34,7 +34,7 @@ function setupSwagger(app: INestApplication) {
   SwaggerModule.setup('docs', app, document)
 
   // Also write api spec to JSON file
-  fs.writeFileSync(path.join(__dirname, './api-spec.json'), toPrettyJSON(document))
+  fs.writeFileSync(path.join(__dirname, './api-spec.json'), formattedJSON(document))
 }
 
 export async function bootstrapHttpApi(

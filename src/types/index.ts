@@ -12,7 +12,14 @@ export type DeepReadonly<T> = { readonly [K in keyof T]: DeepReadonly<T[K]> }
 
 type Secret<T> = { [K in keyof T]: '###SECRET###' }
 
-export function toPrettyJSON(obj: unknown) {
+export type DisplaySafeConfig = Omit<Config, 'youtube' | 'aws' | 'httpApi' | 'joystream'> & {
+  httpApi: Secret<Config['httpApi']>
+  youtube: Secret<Config['youtube']>
+  joystream: Secret<Config['joystream']>
+  aws?: { credentials: Secret<NonNullable<Config['aws']>['credentials']> }
+}
+
+export function formattedJSON(obj: unknown) {
   return JSON.stringify(obj, null, 2)
 }
 

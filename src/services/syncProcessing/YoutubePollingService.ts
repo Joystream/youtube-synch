@@ -87,7 +87,7 @@ export class YoutubePollingService {
 
         await Promise.all(channels.map((channel) => this.performVideosIngestion(channel)))
       } catch (err) {
-        this.logger.error(`Critical Polling error: ${err}`)
+        this.logger.error(`Critical Polling error`, { err })
       }
     }
   }
@@ -158,7 +158,7 @@ export class YoutubePollingService {
           return []
         }
         updatedChannels.push(ch)
-        this.logger.error('Failed to fetch updated channel info', { err })
+        this.logger.error('Failed to fetch updated channel info', { err, channelId: ch.joystreamChannelId })
       }
     }
 

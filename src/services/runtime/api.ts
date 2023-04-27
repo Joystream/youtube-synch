@@ -165,8 +165,8 @@ export class RuntimeApi {
   async ensureApi() {
     try {
       await this.api.isReady
-    } catch (e) {
-      this.logger.error('Failed to initialize Polkadot API', e)
+    } catch (err) {
+      this.logger.error('Failed to initialize Polkadot API', { err })
       throw new RuntimeApiError(ExitCodes.RuntimeApi.API_NOT_CONNECTED, 'Failed to initialize Polkadot API')
     }
   }

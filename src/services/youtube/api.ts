@@ -7,7 +7,7 @@ import { parse, toSeconds } from 'iso8601-duration'
 import { FetchError } from 'node-fetch'
 import ytdl from 'youtube-dl-exec'
 import { StatsRepository } from '../../repository'
-import { ReadonlyConfig, WithRequired, toPrettyJSON } from '../../types'
+import { ReadonlyConfig, WithRequired, formattedJSON } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
 import { YtChannel, YtUser, YtVideo } from '../../types/youtube'
 
@@ -72,7 +72,7 @@ class YoutubeClient implements IYoutubeApi {
       return { access_token: token.tokens.access_token, refresh_token: token.tokens.refresh_token }
     } catch (error) {
       const message = error instanceof GaxiosError ? error.response?.data : error
-      throw new Error(`Could not get User's access token using authorization code ${toPrettyJSON(message)}`)
+      throw new Error(`Could not get User's access token using authorization code ${formattedJSON(message)}`)
     }
   }
 

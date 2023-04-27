@@ -76,7 +76,7 @@ export class ContentUploadService {
         this.logger.info(`Resume service....`)
         await this.uploadPendingAssets(this.config.limits.maxConcurrentUploads)
       } catch (err) {
-        this.logger.error(`Critical Upload error: ${err}`)
+        this.logger.error(`Critical Upload error`, { err })
       }
     }
   }
@@ -90,6 +90,11 @@ export class ContentUploadService {
     await Promise.allSettled(
       videosWithPendingAssets.map(async (video) => {
         try {
+          this.logger.info(`Uploading assets for video`, {
+            videoId: video.resourceId,
+            channelId: video.joystreamChannelId,
+          })
+
           // Update video state and save to DB
           await this.dynamodbService.videos.updateState(video, 'UploadStarted')
 
@@ -103,8 +108,13 @@ export class ContentUploadService {
 
           // After upload is successful, remove the video file from local storage
           this.contentDownloadService.removeVideoFile(video.resourceId)
-        } catch (error) {
-          this.logger.error(`Got error uploading assets for video: ${video.resourceId}, error: ${error}`)
+
+          this.logger.info(`Successfully uploaded assets for video`, {
+            videoId: video.resourceId,
+            channelId: video.joystreamChannelId,
+          })
+        } catch (err) {
+          this.logger.error(`Got error uploading assets for video`, { videoId: video.resourceId, err })
           // Update video state and save to DB
           await this.dynamodbService.videos.updateState(video, 'UploadFailed')
         }
