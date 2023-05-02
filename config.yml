@@ -14,6 +14,10 @@ logs:
   # elastic:
   #   level: info
   #   endpoint: http://localhost:9200
+  #   cloudId: elastic:cloud-id
+  #   auth:
+  #     username: elastic-username
+  #     password: elastic-password
 intervals: # in minutes
   youtubePolling: 30
   contentProcessing: 1
@@ -50,12 +54,13 @@ joystream:
       - mnemonic: 'escape naive annual throw tragic achieve grunt verify cram note harvest problem'
       # - suri: //Alice
 creatorOnboardingRequirements:
-  minimumSubscribersCount: 1
-  minimumVideoCount: 2
-  minimumVideoAgeHours: 1
-  minimumChannelAgeHours: 1
   # ! Production values
-  # minimumSubscribersCount: 50
-  # minimumVideoCount: 10
-  # minimumVideoAgeHours: 720 # (24 hours x 30 days) 1 month
-  # minimumChannelAgeHours: 2160 # (3 x 24 hours x 30 days) 3 months
+  minimumSubscribersCount: 50
+  minimumVideoCount: 10
+  minimumVideoAgeHours: 720 # (24 hours x 30 days) 1 month
+  minimumChannelAgeHours: 2160 # (3 x 24 hours x 30 days) 3 months
+  # ! Development values
+  # minimumSubscribersCount: 1
+  # minimumVideoCount: 2
+  # minimumVideoAgeHours: 1
+  # minimumChannelAgeHours: 1

@@ -179,6 +179,21 @@ export interface ElasticsearchLoggingOptions {
    * Elastichsearch endpoint to push the logs to (for example: http://localhost:9200)
    */
   endpoint: string
+  /**
+   * Elasticsearch cloud id
+   */
+  cloudId: string
+  auth: ElasticsearchAuthenticationOptions
+}
+export interface ElasticsearchAuthenticationOptions {
+  /**
+   * Elasticsearch username
+   */
+  username: string
+  /**
+   * Elasticsearch password
+   */
+  password: string
 }
 /**
  * Specifies daily Youtube API quota rationing scheme for Youtube Partner Program

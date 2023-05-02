@@ -82,7 +82,11 @@ export class ContentUploadService {
   }
 
   private async uploadPendingAssets(limit: number) {
-    const videosWithPendingAssets = await this.dynamodbService.videos.getAllVideosInPendingUploadState(limit)
+    // Get all videos which are in either `VideoCreated` or `UploadFailed` state, and their assets exist in local download directory
+    const videosWithPendingAssets = (await this.dynamodbService.videos.getAllVideosInPendingUploadState(limit)).filter(
+      (v) => this.contentDownloadService.getVideoFilePath(v.resourceId) !== undefined
+    )
+
     this.logger.verbose(`Found ${videosWithPendingAssets.length} videos with upload still pending to storage-node.`, {
       videos: videosWithPendingAssets.map((v) => v.resourceId),
     })

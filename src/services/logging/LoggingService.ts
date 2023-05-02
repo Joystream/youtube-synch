@@ -82,11 +82,15 @@ export class LoggingService {
         level: logs.elastic.level,
         format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
         retryLimit: 10,
-        flushInterval: 5000,
+        flushInterval: 1000,
         clientOpts: {
           node: {
             url: new URL(logs.elastic.endpoint),
           },
+          cloud: {
+            id: logs.elastic.cloudId,
+          },
+          auth: logs.elastic.auth,
         },
       })
       transports.push(esTransport)

@@ -1,7 +1,7 @@
 version: '3.4'
 
 services:
-  # Ref: https://www.elastic.co/guide/en/elasticsearch/reference/8.7/docker.html#docker
+  # Ref: https://www.elastic.co/guide/en/elasticsearch/reference/8.7/docker.html
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
     container_name: elasticsearch
@@ -9,7 +9,6 @@ services:
       - discovery.type=single-node
       - bootstrap.memory_lock=true
       - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
-      - xpack.security.enabled=false
     ulimits:
       memlock:
         soft: -1
@@ -18,7 +17,7 @@ services:
       - es-data:/usr/share/elasticsearch/data
     ports:
       - 127.0.0.1:9200:9200
-  # Ref: https://www.elastic.co/guide/en/kibana/7.13/docker.html
+  # Ref: https://www.elastic.co/guide/en/kibana/8.7/docker.html
   kibana:
     image: docker.elastic.co/kibana/kibana:8.7.0
     container_name: kibana
@@ -26,19 +25,6 @@ services:
       - 127.0.0.1:5601:5601
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: 2b4ec41982d58479b4859d7c83455114
-      XPACK_REPORTING_ENCRYPTIONKEY: d7082f1ceb74499169fbad29983358b2
-      XPACK_SECURITY_ENCRYPTIONKEY: c274dcf4a81d04497749360d478a037d
-  # Ref: https://www.elastic.co/guide/en/beats/filebeat/current/running-on-docker.html
-  # filebeat:
-  #   user: root
-  #   image: joystream/youtube-synch-filebeat
-  #   build:
-  #     context: ./src/config/docker
-  #     dockerfile: ./filebeat.Dockerfile
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #     - youtube-synch_logs:/logs
 
 volumes:
   es-data:
