@@ -176,13 +176,9 @@ export interface ElasticsearchLoggingOptions {
    */
   level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
   /**
-   * Elastichsearch endpoint to push the logs to (for example: http://localhost:9200)
+   * Elasticsearch endpoint to push the logs to (for example: http://localhost:9200)
    */
   endpoint: string
-  /**
-   * Elasticsearch cloud id
-   */
-  cloudId: string
   auth: ElasticsearchAuthenticationOptions
 }
 export interface ElasticsearchAuthenticationOptions {

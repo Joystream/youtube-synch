@@ -96,8 +96,8 @@ The YT-Synch service logs can be sent to Elasticsearch instance, which then can 
 The script uses the following environment variables to configure the alert rule and connectors:
 
 - `KIBANA_URL`: The URL of the Kibana instance (default: `http://localhost:5601`).
-- `KIBANA_USERNAME`: The username for accessing Kibana (default: `elastic`).
-- `KIBANA_PASSWORD`: The password for accessing Kibana.
+- `ELASTIC_USERNAME`: The username for accessing Kibana (default: `elastic`).
+- `ELASTIC_PASSWORD`: The password for accessing Kibana.
 - `EMAIL_RECIPIENTS`: A comma-separated list of email addresses to receive email notifications.
 - `DISCORD_WEBHOOK_URL`: The webhook URL for sending notifications to Discord.
 - `THRESHOLD`: The threshold for triggering the alert (default: `10`).

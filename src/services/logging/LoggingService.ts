@@ -87,9 +87,6 @@ export class LoggingService {
           node: {
             url: new URL(logs.elastic.endpoint),
           },
-          cloud: {
-            id: logs.elastic.cloudId,
-          },
           auth: logs.elastic.auth,
         },
       })

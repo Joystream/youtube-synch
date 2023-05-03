@@ -14,7 +14,6 @@ logs:
   # elastic:
   #   level: info
   #   endpoint: http://localhost:9200
-  #   cloudId: elastic:cloud-id
   #   auth:
   #     username: elastic-username
   #     password: elastic-password

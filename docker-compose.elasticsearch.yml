@@ -9,6 +9,8 @@ services:
       - discovery.type=single-node
       - bootstrap.memory_lock=true
       - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-password}
     ulimits:
       memlock:
         soft: -1
@@ -23,14 +25,16 @@ services:
     container_name: kibana
     ports:
       - 127.0.0.1:5601:5601
+    depends_on:
+      - elasticsearch
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_SERVICEACCOUNTTOKEN: ${ELASTICSEARCH_SERVICEACCOUNTTOKEN}
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: ${XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY}
 
 volumes:
   es-data:
     driver: local
-  youtube-synch_logs:
-    external: true
   cache:
     driver: local
   data:

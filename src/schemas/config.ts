@@ -151,10 +151,6 @@ export const configSchema: JSONSchema4 = objectSchema({
               description: 'Elasticsearch endpoint to push the logs to (for example: http://localhost:9200)',
               type: 'string',
             },
-            cloudId: {
-              description: 'Elasticsearch cloud id',
-              type: 'string',
-            },
             auth: objectSchema({
               title: 'Elasticsearch authentication options',
               properties: {
@@ -170,7 +166,7 @@ export const configSchema: JSONSchema4 = objectSchema({
               required: ['username', 'password'],
             }),
           },
-          required: ['level', 'endpoint', 'cloudId', 'auth'],
+          required: ['level', 'endpoint', 'auth'],
         }),
       },
       required: [],

@@ -1,10 +1,21 @@
 #!/bin/bash
 
 set -e
+
+SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
+cd $SCRIPT_PATH
+
+set -a
+if [ -f ../.env ]; then
+  echo "Loading environment variables from .env file"
+  . ../.env
+fi
+set +a
+
 # Variables
 KIBANA_URL=${KIBANA_URL:="http://localhost:5601"}
-KIBANA_USERNAME=${KIBANA_USERNAME:="elastic"}
-KIBANA_PASSWORD=${KIBANA_PASSWORD}
+ELASTIC_USERNAME=${ELASTIC_USERNAME:="elastic"}
+ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
 EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
 DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
 THRESHOLD=10
@@ -15,14 +26,14 @@ ALERT_RULE_NAME=${ALERT_RULE_NAME:="YT-Sync-Service-Alert"}
 
 does_connector_exist() {
   connector_name="$1"
-  connectors=$(curl -X GET -H "Content-Type: application/json" -H "kbn-xsrf: true" -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" "$KIBANA_URL/api/actions/connectors")
+  connectors=$(curl -X GET -H "Content-Type: application/json" -H "kbn-xsrf: true" -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" "$KIBANA_URL/api/actions/connectors")
   echo $connectors | jq -r --arg name "$connector_name" '.[] | select(.name == $name) | .id'
 }
 
 does_alert_exist() {
   alert_name="$1"
   encoded_alert_name=$(jq -rn --arg v "$alert_name" '$v|@uri')
-  alerts=$(curl -X GET -H "Content-Type: application/json" -H "kbn-xsrf: true" -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" "$KIBANA_URL/api/alerting/rules/_find?search_fields=name&search=$encoded_alert_name")
+  alerts=$(curl -X GET -H "Content-Type: application/json" -H "kbn-xsrf: true" -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" "$KIBANA_URL/api/alerting/rules/_find?search_fields=name&search=$encoded_alert_name")
   echo $alerts | jq -r --arg name "$alert_name" '.data[] | select(.name == $name) | .id'
 }
 
@@ -63,7 +74,7 @@ echo "Email connector ID: $EMAIL_CONNECTOR_ID"
 WEBHOOK_CONNECTOR_ID=$(does_connector_exist $WEBHOOK_CONNECTOR_NAME)
 
 if [[ -z "$WEBHOOK_CONNECTOR_ID" ]]; then
-  WEBHOOK_CONNECTOR_ID=$(curl -X POST -H "Content-Type: application/json" -H "kbn-xsrf: true" -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" "$KIBANA_URL/api/actions/connector" -d '{
+  WEBHOOK_CONNECTOR_ID=$(curl -X POST -H "Content-Type: application/json" -H "kbn-xsrf: true" -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" "$KIBANA_URL/api/actions/connector" -d '{
   "name": "'"$WEBHOOK_CONNECTOR_NAME"'",
   "connector_type_id": ".webhook",
   "config": {
@@ -83,7 +94,7 @@ fi
 RULE_ID=$(does_alert_exist $ALERT_RULE_NAME)
 
 if [[ -z "$RULE_ID" ]]; then
-  RULE_ID=$(curl -X POST -u $KIBANA_USERNAME:$KIBANA_PASSWORD "$KIBANA_URL/api/alerting/rule" -H 'kbn-xsrf: true' -H 'Content-Type: application/json' -d '{
+  RULE_ID=$(curl -X POST -u $ELASTIC_USERNAME:$ELASTIC_PASSWORD "$KIBANA_URL/api/alerting/rule" -H 'kbn-xsrf: true' -H 'Content-Type: application/json' -d '{
   "params":{
       "aggType":"count",
       "termSize":6,

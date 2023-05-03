@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Compute a hash over files related to building joystream/node docker image
+# Compute a hash over files related to building youtube-synch docker image
 
 # Assuming cargo workspace root is same as the git repo root
 cd $(git rev-parse --show-toplevel)
