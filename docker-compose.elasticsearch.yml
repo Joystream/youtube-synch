@@ -1,0 +1,46 @@
+version: '3.4'
+
+services:
+  # Ref: https://www.elastic.co/guide/en/elasticsearch/reference/8.7/docker.html
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-password}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    ports:
+      - 127.0.0.1:9200:9200
+  # Ref: https://www.elastic.co/guide/en/kibana/8.7/docker.html
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.7.0
+    container_name: kibana
+    ports:
+      - 127.0.0.1:5601:5601
+    depends_on:
+      - elasticsearch
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_SERVICEACCOUNTTOKEN: ${ELASTICSEARCH_SERVICEACCOUNTTOKEN}
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: ${XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY}
+
+volumes:
+  es-data:
+    driver: local
+  cache:
+    driver: local
+  data:
+    driver: local
+
+networks:
+  joystream:
+    external: true
+    name: youtube-synch_default

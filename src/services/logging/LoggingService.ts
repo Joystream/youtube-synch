@@ -78,15 +78,16 @@ export class LoggingService {
     let esTransport: ElasticsearchTransport | undefined
     if (logs?.elastic) {
       esTransport = new ElasticsearchTransport({
-        index: 'distributor-node',
+        index: 'youtube-synch',
         level: logs.elastic.level,
         format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
         retryLimit: 10,
-        flushInterval: 5000,
+        flushInterval: 1000,
         clientOpts: {
           node: {
             url: new URL(logs.elastic.endpoint),
           },
+          auth: logs.elastic.auth,
         },
       })
       transports.push(esTransport)

@@ -1,4 +1,5 @@
 import fs from 'fs'
+import _ from 'lodash'
 import nodeCleanup from 'node-cleanup'
 import { Logger } from 'winston'
 import { DynamodbService } from '../repository'
@@ -11,7 +12,7 @@ import { ContentDownloadService } from '../services/syncProcessing/ContentDownlo
 import { ContentUploadService } from '../services/syncProcessing/ContentUploadService'
 import { YoutubePollingService } from '../services/syncProcessing/YoutubePollingService'
 import { IYoutubeApi, YoutubeApi } from '../services/youtube/api'
-import { Config } from '../types'
+import { Config, DisplaySafeConfig } from '../types'
 
 export class Service {
   private config: Config
@@ -92,11 +93,16 @@ export class Service {
     }
   }
 
-  private hideSecrets(config: Config) {
+  private hideSecrets(config: Config): DisplaySafeConfig {
     const displaySafeConfig = {
       ...config,
-      // clientSecret: _.mapValues(config.youtubeConfig.clientSecret, () => '###SECRET###' as const),
-      // m: _.mapValues(config.youtubeConfig.clientSecret, () => '###SECRET###' as const),
+      youtube: _.mapValues(config.youtube, () => '###SECRET###' as const),
+      httpApi: _.mapValues(config.httpApi, () => '###SECRET###' as const),
+      joystream: _.mapValues(config.joystream, () => '###SECRET###' as const),
+      aws: {
+        ...config.aws,
+        credentials: _.mapValues(config.aws?.credentials, () => '###SECRET###' as const),
+      },
     }
 
     return displaySafeConfig

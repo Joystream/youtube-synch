@@ -1,6 +1,6 @@
 {
   "name": "youtube-sync",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "license": "MIT",
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
@@ -9,8 +9,8 @@
     "start": "DEPLOYMENT_ENV=dev ./bin/run start",
     "lint": "eslint ./src --ext .ts",
     "start:prod": "./bin/run start",
-    "docker:start": "DEPLOYMENT_ENV=dev docker-compose up -d",
-    "docker:start:prod": "docker-compose up -d",
+    "docker:start": "DEPLOYMENT_ENV=dev IMAGE_TAG=$(./scripts/code-shasum.sh) docker-compose up -d",
+    "docker:start:prod": "IMAGE_TAG=$(./scripts/code-shasum.sh) docker-compose up -d",
     "dynamodb:start": "yarn dynamodb:stop && export DEPLOYMENT_ENV=local && ./src/infrastructure/deploy.sh",
     "dynamodb:stop": "export DEPLOYMENT_ENV=local REMOVE_PULUMI_STACK=true && ./src/infrastructure/destroy.sh",
     "generate:docs:cli": "yarn oclif-dev readme --multi --dir ./src/cli/docs",

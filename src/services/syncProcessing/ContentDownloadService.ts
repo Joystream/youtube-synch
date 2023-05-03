@@ -51,19 +51,25 @@ export class ContentDownloadService {
           videos.map(async (video) => {
             try {
               // download the video from youtube
+              this.logger.info(`Downloading video`, { videoId: video.resourceId, channelId: video.joystreamChannelId })
               const { ext: fileExt } = await this.youtubeApi.downloadVideo(video.url, this.config.directories.assets)
               this.setVideoFilePath(video.resourceId, fileExt)
               this.contentSizeSum += this.fileSize(video.resourceId)
-            } catch (error) {
-              const errorMsg = (error as Error).message
+              this.logger.info(`Video downloaded.`, { videoId: video.resourceId, channelId: video.joystreamChannelId })
+            } catch (err) {
+              const errorMsg = (err as Error).message
               if (errorMsg.includes('Video unavailable')) {
                 await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
-                this.logger.warn(`Video ${video.resourceId} not found. Skipping from syncing...`)
+                this.logger.warn(`Video not found. Skipping from syncing...`, {
+                  videoId: video.resourceId,
+                })
               } else if (errorMsg.includes('Private video')) {
                 await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
-                this.logger.warn(`Video ${video.resourceId} visibility was set to private. Skipping from syncing...`)
+                this.logger.warn(`Video visibility was set to private. Skipping from syncing...`, {
+                  videoId: video.resourceId,
+                })
               } else {
-                this.logger.error(`Got error downloading video: ${video.resourceId}, error: ${error}. Retrying...`)
+                this.logger.error(`Got error downloading video. Retrying...`, { videoId: video.resourceId, err })
               }
             }
           })
@@ -110,8 +116,8 @@ export class ContentDownloadService {
       fs.unlinkSync(videoFilePath)
       this.downloadedVideoPathByResourceId.delete(resourceId)
       this.contentSizeSum -= size
-    } catch (error) {
-      this.logger.error(`Failed to delete video file for: ${resourceId}. File not found.`)
+    } catch (err) {
+      this.logger.error(`Failed to delete media file for video. File not found.`, { videoId: resourceId, err })
     }
   }
 
@@ -155,7 +161,7 @@ export class ContentDownloadService {
         this.logger.info(`Resume service....`)
         await this.downloadNewContentWithUpdatedPriority()
       } catch (err) {
-        this.logger.error(`Critical content download error: ${err}`)
+        this.logger.error(`Critical content download error`, { err })
       }
     }
   }
