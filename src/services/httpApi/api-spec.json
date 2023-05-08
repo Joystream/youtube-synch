@@ -357,6 +357,94 @@
         ]
       }
     },
+    "/channels/whitelist": {
+      "post": {
+        "operationId": "ChannelsController_addWhitelistChannels",
+        "summary": "",
+        "description": "Whitelist a given youtube channel/s by it's channel handle",
+        "parameters": [
+          {
+            "name": "authorization",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WhitelistChannelDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
+    "/channels/whitelist/{channelHandle}": {
+      "delete": {
+        "operationId": "ChannelsController_deleteWhitelistedChannel",
+        "summary": "",
+        "description": "Remove a whitelisted channel by it's channel handle",
+        "parameters": [
+          {
+            "name": "authorization",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "channelHandle",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhitelistChannelDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
     "/channels/induction/requirements": {
       "get": {
         "operationId": "ChannelsController_inductionRequirements",
@@ -880,6 +968,17 @@
           "duration",
           "language",
           "joystreamVideo"
+        ]
+      },
+      "WhitelistChannelDto": {
+        "type": "object",
+        "properties": {
+          "channelHandle": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "channelHandle"
         ]
       },
       "ChannelInductionRequirementsDto": {

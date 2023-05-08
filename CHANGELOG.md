@@ -1,3 +1,7 @@
+### 1.4.0
+
+- Adds support for whitelisting a channel such that a whitelisted channel will be exempted from requirements check when signing up for the YPP program. Adds `POST /channels/whitelist` endpoint to whitelist a channel/s & `DELETE /channels/whitelist/{ytChannelHandle}` endpoint to remove a channel from whitelist.
+
 ### 1.3.0
 
 - Integrates ElasticSearch alerting feature based on the filtration criteria set on the ingested logs.

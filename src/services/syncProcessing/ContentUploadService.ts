@@ -117,7 +117,8 @@ export class ContentUploadService {
             videoId: video.resourceId,
             channelId: video.joystreamChannelId,
           })
-        } catch (err) {
+        } catch (error) {
+          const err = (error as Error).message
           this.logger.error(`Got error uploading assets for video`, { videoId: video.resourceId, err })
           // Update video state and save to DB
           await this.dynamodbService.videos.updateState(video, 'UploadFailed')

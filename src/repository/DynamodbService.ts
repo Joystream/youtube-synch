@@ -5,12 +5,14 @@ import { ChannelsRepository, ChannelsService } from './channel'
 import { StatsRepository } from './stats'
 import { UsersRepository, UsersService } from './user'
 import { VideosRepository, VideosService } from './video'
+import { WhitelistChannelsRepository } from './whitelistChannels'
 
 interface IDynamodbClient {
   channels: ChannelsRepository
   users: UsersRepository
   videos: VideosRepository
   stats: StatsRepository
+  whitelistChannels: WhitelistChannelsRepository
 }
 
 const DynamodbClient = {
@@ -20,6 +22,7 @@ const DynamodbClient = {
       users: new UsersRepository(tablePrefix),
       videos: new VideosRepository(tablePrefix),
       stats: new StatsRepository(tablePrefix),
+      whitelistChannels: new WhitelistChannelsRepository(tablePrefix),
     }
   },
 }

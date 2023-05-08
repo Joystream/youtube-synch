@@ -11,6 +11,9 @@ export class YtChannel {
   // ID of the user that owns the channel
   userId: string
 
+  // Youtube channel custom URL. Also known as youtube channel handle
+  customUrl: string
+
   // user provided email
   email: string
 
@@ -220,6 +223,11 @@ export class Stats {
   signupQuotaUsed: number
   date: string
   partition = 'stats'
+}
+
+export class WhitelistChannel {
+  channelHandle: string
+  createdAt: Date
 }
 
 export const getImages = (channel: YtChannel) => {
