@@ -86,3 +86,30 @@ For running Youtube-synch service as a docker container, run `docker-compose up 
 There is a CLI command for doing unauthorized replication/syncing of Youtube Channel's videos on joystream. For more information see [sync:addUnauthorizedChannelForSyncing](./src/cli/docs/sync.md)
 
 Also, if you want to sync multiple unauthorized channels, you can use [sync:syncMultipleUnauthorizedChannels](./src/cli/docs/sync.md) command
+
+# Elasticsearch Alerting & Monitoring
+
+The YT-Synch service logs can be sent to Elasticsearch instance, which then can be used to create alerting & monitoring rules based on the defined criteria. There is a [script](scripts/create-elasticsearch-alert.sh) designed to automate the creation of _Kibana Alert Rules_ and _Action Connectors_ for monitoring the Youtube Synchronization Service. The script creates an alert rule that queries Elasticsearch for any errors occurring in the service within the past some time (in minutes). If any errors are found, the script triggers email and Discord notifications to inform recipients of the issue. The script also creates the necessary connectors for sending these notifications.
+
+## Environment Variables
+
+The script uses the following environment variables to configure the alert rule and connectors:
+
+- `KIBANA_URL`: The URL of the Kibana instance (default: `http://localhost:5601`).
+- `ELASTIC_USERNAME`: The username for accessing Kibana (default: `elastic`).
+- `ELASTIC_PASSWORD`: The password for accessing Kibana.
+- `EMAIL_RECIPIENTS`: A comma-separated list of email addresses to receive email notifications.
+- `DISCORD_WEBHOOK_URL`: The webhook URL for sending notifications to Discord.
+- `THRESHOLD`: The threshold for triggering the alert (default: `10`).
+- `EMAIL_CONNECTOR_NAME`: The name of the email connector to be created in Kibana (default: `Elastic-Cloud-SMTP`).
+- `WEBHOOK_CONNECTOR_NAME`: The name of the webhook connector to be created in Kibana (default: `Discord Webhook`).
+- `ALERT_RULE_NAME`: The name of the alert rule to be created in Kibana (default: `YT-Sync-Service-Alert`).
+
+## How to Run the Script
+
+1. Ensure that you have the required tools installed on your system: `bash`, `curl`, and `jq`.
+2. Set the necessary environment variables in your shell or export them in a `.env` file.
+3. Make the script executable by running `chmod +x scripts/create-elasticsearch-alert.sh`.
+4. Run the script with `./scripts/create-elasticsearch-alert.sh`.
+
+Upon successful execution, the script will create an alert rule and the required connectors in Kibana. If any errors are encountered, the script will display an error message with details on the issue.

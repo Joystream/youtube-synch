@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  Matches,
   ValidateIf,
   ValidateNested,
 } from 'class-validator'
@@ -198,4 +199,10 @@ export class SuspendChannelDto {
 export class VerifyChannelDto {
   @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
   @IsBoolean() @ApiProperty({ required: true }) isVerified: boolean
+}
+
+export class WhitelistChannelDto {
+  @Matches(/^@/, { message: 'The channel handle should start with a "@"' })
+  @ApiProperty({ required: true })
+  channelHandle: string
 }

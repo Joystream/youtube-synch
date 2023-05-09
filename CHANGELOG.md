@@ -1,3 +1,12 @@
+### 1.4.0
+
+- Adds support for whitelisting a channel such that a whitelisted channel will be exempted from requirements check when signing up for the YPP program. Adds `POST /channels/whitelist` endpoint to whitelist a channel/s & `DELETE /channels/whitelist/{ytChannelHandle}` endpoint to remove a channel from whitelist.
+
+### 1.3.0
+
+- Integrates ElasticSearch alerting feature based on the filtration criteria set on the ingested logs.
+- Adds `./scripts/create-elasticsearch-alert.sh` script to automate the creation of _Kibana Alert Rules_ and _Action Connectors_ for Alerting purpose.
+
 ### 1.2.0
 
 - Changed the order by which videos should be synced, now the videos are synced in the order of their `publishedAt` date instead of `views`. This is done to ensure that the videos are synced in the order they were published on Youtube.

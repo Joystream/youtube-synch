@@ -7,7 +7,7 @@ import { parse, toSeconds } from 'iso8601-duration'
 import { FetchError } from 'node-fetch'
 import ytdl from 'youtube-dl-exec'
 import { StatsRepository } from '../../repository'
-import { ReadonlyConfig, WithRequired, toPrettyJSON } from '../../types'
+import { ReadonlyConfig, WithRequired, formattedJSON } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
 import { YtChannel, YtUser, YtVideo } from '../../types/youtube'
 
@@ -18,7 +18,7 @@ import Schema$Channel = youtube_v3.Schema$Channel
 export interface IYoutubeApi {
   getUserFromCode(code: string, youtubeRedirectUri: string): Promise<YtUser>
   getChannel(user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>): Promise<YtChannel>
-  getVerifiedChannel(user: YtUser): Promise<YtChannel>
+  verifyChannel(channel: YtChannel): Promise<YtChannel>
   getVideos(channel: YtChannel, top: number): Promise<YtVideo[]>
   getAllVideos(channel: YtChannel, max: number): Promise<YtVideo[]>
   downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl>
@@ -72,7 +72,7 @@ class YoutubeClient implements IYoutubeApi {
       return { access_token: token.tokens.access_token, refresh_token: token.tokens.refresh_token }
     } catch (error) {
       const message = error instanceof GaxiosError ? error.response?.data : error
-      throw new Error(`Could not get User's access token using authorization code ${toPrettyJSON(message)}`)
+      throw new Error(`Could not get User's access token using authorization code ${formattedJSON(message)}`)
     }
   }
 
@@ -129,9 +129,7 @@ class YoutubeClient implements IYoutubeApi {
     return channel
   }
 
-  async getVerifiedChannel(user: YtUser): Promise<YtChannel> {
-    const channel = await this.getChannel(user)
-
+  async verifyChannel(channel: YtChannel): Promise<YtChannel> {
     const { minimumSubscribersCount, minimumVideoCount, minimumChannelAgeHours, minimumVideoAgeHours } =
       this.config.creatorOnboardingRequirements
     const errors: YoutubeApiError[] = []
@@ -271,6 +269,7 @@ class YoutubeClient implements IYoutubeApi {
           description: channel.snippet?.description,
           title: channel.snippet?.title,
           userId: user.id,
+          customUrl: channel.snippet?.customUrl,
           userAccessToken: user.accessToken,
           userRefreshToken: user.refreshToken,
           thumbnails: {
@@ -354,7 +353,7 @@ class QuotaTrackingClient implements IYoutubeApi {
     return this.decorated.getUserFromCode(code, youtubeRedirectUri)
   }
 
-  async getVerifiedChannel(user: YtUser) {
+  async verifyChannel(channel: YtChannel) {
     // ensure have some left api quota
     if (!(await this.canCallYoutube('signup'))) {
       throw new YoutubeApiError(
@@ -364,7 +363,7 @@ class QuotaTrackingClient implements IYoutubeApi {
     }
 
     try {
-      const verifiedChannel = await this.decorated.getVerifiedChannel(user)
+      const verifiedChannel = await this.decorated.verifyChannel(channel)
       // increase used quota count
       await this.increaseUsedQuota({ signupQuotaIncrement: 1 })
       return verifiedChannel

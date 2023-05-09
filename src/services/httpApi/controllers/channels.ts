@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   Inject,
@@ -31,6 +32,7 @@ import {
   UserDto,
   VerifyChannelDto,
   VideoDto,
+  WhitelistChannelDto,
 } from '../dtos'
 
 @Controller('channels')
@@ -308,6 +310,56 @@ export class ChannelsController {
   async getVideo(@Param('id') id: string, @Param('videoId') videoId: string) {
     const result = await this.dynamodbService.repo.videos.get(id, videoId)
     return result
+  }
+
+  @Post('/whitelist')
+  @ApiResponse({ type: WhitelistChannelDto, isArray: true })
+  @ApiOperation({ description: `Whitelist a given youtube channel/s by it's channel handle` })
+  async addWhitelistChannels(
+    @Headers('authorization') authorizationHeader: string,
+    @Body(new ParseArrayPipe({ items: WhitelistChannelDto, whitelist: true })) channels: WhitelistChannelDto[]
+  ) {
+    const yppOwnerKey = authorizationHeader ? authorizationHeader.split(' ')[1] : ''
+    // TODO: fix this YT_SYNCH__HTTP_API__OWNER_KEY config value
+    if (yppOwnerKey !== process.env.YT_SYNCH__HTTP_API__OWNER_KEY) {
+      throw new UnauthorizedException('Invalid YPP owner key')
+    }
+
+    try {
+      for (const { channelHandle } of channels) {
+        await this.dynamodbService.repo.whitelistChannels.save({ channelHandle, createdAt: new Date() })
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
+  }
+
+  @Delete('/whitelist/:channelHandle')
+  @ApiResponse({ type: WhitelistChannelDto })
+  @ApiOperation({ description: `Remove a whitelisted channel by it's channel handle` })
+  async deleteWhitelistedChannel(
+    @Headers('authorization') authorizationHeader: string,
+    @Param('channelHandle') channelHandle: string
+  ) {
+    const yppOwnerKey = authorizationHeader ? authorizationHeader.split(' ')[1] : ''
+    // TODO: fix this YT_SYNCH__HTTP_API__OWNER_KEY config value
+    if (yppOwnerKey !== process.env.YT_SYNCH__HTTP_API__OWNER_KEY) {
+      throw new UnauthorizedException('Invalid YPP owner key')
+    }
+
+    try {
+      const whitelistChannel = await this.dynamodbService.repo.whitelistChannels.get(channelHandle)
+
+      if (!whitelistChannel) {
+        throw new NotFoundException(`Channel with handle ${channelHandle} is not whitelisted`)
+      }
+
+      await this.dynamodbService.repo.whitelistChannels.delete(channelHandle)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
   }
 
   @Get('/induction/requirements')

@@ -1,24 +1,23 @@
 version: '3.4'
 services:
-  youtube-synch-service:
-    image: node:14
-    container_name: youtube-synch-service
+  youtube-synch:
+    image: youtube-synch:${IMAGE_TAG}
+    container_name: youtube-synch
     restart: on-failure
-    network_mode: "host"
+    build:
+      context: .
+      dockerfile: Dockerfile
     volumes:
-      - youtube-synch-logs:/logs
-      - youtube-synch-data:/data
+      - logs:/logs
+      - data:/data
       # mount the AWS credentials file to docker container home directory
       - ~/.aws/:/root/.aws:ro
-      - type: bind
-        source: .
-        target: /youtube-synch
-    working_dir: /youtube-synch
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
     environment:
       DEPLOYMENT_ENV: ${DEPLOYMENT_ENV}
+    #   YT_SYNCH__LOGS__ELASTIC: "{\"level\":\"debug\",\"endpoint\":\"http://elasticsearch:9200\"}"
     #   YT_SYNCH__ENDPOINTS__QUERY_NODE: ${YT_SYNCH__ENDPOINTS__QUERY_NODE}
     #   YT_SYNCH__ENDPOINTS__JOYSTREAM_NODE_WS: ${YT_SYNCH__ENDPOINTS__JOYSTREAM_NODE_WS}
     #   YT_SYNCH__HTTP_API__PORT: ${YT_SYNCH__HTTP_API__PORT}
@@ -32,10 +31,11 @@ services:
     #   YT_SYNCH__JOYSTREAM__CHANNEL_COLLABORATOR__MEMBER_ID: ${YT_SYNCH__JOYSTREAM__CHANNEL_COLLABORATOR__MEMBER_ID}
     #   YT_SYNCH__JOYSTREAM__APP__NAME: ${YT_SYNCH__JOYSTREAM__APP__NAME}
     #   YT_SYNCH__JOYSTREAM__APP__ACCOUNT_SEED: ${YT_SYNCH__JOYSTREAM__APP__ACCOUNT_SEED}
-    command: [ './bin/run', 'start' ]
+    ports:
+      - 127.0.0.1:${YT_SYNCH__HTTP_API__PORT}:${YT_SYNCH__HTTP_API__PORT}
 
 volumes:
-  youtube-synch-logs:
+  logs:
     driver: local
-  youtube-synch-data:
+  data:
     driver: local

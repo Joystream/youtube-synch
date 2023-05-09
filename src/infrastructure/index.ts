@@ -1,5 +1,5 @@
 import * as aws from '@pulumi/aws'
-import { resourcePrefix, Stats, YtChannel, YtUser, YtVideo } from '../types/youtube'
+import { resourcePrefix, Stats, WhitelistChannel, YtChannel, YtUser, YtVideo } from '../types/youtube'
 
 const nameof = <T>(name: keyof T) => <string>name
 
@@ -107,7 +107,20 @@ const statsTable = new aws.dynamodb.Table('stats', {
   billingMode: 'PAY_PER_REQUEST',
 })
 
+const whitelistChannelsTable = new aws.dynamodb.Table('whitelistChannels', {
+  name: `${resourcePrefix}whitelistChannels`,
+  hashKey: nameof<WhitelistChannel>('channelHandle'),
+  attributes: [
+    {
+      name: nameof<WhitelistChannel>('channelHandle'),
+      type: 'S',
+    },
+  ],
+  billingMode: 'PAY_PER_REQUEST',
+})
+
 export const usersTableArn = userTable.arn
 export const channelsTableArn = channelsTable.arn
 export const videosTableArn = videosTable.arn
 export const statsTableArn = statsTable.arn
+export const whitelistChannelsTableArn = whitelistChannelsTable.arn

@@ -11,6 +11,9 @@ export class YtChannel {
   // ID of the user that owns the channel
   userId: string
 
+  // Youtube channel custom URL. Also known as youtube channel handle
+  customUrl: string
+
   // user provided email
   email: string
 
@@ -205,7 +208,7 @@ export class YtVideo {
   // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
   joystreamVideo: JoystreamVideo
 
-  // ID of the corresponding Joystream Channel (De-normalized from Channel table)
+  // ID of the corresponding Joystream Channel (De-normalized from YtChannel table)
   joystreamChannelId: number
 
   // Youtube video creation date
@@ -220,6 +223,11 @@ export class Stats {
   signupQuotaUsed: number
   date: string
   partition = 'stats'
+}
+
+export class WhitelistChannel {
+  channelHandle: string
+  createdAt: Date
 }
 
 export const getImages = (channel: YtChannel) => {

@@ -76,13 +76,13 @@ export class ContentCreationService {
           }
         }
       } catch (err) {
-        this.logger.error(`Critical content creation error: ${err}`)
+        this.logger.error(`Critical content creation error`, { err })
       }
     }
   }
 
   private async addVideoCreationTask(video: YtVideo, videoFilePath: string) {
-    this.logger.info(`Adding video ${video.resourceId} to the queue`)
+    this.logger.debug(`Adding video ${video.resourceId} to the queue`)
     this.queue.push(async () => {
       try {
         // * Pre-validation
@@ -116,7 +116,7 @@ export class ContentCreationService {
         if (qnVideo) {
           this.logger.error(
             `Inconsistent state. Youtube video ${video.resourceId} was already created on Joystream but the service tried to recreate it.`,
-            { duplicateVideo: video.resourceId, chanelId: video.channelId }
+            { videoId: video.resourceId, channelId: video.joystreamChannelId }
           )
           process.exit(-1)
         }
@@ -125,8 +125,9 @@ export class ContentCreationService {
         const [createdVideo, createdInBlock] = await this.joystreamClient.createVideo(video, videoFilePath)
         this.lastVideoCreationBlockByChannelId.set(video.joystreamChannelId, createdInBlock)
         await this.dynamodbService.videos.updateState(createdVideo, 'VideoCreated')
-      } catch (error) {
-        this.logger.error(`Got error processing video: ${video.resourceId}, error: ${JSON.stringify(error)}`)
+        this.logger.info(`Video created on chain.`, { videoId: video.resourceId, channelId: video.joystreamChannelId })
+      } catch (err) {
+        this.logger.error(`Got error processing video`, { videoId: video.resourceId, err })
         await this.dynamodbService.videos.updateState(video, 'VideoCreationFailed')
       }
     })

@@ -1,5 +1,5 @@
 import { createType } from '@joystream/types'
-import axios, { AxiosError, AxiosRequestConfig } from 'axios'
+import axios from 'axios'
 import BN from 'bn.js'
 import FormData from 'form-data'
 import fs from 'fs'
@@ -25,22 +25,6 @@ export class StorageNodeApi {
   public constructor(logging: LoggingService, queryNodeApi: QueryNodeApi) {
     this.queryNodeApi = queryNodeApi
     this.logger = logging.createLogger('StorageNodeApi')
-  }
-
-  // Adds timeout for the request which can additionally take into account response processing time.
-  private reqConfigWithTimeout(options: AxiosRequestConfig, timeoutMs: number): [AxiosRequestConfig, NodeJS.Timeout] {
-    const source = axios.CancelToken.source()
-    const timeout = setTimeout(() => {
-      this.logger.error(`Request timeout of ${timeoutMs}ms reached`, { timeoutMs })
-      source.cancel('Request timeout')
-    }, timeoutMs)
-    return [
-      {
-        ...options,
-        cancelToken: source.token,
-      },
-      timeout,
-    ]
   }
 
   async uploadVideo(video: YtVideo, videoFilePath: string): Promise<void> {
@@ -85,11 +69,15 @@ export class StorageNodeApi {
           },
         })
       } catch (error) {
-        const msg: string = (error as AxiosError).response?.data?.message
-        this.logger.error(msg)
-        if (msg.includes(`Data object ${dataObjectId} has already been accepted by storage node`)) {
-          // No need to throw an error, we can continue with the next asset
-          continue
+        if (axios.isAxiosError(error) && error.response) {
+          const storageNodeUrl = error.config?.url
+          const { status, data } = error.response
+          this.logger.error(`${storageNodeUrl} - errorCode: ${status}, msg: ${data?.message}`)
+
+          if (data?.message?.includes(`Data object ${dataObjectId} has already been accepted by storage node`)) {
+            // No need to throw an error, we can continue with the next asset
+            continue
+          }
         }
 
         throw error
