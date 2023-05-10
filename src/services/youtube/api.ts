@@ -150,9 +150,7 @@ class YoutubeClient implements IYoutubeApi {
     videoCreationTimeCutoff.setHours(videoCreationTimeCutoff.getHours() - minimumVideoAgeHours)
 
     // filter all videos that are older than MINIMUM_VIDEO_AGE_HOURS
-    const videos = (await this.getVideos(channel, minimumVideoCount)).filter(
-      (v) => new Date(v.publishedAt) < videoCreationTimeCutoff
-    )
+    const videos = (await this.getAllVideos(channel)).filter((v) => new Date(v.publishedAt) < videoCreationTimeCutoff)
     if (videos.length < minimumVideoCount) {
       errors.push(
         new YoutubeApiError(
