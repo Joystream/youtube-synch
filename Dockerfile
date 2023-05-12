@@ -1,13 +1,17 @@
+# Use the specified image as base
 FROM node:14
 
 # Set the working directory to /youtube-synch
 WORKDIR /youtube-synch
 
-# Copy the contents of the current directory to /youtube-synch
-COPY . /youtube-synch
+# Copy the package.json and yarn.lock (or package-lock.json for npm) files
+COPY package.json yarn.lock ./
 
 # Install dependencies
 RUN yarn install
+
+# Copy the rest of your application
+COPY . .
 
 # Build the project
 RUN yarn build

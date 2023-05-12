@@ -32,9 +32,13 @@ export class ContentCreationService {
     this.joystreamClient = joystreamClient
     this.contentDownloadService = contentDownloadService
     this.lastVideoCreationBlockByChannelId = new Map()
-    this.queue = queue({ concurrency: 1, autostart: true })
+    this.queue = queue({ concurrency: 1, autostart: true, timeout: 60000 /* 1 minute */ })
     this.queue.on('error', (err) => {
       this.logger.error(`Got error processing video`, { err })
+    })
+    this.queue.on('timeout', async (e) => {
+      this.logger.error(`Timeout processing video`, { e })
+      await this.ensureContentStateConsistency()
     })
   }
 
@@ -147,7 +151,9 @@ export class ContentCreationService {
       if (qnVideo) {
         // If QN return a video with given YT video ID attribution, then it means that
         // video was already created so video state should be updated accordingly.
-        await this.dynamodbService.videos.updateState(v, 'VideoCreated')
+        const { id, media, thumbnailPhoto } = qnVideo
+        const createdVideo = { ...v, joystreamVideo: { id, assetIds: [media?.id || '', thumbnailPhoto?.id || ''] } }
+        await this.dynamodbService.videos.updateState(createdVideo, 'VideoCreated')
       } else {
         await this.dynamodbService.videos.updateState(v, 'New')
       }

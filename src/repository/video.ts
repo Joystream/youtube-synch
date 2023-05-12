@@ -233,16 +233,6 @@ export class VideosService {
     return await this.videosRepository.save({ ...video, state })
   }
 
-  async getCountByChannel(channelId: string) {
-    const videosCountByChannel = (await (await this.videosRepository.getModel())
-      .query('channelId')
-      .eq(channelId)
-      .count()
-      .exec()) as unknown as { count: string }
-
-    return parseInt(videosCountByChannel.count)
-  }
-
   async getVideosInState(state: VideoState): Promise<YtVideo[]> {
     return this.videosRepository.query({ state }, (q) => q.sort('ascending').using('state-publishedAt-index'))
   }

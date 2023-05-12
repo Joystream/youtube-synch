@@ -20,7 +20,7 @@ export interface IYoutubeApi {
   getChannel(user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>): Promise<YtChannel>
   verifyChannel(channel: YtChannel): Promise<YtChannel>
   getVideos(channel: YtChannel, top: number): Promise<YtVideo[]>
-  getAllVideos(channel: YtChannel, max: number): Promise<YtVideo[]>
+  getAllVideos(channel: YtChannel): Promise<YtVideo[]>
   downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl>
   getCreatorOnboardingRequirements(): ReadonlyConfig['creatorOnboardingRequirements']
 }
@@ -150,9 +150,7 @@ class YoutubeClient implements IYoutubeApi {
     videoCreationTimeCutoff.setHours(videoCreationTimeCutoff.getHours() - minimumVideoAgeHours)
 
     // filter all videos that are older than MINIMUM_VIDEO_AGE_HOURS
-    const videos = (await this.getVideos(channel, minimumVideoCount)).filter(
-      (v) => new Date(v.publishedAt) < videoCreationTimeCutoff
-    )
+    const videos = (await this.getAllVideos(channel)).filter((v) => new Date(v.publishedAt) < videoCreationTimeCutoff)
     if (videos.length < minimumVideoCount) {
       errors.push(
         new YoutubeApiError(
@@ -199,10 +197,10 @@ class YoutubeClient implements IYoutubeApi {
     }
   }
 
-  async getAllVideos(channel: YtChannel, max = 500) {
+  async getAllVideos(channel: YtChannel) {
     const yt = this.getYoutube(channel.userAccessToken, channel.userRefreshToken)
     try {
-      return this.iterateVideos(yt, channel, max)
+      return this.iterateVideos(yt, channel)
     } catch (error) {
       throw new Error(`Failed to fetch videos for channel ${channel.title}. Error: ${error}`)
     }
@@ -219,9 +217,9 @@ class YoutubeClient implements IYoutubeApi {
     return response
   }
 
-  private async iterateVideos(youtube: youtube_v3.Youtube, channel: YtChannel, max: number) {
+  private async iterateVideos(youtube: youtube_v3.Youtube, channel: YtChannel, limit?: number) {
     let videos: YtVideo[] = []
-    let continuation: string | undefined
+    let nextPageToken: string | undefined
 
     do {
       const nextPage = await youtube.playlistItems
@@ -229,7 +227,7 @@ class YoutubeClient implements IYoutubeApi {
           part: ['contentDetails', 'snippet', 'id', 'status'],
           playlistId: channel.uploadsPlaylistId,
           maxResults: 50,
-          pageToken: continuation,
+          pageToken: nextPageToken,
         })
         .catch((err) => {
           if (err instanceof FetchError && err.code === 'ENOTFOUND') {
@@ -237,13 +235,16 @@ class YoutubeClient implements IYoutubeApi {
           }
           throw err
         })
-      continuation = nextPage.data.nextPageToken ?? ''
+      nextPageToken = nextPage.data.nextPageToken ?? ''
 
-      const videosDetails = nextPage.data.items?.length
+      // Filter `public` videos as only those would be synced
+      const videosPage = nextPage.data.items?.filter((v) => v.status?.privacyStatus === 'public') ?? []
+
+      const videosDetailsPage = videosPage.length
         ? (
             await youtube.videos
               .list({
-                id: nextPage.data.items?.map((v) => v.snippet?.resourceId?.videoId ?? ``),
+                id: videosPage?.map((v) => v.snippet?.resourceId?.videoId ?? ``),
                 part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status', 'statistics'],
               })
               .catch((err) => {
@@ -252,12 +253,12 @@ class YoutubeClient implements IYoutubeApi {
                 }
                 throw err
               })
-          ).data?.items
+          ).data?.items ?? []
         : []
 
-      const page = this.mapVideos(nextPage.data.items ?? [], videosDetails ?? [], channel)
+      const page = this.mapVideos(videosPage, videosDetailsPage, channel)
       videos = [...videos, ...page]
-    } while (continuation && videos.length < max)
+    } while (nextPageToken && (limit === undefined || videos.length < limit))
     return videos
   }
 
@@ -331,9 +332,7 @@ class YoutubeClient implements IYoutubeApi {
             }
         )
         // filter out videos that are not public, processed, or have live-stream, since those can't be synced yet
-        .filter(
-          (v) => v.uploadStatus === 'processed' && v.privacyStatus === 'public' && v.liveBroadcastContent === 'none'
-        )
+        .filter((v) => v.uploadStatus === 'processed' && v.liveBroadcastContent === 'none')
     )
   }
 }
@@ -410,7 +409,7 @@ class QuotaTrackingClient implements IYoutubeApi {
     return videos
   }
 
-  async getAllVideos(channel: YtChannel, max: number) {
+  async getAllVideos(channel: YtChannel) {
     // ensure have some left api quota
     if (!(await this.canCallYoutube('sync'))) {
       throw new YoutubeApiError(
@@ -420,7 +419,7 @@ class QuotaTrackingClient implements IYoutubeApi {
     }
 
     // get videos from api
-    const videos = await this.decorated.getAllVideos(channel, max)
+    const videos = await this.decorated.getAllVideos(channel)
 
     // increase used quota count, at least 2 api per channel are being used for requesting video details
     await this.increaseUsedQuota({ syncQuotaIncrement: parseInt((videos.length / 50).toString()) * 2 || 2 })

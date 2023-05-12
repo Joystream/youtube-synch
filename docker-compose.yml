@@ -8,8 +8,8 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - logs:/logs
-      - data:/data
+      - ./local/logs:/youtube-synch/local/logs
+      - ./local/data:/youtube-synch/local/data
       # mount the AWS credentials file to docker container home directory
       - ~/.aws/:/root/.aws:ro
     env_file:
