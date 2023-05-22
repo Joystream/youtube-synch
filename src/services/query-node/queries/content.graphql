@@ -29,9 +29,11 @@ fragment VideoFields on Video {
     name
   }
   media {
+    id
     isAccepted
   }
   thumbnailPhoto {
+    id
     isAccepted
   }
 }

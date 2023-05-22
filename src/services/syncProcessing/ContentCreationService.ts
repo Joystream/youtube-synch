@@ -1,4 +1,5 @@
 import BN from 'bn.js'
+import pWaitFor from 'p-wait-for'
 import queue from 'queue'
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
@@ -32,9 +33,13 @@ export class ContentCreationService {
     this.joystreamClient = joystreamClient
     this.contentDownloadService = contentDownloadService
     this.lastVideoCreationBlockByChannelId = new Map()
-    this.queue = queue({ concurrency: 1, autostart: true })
+    this.queue = queue({ concurrency: 1, autostart: true, timeout: 60000 /* 1 minute */ })
     this.queue.on('error', (err) => {
       this.logger.error(`Got error processing video`, { err })
+    })
+    this.queue.on('timeout', async (e) => {
+      this.logger.error(`Timeout processing video`, { e })
+      await this.ensureContentStateConsistency()
     })
   }
 
@@ -104,12 +109,11 @@ export class ContentCreationService {
          * of that channel because  QN will return outdated `totalVideosCreated` field and incorrect AppAction message will be
          * constructed for the next video, which would lead to youtube attribution information missing in the QN video metadata.
          */
-        const isQueryNodeUptodate = await this.joystreamClient.hasQueryNodeProcessedBlock(
-          this.lastVideoCreationBlockByChannelId.get(video.joystreamChannelId) || new BN(0)
-        )
-        if (!isQueryNodeUptodate) {
-          return
-        }
+
+        await pWaitFor(async () => {
+          const blockNumber = this.lastVideoCreationBlockByChannelId.get(video.joystreamChannelId) || new BN(0)
+          return await this.joystreamClient.hasQueryNodeProcessedBlock(blockNumber)
+        })
 
         // Extra validation to check state consistency
         const qnVideo = await this.joystreamClient.getVideoByYtResourceId(video.resourceId)
@@ -147,7 +151,9 @@ export class ContentCreationService {
       if (qnVideo) {
         // If QN return a video with given YT video ID attribution, then it means that
         // video was already created so video state should be updated accordingly.
-        await this.dynamodbService.videos.updateState(v, 'VideoCreated')
+        const { id, media, thumbnailPhoto } = qnVideo
+        const createdVideo = { ...v, joystreamVideo: { id, assetIds: [media?.id || '', thumbnailPhoto?.id || ''] } }
+        await this.dynamodbService.videos.updateState(createdVideo, 'VideoCreated')
       } else {
         await this.dynamodbService.videos.updateState(v, 'New')
       }

@@ -68,6 +68,11 @@ export class ContentDownloadService {
                 this.logger.warn(`Video visibility was set to private. Skipping from syncing...`, {
                   videoId: video.resourceId,
                 })
+              } else if (errorMsg.includes('Postprocessing: Conversion failed!')) {
+                await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
+                this.logger.error(`Video Postprocessing error. Skipping from syncing...`, {
+                  videoId: video.resourceId,
+                })
               } else {
                 this.logger.error(`Got error downloading video. Retrying...`, { videoId: video.resourceId, err })
               }
@@ -189,8 +194,8 @@ export class ContentDownloadService {
     await Promise.all(
       downloadPendingVideosByChannel.map(async ({ channelId, unsyncedVideos }) => {
         // Get total videos of channel
-        const videosCount = await this.dynamodbService.videos.getCountByChannel(channelId)
-        const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / videosCount
+        const { videoCount } = (await this.dynamodbService.channels.getByChannelId(channelId)).statistics
+        const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / videoCount
 
         for (const v of unsyncedVideos) {
           const rank = this.calculateVideoRank(

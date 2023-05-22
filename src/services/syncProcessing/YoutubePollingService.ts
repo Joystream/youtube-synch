@@ -168,9 +168,9 @@ export class YoutubePollingService {
     return updatedChannels.filter((ch) => ch.shouldBeIngested)
   }
 
-  private async performVideosIngestion(channel: YtChannel, top = 1000) {
+  private async performVideosIngestion(channel: YtChannel) {
     // get all sync-able videos of the channel
-    const allVideos = await this.youtubeApi.getAllVideos(channel, top)
+    const allVideos = await this.youtubeApi.getAllVideos(channel)
 
     // get all unsynced videos
     const unsyncedVideos = await this.getUnsyncedVideos(channel, allVideos)

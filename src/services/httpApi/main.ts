@@ -82,14 +82,45 @@ export async function bootstrapHttpApi(
   app.useGlobalPipes(new ValidationPipe({ transform: true })) // enable ValidationPipe
   app.enableCors({ allowedHeaders: '*', methods: '*', origin: '*' })
 
+  // override the res.send and res.json methods to save the body data to res.locals
+  app.use((_request: express.Request, response: express.Response, next: express.NextFunction) => {
+    const originalSend = response.send
+    const originalJson = response.json
+
+    response.json = function (data) {
+      // Only save the body data if the http request failed, as we only log the response body for failed requests
+      if (response.statusCode >= 400) {
+        response.locals.body = data
+      }
+      return originalJson.call(this, data)
+    }
+
+    response.send = function (data) {
+      // Only save the body data if the http request failed, as we only log the response body for failed requests
+      if (response.statusCode >= 400) {
+        response.locals.body = data
+      }
+      return originalSend.call(this, data)
+    }
+
+    next()
+  })
+
   // API request/response logging
   const logger = logging.createLogger('HttpApi')
   app.use((request: express.Request, response: express.Response, next: express.NextFunction) => {
     const { method, originalUrl } = request
 
     response.on('finish', () => {
-      const { statusCode } = response
-      logger.http(`${method} ${originalUrl} ${statusCode}`)
+      const { statusCode, statusMessage, req, locals } = response
+
+      logger.http(statusMessage, {
+        method,
+        url: originalUrl,
+        req: response.statusCode >= 400 ? { query: req.query, params: req.params, body: req.body } : undefined,
+        res: locals.body,
+        statusCode,
+      })
     })
 
     next()

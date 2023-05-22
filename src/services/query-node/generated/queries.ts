@@ -48,8 +48,8 @@ export type VideoFieldsFragment = {
   id: string
   ytVideoId?: Types.Maybe<string>
   entryApp?: Types.Maybe<{ id: string; name: string }>
-  media?: Types.Maybe<{ isAccepted: boolean }>
-  thumbnailPhoto?: Types.Maybe<{ isAccepted: boolean }>
+  media?: Types.Maybe<{ id: string; isAccepted: boolean }>
+  thumbnailPhoto?: Types.Maybe<{ id: string; isAccepted: boolean }>
 }
 
 export type GetVideoByYtResourceIdAndEntryAppNameQueryVariables = Types.Exact<{
@@ -216,9 +216,11 @@ export const VideoFields = gql`
       name
     }
     media {
+      id
       isAccepted
     }
     thumbnailPhoto {
+      id
       isAccepted
     }
   }

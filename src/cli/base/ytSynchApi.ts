@@ -2,8 +2,8 @@ import { flags } from '@oclif/command'
 import { CLIError } from '@oclif/errors'
 import axios, { AxiosError } from 'axios'
 import { ChannelDto, VideoDto } from 'src/services/httpApi/dtos'
-import DefaultCommandBase from './default'
 import ExitCodes from './ExitCodes'
+import DefaultCommandBase from './default'
 
 /**
  * Abstract base class for commands that require access to the YtSynch Http API.
@@ -31,9 +31,12 @@ export default abstract class YtSynchCommandBase extends DefaultCommandBase {
       const response = await axios.get<ChannelDto>(`${this.httpApiUrl}/channels/${channelId}`)
       return response.data
     } catch (error) {
-      throw new CLIError(`Failed to fetch channel from HttpApi, msg: ${(error as AxiosError).response?.data.message}`, {
-        exit: ExitCodes.HttpApiError,
-      })
+      throw new CLIError(
+        `Failed to fetch channel from HttpApi, msg: ${(error as AxiosError<any>).response?.data.message}`,
+        {
+          exit: ExitCodes.HttpApiError,
+        }
+      )
     }
   }
 
@@ -44,7 +47,7 @@ export default abstract class YtSynchCommandBase extends DefaultCommandBase {
     } catch (error) {
       throw new CLIError(
         `Failed to fetch channels from HttpApi, code: ${(error as AxiosError).code} msg: ${
-          (error as AxiosError).response?.data.message
+          (error as AxiosError<any>).response?.data.message
         }`,
         {
           exit: ExitCodes.HttpApiError,
@@ -58,9 +61,12 @@ export default abstract class YtSynchCommandBase extends DefaultCommandBase {
       const response = await axios.get<VideoDto[]>(`${this.httpApiUrl}/channels/${channelId}/videos`)
       return response.data
     } catch (error) {
-      throw new CLIError(`Failed to fetch videos from HttpApi, msg: ${(error as AxiosError).response?.data.message}`, {
-        exit: ExitCodes.HttpApiError,
-      })
+      throw new CLIError(
+        `Failed to fetch videos from HttpApi, msg: ${(error as AxiosError<any>).response?.data.message}`,
+        {
+          exit: ExitCodes.HttpApiError,
+        }
+      )
     }
   }
 }
