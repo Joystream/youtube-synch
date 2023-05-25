@@ -196,6 +196,9 @@ export class YtVideo {
   // The video's privacy status. `private`, `public`, or `unlisted`.
   privacyStatus: 'public' | 'private' | 'unlisted'
 
+  // A rating that YouTube uses to identify age-restricted content.
+  ytRating: 'ytAgeRestricted' | undefined
+
   // youtube video license
   license: 'creativeCommon' | 'youtube'
 

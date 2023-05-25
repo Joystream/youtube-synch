@@ -63,12 +63,16 @@ export class StorageNodeApi {
           },
           maxBodyLength: Infinity,
           maxContentLength: Infinity,
+          maxRedirects: 0,
           headers: {
             'content-type': 'multipart/form-data',
             ...formData.getHeaders(),
           },
         })
       } catch (error) {
+        // destroy the file stream
+        file.destroy()
+
         if (axios.isAxiosError(error) && error.response) {
           const storageNodeUrl = error.config?.url
           const { status, data } = error.response

@@ -322,6 +322,7 @@ class YoutubeClient implements IYoutubeApi {
               languageIso: channel.joystreamChannelLanguageIso,
               joystreamChannelId: channel.joystreamChannelId,
               privacyStatus: video.status?.privacyStatus,
+              ytRating: videosDetails[i].contentDetails?.contentRating?.ytRating,
               liveBroadcastContent: videosDetails[i].snippet?.liveBroadcastContent,
               license: videosDetails[i].status?.license,
               duration: toSeconds(parse(videosDetails[i].contentDetails?.duration ?? 'PT0S')),
@@ -331,8 +332,8 @@ class YoutubeClient implements IYoutubeApi {
               state: 'New',
             }
         )
-        // filter out videos that are not public, processed, or have live-stream, since those can't be synced yet
-        .filter((v) => v.uploadStatus === 'processed' && v.liveBroadcastContent === 'none')
+        // filter out videos that are not public, processed, have live-stream or age-restriction, since those can't be synced yet
+        .filter((v) => v.uploadStatus === 'processed' && v.liveBroadcastContent === 'none' && v.ytRating === undefined)
     )
   }
 }

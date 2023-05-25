@@ -1,4 +1,5 @@
 import BN from 'bn.js'
+import pWaitFor from 'p-wait-for'
 import queue from 'queue'
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
@@ -108,12 +109,11 @@ export class ContentCreationService {
          * of that channel because  QN will return outdated `totalVideosCreated` field and incorrect AppAction message will be
          * constructed for the next video, which would lead to youtube attribution information missing in the QN video metadata.
          */
-        const isQueryNodeUptodate = await this.joystreamClient.hasQueryNodeProcessedBlock(
-          this.lastVideoCreationBlockByChannelId.get(video.joystreamChannelId) || new BN(0)
-        )
-        if (!isQueryNodeUptodate) {
-          return
-        }
+
+        await pWaitFor(async () => {
+          const blockNumber = this.lastVideoCreationBlockByChannelId.get(video.joystreamChannelId) || new BN(0)
+          return await this.joystreamClient.hasQueryNodeProcessedBlock(blockNumber)
+        })
 
         // Extra validation to check state consistency
         const qnVideo = await this.joystreamClient.getVideoByYtResourceId(video.resourceId)
