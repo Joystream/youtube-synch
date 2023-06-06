@@ -1,5 +1,6 @@
 import Queue from 'better-queue'
 import fs from 'fs'
+import fsPromises from 'fs/promises'
 import _ from 'lodash'
 import path from 'path'
 import sleep from 'sleep-promise'
@@ -76,6 +77,8 @@ export class ContentDownloadService {
               } else {
                 this.logger.error(`Got error downloading video. Retrying...`, { videoId: video.resourceId, err })
               }
+
+              await this.removeVideoFile(video.resourceId)
             }
           })
         )
@@ -114,11 +117,16 @@ export class ContentDownloadService {
     throw new Error(`Failed to get video file path: ${resourceId}. File not found.`)
   }
 
-  public removeVideoFile(resourceId: string) {
+  public async removeVideoFile(resourceId: string) {
     try {
-      const videoFilePath = this.expectedVideoFilePath(resourceId)
+      const dir = this.config.directories.assets
       const size = this.fileSize(resourceId)
-      fs.unlinkSync(videoFilePath)
+      const files = await fsPromises.readdir(dir)
+      for (const file of files) {
+        if (file.startsWith(resourceId)) {
+          await fsPromises.unlink(path.join(dir, file))
+        }
+      }
       this.downloadedVideoPathByResourceId.delete(resourceId)
       this.contentSizeSum -= size
     } catch (err) {
@@ -149,7 +157,10 @@ export class ContentDownloadService {
         this.contentSizeSum += this.fileSize(videoId)
         return videoId
       })
-    this.logger.verbose(`Resolved already downloaded video assets in local storage`, { resolvedDownloads })
+    this.logger.verbose(`Resolved already downloaded video assets in local storage`, {
+      resolvedDownloads,
+      spaceUsed: this.contentSizeSum,
+    })
   }
 
   /**

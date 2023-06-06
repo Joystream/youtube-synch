@@ -1,3 +1,7 @@
+### 1.4.2
+
+- Add support for transcoding the media files while downloading & merging the audio/video streams from Youtube. E.g, If the media output container is `mkv` then transcode(recode) the media to `mp4`, as `mkv` is not widely supported by the browsers.
+
 ### 1.4.1
 
 - Excludes age restricted videos from syncing.

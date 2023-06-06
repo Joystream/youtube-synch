@@ -210,6 +210,9 @@ class YoutubeClient implements IYoutubeApi {
     const response = await ytdl(videoUrl, {
       noWarnings: true,
       printJson: true,
+      // If the media output container is `mkv` then transcode (recode) the
+      // media to `mp4`, as `mkv` is not widely supported by the browsers.
+      recodeVideo: 'mkv>mp4',
       format: 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
       output: `${outPath}/%(id)s.%(ext)s`,
       ffmpegLocation: ffmpegInstaller.path,
@@ -405,7 +408,7 @@ class QuotaTrackingClient implements IYoutubeApi {
     const videos = await this.decorated.getVideos(channel, top)
 
     // increase used quota count, at least 2 api per channel are being used for requesting video details
-    await this.increaseUsedQuota({ syncQuotaIncrement: parseInt((videos.length / 50).toString()) * 2 || 2 })
+    await this.increaseUsedQuota({ syncQuotaIncrement: Math.ceil(videos.length / 50) * 2 || 2 })
 
     return videos
   }
@@ -423,7 +426,7 @@ class QuotaTrackingClient implements IYoutubeApi {
     const videos = await this.decorated.getAllVideos(channel)
 
     // increase used quota count, at least 2 api per channel are being used for requesting video details
-    await this.increaseUsedQuota({ syncQuotaIncrement: parseInt((videos.length / 50).toString()) * 2 || 2 })
+    await this.increaseUsedQuota({ syncQuotaIncrement: Math.ceil(videos.length / 50) * 2 || 2 })
 
     return videos
   }

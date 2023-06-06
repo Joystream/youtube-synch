@@ -111,7 +111,7 @@ export class ContentUploadService {
           await this.dynamodbService.videos.updateState(video, 'UploadSucceeded')
 
           // After upload is successful, remove the video file from local storage
-          this.contentDownloadService.removeVideoFile(video.resourceId)
+          await this.contentDownloadService.removeVideoFile(video.resourceId)
 
           this.logger.info(`Successfully uploaded assets for video`, {
             videoId: video.resourceId,
