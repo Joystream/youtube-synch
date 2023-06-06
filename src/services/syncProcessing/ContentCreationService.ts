@@ -10,6 +10,8 @@ import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
 import { ContentDownloadService } from './ContentDownloadService'
 
+// TODO: keep hash calculation separate from extrinsic calling
+
 // Video content creation/processing service
 export class ContentCreationService {
   private config: ReadonlyConfig
@@ -33,7 +35,7 @@ export class ContentCreationService {
     this.joystreamClient = joystreamClient
     this.contentDownloadService = contentDownloadService
     this.lastVideoCreationBlockByChannelId = new Map()
-    this.queue = queue({ concurrency: 1, autostart: true, timeout: 60000 /* 1 minute */ })
+    this.queue = queue({ concurrency: 1, autostart: true, timeout: 120000 /* 2 minute */ })
     this.queue.on('error', (err) => {
       this.logger.error(`Got error processing video`, { err })
     })
