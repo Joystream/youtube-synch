@@ -22,6 +22,8 @@ export class ContentDownloadService {
   private youtubeApi: IYoutubeApi
   private dynamodbService: IDynamodbService
   private downloadQueue: Queue<VideoDownloadTask>
+  private activeDownloadsIds: string[]
+  private activeDownloadsCount: number
   private downloadedVideoPathByResourceId: Map<string, string>
   private contentSizeSum = 0
 
@@ -44,55 +46,16 @@ export class ContentDownloadService {
     this.logger = logging.createLogger('ContentDownloadService')
     this.dynamodbService = dynamodbService
     this.youtubeApi = youtubeApi
+    this.activeDownloadsIds = []
+    this.activeDownloadsCount = 0
     this.downloadedVideoPathByResourceId = new Map()
-    this.downloadQueue = new Queue(
-      /// Process download tasks based on their priority.
-      async (videos: VideoDownloadTask[], cb: (error?: any, result?: null) => void) => {
-        await Promise.allSettled(
-          videos.map(async (video) => {
-            try {
-              // download the video from youtube
-              this.logger.info(`Downloading video`, { videoId: video.resourceId, channelId: video.joystreamChannelId })
-              const { ext: fileExt } = await this.youtubeApi.downloadVideo(video.url, this.config.directories.assets)
-              this.setVideoFilePath(video.resourceId, fileExt)
-              this.contentSizeSum += this.fileSize(video.resourceId)
-              this.logger.info(`Video downloaded.`, { videoId: video.resourceId, channelId: video.joystreamChannelId })
-            } catch (err) {
-              const errorMsg = (err as Error).message
-              if (errorMsg.includes('Video unavailable')) {
-                await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
-                this.logger.warn(`Video not found. Skipping from syncing...`, {
-                  videoId: video.resourceId,
-                })
-              } else if (errorMsg.includes('Private video')) {
-                await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
-                this.logger.warn(`Video visibility was set to private. Skipping from syncing...`, {
-                  videoId: video.resourceId,
-                })
-              } else if (errorMsg.includes('Postprocessing: Conversion failed!')) {
-                await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
-                this.logger.error(`Video Postprocessing error. Skipping from syncing...`, {
-                  videoId: video.resourceId,
-                })
-              } else {
-                this.logger.error(`Got error downloading video. Retrying...`, { videoId: video.resourceId, err })
-              }
-
-              await this.removeVideoFile(video.resourceId)
-            }
-          })
-        )
-        // Signal that the batch is done
-        cb(null, null)
+    this.downloadQueue = new Queue(this.processDownloadTasks.bind(this), {
+      priority: (video: VideoDownloadTask, cb) => {
+        cb(null, video.priorityScore)
       },
-      {
-        priority: (video: VideoDownloadTask, cb) => {
-          cb(null, video.priorityScore)
-        },
 
-        batchSize: this.config.limits.maxConcurrentDownloads,
-      }
-    )
+      batchSize: this.config.limits.maxConcurrentDownloads,
+    })
   }
 
   async start() {
@@ -163,6 +126,13 @@ export class ContentDownloadService {
     })
   }
 
+  private async pendingDownloadVideos() {
+    const allUnsyncedVideos = await this.dynamodbService.videos.getAllUnsyncedVideos()
+    return allUnsyncedVideos.filter((v) => {
+      return !this.activeDownloadsIds.includes(v.resourceId) && this.getVideoFilePath(v.resourceId) === undefined
+    })
+  }
+
   /**
    * Download new content after specified interval.
    * @param downloadIntervalMinutes - defines an interval between new content downloads.
@@ -175,35 +145,30 @@ export class ContentDownloadService {
       await sleep(sleepInterval)
       try {
         this.logger.info(`Resume service....`)
-        await this.downloadNewContentWithUpdatedPriority()
+        await this.prepareNewContentForDownloading()
       } catch (err) {
         this.logger.error(`Critical content download error`, { err })
       }
     }
   }
 
-  private async downloadNewContentWithUpdatedPriority() {
-    const allUnsyncedVideos = await this.dynamodbService.videos.getAllUnsyncedVideos()
+  // Prepare new content for downloading with updated priority
+  private async prepareNewContentForDownloading() {
+    const pendingDownloadVideos = await this.pendingDownloadVideos()
 
-    this.logger.info(`Found ${allUnsyncedVideos.length} unsynced videos.`)
-    if (!this.freeSpace && allUnsyncedVideos.length) {
-      this.logger.warn(`Not enough space available to download new videos. Will try again later.`)
-      return
-    }
+    this.logger.info(`Download in progress for ${this.activeDownloadsCount} videos.`)
 
-    const downloadPendingVideos = allUnsyncedVideos.filter((v) => this.getVideoFilePath(v.resourceId) === undefined)
-
-    this.logger.verbose(`Found ${downloadPendingVideos.length} videos with pending download.`, {
-      videos: downloadPendingVideos.map((v) => v.resourceId),
+    this.logger.verbose(`Found ${pendingDownloadVideos.length} videos with pending download.`, {
+      videos: pendingDownloadVideos.map((v) => v.resourceId),
     })
 
-    const downloadPendingVideosByChannel = _(downloadPendingVideos)
+    const pendingDownloadVideosByChannel = _(pendingDownloadVideos)
       .groupBy((v) => v.channelId)
       .map((videos, channelId) => ({ channelId, unsyncedVideos: [...videos] }))
       .value()
 
     await Promise.all(
-      downloadPendingVideosByChannel.map(async ({ channelId, unsyncedVideos }) => {
+      pendingDownloadVideosByChannel.map(async ({ channelId, unsyncedVideos }) => {
         // Get total videos of channel
         const { videoCount } = (await this.dynamodbService.channels.getByChannelId(channelId)).statistics
         const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / videoCount
@@ -224,6 +189,56 @@ export class ContentDownloadService {
     )
   }
 
+  /// Process download tasks based on their priority.
+  private async processDownloadTasks(videos: VideoDownloadTask[], cb: (error?: any, result?: null) => void) {
+    // set `activeDownloadsIds`
+    this.activeDownloadsIds = videos.map((v) => v.resourceId)
+    this.activeDownloadsCount = videos.length
+
+    await Promise.allSettled(
+      videos.map(async (video) => {
+        try {
+          // download the video from youtube
+          this.logger.info(`Downloading video`, { videoId: video.resourceId, channelId: video.joystreamChannelId })
+          const { ext: fileExt } = await this.youtubeApi.downloadVideo(video.url, this.config.directories.assets)
+          this.setVideoFilePath(video.resourceId, fileExt === 'mkv' ? 'mp4' : fileExt)
+          this.contentSizeSum += this.fileSize(video.resourceId)
+          this.logger.info(`Video downloaded.`, { videoId: video.resourceId, channelId: video.joystreamChannelId })
+        } catch (err) {
+          const errorMsg = (err as Error).message
+          if (errorMsg.includes('Video unavailable')) {
+            await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
+            this.logger.warn(`Video not found. Skipping from syncing...`, {
+              videoId: video.resourceId,
+            })
+          } else if (errorMsg.includes('Private video')) {
+            await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
+            this.logger.warn(`Video visibility was set to private. Skipping from syncing...`, {
+              videoId: video.resourceId,
+            })
+          } else if (errorMsg.includes('Postprocessing: Conversion failed!')) {
+            await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
+            this.logger.error(`Video Postprocessing error. Skipping from syncing...`, {
+              videoId: video.resourceId,
+            })
+          } else {
+            this.logger.error(`Got error downloading video. Retrying...`, { videoId: video.resourceId, err })
+          }
+
+          await this.removeVideoFile(video.resourceId)
+        } finally {
+          this.activeDownloadsCount--
+        }
+      })
+    )
+
+    // unset `activeDownloadsIds` set
+    this.activeDownloadsIds = []
+    // Signal that the batch is done
+    cb(null, null)
+  }
+
+  // Measure the priority of a video for download.
   private measure(sudoPriority: number, percentage: number, publishedAt: number) {
     const currentUnixTime = Date.now()
     const normalizedPublishedDate =
