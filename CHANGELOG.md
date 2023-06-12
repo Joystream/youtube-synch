@@ -1,3 +1,15 @@
+### 1.4.2
+
+- Add support for transcoding the media files while downloading & merging the audio/video streams from Youtube. E.g, If the media output container is `mkv` then transcode(recode) the media to `mp4`, as `mkv` is not widely supported by the browsers.
+
+### 1.4.1
+
+- Excludes age restricted videos from syncing.
+- Add support for excluding blocked videos of channel from being tracked.
+- While uploading the asset to storage-node set the axios `max-redirects: 0`. This is done to avoid the buffering of complete request payload body in-memory (which could lead to out of memory error if payload is too large). Since if max-redirects is not equal to zero, the axios client will buffer all the request payload in-memory to respond to any redirection from the server.
+- override the `res.send` and `res.json` methods to save the body data to `res.locals`
+- Adds `pWaitFor` function to check the QN state for `totalVideosCreated` nonce when creating videos.
+
 ### 1.4.0
 
 - Adds support for whitelisting a channel such that a whitelisted channel will be exempted from requirements check when signing up for the YPP program. Adds `POST /channels/whitelist` endpoint to whitelist a channel/s & `DELETE /channels/whitelist/{ytChannelHandle}` endpoint to remove a channel from whitelist.

@@ -302,17 +302,10 @@ function getVideoFFProbeMetadata(filePath: string): Promise<VideoFFProbeMetadata
 }
 
 async function getVideoFileMetadata(filePath: string): Promise<VideoFileMetadata> {
-  let ffProbeMetadata: VideoFFProbeMetadata = {}
-  try {
-    ffProbeMetadata = await getVideoFFProbeMetadata(filePath)
-  } catch (e) {
-    const message = e instanceof Error ? e.message : e
-    console.warn(`Failed to get video metadata via ffprobe (${message})`)
-  }
-
   const size = fs.statSync(filePath).size
   const container = path.extname(filePath).slice(1)
   const mimeType = mimeTypes.lookup(container) || `unknown`
+  const ffProbeMetadata = await getVideoFFProbeMetadata(filePath)
   return {
     size,
     container,
