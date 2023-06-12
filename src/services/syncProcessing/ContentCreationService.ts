@@ -75,6 +75,8 @@ export class ContentCreationService {
             ...(await this.dynamodbService.videos.getVideosInState('New')),
           ]
 
+          this.logger.info(`Found ${videos.length} videos with pending on-chain creation.`)
+
           for (const v of videos) {
             const videoFilePath = this.contentDownloadService.getVideoFilePath(v.resourceId)
             if (videoFilePath) {
