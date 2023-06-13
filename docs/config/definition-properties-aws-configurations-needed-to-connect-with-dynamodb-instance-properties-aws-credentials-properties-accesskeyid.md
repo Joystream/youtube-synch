@@ -1,0 +1,3 @@
+## accessKeyId Type
+
+`string`

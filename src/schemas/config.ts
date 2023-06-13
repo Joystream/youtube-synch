@@ -224,8 +224,24 @@ export const configSchema: JSONSchema4 = objectSchema({
       title: 'Youtube Oauth2 Client configuration',
       description: 'Youtube Oauth2 Client configuration',
       properties: {
-        clientId: { type: 'string' },
-        clientSecret: { type: 'string' },
+        clientId: { type: 'string', description: 'Youtube Oauth2 Client Id' },
+        clientSecret: { type: 'string', description: 'Youtube Oauth2 Client Secret' },
+        maxAllowedQuotaUsageInPercentage: {
+          description:
+            `Maximum percentage of daily Youtube API quota that can be used by the Periodic polling service. ` +
+            `Once this limit is reached the service will stop polling for new videos until the next day(when Quota resets). ` +
+            `All the remaining quota (100 - maxAllowedQuotaUsageInPercentage) will be used for potential channel's signups.`,
+          type: 'number',
+        },
+        adcKeyFilePath: {
+          type: 'string',
+          description:
+            `Path to the Google Cloud's Application Default Credentials (ADC) key file. ` +
+            `It is required to periodically monitor the Youtube API quota usage.`,
+        },
+      },
+      dependencies: {
+        maxAllowedQuotaUsageInPercentage: ['adcKeyFilePath'],
       },
       required: ['clientId', 'clientSecret'],
     }),

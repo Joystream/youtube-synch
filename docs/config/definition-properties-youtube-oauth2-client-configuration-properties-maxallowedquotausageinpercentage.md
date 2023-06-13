@@ -1,0 +1,3 @@
+## maxAllowedQuotaUsageInPercentage Type
+
+`number`

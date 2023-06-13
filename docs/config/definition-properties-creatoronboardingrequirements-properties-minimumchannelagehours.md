@@ -1,0 +1,3 @@
+## minimumChannelAgeHours Type
+
+`number`
