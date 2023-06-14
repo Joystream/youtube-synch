@@ -34,8 +34,6 @@ function videoRepository(tablePrefix: ResourcePrefix) {
       // Video's playlist ID
       playlistId: String,
 
-      resourceId: String,
-
       viewCount: Number,
 
       thumbnails: {

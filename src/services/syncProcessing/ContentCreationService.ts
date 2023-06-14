@@ -78,7 +78,7 @@ export class ContentCreationService {
           this.logger.info(`Found ${videos.length} videos with pending on-chain creation.`)
 
           for (const v of videos) {
-            const videoFilePath = this.contentDownloadService.getVideoFilePath(v.resourceId)
+            const videoFilePath = this.contentDownloadService.getVideoFilePath(v.id)
             if (videoFilePath) {
               await this.addVideoCreationTask(v, videoFilePath)
             }
@@ -91,7 +91,7 @@ export class ContentCreationService {
   }
 
   private async addVideoCreationTask(video: YtVideo, videoFilePath: string) {
-    this.logger.debug(`Adding video ${video.resourceId} to the queue`)
+    this.logger.debug(`Adding video ${video.id} to the queue`)
     this.queue.push(async () => {
       try {
         // * Pre-validation
@@ -102,7 +102,7 @@ export class ContentCreationService {
         if (!isCollaboratorSet) {
           this.logger.warn(
             `Channel ${video.joystreamChannelId} opted out of YPP program. So skipping the video ` +
-              `${video.resourceId} from syncing & deleting it's record from the database.`
+              `${video.id} from syncing & deleting it's record from the database.`
           )
           await this.dynamodbService.videos.delete(video)
           return
@@ -120,11 +120,11 @@ export class ContentCreationService {
         })
 
         // Extra validation to check state consistency
-        const qnVideo = await this.joystreamClient.getVideoByYtResourceId(video.resourceId)
+        const qnVideo = await this.joystreamClient.getVideoByYtResourceId(video.id)
         if (qnVideo) {
           this.logger.error(
-            `Inconsistent state. Youtube video ${video.resourceId} was already created on Joystream but the service tried to recreate it.`,
-            { videoId: video.resourceId, channelId: video.joystreamChannelId }
+            `Inconsistent state. Youtube video ${video.id} was already created on Joystream but the service tried to recreate it.`,
+            { videoId: video.id, channelId: video.joystreamChannelId }
           )
           process.exit(-1)
         }
@@ -133,9 +133,9 @@ export class ContentCreationService {
         const [createdVideo, createdInBlock] = await this.joystreamClient.createVideo(video, videoFilePath)
         this.lastVideoCreationBlockByChannelId.set(video.joystreamChannelId, createdInBlock)
         await this.dynamodbService.videos.updateState(createdVideo, 'VideoCreated')
-        this.logger.info(`Video created on chain.`, { videoId: video.resourceId, channelId: video.joystreamChannelId })
+        this.logger.info(`Video created on chain.`, { videoId: video.id, channelId: video.joystreamChannelId })
       } catch (err) {
-        this.logger.error(`Got error processing video`, { videoId: video.resourceId, err })
+        this.logger.error(`Got error processing video`, { videoId: video.id, err })
         await this.dynamodbService.videos.updateState(video, 'VideoCreationFailed')
       }
     })
@@ -151,7 +151,7 @@ export class ContentCreationService {
     const videosInProcessingState = await this.dynamodbService.videos.getVideosInState('CreatingVideo')
 
     for (const v of videosInProcessingState) {
-      const qnVideo = await this.joystreamClient.getVideoByYtResourceId(v.resourceId)
+      const qnVideo = await this.joystreamClient.getVideoByYtResourceId(v.id)
       if (qnVideo) {
         // If QN return a video with given YT video ID attribution, then it means that
         // video was already created so video state should be updated accordingly.

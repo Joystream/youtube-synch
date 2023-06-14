@@ -129,7 +129,7 @@ export class ContentDownloadService {
   private async pendingDownloadVideos() {
     const allUnsyncedVideos = await this.dynamodbService.videos.getAllUnsyncedVideos()
     return allUnsyncedVideos.filter((v) => {
-      return !this.activeDownloadsIds.includes(v.resourceId) && this.getVideoFilePath(v.resourceId) === undefined
+      return !this.activeDownloadsIds.includes(v.id) && this.getVideoFilePath(v.id) === undefined
     })
   }
 
@@ -159,7 +159,7 @@ export class ContentDownloadService {
     this.logger.info(`Download in progress for ${this.activeDownloadsCount} videos.`)
 
     this.logger.verbose(`Found ${pendingDownloadVideos.length} videos with pending download.`, {
-      videos: pendingDownloadVideos.map((v) => v.resourceId),
+      videos: pendingDownloadVideos.map((v) => v.id),
     })
 
     const pendingDownloadVideosByChannel = _(pendingDownloadVideos)
@@ -192,40 +192,40 @@ export class ContentDownloadService {
   /// Process download tasks based on their priority.
   private async processDownloadTasks(videos: VideoDownloadTask[], cb: (error?: any, result?: null) => void) {
     // set `activeDownloadsIds`
-    this.activeDownloadsIds = videos.map((v) => v.resourceId)
+    this.activeDownloadsIds = videos.map((v) => v.id)
     this.activeDownloadsCount = videos.length
 
     await Promise.allSettled(
       videos.map(async (video) => {
         try {
           // download the video from youtube
-          this.logger.info(`Downloading video`, { videoId: video.resourceId, channelId: video.joystreamChannelId })
+          this.logger.info(`Downloading video`, { videoId: video.id, channelId: video.joystreamChannelId })
           const { ext: fileExt } = await this.youtubeApi.downloadVideo(video.url, this.config.directories.assets)
-          this.setVideoFilePath(video.resourceId, fileExt === 'mkv' ? 'mp4' : fileExt)
-          this.contentSizeSum += this.fileSize(video.resourceId)
-          this.logger.info(`Video downloaded.`, { videoId: video.resourceId, channelId: video.joystreamChannelId })
+          this.setVideoFilePath(video.id, fileExt)
+          this.contentSizeSum += this.fileSize(video.id)
+          this.logger.info(`Video downloaded.`, { videoId: video.id, channelId: video.joystreamChannelId })
         } catch (err) {
           const errorMsg = (err as Error).message
           if (errorMsg.includes('Video unavailable')) {
             await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
             this.logger.warn(`Video not found. Skipping from syncing...`, {
-              videoId: video.resourceId,
+              videoId: video.id,
             })
           } else if (errorMsg.includes('Private video')) {
             await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
             this.logger.warn(`Video visibility was set to private. Skipping from syncing...`, {
-              videoId: video.resourceId,
+              videoId: video.id,
             })
           } else if (errorMsg.includes('Postprocessing: Conversion failed!')) {
             await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
             this.logger.error(`Video Postprocessing error. Skipping from syncing...`, {
-              videoId: video.resourceId,
+              videoId: video.id,
             })
           } else {
-            this.logger.error(`Got error downloading video. Retrying...`, { videoId: video.resourceId, err })
+            this.logger.error(`Got error downloading video. Retrying...`, { videoId: video.id, err })
           }
 
-          await this.removeVideoFile(video.resourceId)
+          await this.removeVideoFile(video.id)
         } finally {
           this.activeDownloadsCount--
         }

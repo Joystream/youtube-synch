@@ -115,7 +115,7 @@ export class JoystreamClient {
 
     const creatorId = video.joystreamChannelId.toString()
     const nonce = (await this.qnApi.getChannelById(creatorId || ''))?.totalVideosCreated || 0
-    const appActionMetadata = metadataToBytes(AppActionMetadata, { videoId: video.resourceId })
+    const appActionMetadata = metadataToBytes(AppActionMetadata, { videoId: video.id })
     const appAction = await this.prepareAppActionInput({
       rawAction,
       assets,

@@ -191,7 +191,6 @@ export default class AddUnauthorizedChannelForSyncing extends RuntimeApiCommandB
         thumbnails: { default: video.thumbnails[0]?.url, medium: video.thumbnails[1]?.url } as Thumbnails,
         duration: video.durationSec || 0,
         createdAt: new Date(),
-        resourceId: video.id,
         url: video.shortUrl,
         privacyStatus: 'public',
         uploadStatus: 'processed',
