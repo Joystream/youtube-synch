@@ -65,6 +65,14 @@ Maximum percentage of daily Youtube API quota that can be used by the Periodic p
 
 `number`
 
+### maxAllowedQuotaUsageInPercentage Default Value
+
+The default value is:
+
+```json
+95
+```
+
 ## adcKeyFilePath
 
 Path to the Google Cloud's Application Default Credentials (ADC) key file. It is required to periodically monitor the Youtube API quota usage.

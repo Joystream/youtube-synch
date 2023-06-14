@@ -232,6 +232,7 @@ export const configSchema: JSONSchema4 = objectSchema({
             `Once this limit is reached the service will stop polling for new videos until the next day(when Quota resets). ` +
             `All the remaining quota (100 - maxAllowedQuotaUsageInPercentage) will be used for potential channel's signups.`,
           type: 'number',
+          default: 95,
         },
         adcKeyFilePath: {
           type: 'string',
