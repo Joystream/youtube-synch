@@ -1,4 +1,3 @@
-import Queue from 'better-queue'
 import fs from 'fs'
 import fsPromises from 'fs/promises'
 import _ from 'lodash'
@@ -10,18 +9,17 @@ import { ReadonlyConfig } from '../../types'
 import { VideoDownloadTask } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { IYoutubeApi } from '../youtube/api'
+import { PriorityQueue } from './PriorityQueue'
 
 // Youtube videos download service
 export class ContentDownloadService {
-  private readonly MAX_SUDO_PRIORITY = 100
   private readonly DEFAULT_SUDO_PRIORITY = 10
-  private readonly OLDEST_PUBLISHED_DATE = 946684800 // Unix timestamp of year 2000
 
   private config: ReadonlyConfig
   private logger: Logger
   private youtubeApi: IYoutubeApi
   private dynamodbService: IDynamodbService
-  private downloadQueue: Queue<VideoDownloadTask>
+  private downloadQueue: PriorityQueue<VideoDownloadTask, 'batchProcessor'>
   private activeDownloadsIds: string[]
   private activeDownloadsCount: number
   private downloadedVideoPathByResourceId: Map<string, string>
@@ -49,13 +47,13 @@ export class ContentDownloadService {
     this.activeDownloadsIds = []
     this.activeDownloadsCount = 0
     this.downloadedVideoPathByResourceId = new Map()
-    this.downloadQueue = new Queue(this.processDownloadTasks.bind(this), {
-      priority: (video: VideoDownloadTask, cb) => {
+    this.downloadQueue = new PriorityQueue(
+      this.processDownloadTasks.bind(this),
+      (video: VideoDownloadTask, cb) => {
         cb(null, video.priorityScore)
       },
-
-      batchSize: this.config.limits.maxConcurrentDownloads,
-    })
+      this.config.limits.maxConcurrentDownloads
+    )
   }
 
   async start() {
@@ -145,7 +143,7 @@ export class ContentDownloadService {
       await sleep(sleepInterval)
       try {
         this.logger.info(`Resume service....`)
-        await this.prepareNewContentForDownloading()
+        await this.prepareContentForDownloading()
       } catch (err) {
         this.logger.error(`Critical content download error`, { err })
       }
@@ -153,13 +151,12 @@ export class ContentDownloadService {
   }
 
   // Prepare new content for downloading with updated priority
-  private async prepareNewContentForDownloading() {
+  private async prepareContentForDownloading() {
     const pendingDownloadVideos = await this.pendingDownloadVideos()
 
-    this.logger.info(`Download in progress for ${this.activeDownloadsCount} videos.`)
-
-    this.logger.verbose(`Found ${pendingDownloadVideos.length} videos with pending download.`, {
-      videos: pendingDownloadVideos.map((v) => v.id),
+    this.logger.verbose(`Video downloads progress status`, {
+      activeDownloadsCount: this.activeDownloadsCount,
+      pendingDownloadsCount: pendingDownloadVideos.length,
     })
 
     const pendingDownloadVideosByChannel = _(pendingDownloadVideos)
@@ -174,7 +171,7 @@ export class ContentDownloadService {
         const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / videoCount
 
         for (const v of unsyncedVideos) {
-          const rank = this.calculateVideoRank(
+          const rank = this.downloadQueue.calculateVideoRank(
             this.DEFAULT_SUDO_PRIORITY,
             percentageOfCreatorBacklogNotSynched,
             Date.parse(v.publishedAt)
@@ -236,44 +233,5 @@ export class ContentDownloadService {
     this.activeDownloadsIds = []
     // Signal that the batch is done
     cb(null, null)
-  }
-
-  // Measure the priority of a video for download.
-  private measure(sudoPriority: number, percentage: number, publishedAt: number) {
-    const currentUnixTime = Date.now()
-    const normalizedPublishedDate =
-      (100 * (currentUnixTime - publishedAt)) / (currentUnixTime - this.OLDEST_PUBLISHED_DATE)
-    const percentageWeight = 1000
-    const sudoPriorityWeight = 2 * percentageWeight
-
-    return sudoPriorityWeight * sudoPriority + percentageWeight * percentage + normalizedPublishedDate
-  }
-
-  /**
-   * Re/calculates the priority score/rank of a video based on the following parameters:
-   * - sudoPriority: a number between 0 and 100, where 0 is the lowest priority and 100 is the highest priority.
-   * - percentageOfCreatorBacklogNotSynched: a number between 0 and 100, where 0 is the lowest priority and 100 is the highest priority.
-   * - viewsOnYouTube: a number between 0 and 10,000,000, where 0 is the lowest priority and 10,000,000 is the highest priority.
-   * @returns a number between 0 and 10,000,000, where 0 is the lowest priority and 10,000,000 is the highest priority.
-   */
-  private calculateVideoRank(
-    sudoPriority: number,
-    percentageOfCreatorBacklogNotSynched: number,
-    viewsOnYouTube: number
-  ) {
-    const isIntegerInRange = (value: number, min: number, max: number) => {
-      return value >= min && value <= max
-    }
-    if (!isIntegerInRange(sudoPriority, 0, this.MAX_SUDO_PRIORITY)) {
-      throw new Error(
-        `Invalid sudoPriority value ${sudoPriority}, should be an integer between 0 and ${this.MAX_SUDO_PRIORITY}`
-      )
-    } else if (!isIntegerInRange(percentageOfCreatorBacklogNotSynched, 0, 100)) {
-      throw new Error(`Invalid percentageOfCreatorBacklogNotSynched value ${percentageOfCreatorBacklogNotSynched}`)
-    }
-
-    const rank = Math.ceil(this.measure(sudoPriority, percentageOfCreatorBacklogNotSynched, viewsOnYouTube))
-
-    return rank
   }
 }

@@ -10,6 +10,10 @@ services:
     volumes:
       - ./local/logs:/youtube-synch/local/logs
       - ./local/data:/youtube-synch/local/data
+      # mount Google Cloud's Application Default Credentials file. A default bind mount is created
+      # as workaround for scenario when `YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH` will be undefined, 
+      # since docker-compose does not support creating bind-mount volume with empty path.
+      - ${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-./package.json}:${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-/package.json}:ro
       # mount the AWS credentials file to docker container home directory
       - ~/.aws/:/root/.aws:ro
     env_file:

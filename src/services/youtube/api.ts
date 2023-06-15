@@ -265,7 +265,7 @@ class YoutubeClient implements IYoutubeApi {
         ? (
             await youtube.videos
               .list({
-                id: ids,
+                id: idsChunk,
                 part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status', 'statistics'],
               })
               .catch((err) => {
@@ -489,7 +489,7 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
     const timeSeries = await this.quotaMonitoringClient?.listTimeSeries(request)
 
     // Get Youtube API quota limit
-    const quotaLimit = (timeSeries![0][0].points || [])[0]?.value?.int64Value
+    const quotaLimit = (timeSeries![0][0]?.points || [])[0]?.value?.int64Value
     return Number(quotaLimit)
   }
 
@@ -524,7 +524,7 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
     // Aggregate Youtube API quota usage for the day using the time series data
     let quotaUsage = 0
     timeSeries![0].forEach((data) => {
-      quotaUsage = _.sumBy(data.points, (point) => {
+      quotaUsage = _.sumBy(data?.points, (point) => {
         return Number(point.value?.int64Value)
       })
     })

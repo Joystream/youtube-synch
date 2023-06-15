@@ -245,3 +245,8 @@ const urlAsArray = (url: string) => (url ? [url] : [])
 export type VideoDownloadTask = YtVideo & {
   priorityScore: number
 }
+
+export type VideoCreationTask = YtVideo & {
+  priorityScore: number
+  filePath: string
+}

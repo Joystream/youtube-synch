@@ -1,26 +1,29 @@
 import BN from 'bn.js'
+import _ from 'lodash'
 import pWaitFor from 'p-wait-for'
-import queue from 'queue'
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
-import { YtVideo } from '../../types/youtube'
+import { VideoCreationTask } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
 import { ContentDownloadService } from './ContentDownloadService'
-
+import { PriorityQueue } from './PriorityQueue'
 // TODO: keep hash calculation separate from extrinsic calling
 
 // Video content creation/processing service
 export class ContentCreationService {
+  private readonly DEFAULT_SUDO_PRIORITY = 10
+
   private config: ReadonlyConfig
   private logger: Logger
   private joystreamClient: JoystreamClient
   private dynamodbService: IDynamodbService
   private contentDownloadService: ContentDownloadService
-  private queue: queue
+  private queue: PriorityQueue<VideoCreationTask, 'sequentialProcessor'>
   private lastVideoCreationBlockByChannelId: Map<number, BN> // JsChannelId -> Last video creation block number
+  private activeTaskId: string // video Id of the currently running video creation task
 
   constructor(
     config: ReadonlyConfig,
@@ -35,13 +38,8 @@ export class ContentCreationService {
     this.joystreamClient = joystreamClient
     this.contentDownloadService = contentDownloadService
     this.lastVideoCreationBlockByChannelId = new Map()
-    this.queue = queue({ concurrency: 1, autostart: true, timeout: 120000 /* 2 minute */ })
-    this.queue.on('error', (err) => {
-      this.logger.error(`Got error processing video`, { err })
-    })
-    this.queue.on('timeout', async (e) => {
-      this.logger.error(`Timeout processing video`, { e })
-      await this.ensureContentStateConsistency()
+    this.queue = new PriorityQueue(this.processCreateVideoTask.bind(this), (video: VideoCreationTask, cb) => {
+      cb(null, video.priorityScore)
     })
   }
 
@@ -52,6 +50,13 @@ export class ContentCreationService {
 
     // start video creation service
     setTimeout(async () => this.createContentWithInterval(this.config.intervals.contentProcessing), 0)
+  }
+
+  private async pendingOnchainCreationVideos() {
+    const videos = await this.dynamodbService.videos.getVideosPendingOnchainCreation()
+    return videos.filter((v) => {
+      return v.id !== this.activeTaskId && this.contentDownloadService.getVideoFilePath(v.id)
+    })
   }
 
   /**
@@ -66,79 +71,99 @@ export class ContentCreationService {
       await sleep(sleepInterval)
       try {
         this.logger.info(`Resume service....`)
-
-        // Only when queue is empty, prepare new videos for on chain creation.
-        // Otherwise we might add the same video twice.
-        if (this.queue.length === 0) {
-          const videos = [
-            ...(await this.dynamodbService.videos.getVideosInState('VideoCreationFailed')),
-            ...(await this.dynamodbService.videos.getVideosInState('New')),
-          ]
-
-          this.logger.info(`Found ${videos.length} videos with pending on-chain creation.`)
-
-          for (const v of videos) {
-            const videoFilePath = this.contentDownloadService.getVideoFilePath(v.id)
-            if (videoFilePath) {
-              await this.addVideoCreationTask(v, videoFilePath)
-            }
-          }
-        }
+        await this.prepareContentForOnchainCreation()
       } catch (err) {
         this.logger.error(`Critical content creation error`, { err })
       }
     }
   }
 
-  private async addVideoCreationTask(video: YtVideo, videoFilePath: string) {
-    this.logger.debug(`Adding video ${video.id} to the queue`)
-    this.queue.push(async () => {
-      try {
-        // * Pre-validation
-        /**
-         * If the channel opted out of YPP program, then skip creating the video
-         */
-        const isCollaboratorSet = await this.joystreamClient.doesChannelHaveCollaborator(video.joystreamChannelId)
-        if (!isCollaboratorSet) {
-          this.logger.warn(
-            `Channel ${video.joystreamChannelId} opted out of YPP program. So skipping the video ` +
-              `${video.id} from syncing & deleting it's record from the database.`
+  // Prepare new content for downloading with updated priority
+  private async prepareContentForOnchainCreation() {
+    // Get all videos whose media assets have been downloaded & prepared
+    const videos = await this.pendingOnchainCreationVideos()
+    this.logger.verbose(`Videos with pending on-chain creation.`, { videosCount: videos.length })
+
+    const pendingOnchainCreationVideosByChannel = _(videos)
+      .groupBy((v) => v.channelId)
+      .map((videos, channelId) => ({ channelId, unsyncedVideos: [...videos] }))
+      .value()
+
+    await Promise.all(
+      pendingOnchainCreationVideosByChannel.map(async ({ channelId, unsyncedVideos }) => {
+        // Get total videos of channel
+        const { videoCount } = (await this.dynamodbService.channels.getByChannelId(channelId)).statistics
+        const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / videoCount
+
+        for (const v of unsyncedVideos) {
+          const rank = this.queue.calculateVideoRank(
+            this.DEFAULT_SUDO_PRIORITY,
+            percentageOfCreatorBacklogNotSynched,
+            Date.parse(v.publishedAt)
           )
-          await this.dynamodbService.videos.delete(video)
-          return
+          const task = {
+            ...v,
+            priorityScore: rank,
+            filePath: this.contentDownloadService.expectedVideoFilePath(v.id),
+          }
+          this.queue.push(task)
         }
+      })
+    )
+  }
 
-        /**
-         * If the last synced video of the same channel is still being processed by the QN, then skip creating the next video
-         * of that channel because  QN will return outdated `totalVideosCreated` field and incorrect AppAction message will be
-         * constructed for the next video, which would lead to youtube attribution information missing in the QN video metadata.
-         */
+  private async processCreateVideoTask(video: VideoCreationTask, cb: (error?: any, result?: null) => void) {
+    // set `activeTaskId`
+    this.activeTaskId = video.id
 
-        await pWaitFor(async () => {
-          const blockNumber = this.lastVideoCreationBlockByChannelId.get(video.joystreamChannelId) || new BN(0)
-          return await this.joystreamClient.hasQueryNodeProcessedBlock(blockNumber)
-        })
-
-        // Extra validation to check state consistency
-        const qnVideo = await this.joystreamClient.getVideoByYtResourceId(video.id)
-        if (qnVideo) {
-          this.logger.error(
-            `Inconsistent state. Youtube video ${video.id} was already created on Joystream but the service tried to recreate it.`,
-            { videoId: video.id, channelId: video.joystreamChannelId }
-          )
-          process.exit(-1)
-        }
-
-        await this.dynamodbService.videos.updateState(video, 'CreatingVideo')
-        const [createdVideo, createdInBlock] = await this.joystreamClient.createVideo(video, videoFilePath)
-        this.lastVideoCreationBlockByChannelId.set(video.joystreamChannelId, createdInBlock)
-        await this.dynamodbService.videos.updateState(createdVideo, 'VideoCreated')
-        this.logger.info(`Video created on chain.`, { videoId: video.id, channelId: video.joystreamChannelId })
-      } catch (err) {
-        this.logger.error(`Got error processing video`, { videoId: video.id, err })
-        await this.dynamodbService.videos.updateState(video, 'VideoCreationFailed')
+    try {
+      // * Pre-validation
+      // If the channel opted out of YPP program, then skip creating the video
+      const isCollaboratorSet = await this.joystreamClient.doesChannelHaveCollaborator(video.joystreamChannelId)
+      if (!isCollaboratorSet) {
+        this.logger.warn(
+          `Channel ${video.joystreamChannelId} opted out of YPP program. So skipping the video ` +
+            `${video.id} from syncing & deleting it's record from the database.`
+        )
+        await this.dynamodbService.videos.delete(video)
+        await this.contentDownloadService.removeVideoFile(video.id)
+        return
       }
-    })
+
+      /**
+       * If the last synced video of the same channel is still being processed by the QN, then skip creating the next video
+       * of that channel because  QN will return outdated `totalVideosCreated` field and incorrect AppAction message will be
+       * constructed for the next video, which would lead to youtube attribution information missing in the QN video metadata.
+       */
+      await pWaitFor(async () => {
+        const blockNumber = this.lastVideoCreationBlockByChannelId.get(video.joystreamChannelId) || new BN(0)
+        return await this.joystreamClient.hasQueryNodeProcessedBlock(blockNumber)
+      })
+
+      // Extra validation to check state consistency
+      const qnVideo = await this.joystreamClient.getVideoByYtResourceId(video.id)
+      if (qnVideo) {
+        this.logger.error(
+          `Inconsistent state. Youtube video ${video.id} was already created on Joystream but the service tried to recreate it.`,
+          { videoId: video.id, channelId: video.joystreamChannelId }
+        )
+        // process.exit(-1)
+      }
+
+      await this.dynamodbService.videos.updateState(video, 'CreatingVideo')
+      const [createdVideo, createdInBlock] = await this.joystreamClient.createVideo(video, video.filePath)
+      this.lastVideoCreationBlockByChannelId.set(video.joystreamChannelId, createdInBlock)
+      await this.dynamodbService.videos.updateState(createdVideo, 'VideoCreated')
+      this.logger.info(`Video created on chain.`, { videoId: video.id, channelId: video.joystreamChannelId })
+    } catch (err) {
+      this.logger.error(`Got error processing video`, { videoId: video.id, err })
+      await this.dynamodbService.videos.updateState(video, 'VideoCreationFailed')
+    }
+
+    // unset `activeTaskId` set
+    this.activeTaskId = ''
+    // Signal that the task is done
+    cb(null, null)
   }
 
   /**
