@@ -138,7 +138,7 @@ export class VideosRepository implements IRepository<YtVideo> {
 
   // lock any updates on video table
   private readonly ASYNC_LOCK_ID = 'video'
-  private asyncLock: AsyncLock = new AsyncLock()
+  private asyncLock: AsyncLock = new AsyncLock({ maxPending: Number.MAX_SAFE_INTEGER })
 
   constructor(tablePrefix: ResourcePrefix) {
     this.model = videoRepository(tablePrefix)

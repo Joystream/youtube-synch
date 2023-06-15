@@ -38,7 +38,7 @@ export class WhitelistChannelsRepository implements IRepository<WhitelistChannel
 
   // lock any updates on whitelistChannels table
   private readonly ASYNC_LOCK_ID = 'whitelistChannels'
-  private asyncLock: AsyncLock = new AsyncLock()
+  private asyncLock: AsyncLock = new AsyncLock({ maxPending: Number.MAX_SAFE_INTEGER })
 
   constructor(tablePrefix: ResourcePrefix) {
     this.model = whitelistChannelsModel(tablePrefix)
