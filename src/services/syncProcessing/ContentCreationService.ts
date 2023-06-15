@@ -147,7 +147,7 @@ export class ContentCreationService {
           `Inconsistent state. Youtube video ${video.id} was already created on Joystream but the service tried to recreate it.`,
           { videoId: video.id, channelId: video.joystreamChannelId }
         )
-        // process.exit(-1)
+        process.exit(-1)
       }
 
       await this.dynamodbService.videos.updateState(video, 'CreatingVideo')
