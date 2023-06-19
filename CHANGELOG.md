@@ -1,6 +1,10 @@
 ### 1.4.2
 
-- 
+- Adds Youtube API quota usage optimization.
+- Fetches Youtube API daily quota usage stats from the Google's Cloud Monitoring API instead of calculating it in the application.
+- Bumps `ajv` package version to `^8.0.0` & generate docs for the configuration schema
+- set AsyncLock's queue size to `MAX_SAFE_INTEGER`
+
 ### 1.4.1
 
 - Excludes age restricted videos from syncing.
