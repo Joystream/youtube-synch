@@ -45,8 +45,7 @@ export class ChannelsController {
   ) {}
 
   @ApiOperation({
-    description: `Creates user from the supplied google authorization code and fetches
-     user's channel and if it satisfies YPP induction criteria it saves the record`,
+    description: `Saves channel record of a YPP verified user`,
   })
   @ApiBody({ type: SaveChannelRequest })
   @ApiResponse({ type: SaveChannelResponse })
@@ -76,7 +75,7 @@ export class ChannelsController {
       }
 
       // get channel from user
-      const channel = await this.youtubeApi.getChannel(user)
+      const { channel } = await this.youtubeApi.getVerifiedChannel(user)
 
       // reset authorization code to prevent repeated save channel requests by authorization code re-use
       const updatedUser: YtUser = { ...user, email, authorizationCode: randomBytes(10).toString('hex') }

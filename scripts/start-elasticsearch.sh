@@ -22,6 +22,7 @@ printf 'Waiting for Elasticsearch...\n'
 sleep 30
 
 # Generate & Export a random 32-character encryption key as an environment variable
+# Ref: https://www.elastic.co/guide/en/kibana/current/xpack-security-secure-saved-objects.html#xpack-security-secure-saved-objects
 export XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=$(openssl rand -base64 24)
 
 # Generate the service token

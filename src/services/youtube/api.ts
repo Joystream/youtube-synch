@@ -1,12 +1,18 @@
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
+import { MetricServiceClient } from '@google-cloud/monitoring'
 import { youtube_v3 } from '@googleapis/youtube'
+import { exec } from 'child_process'
 import { OAuth2Client } from 'google-auth-library'
 import { GetTokenResponse } from 'google-auth-library/build/src/auth/oauth2client'
 import { GaxiosError } from 'googleapis-common'
 import { parse, toSeconds } from 'iso8601-duration'
+import _ from 'lodash'
+import moment from 'moment-timezone'
 import { FetchError } from 'node-fetch'
+import path from 'path'
+import pkgDir from 'pkg-dir'
+import { promisify } from 'util'
 import ytdl from 'youtube-dl-exec'
-import { StatsRepository } from '../../repository'
 import { ReadonlyConfig, WithRequired, formattedJSON } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
 import { YtChannel, YtUser, YtVideo } from '../../types/youtube'
@@ -15,14 +21,45 @@ import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
 import Schema$Video = youtube_v3.Schema$Video
 import Schema$Channel = youtube_v3.Schema$Channel
 
+export class YtDlpClient {
+  private ytdlpPath: string
+  private exec
+
+  constructor() {
+    this.exec = promisify(exec)
+    this.ytdlpPath = `${pkgDir.sync(__dirname)}/node_modules/youtube-dl-exec/bin/yt-dlp`
+  }
+
+  async getAllVideosIds(channel: YtChannel): Promise<string[]> {
+    try {
+      const { stdout } = await this.exec(
+        `${this.ytdlpPath} --flat-playlist --get-id https://www.youtube.com/playlist?list=${channel.uploadsPlaylistId}`
+      )
+
+      // Each line of stdout is a video ID
+      const videoIDs = stdout.split('\n').filter((id: unknown) => id) // Remove any empty lines
+      return videoIDs
+    } catch (err) {
+      throw err
+    }
+  }
+}
+
 export interface IYoutubeApi {
   getUserFromCode(code: string, youtubeRedirectUri: string): Promise<YtUser>
   getChannel(user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>): Promise<YtChannel>
-  verifyChannel(channel: YtChannel): Promise<YtChannel>
-  getVideos(channel: YtChannel, top: number): Promise<YtVideo[]>
+  getVerifiedChannel(
+    user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>
+  ): Promise<{ channel: YtChannel; errors: YoutubeApiError[] }>
+  getVideos(channel: YtChannel, ids: string[]): Promise<YtVideo[]>
   getAllVideos(channel: YtChannel): Promise<YtVideo[]>
   downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl>
   getCreatorOnboardingRequirements(): ReadonlyConfig['creatorOnboardingRequirements']
+}
+
+export interface IQuotaMonitoringClient {
+  getQuotaUsage(): Promise<number>
+  getQuotaLimit(): Promise<number>
 }
 
 class YoutubeClient implements IYoutubeApi {
@@ -129,7 +166,10 @@ class YoutubeClient implements IYoutubeApi {
     return channel
   }
 
-  async verifyChannel(channel: YtChannel): Promise<YtChannel> {
+  async getVerifiedChannel(
+    user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>
+  ): Promise<{ channel: YtChannel; errors: YoutubeApiError[] }> {
+    const channel = await this.getChannel(user)
     const { minimumSubscribersCount, minimumVideoCount, minimumChannelAgeHours, minimumVideoAgeHours } =
       this.config.creatorOnboardingRequirements
     const errors: YoutubeApiError[] = []
@@ -182,16 +222,13 @@ class YoutubeClient implements IYoutubeApi {
       )
     }
 
-    if (errors.length > 0) {
-      throw errors
-    }
-    return channel
+    return { channel, errors }
   }
 
-  async getVideos(channel: YtChannel, top: number) {
+  async getVideos(channel: YtChannel, ids: string[]) {
     const yt = this.getYoutube(channel.userAccessToken, channel.userRefreshToken)
     try {
-      return this.iterateVideos(yt, channel, top)
+      return this.iterateVideos(yt, channel, ids)
     } catch (error) {
       throw new Error(`Failed to fetch videos for channel ${channel.title}. Error: ${error}`)
     }
@@ -200,7 +237,7 @@ class YoutubeClient implements IYoutubeApi {
   async getAllVideos(channel: YtChannel) {
     const yt = this.getYoutube(channel.userAccessToken, channel.userRefreshToken)
     try {
-      return this.iterateVideos(yt, channel)
+      return this.iterateAllVideos(yt, channel)
     } catch (error) {
       throw new Error(`Failed to fetch videos for channel ${channel.title}. Error: ${error}`)
     }
@@ -210,17 +247,43 @@ class YoutubeClient implements IYoutubeApi {
     const response = await ytdl(videoUrl, {
       noWarnings: true,
       printJson: true,
-      // If the media output container is `mkv` then transcode (recode) the
-      // media to `mp4`, as `mkv` is not widely supported by the browsers.
-      recodeVideo: 'mkv>mp4',
-      format: 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
+      format: 'bv[height<=1080][ext=mp4]+ba[ext=m4a]/bv[height<=1080][ext=webm]+ba[ext=webm]/best[height<=1080]',
       output: `${outPath}/%(id)s.%(ext)s`,
       ffmpegLocation: ffmpegInstaller.path,
     })
     return response
   }
 
-  private async iterateVideos(youtube: youtube_v3.Youtube, channel: YtChannel, limit?: number) {
+  private async iterateVideos(youtube: youtube_v3.Youtube, channel: YtChannel, ids: string[]) {
+    let videos: YtVideo[] = []
+
+    // Youtube API allows to fetch up to 50 videos per request
+    const idsChunks = _.chunk(ids, 50)
+
+    for (const idsChunk of idsChunks) {
+      const videosPage = idsChunk.length
+        ? (
+            await youtube.videos
+              .list({
+                id: idsChunk,
+                part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status', 'statistics'],
+              })
+              .catch((err) => {
+                if (err instanceof FetchError && err.code === 'ENOTFOUND') {
+                  throw new YoutubeApiError(ExitCodes.YoutubeApi.YOUTUBE_API_NOT_CONNECTED, err.message)
+                }
+                throw err
+              })
+          ).data?.items ?? []
+        : []
+
+      const page = this.mapVideos(videosPage, channel)
+      videos = [...videos, ...page]
+    }
+    return videos
+  }
+
+  private async iterateAllVideos(youtube: youtube_v3.Youtube, channel: YtChannel, limit?: number) {
     let videos: YtVideo[] = []
     let nextPageToken: string | undefined
 
@@ -259,7 +322,7 @@ class YoutubeClient implements IYoutubeApi {
           ).data?.items ?? []
         : []
 
-      const page = this.mapVideos(videosPage, videosDetailsPage, channel)
+      const page = this.mapAllVideos(videosPage, videosDetailsPage, channel)
       videos = [...videos, ...page]
     } while (nextPageToken && (limit === undefined || videos.length < limit))
     return videos
@@ -301,11 +364,11 @@ class YoutubeClient implements IYoutubeApi {
     )
   }
 
-  private mapVideos(videos: Schema$PlaylistItem[], videosDetails: Schema$Video[], channel: YtChannel): YtVideo[] {
+  private mapVideos(videos: Schema$Video[], channel: YtChannel): YtVideo[] {
     return (
       videos
         .map(
-          (video, i) =>
+          (video) =>
             <YtVideo>{
               id: video.id,
               description: video.snippet?.description,
@@ -317,8 +380,45 @@ class YoutubeClient implements IYoutubeApi {
                 standard: video.snippet?.thumbnails?.standard?.url,
                 default: video.snippet?.thumbnails?.default?.url,
               },
+              url: `https://youtube.com/watch?v=${video.id}`,
+              publishedAt: video.snippet?.publishedAt,
+              createdAt: new Date(),
+              category: channel.videoCategoryId,
+              languageIso: channel.joystreamChannelLanguageIso,
+              joystreamChannelId: channel.joystreamChannelId,
+              privacyStatus: video.status?.privacyStatus,
+              ytRating: video.contentDetails?.contentRating?.ytRating,
+              liveBroadcastContent: video.snippet?.liveBroadcastContent,
+              license: video.status?.license,
+              duration: toSeconds(parse(video.contentDetails?.duration ?? 'PT0S')),
+              container: video.fileDetails?.container,
+              uploadStatus: video.status?.uploadStatus,
+              viewCount: parseInt(video.statistics?.viewCount ?? '0'),
+              state: 'New',
+            }
+        )
+        // filter out videos that are not public, processed, have live-stream or age-restriction, since those can't be synced yet
+        .filter((v) => v.uploadStatus === 'processed' && v.liveBroadcastContent === 'none' && v.ytRating === undefined)
+    )
+  }
+
+  private mapAllVideos(videos: Schema$PlaylistItem[], videosDetails: Schema$Video[], channel: YtChannel): YtVideo[] {
+    return (
+      videos
+        .map(
+          (video, i) =>
+            <YtVideo>{
+              id: video.snippet?.resourceId?.videoId,
+              description: video.snippet?.description,
+              title: video.snippet?.title,
+              channelId: video.snippet?.channelId,
+              thumbnails: {
+                high: video.snippet?.thumbnails?.high?.url,
+                medium: video.snippet?.thumbnails?.medium?.url,
+                standard: video.snippet?.thumbnails?.standard?.url,
+                default: video.snippet?.thumbnails?.default?.url,
+              },
               url: `https://youtube.com/watch?v=${video.snippet?.resourceId?.videoId}`,
-              resourceId: video.snippet?.resourceId?.videoId,
               publishedAt: video.contentDetails?.videoPublishedAt,
               createdAt: new Date(),
               category: channel.videoCategoryId,
@@ -341,12 +441,96 @@ class YoutubeClient implements IYoutubeApi {
   }
 }
 
-class QuotaTrackingClient implements IYoutubeApi {
-  constructor(
-    private decorated: IYoutubeApi,
-    private dailyApiQuota: ReadonlyConfig['limits']['dailyApiQuota'],
-    private statsRepo: StatsRepository
-  ) {}
+class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
+  private quotaMonitoringClient: MetricServiceClient | undefined
+  private googleCloudProjectId: string
+  private DEFAULT_MAX_ALLOWED_QUOTA_USAGE = 95 // 95%
+
+  constructor(private decorated: IYoutubeApi, private config: ReadonlyConfig) {
+    // Use the client id to get the google cloud project id
+    this.googleCloudProjectId = this.config.youtube.clientId.split('-')[0]
+
+    // if we have a key file path, we use it to authenticate with the google cloud monitoring api
+    if (this.config.youtube.adcKeyFilePath) {
+      this.quotaMonitoringClient = new MetricServiceClient({
+        keyFile: path.resolve(this.config.youtube.adcKeyFilePath),
+      })
+    }
+  }
+
+  async getQuotaLimit(): Promise<number> {
+    // Get the unix timestamp for the start of the day in the PST timezone
+    const dateInPstZone = moment().tz('America/Los_Angeles')
+    dateInPstZone.startOf('day')
+    const pstUnixTimestamp = dateInPstZone.unix()
+
+    const now = new Date()
+
+    // Create the request
+    const request = {
+      name: this.quotaMonitoringClient?.projectPath(this.googleCloudProjectId),
+      filter:
+        `metric.type = "serviceruntime.googleapis.com/quota/limit" ` +
+        `AND ` +
+        `metric.labels.limit_name = defaultPerDayPerProject ` +
+        `AND ` +
+        `resource.labels.service= "youtube.googleapis.com"`,
+      interval: {
+        startTime: {
+          seconds: pstUnixTimestamp,
+        },
+        endTime: {
+          seconds: Math.floor(now.getTime() / 1000),
+        },
+      },
+    }
+
+    // Get time series metrics data
+    const timeSeries = await this.quotaMonitoringClient?.listTimeSeries(request)
+
+    // Get Youtube API quota limit
+    const quotaLimit = (timeSeries![0][0]?.points || [])[0]?.value?.int64Value
+    return Number(quotaLimit)
+  }
+
+  async getQuotaUsage(): Promise<number> {
+    // Get the unix timestamp for the start of the day in the PST timezone
+    const dateInPstZone = moment().tz('America/Los_Angeles')
+    dateInPstZone.startOf('day')
+    const pstUnixTimestamp = dateInPstZone.unix()
+
+    const now: Date = new Date()
+
+    // Create the request
+    const request = {
+      name: this.quotaMonitoringClient?.projectPath(this.googleCloudProjectId),
+      filter:
+        `metric.type = "serviceruntime.googleapis.com/quota/rate/net_usage" ` +
+        `AND ` +
+        `resource.labels.service= "youtube.googleapis.com" `,
+      interval: {
+        startTime: {
+          seconds: pstUnixTimestamp,
+        },
+        endTime: {
+          seconds: Math.floor(now.getTime() / 1000),
+        },
+      },
+    }
+
+    // Get time series metrics data
+    const timeSeries = await this.quotaMonitoringClient?.listTimeSeries(request)
+
+    // Aggregate Youtube API quota usage for the day using the time series data
+    let quotaUsage = 0
+    timeSeries![0].forEach((data) => {
+      quotaUsage = _.sumBy(data?.points, (point) => {
+        return Number(point.value?.int64Value)
+      })
+    })
+
+    return quotaUsage
+  }
 
   getCreatorOnboardingRequirements() {
     return this.decorated.getCreatorOnboardingRequirements()
@@ -356,30 +540,15 @@ class QuotaTrackingClient implements IYoutubeApi {
     return this.decorated.getUserFromCode(code, youtubeRedirectUri)
   }
 
-  async verifyChannel(channel: YtChannel) {
-    // ensure have some left api quota
-    if (!(await this.canCallYoutube('signup'))) {
-      throw new YoutubeApiError(
-        ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED,
-        'No more quota left for signup. Please try again later.'
-      )
-    }
-
-    try {
-      const verifiedChannel = await this.decorated.verifyChannel(channel)
-      // increase used quota count
-      await this.increaseUsedQuota({ signupQuotaIncrement: 1 })
-      return verifiedChannel
-    } catch (error) {
-      // increase used quota count even in case of failed verification
-      await this.increaseUsedQuota({ signupQuotaIncrement: 1 })
-      throw error
-    }
+  async getVerifiedChannel(user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>) {
+    // These is no api quota check for this operation, as we allow untracked access to channel verification/signup endpoint.
+    const verifiedChannel = await this.decorated.getVerifiedChannel(user)
+    return verifiedChannel
   }
 
   async getChannel(user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>) {
     // ensure have some left api quota
-    if (!(await this.canCallYoutube('sync'))) {
+    if (!(await this.canCallYoutube())) {
       throw new YoutubeApiError(
         ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED,
         'No more quota left. Please try again later.'
@@ -388,16 +557,12 @@ class QuotaTrackingClient implements IYoutubeApi {
 
     // get channels from api
     const channels = await this.decorated.getChannel(user)
-
-    // increase used quota count by 1 because only one page is returned
-    await this.increaseUsedQuota({ syncQuotaIncrement: 1 })
-
     return channels
   }
 
-  async getVideos(channel: YtChannel, top: number) {
+  async getVideos(channel: YtChannel, ids: string[]) {
     // ensure have some left api quota
-    if (!(await this.canCallYoutube('sync'))) {
+    if (!(await this.canCallYoutube())) {
       throw new YoutubeApiError(
         ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED,
         'No more quota left for signup. Please try again later.'
@@ -405,17 +570,13 @@ class QuotaTrackingClient implements IYoutubeApi {
     }
 
     // get videos from api
-    const videos = await this.decorated.getVideos(channel, top)
-
-    // increase used quota count, at least 2 api per channel are being used for requesting video details
-    await this.increaseUsedQuota({ syncQuotaIncrement: Math.ceil(videos.length / 50) * 2 || 2 })
-
+    const videos = await this.decorated.getVideos(channel, ids)
     return videos
   }
 
   async getAllVideos(channel: YtChannel) {
     // ensure have some left api quota
-    if (!(await this.canCallYoutube('sync'))) {
+    if (!(await this.canCallYoutube())) {
       throw new YoutubeApiError(
         ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED,
         'No more quota left. Please try again later.'
@@ -424,10 +585,6 @@ class QuotaTrackingClient implements IYoutubeApi {
 
     // get videos from api
     const videos = await this.decorated.getAllVideos(channel)
-
-    // increase used quota count, at least 2 api per channel are being used for requesting video details
-    await this.increaseUsedQuota({ syncQuotaIncrement: Math.ceil(videos.length / 50) * 2 || 2 })
-
     return videos
   }
 
@@ -435,32 +592,21 @@ class QuotaTrackingClient implements IYoutubeApi {
     return this.decorated.downloadVideo(videoUrl, outPath)
   }
 
-  private async increaseUsedQuota({ syncQuotaIncrement = 0, signupQuotaIncrement = 0 }) {
-    // Quota resets at Pacific Time, and pst is 8 hours behind UTC
-    const stats = await this.statsRepo.getOrSetTodaysStats()
-    const statsModel = await this.statsRepo.getModel()
-
-    await statsModel.update(
-      { partition: 'stats', date: stats.date },
-      { $ADD: { syncQuotaUsed: syncQuotaIncrement, signupQuotaUsed: signupQuotaIncrement } }
-    )
-  }
-
-  private async canCallYoutube(purpose: 'signup' | 'sync'): Promise<boolean> {
-    // Total daily Youtube quota is 10,000 which is shared between signup(2%) and sync(98%) services
-    const syncDailyQuota = 9500
-    const signupDailyQuota = 500
-
-    const stats = await this.statsRepo.getOrSetTodaysStats()
-
-    return purpose === 'signup'
-      ? stats.signupQuotaUsed < this.dailyApiQuota.signup
-      : stats.syncQuotaUsed < this.dailyApiQuota.sync
+  private async canCallYoutube(): Promise<boolean> {
+    if (this.quotaMonitoringClient) {
+      const quotaUsage = await this.getQuotaUsage()
+      const quotaLimit = await this.getQuotaLimit()
+      return (
+        (quotaUsage * 100) / quotaLimit <
+        (this.config.youtube.maxAllowedQuotaUsageInPercentage || this.DEFAULT_MAX_ALLOWED_QUOTA_USAGE)
+      )
+    }
+    return true
   }
 }
 
 export const YoutubeApi = {
-  create(config: ReadonlyConfig, statsRepo: StatsRepository): IYoutubeApi {
-    return new QuotaTrackingClient(new YoutubeClient(config), config.limits.dailyApiQuota, statsRepo)
+  create(config: ReadonlyConfig): IYoutubeApi {
+    return new QuotaMonitoringClient(new YoutubeClient(config), config)
   },
 }

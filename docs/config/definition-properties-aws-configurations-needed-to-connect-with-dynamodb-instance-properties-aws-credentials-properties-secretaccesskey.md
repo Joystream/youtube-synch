@@ -1,0 +1,3 @@
+## secretAccessKey Type
+
+`string`

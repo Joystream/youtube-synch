@@ -1,18 +1,20 @@
 import { GaxiosError } from 'gaxios/build/src/common'
+import _ from 'lodash'
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
-import { YtChannel, YtVideo } from '../../types/youtube'
+import { YtChannel } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
-import { IYoutubeApi } from '../youtube/api'
+import { IYoutubeApi, YtDlpClient } from '../youtube/api'
 
 export class YoutubePollingService {
   private config: ReadonlyConfig
   private logger: Logger
   private youtubeApi: IYoutubeApi
+  private ytdlpClient: YtDlpClient
   private joystreamClient: JoystreamClient
   private dynamodbService: IDynamodbService
 
@@ -26,6 +28,7 @@ export class YoutubePollingService {
     this.config = config
     this.logger = logging.createLogger('YoutubePollingService')
     this.youtubeApi = youtubeApi
+    this.ytdlpClient = new YtDlpClient()
     this.dynamodbService = dynamodbService
     this.joystreamClient = joystreamClient
   }
@@ -38,32 +41,15 @@ export class YoutubePollingService {
     setTimeout(async () => this.runPollingWithInterval(this.config.intervals.youtubePolling), 0)
   }
 
-  // get all unsynced videos
-  private async getUnsyncedVideos(channel: YtChannel, newVideos: YtVideo[]): Promise<YtVideo[]> {
+  // get IDs of all new videos of the channel
+  private async getNewVideosIds(channel: YtChannel, allVideosIds: string[]): Promise<string[]> {
     // Get all the existing videos
     const existingVideos = await this.dynamodbService.repo.videos.query({ channelId: channel.id }, (q) => q)
 
-    return newVideos.reduce((unSyncedVideos, video) => {
-      const existingVideo = existingVideos.find((v) => v.id === video.id)
-      if (!existingVideo) {
-        // Video is a new video, so add it to the list of unsynced videos
-        unSyncedVideos.push(video)
-      } else if (
-        existingVideo.state === 'New' ||
-        existingVideo.state === 'VideoCreationFailed' ||
-        existingVideo.state === 'UploadFailed'
-      ) {
-        // If video is already being tracked but hasn't been synced yet then we update it's fields (e.g. viewCount), which are
-        // being used to calculate it's syncing priority. After that add video to the list of unsynced videos for re/processing.
-        unSyncedVideos.push({
-          ...video,
-          createdAt: existingVideo.createdAt,
-          state: existingVideo.state,
-          joystreamVideo: existingVideo.joystreamVideo,
-        })
-      }
-      return unSyncedVideos
-    }, [] as YtVideo[])
+    return _.difference(
+      allVideosIds,
+      existingVideos.map((v) => v.id)
+    )
   }
 
   /**
@@ -170,12 +156,15 @@ export class YoutubePollingService {
 
   private async performVideosIngestion(channel: YtChannel) {
     // get all sync-able videos of the channel
-    const allVideos = await this.youtubeApi.getAllVideos(channel)
+    const allVideosIds = await this.ytdlpClient.getAllVideosIds(channel)
 
-    // get all unsynced videos
-    const unsyncedVideos = await this.getUnsyncedVideos(channel, allVideos)
+    // get all new video Ids that are not yet being tracked
+    const newVideosIds = await this.getNewVideosIds(channel, allVideosIds)
 
-    // save all unsynced videos to DB including new + old(as some fields on old videos might have changed, e.g. viewCount)
-    await this.dynamodbService.repo.videos.upsertAll(unsyncedVideos)
+    //  get all new videos that are not yet being tracked
+    const newVideos = await this.youtubeApi.getVideos(channel, newVideosIds)
+
+    // save all new videos to DB including
+    await this.dynamodbService.repo.videos.upsertAll(newVideos)
   }
 }

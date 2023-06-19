@@ -1,0 +1,3 @@
+## minimumVideoAgeHours Type
+
+`number`

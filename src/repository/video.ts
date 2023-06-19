@@ -34,8 +34,6 @@ function videoRepository(tablePrefix: ResourcePrefix) {
       // Video's playlist ID
       playlistId: String,
 
-      resourceId: String,
-
       viewCount: Number,
 
       thumbnails: {
@@ -140,7 +138,7 @@ export class VideosRepository implements IRepository<YtVideo> {
 
   // lock any updates on video table
   private readonly ASYNC_LOCK_ID = 'video'
-  private asyncLock: AsyncLock = new AsyncLock()
+  private asyncLock: AsyncLock = new AsyncLock({ maxPending: Number.MAX_SAFE_INTEGER })
 
   constructor(tablePrefix: ResourcePrefix) {
     this.model = videoRepository(tablePrefix)
@@ -245,12 +243,16 @@ export class VideosService {
     ]
   }
 
-  async getAllVideosInPendingUploadState(limit: number): Promise<YtVideo[]> {
+  async getVideosPendingUpload(limit: number): Promise<YtVideo[]> {
     // only handle upload for videos that has been created or upload failed previously
     return [...(await this.getVideosInState('UploadFailed')), ...(await this.getVideosInState('VideoCreated'))].slice(
       0,
       limit
     )
+  }
+
+  async getVideosPendingOnchainCreation(): Promise<YtVideo[]> {
+    return [...(await this.getVideosInState('VideoCreationFailed')), ...(await this.getVideosInState('New'))]
   }
 
   /**

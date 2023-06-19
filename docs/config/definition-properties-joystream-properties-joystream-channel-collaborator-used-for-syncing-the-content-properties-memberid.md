@@ -1,0 +1,3 @@
+## memberId Type
+
+`string`

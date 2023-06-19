@@ -152,7 +152,7 @@ export type JoystreamVideo = {
 }
 
 export class YtVideo {
-  // Video ID
+  // Video ID on Youtube
   id: string
 
   // Video's channel ID
@@ -169,8 +169,6 @@ export class YtVideo {
 
   // Video's playlist ID
   playlistId: string
-
-  resourceId: string
 
   // video views count
   viewCount: number
@@ -246,4 +244,9 @@ const urlAsArray = (url: string) => (url ? [url] : [])
 
 export type VideoDownloadTask = YtVideo & {
   priorityScore: number
+}
+
+export type VideoCreationTask = YtVideo & {
+  priorityScore: number
+  filePath: string
 }

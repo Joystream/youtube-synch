@@ -51,15 +51,12 @@ export class UsersController {
         )
       }
 
-      // get channel from user
-      const channel = await this.youtube.getChannel(user)
-
-      // check if the channel is whitelisted
+      const { channel, errors } = await this.youtube.getVerifiedChannel(user)
       const whitelistedChannel = await this.dynamodbService.repo.whitelistChannels.get(channel.customUrl)
 
-      if (!whitelistedChannel) {
-        // verify given channel
-        await this.youtube.verifyChannel(channel)
+      // check if the channel is whitelisted
+      if (errors.length && !whitelistedChannel) {
+        throw errors
       }
 
       // save user

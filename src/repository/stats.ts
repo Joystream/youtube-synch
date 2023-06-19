@@ -28,7 +28,7 @@ export class StatsRepository implements IRepository<Stats> {
 
   // lock any updates on video table
   private readonly ASYNC_LOCK_ID = 'stat'
-  private asyncLock: AsyncLock = new AsyncLock()
+  private asyncLock: AsyncLock = new AsyncLock({ maxPending: Number.MAX_SAFE_INTEGER })
 
   constructor(tablePrefix: ResourcePrefix) {
     this.model = statsRepository(tablePrefix)
