@@ -63,7 +63,15 @@ export class UsersController {
       await this.dynamodbService.users.save(user)
 
       // return verified user
-      return { email: user.email, userId: user.id }
+      return {
+        email: user.email,
+        userId: user.id,
+        channelTitle: channel.title,
+        channelDescription: channel.description,
+        avatarUrl: channel.thumbnails.medium,
+        bannerUrl: channel.bannerImageUrl,
+        channelHandle: channel.customUrl,
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : error
       throw new BadRequestException(message)

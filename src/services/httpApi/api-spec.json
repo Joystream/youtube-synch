@@ -1027,11 +1027,31 @@
           },
           "userId": {
             "type": "string"
+          },
+          "channelHandle": {
+            "type": "string"
+          },
+          "channelTitle": {
+            "type": "string"
+          },
+          "channelDescription": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string"
+          },
+          "bannerUrl": {
+            "type": "string"
           }
         },
         "required": [
           "email",
-          "userId"
+          "userId",
+          "channelHandle",
+          "channelTitle",
+          "channelDescription",
+          "avatarUrl",
+          "bannerUrl"
         ]
       },
       "Stats": {
