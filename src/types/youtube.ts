@@ -44,8 +44,11 @@ export class YtChannel {
   // record creation time
   createdAt: Date
 
-  // channel thumbnails
+  // channel Avatar thumbnails
   thumbnails: Thumbnails
+
+  // channel Cover Image URL
+  bannerImageUrl: string
 
   // Channel statistics
   statistics: {

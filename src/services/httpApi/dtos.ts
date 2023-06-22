@@ -101,6 +101,21 @@ export class VerifyChannelResponse {
 
   // ID of the verified user
   @IsString() @ApiProperty({ required: true }) userId: string
+
+  // Youtube Channel/User handle
+  @IsString() @ApiProperty() channelHandle: string
+
+  // Youtube Channel title
+  @IsString() @ApiProperty({ required: true }) channelTitle: string
+
+  // Youtube Channel description
+  @IsString() @ApiProperty({ required: true }) channelDescription: string
+
+  // Youtube Channel avatar URL
+  @IsString() @ApiProperty({ required: true }) avatarUrl: string
+
+  // Youtube Channel banner URL
+  @IsString() @ApiProperty() bannerUrl: string
 }
 
 // Dto for saving the verified Youtube channel
