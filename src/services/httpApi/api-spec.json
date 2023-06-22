@@ -40,7 +40,7 @@
       "post": {
         "operationId": "ChannelsController_saveChannel",
         "summary": "",
-        "description": "Creates user from the supplied google authorization code and fetches\n     user's channel and if it satisfies YPP induction criteria it saves the record",
+        "description": "Saves channel record of a YPP verified user",
         "parameters": [],
         "requestBody": {
           "required": true,

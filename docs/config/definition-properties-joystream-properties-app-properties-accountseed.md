@@ -1,0 +1,3 @@
+## accountSeed Type
+
+`string`

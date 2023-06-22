@@ -73,7 +73,7 @@ export class UsersRepository implements IRepository<YtUser> {
 
   // lock any updates on video table
   private readonly ASYNC_LOCK_ID = 'user'
-  private asyncLock: AsyncLock = new AsyncLock()
+  private asyncLock: AsyncLock = new AsyncLock({ maxPending: Number.MAX_SAFE_INTEGER })
 
   constructor(tablePrefix: ResourcePrefix) {
     this.model = createUserModel(tablePrefix)

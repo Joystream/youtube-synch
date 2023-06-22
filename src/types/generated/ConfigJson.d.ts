@@ -202,8 +202,22 @@ export interface SpecifiesDailyYoutubeAPIQuotaRationingSchemeForYoutubePartnerPr
  * Youtube Oauth2 Client configuration
  */
 export interface YoutubeOauth2ClientConfiguration {
+  /**
+   * Youtube Oauth2 Client Id
+   */
   clientId: string
+  /**
+   * Youtube Oauth2 Client Secret
+   */
   clientSecret: string
+  /**
+   * Maximum percentage of daily Youtube API quota that can be used by the Periodic polling service. Once this limit is reached the service will stop polling for new videos until the next day(when Quota resets). All the remaining quota (100 - maxAllowedQuotaUsageInPercentage) will be used for potential channel's signups.
+   */
+  maxAllowedQuotaUsageInPercentage?: number
+  /**
+   * Path to the Google Cloud's Application Default Credentials (ADC) key file. It is required to periodically monitor the Youtube API quota usage.
+   */
+  adcKeyFilePath?: string
 }
 /**
  * AWS configurations needed to connect with DynamoDB instance

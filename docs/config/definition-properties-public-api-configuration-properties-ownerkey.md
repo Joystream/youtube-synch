@@ -1,0 +1,3 @@
+## ownerKey Type
+
+`string`

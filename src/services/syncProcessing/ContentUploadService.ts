@@ -83,26 +83,26 @@ export class ContentUploadService {
 
   private async uploadPendingAssets(limit: number) {
     // Get all videos which are in either `VideoCreated` or `UploadFailed` state, and their assets exist in local download directory
-    const videosWithPendingAssets = (await this.dynamodbService.videos.getAllVideosInPendingUploadState(limit)).filter(
-      (v) => this.contentDownloadService.getVideoFilePath(v.resourceId) !== undefined
+    const videosWithPendingAssets = (await this.dynamodbService.videos.getVideosPendingUpload(limit)).filter(
+      (v) => this.contentDownloadService.getVideoFilePath(v.id) !== undefined
     )
 
     this.logger.verbose(`Found ${videosWithPendingAssets.length} videos with upload still pending to storage-node.`, {
-      videos: videosWithPendingAssets.map((v) => v.resourceId),
+      videos: videosWithPendingAssets.map((v) => v.id),
     })
 
     await Promise.allSettled(
       videosWithPendingAssets.map(async (video) => {
         try {
           this.logger.info(`Uploading assets for video`, {
-            videoId: video.resourceId,
+            videoId: video.id,
             channelId: video.joystreamChannelId,
           })
 
           // Update video state and save to DB
           await this.dynamodbService.videos.updateState(video, 'UploadStarted')
 
-          const videoFilePath = this.contentDownloadService.expectedVideoFilePath(video.resourceId)
+          const videoFilePath = this.contentDownloadService.expectedVideoFilePath(video.id)
 
           // Upload the video assets
           await this.storageNodeApi.uploadVideo(video, videoFilePath)
@@ -111,15 +111,15 @@ export class ContentUploadService {
           await this.dynamodbService.videos.updateState(video, 'UploadSucceeded')
 
           // After upload is successful, remove the video file from local storage
-          await this.contentDownloadService.removeVideoFile(video.resourceId)
+          await this.contentDownloadService.removeVideoFile(video.id)
 
           this.logger.info(`Successfully uploaded assets for video`, {
-            videoId: video.resourceId,
+            videoId: video.id,
             channelId: video.joystreamChannelId,
           })
         } catch (error) {
           const err = (error as Error).message
-          this.logger.error(`Got error uploading assets for video`, { videoId: video.resourceId, err })
+          this.logger.error(`Got error uploading assets for video`, { videoId: video.id, err })
           // Update video state and save to DB
           await this.dynamodbService.videos.updateState(video, 'UploadFailed')
         }

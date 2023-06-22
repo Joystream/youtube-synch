@@ -1,0 +1,3 @@
+## minimumSubscribersCount Type
+
+`number`
