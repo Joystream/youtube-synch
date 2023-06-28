@@ -489,8 +489,8 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
     const timeSeries = await this.quotaMonitoringClient?.listTimeSeries(request)
 
     // Get Youtube API quota limit
-    const quotaLimit = (timeSeries![0][0]?.points || [])[0]?.value?.int64Value
-    return Number(quotaLimit)
+    const quotaLimit = Number((timeSeries![0][0]?.points || [])[0]?.value?.int64Value)
+    return _.isFinite(quotaLimit) ? quotaLimit : Number.MAX_SAFE_INTEGER
   }
 
   async getQuotaUsage(): Promise<number> {
