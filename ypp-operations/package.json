@@ -1,25 +1,69 @@
 {
   "name": "ypp-operations",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "lib/index.js",
   "license": "MIT",
   "scripts": {
+    "postpack": "rm -f oclif.manifest.json",
+    "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "build": "rm -rf lib && tsc --build tsconfig.json",
     "start": "node lib/index.js",
-    "lint": "eslint ./src --ext .ts"
+    "lint": "eslint ./src --ext .ts",
+    "generate:docs:cli": "yarn oclif-dev readme --multi --dir ./docs/cli"
   },
+  "files": [
+    "/oclif.manifest.json"
+  ],
   "devDependencies": {
+    "@types/node-cron": "^3.0.8",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.60.1",
     "eslint": "^8.43.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^4.2.1",
     "ts-node": "^10.9.1",
-    "typescript": "^5.1.3"
+    "typescript": "^5.1.3",
+    "@oclif/dev-cli": "^1"
   },
   "dependencies": {
-    "dynamoose": "^3.1.0",
+    "axios": "^1.4.0",
     "@hubspot/api-client": "^9.0.0",
-    "aws-sdk": "^2.1405.0"
+    "@joystream/cli": "1.2.0",
+    "@oclif/command": "^1",
+    "@oclif/config": "^1",
+    "@oclif/plugin-help": "^3",
+    "aws-sdk": "^2.1405.0",
+    "chalk": "^4.0.0",
+    "dynamoose": "^3.1.0",
+    "node-cron": "^3.0.2"
+  },
+  "oclif": {
+    "repositoryPrefix": "<%- repo %>/blob/main/src/cli/<%- commandPath %>",
+    "commands": "./lib/cli/commands",
+    "bin": "youtube-synch",
+    "plugins": [
+      "@oclif/plugin-help"
+    ],
+    "topics": {}
+  },
+  "bin": {
+    "youtube-synch-service": "./bin/run"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "yarn": "^1.22.15"
+  },
+  "volta": {
+    "node": "14.18.0",
+    "yarn": "1.22.15"
+  },
+  "resolutions": {
+    "@polkadot/api": "8.9.1",
+    "@polkadot/keyring": "9.5.1",
+    "@polkadot/util": "9.5.1",
+    "@polkadot/util-crypto": "9.5.1",
+    "@substrate/txwrapper-core": "3.1.3",
+    "@substrate/txwrapper-substrate": "3.1.3",
+    "@substrate/txwrapper-polkadot": "3.1.3"
   }
 }

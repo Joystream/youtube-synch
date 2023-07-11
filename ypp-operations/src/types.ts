@@ -147,6 +147,7 @@ export type VideoState =
 
 export type HubspotYPPContact = {
   vid: string
+  contactId: string
   channel_title: string
   channel_url: string
   email: string
@@ -158,9 +159,28 @@ export type HubspotYPPContact = {
   latest_ypp_period_wc: string // Latest Date Check
   date_signed_up_to_ypp: string // Date Signed up to YPP
 
-  sign_up_reward: string // Sign Up Reward
-  referral_reward: string // Referral Reward
-  videos_sync_reward: string // Videos Sync Reward
+  sign_up_reward_in_usd: string // Sign Up Reward in USD
+  latest_referral_reward_in_usd: string // Latest Referral Reward in USD
+  videos_sync_reward: string // Videos Sync Reward in USD
+
+  sign_up_reward: string // Sign Up Reward (in JOY)
+  referral_reward: string // Latest Referral Reward (in JOY)
+  videos_sync_reward_in_joy: string // Videos Sync Reward (in JOY)
+
   latest_ypp_reward: string // Latest Overall YPP Reward
+  total_ypp_rewards: string // Total YPP Rewards in JOY
   latest_ypp_reward_status: 'Not calculated' | 'Paid' | 'To Pay' // Latest YPP Reward Status
 }
+
+export const payableContactProps = [
+  'contactId',
+  'email',
+  'channel_url',
+  'gleev_channel_id',
+  'sign_up_reward_in_usd',
+  'latest_referral_reward_in_usd',
+  'videos_sync_reward',
+  'total_ypp_rewards',
+] as const
+
+export type PayableContact = Pick<HubspotYPPContact, typeof payableContactProps[number]>

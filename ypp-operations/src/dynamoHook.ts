@@ -1,41 +1,37 @@
-import AWS from 'aws-sdk'
+import AWS from './aws-config'
 import { loadConfig as config } from './config'
 import { addOrUpdateYppContact, getYppContactByEmail } from './hubspot'
-import { YtChannel } from './types'
-
-AWS.config.update({
-  region: config().AWS_REGION,
-  credentials: {
-    accessKeyId: config().AWS_ACCESS_KEY_ID,
-    secretAccessKey: config().AWS_SECRET_ACCESS_KEY,
-  },
-})
+import { getAllVerifiedChannels } from './recheckVideoState'
 
 const dynamodbstreams = new AWS.DynamoDBStreams({ apiVersion: '2012-08-10' })
 
-async function getRecords(ShardIterator: any) {
+async function getRecords(ShardIterator: string) {
   return dynamodbstreams.getRecords({ ShardIterator }).promise()
 }
 
-async function processRecords(records: any) {
-  console.log('total records', records.Records.length)
-  for (const record of records.Records) {
-    if (record.eventName === 'MODIFY') {
-      const oldItem = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.OldImage) as YtChannel
-      const newItem = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage) as YtChannel
+let lastProcessingAt = 0
+let isProcessing = false
+async function processRecords(records: AWS.DynamoDBStreams.GetRecordsOutput) {
+  console.log('total records', records.Records?.length)
+  if (records.Records?.find((r) => r.eventName === 'MODIFY')) {
+    console.log('found modify')
 
-      // Get existing contact in Hubspot against email (if any)
-
-      // Add new item to Hubspot
-      if (newItem.yppStatus === 'Verified') {
-        const contactId = await getYppContactByEmail(newItem.email)
-        await addOrUpdateYppContact(newItem, contactId)
+    if (!isProcessing && lastProcessingAt < Date.now() - 180000) {
+      isProcessing = true
+      // setTimeout(async () => {
+      console.log('timeout')
+      const channels = await getAllVerifiedChannels()
+      for (const ch of channels) {
+        const contactId = await getYppContactByEmail(ch.email)
+        await addOrUpdateYppContact(ch, contactId)
       }
+      // }, 180000) // 3 minutes
+      lastProcessingAt = Date.now()
     }
   }
 }
 
-async function processShard(shardId: any) {
+async function processShard(shardId: string) {
   const shardIteratorResult = await dynamodbstreams
     .getShardIterator({
       StreamArn: config().AWS_DYNAMO_STREAM_ARN,
@@ -53,9 +49,11 @@ async function processShard(shardId: any) {
 }
 
 export async function startStreamProcessing() {
-  //   const stream = await dynamodbstreams.describeStream({ StreamArn: config().AWS_DYNAMO_STREAM_ARN }).promise()
-  //   for (const shard of stream?.StreamDescription?.Shards || []) {
-  //     // Process each shard in asynchronously (avoiding `await`)
-  //     processShard(shard.ShardId)
-  //   }
+  const stream = await dynamodbstreams.describeStream({ StreamArn: config().AWS_DYNAMO_STREAM_ARN }).promise()
+  for (const shard of stream?.StreamDescription?.Shards || []) {
+    // Process each shard in asynchronously (avoiding `await`)
+    if (shard.ShardId) {
+      processShard(shard.ShardId)
+    }
+  }
 }

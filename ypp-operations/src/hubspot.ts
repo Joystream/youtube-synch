@@ -1,7 +1,7 @@
 import { Client } from '@hubspot/api-client'
 import axios, { AxiosResponse, isAxiosError } from 'axios'
 import { loadConfig as config } from './config'
-import { HubspotYPPContact, YtChannel } from './types'
+import { HubspotYPPContact, PayableContact, YtChannel, payableContactProps } from './types'
 
 const hubspotClient: Client = new Client({ accessToken: config().HUBSPOT_API_KEY })
 
@@ -34,6 +34,12 @@ export async function getAllContacts(): Promise<
     channelId: string
     latestDateChecked: string
     tier: number
+    yppRewardStatus: string
+    dateSignedUpToYpp: string
+    sign_up_reward_in_usd: number
+    latest_referral_reward_in_usd: number
+    videos_sync_reward_in_usd: number
+    gleev_channel_id: number
   }[]
 > {
   const contacts = []
@@ -55,7 +61,18 @@ export async function getAllContacts(): Promise<
           },
         ],
         sorts: [],
-        properties: ['email', 'channel_url', 'total_subscribers', 'latest_ypp_period_wc'],
+        properties: [
+          'email',
+          'channel_url',
+          'gleev_channel_id',
+          'total_subscribers',
+          'latest_ypp_period_wc',
+          'latest_ypp_reward_status',
+          'date_signed_up_to_ypp',
+          'sign_up_reward_in_usd',
+          'latest_referral_reward_in_usd',
+          'videos_sync_reward',
+        ],
         limit: 50,
         after: nextPage,
       })
@@ -65,8 +82,114 @@ export async function getAllContacts(): Promise<
           email: contact.properties.email,
           channelId: contact.properties.channel_url.split('/')[1],
           latestDateChecked: contact.properties.latest_ypp_period_wc,
+          yppRewardStatus: contact.properties.latest_ypp_reward_status,
+          dateSignedUpToYpp: contact.properties.date_signed_up_to_ypp,
+          sign_up_reward_in_usd: parseInt(contact.properties.sign_up_reward_in_usd || '0'),
+          latest_referral_reward_in_usd: parseInt(contact.properties.latest_referral_reward_in_usd || '0'),
+          videos_sync_reward_in_usd: parseInt(contact.properties.videos_sync_reward || '0'),
+          gleev_channel_id: parseInt(contact.properties.gleev_channel_id || '0'),
           tier:
-            contact.properties.total_subscribers < '5000' ? 1 : contact.properties.total_subscribers < '50000' ? 2 : 3,
+            parseInt(contact.properties.total_subscribers) < 5000
+              ? 1
+              : parseInt(contact.properties.total_subscribers) < 50000
+              ? 2
+              : 3,
+        }))
+      )
+      nextPage = Number(response.paging?.next?.after)
+    } while (nextPage)
+    return contacts
+  } catch (err) {
+    console.error(err)
+    throw err
+  }
+}
+
+export async function getContactToPay(gleevChannelId: string): Promise<PayableContact> {
+  try {
+    const response = await hubspotClient.crm.contacts.searchApi.doSearch({
+      filterGroups: [
+        {
+          filters: [
+            {
+              propertyName: 'lifecyclestage',
+              operator: 'EQ',
+              value: 'customer',
+            },
+            {
+              propertyName: 'latest_ypp_reward_status',
+              operator: 'EQ',
+              value: 'To Pay',
+            },
+            {
+              propertyName: 'gleev_channel_id',
+              operator: 'EQ',
+              value: gleevChannelId,
+            },
+          ],
+        },
+      ],
+      sorts: [],
+      properties: payableContactProps as unknown as string[],
+      limit: 50,
+      after: 0,
+    })
+    const contacts = response.results.map((contact) => ({
+      contactId: contact.id,
+      email: contact.properties.email,
+      channel_url: contact.properties.channel_url.split('/')[1],
+      gleev_channel_id: contact.properties.gleev_channel_id,
+      sign_up_reward_in_usd: contact.properties.sign_up_reward_in_usd,
+      latest_referral_reward_in_usd: contact.properties.latest_referral_reward_in_usd,
+      videos_sync_reward: contact.properties.videos_sync_reward,
+      total_ypp_rewards: contact.properties.total_ypp_rewards,
+    }))
+    return contacts[0]
+  } catch (err) {
+    console.error(err)
+    throw err
+  }
+}
+
+export async function getContactsToPay(): Promise<PayableContact[]> {
+  const contacts = []
+
+  let nextPage: number | undefined = 0
+
+  try {
+    do {
+      const response = await hubspotClient.crm.contacts.searchApi.doSearch({
+        filterGroups: [
+          {
+            filters: [
+              {
+                propertyName: 'lifecyclestage',
+                operator: 'EQ',
+                value: 'customer',
+              },
+              {
+                propertyName: 'latest_ypp_reward_status',
+                operator: 'EQ',
+                value: 'To Pay',
+              },
+            ],
+          },
+        ],
+        sorts: [],
+        properties: payableContactProps as unknown as string[],
+        limit: 50,
+        after: nextPage,
+      })
+      contacts.push(
+        ...response.results.map((contact) => ({
+          contactId: contact.id,
+          email: contact.properties.email,
+          channel_url: contact.properties.channel_url.split('/')[1],
+          gleev_channel_id: contact.properties.gleev_channel_id,
+          sign_up_reward_in_usd: contact.properties.sign_up_reward_in_usd,
+          latest_referral_reward_in_usd: contact.properties.latest_referral_reward_in_usd,
+          videos_sync_reward: contact.properties.videos_sync_reward,
+          total_ypp_rewards: contact.properties.total_ypp_rewards,
         }))
       )
       nextPage = Number(response.paging?.next?.after)
@@ -81,7 +204,7 @@ export async function getAllContacts(): Promise<
 // Function to update a Hubspot YPP contact
 export async function updateYppContact(contactId: string, properties: Partial<HubspotYPPContact>): Promise<void> {
   try {
-    await hubspotClient.crm.contacts.basicApi.update(contactId, { properties: properties })
+    await hubspotClient.crm.contacts.basicApi.update(contactId, { properties })
   } catch (err) {
     console.error(err)
   }
@@ -98,13 +221,13 @@ export async function createYppContact(properties: Partial<HubspotYPPContact>): 
 
 export async function addOrUpdateYppContact(item: YtChannel, contactId?: string): Promise<void> {
   if (contactId) {
-    return await updateYppContact(contactId, dynamoItemToContact(item))
+    return await updateYppContact(contactId, mapDynamoItemToContactFields(item))
   } else {
-    return await createYppContact(dynamoItemToContact(item))
+    return await createYppContact(mapDynamoItemToContactFields(item))
   }
 }
 
-function dynamoItemToContact(item: YtChannel): Partial<HubspotYPPContact> {
+function mapDynamoItemToContactFields(item: YtChannel): Partial<HubspotYPPContact> {
   return {
     channel_title: item.title,
     channel_url: `channel/${item.id}`,
