@@ -14,7 +14,7 @@ USAGE
   $ youtube-synch payRewards
 
 OPTIONS
-  -d, --rationale=rationale              (required) Reason why payment is being made
+  -d, --rationale=rationale              Reason why payment is being made
   -p, --joyPrice=joyPrice                (required) Price of JOY token
   -y, --yes                              Answer "yes" to any prompt, skipping any manual confirmations
   --payerMemberId=payerMemberId          (required) Joystream member Id of Reward payer account
