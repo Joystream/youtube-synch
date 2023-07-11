@@ -34,7 +34,7 @@ async function processRecords(records: AWS.DynamoDBStreams.GetRecordsOutput) {
 async function processShard(shardId: string) {
   const shardIteratorResult = await dynamodbstreams
     .getShardIterator({
-      StreamArn: config().AWS_DYNAMO_STREAM_ARN,
+      StreamArn: config('AWS_DYNAMO_STREAM_ARN'),
       ShardId: shardId,
       ShardIteratorType: 'TRIM_HORIZON',
     })
@@ -49,7 +49,7 @@ async function processShard(shardId: string) {
 }
 
 export async function startStreamProcessing() {
-  const stream = await dynamodbstreams.describeStream({ StreamArn: config().AWS_DYNAMO_STREAM_ARN }).promise()
+  const stream = await dynamodbstreams.describeStream({ StreamArn: config('AWS_DYNAMO_STREAM_ARN') }).promise()
   for (const shard of stream?.StreamDescription?.Shards || []) {
     // Process each shard in asynchronously (avoiding `await`)
     if (shard.ShardId) {

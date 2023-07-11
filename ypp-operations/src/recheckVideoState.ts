@@ -97,10 +97,10 @@ export async function recheck() {
 
     // If this is the first time we are checking for this channel contact, we should give them the sign up reward
     let sign_up_reward_in_usd =
-      contact.latestDateChecked === null ? config().BASE_SIGNUP_REWARD_IN_USD * rewardMultiplier : 0
-    let latest_referral_reward_in_usd = config().BASE_REFERRAL_REWARD_IN_USD * rewardMultiplier * referredCount
+      contact.latestDateChecked === null ? config('BASE_SIGNUP_REWARD_IN_USD') * rewardMultiplier : 0
+    let latest_referral_reward_in_usd = config('BASE_REFERRAL_REWARD_IN_USD') * rewardMultiplier * referredCount
     let videos_sync_reward_in_usd =
-      config().BASE_SYNC_REWARD_IN_USD * rewardMultiplier * (syncedCount < 5 ? syncedCount : 5)
+      config('BASE_SYNC_REWARD_IN_USD') * rewardMultiplier * (syncedCount < 5 ? syncedCount : 5)
     let latest_ypp_reward = sign_up_reward_in_usd + latest_referral_reward_in_usd + videos_sync_reward_in_usd
 
     if (contact.yppRewardStatus === 'To Pay') {

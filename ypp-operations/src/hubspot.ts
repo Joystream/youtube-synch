@@ -3,10 +3,10 @@ import axios, { AxiosResponse, isAxiosError } from 'axios'
 import { loadConfig as config } from './config'
 import { HubspotYPPContact, PayableContact, YtChannel, payableContactProps } from './types'
 
-const hubspotClient: Client = new Client({ accessToken: config().HUBSPOT_API_KEY })
+const hubspotClient: Client = new Client({ accessToken: config('HUBSPOT_API_KEY') })
 
 export async function getYppContactByEmail(email: string): Promise<string | undefined> {
-  const token = config().HUBSPOT_API_KEY
+  const token = config('HUBSPOT_API_KEY')
   const baseUrl: string = 'https://api.hubapi.com'
   const endpoint: string = `/contacts/v1/contact/email/${email}/profile`
 

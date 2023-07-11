@@ -50,7 +50,7 @@ export default abstract class DefaultCommandBase extends Command {
     this.autoConfirm = !!(process.env.AUTO_CONFIRM === 'true' || parseInt(process.env.AUTO_CONFIRM || '') || yes)
   }
 
-  asHapi(joy: string) {
+  asHapi(joy: number) {
     let joyBN = new BN(joy)
     let factor = new BN(10).pow(new BN(this.tokenDecimals))
     return joyBN.mul(factor).toString()

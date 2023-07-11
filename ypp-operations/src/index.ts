@@ -1,4 +1,3 @@
-import { loadConfig } from './config'
 import { countChannelsReferredAfter, recheck } from './recheckVideoState'
 
 export * from './config'
@@ -6,7 +5,7 @@ export * from './dynamoHook'
 export * from './hubspot'
 
 // Start processing the DynamoDB stream
-loadConfig()
+// loadConfig()
 // startStreamProcessing()
 
 // getAllVerifiedChannels()
