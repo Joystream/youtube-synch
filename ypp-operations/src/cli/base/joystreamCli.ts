@@ -56,21 +56,22 @@ export abstract class CLI {
       return new Promise((resolve, reject) => {
         const child = spawn(this.binPath, [command, ...this.getArgs(customArgs)], {
           env,
+          stdio: 'inherit', // this is the important part for handling interactive input
           cwd: this.rootPath,
         })
 
         let stdout = ''
         let stderr = ''
 
-        child.stdout.on('data', (data) => {
-          if (debugCli) console.log(data.toString())
-          stdout += data
-        })
+        // child.stdout.on('data', (data) => {
+        //   if (debugCli) console.log(data.toString())
+        //   stdout += data
+        // })
 
-        child.stderr.on('data', (data) => {
-          if (debugCli) console.error(data.toString())
-          stderr += data
-        })
+        // child.stderr.on('data', (data) => {
+        //   if (debugCli) console.error(data.toString())
+        //   stderr += data
+        // })
 
         child.on('error', (error) => {
           reject(error)
