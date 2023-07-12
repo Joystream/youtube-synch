@@ -1,9 +1,8 @@
 import ExitCodes from '@joystream/cli/lib/ExitCodes'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { execFile, ExecFileException } from 'child_process'
+import { spawn } from 'child_process'
 import fs, { mkdirSync, rmdirSync } from 'fs'
 import path from 'path'
-import { promisify } from 'util'
 import { v4 as uuid } from 'uuid'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../node_modules/@joystream/cli')
@@ -46,39 +45,45 @@ export abstract class CLI {
   }
 
   async run(command: string, customArgs: string[] = [], requireSuccess = true): Promise<CommandResult> {
-    const defaultError = 1
-
-    const pExecFile = promisify(execFile)
+    const debugCli = process.env.DEBUG === 'true'
     const { env } = this
 
-    const func = async () => {
-      try {
-        // execute command and wait for std outputs (or error)
-        const execOutputs = await pExecFile(this.binPath, [command, ...this.getArgs(customArgs)], {
+    const func = async (): Promise<{
+      stdout: string
+      stderr: string
+      exitCode: number
+    }> => {
+      return new Promise((resolve, reject) => {
+        const child = spawn(this.binPath, [command, ...this.getArgs(customArgs)], {
           env,
           cwd: this.rootPath,
         })
 
-        // return outputs and exit code
-        return {
-          ...execOutputs,
-          exitCode: 0,
-        }
-      } catch (error: unknown) {
-        const errorTyped = error as ExecFileException & { stdout?: string; stderr?: string }
-        // escape if command's success is required
-        if (requireSuccess) {
-          throw error
-        }
+        let stdout = ''
+        let stderr = ''
 
-        const response = {
-          exitCode: Number(errorTyped.code) || defaultError,
-          stdout: errorTyped.stdout || '',
-          stderr: errorTyped.stderr || '',
-        }
+        child.stdout.on('data', (data) => {
+          if (debugCli) console.log(data.toString())
+          stdout += data
+        })
 
-        return response
-      }
+        child.stderr.on('data', (data) => {
+          if (debugCli) console.error(data.toString())
+          stderr += data
+        })
+
+        child.on('error', (error) => {
+          reject(error)
+        })
+
+        child.on('close', (code) => {
+          resolve({
+            stdout,
+            stderr,
+            exitCode: code || 0,
+          })
+        })
+      })
     }
 
     const { stdout, stderr, exitCode } = await func()
