@@ -144,6 +144,22 @@ export class YoutubePollingService {
             lastActedAt: new Date(),
           })
           continue
+          // ! Although type of `err.code` is string, the api api response returns it as number.
+        } else if (
+          err instanceof GaxiosError &&
+          err.code === (403 as any) &&
+          (err as GaxiosError).response?.data?.error?.errors[0]?.reason === 'authenticatedUserAccountSuspended'
+        ) {
+          this.logger.warn(
+            `Opting out '${ch.id}' from YPP program as their Youtube channel has been terminated by the Youtube.`
+          )
+          updatedChannels.push({
+            ...ch,
+            yppStatus: 'OptedOut',
+            shouldBeIngested: false,
+            lastActedAt: new Date(),
+          })
+          continue
         } else if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.CHANNEL_NOT_FOUND) {
           this.logger.warn(`Opting out '${ch.id}' from YPP program as Channel is not found on Youtube.`)
           updatedChannels.push({
