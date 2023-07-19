@@ -36,8 +36,8 @@ function createUserModel(tablePrefix: ResourcePrefix) {
       // User avatar url
       avatarUrl: String,
 
-      // User Youtube channels count
-      channelsCount: Number,
+      // joystream member ID for given creator.
+      joystreamMemberId: Number,
     },
     {
       saveUnknown: false,

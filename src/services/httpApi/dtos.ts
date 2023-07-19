@@ -123,7 +123,7 @@ export class SaveChannelRequest {
   // Authorization code send to the backend after user o-auth verification
   @IsString() @ApiProperty({ required: true }) authorizationCode: string
 
-  // Authorization code send to the backend after user O-auth verification
+  // UserId of the Youtube creator return from Google Oauth API
   @IsString() @ApiProperty({ required: true }) userId: string
 
   // Email of the user
@@ -152,6 +152,44 @@ export class SaveChannelResponse {
   constructor(user: UserDto, channel: ChannelDto) {
     this.user = user
     this.channel = channel
+  }
+}
+
+// Dto for creating membership request
+export class CreateMembershipRequest {
+  // UserId of the Youtube creator return from Google Oauth API
+  @IsString() @ApiProperty({ required: true }) userId: string
+
+  // Authorization code send to the backend after user o-auth verification
+  @IsString() @ApiProperty({ required: true }) authorizationCode: string
+
+  // Membership Account address
+  @IsString() @ApiProperty({ required: true }) account: string
+
+  // Membership Handle
+  @IsString() @ApiProperty({ required: true }) handle: string
+
+  // Membership avatar URL
+  @IsUrl({ require_tld: false }) @ApiProperty({ required: true }) avatar: string
+
+  // `about` information to associate with new Membership
+  @IsString() @ApiProperty() about: string
+
+  // Membership name
+  @IsString() @ApiProperty() name: string
+}
+
+// Dto for create membership response
+export class CreateMembershipResponse {
+  // Membership Account address
+  @IsNumber() @ApiProperty({ required: true }) memberId: number
+
+  // Membership Handle
+  @IsString() @ApiProperty({ required: true }) handle: string
+
+  constructor(memberId: number, handle: string) {
+    this.memberId = memberId
+    this.handle = handle
   }
 }
 
