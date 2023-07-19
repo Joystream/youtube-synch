@@ -92,6 +92,13 @@ const videosTable = new aws.dynamodb.Table('videos', {
       name: 'state-publishedAt-index',
       projectionType: 'ALL',
     },
+    {
+      hashKey: nameof<YtVideo>('channelId'),
+      rangeKey: nameof<YtVideo>('publishedAt'),
+      name: 'channelId-publishedAt-index',
+      projectionType: 'INCLUDE',
+      nonKeyAttributes: ['state'],
+    },
   ],
   billingMode: 'PAY_PER_REQUEST',
 })
