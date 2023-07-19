@@ -159,6 +159,11 @@ export class ContentDownloadService {
       pendingDownloadsCount: pendingDownloadVideos.length,
     })
 
+    if (!this.freeSpace && pendingDownloadVideos.length) {
+      this.logger.warn(`Not enough space available to download new videos. Will try again later.`)
+      return
+    }
+
     const pendingDownloadVideosByChannel = _(pendingDownloadVideos)
       .groupBy((v) => v.channelId)
       .map((videos, channelId) => ({ channelId, unsyncedVideos: [...videos] }))

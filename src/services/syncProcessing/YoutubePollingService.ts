@@ -83,7 +83,7 @@ export class YoutubePollingService {
    */
   private async performChannelsIngestion(): Promise<YtChannel[]> {
     // get all channels that need to be ingested
-    const channelsWithSyncElabled = async () =>
+    const channelsWithSyncEnabled = async () =>
       await this.dynamodbService.repo.channels.scan('shouldBeIngested', (s) =>
         // * Unauthorized channels add by infra operator are exempted from periodic
         // * ingestion as we don't have access to their access/refresh tokens
@@ -92,7 +92,7 @@ export class YoutubePollingService {
 
     // updated channel objects with uptodate info
     const updatedChannels: YtChannel[] = []
-    const channelsToBeIngested = await channelsWithSyncElabled()
+    const channelsToBeIngested = await channelsWithSyncEnabled()
     for (const ch of channelsToBeIngested) {
       try {
         const uptodateChannel = await this.youtubeApi.getChannel({
@@ -172,7 +172,7 @@ export class YoutubePollingService {
     // save updated  channels
     await this.dynamodbService.repo.channels.upsertAll(updatedChannels)
 
-    return channelsWithSyncElabled()
+    return channelsWithSyncEnabled()
   }
 
   private async performVideosIngestion(channel: YtChannel) {
