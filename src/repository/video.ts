@@ -240,6 +240,7 @@ export class VideosService {
       ...(await this.getVideosInState('New')),
       ...(await this.getVideosInState('VideoCreationFailed')),
       ...(await this.getVideosInState('UploadFailed')),
+      ...(await this.getVideosInState('VideoCreated')),
     ]
   }
 
