@@ -1,3 +1,13 @@
+### 1.5.0
+
+- Adds new `POST /membership` endpoint for captcha-free membership creation of verified YPP users. Requires Faucet endpoint (`joystream.faucet.endpoint`) and Bearer Authentication token (`joystream.faucet.captchaBypassKey`) in the configuration, as the request handler calls Joystream Faucet as an authenticated actor.
+- Adds new `state-publishedAt-index` Global Secondary Index on `videos` DynamoDB table to efficiently query all the videos synced in a given time range.
+- Updates `POST /users` endpoint to return more information about verified YPP user. The response now includes `channelHandle`, `channelTitle`, `channelDescription`, `avatarUrl` & `bannerUrl` fields too.
+- Adds check for disk space before initiating video download.
+- **FIX** `sendExtrinsic`: The send extrinsic function (which is a wrapper around PolkadotJS `tx.signAndSend` function) has been fixed to handle the case when tx has been finalized before the callback registered in `tx.signAndSend` would run.
+- **FIX**: Calculation for daily quota usage of Youtube API.
+- **FIX**: If a Youtube channel has been terminated by Youtube, mark its state in YT-synch backend as `OutedOut` and exclude it from syncing, previously, the YT-synch backend would keep trying to fetch the channel info and would fail with `youtube.common.authenticatedUserAccountSuspended` error.
+
 ### 1.4.2
 
 - Adds Youtube API quota usage optimization.

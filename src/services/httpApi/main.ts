@@ -18,6 +18,7 @@ import {
   VideosController,
   YoutubeController,
 } from './controllers'
+import { MembershipController } from './controllers/membership'
 
 class ApiModule {}
 
@@ -52,7 +53,14 @@ export async function bootstrapHttpApi(
     module: ApiModule,
     imports: [],
     exports: [],
-    controllers: [VideosController, ChannelsController, UsersController, YoutubeController, StatusController],
+    controllers: [
+      VideosController,
+      ChannelsController,
+      UsersController,
+      YoutubeController,
+      StatusController,
+      MembershipController,
+    ],
     providers: [
       {
         provide: DynamodbService,

@@ -29,6 +29,17 @@ export const configSchema: JSONSchema4 = objectSchema({
     joystream: objectSchema({
       description: 'Joystream network related configuration',
       properties: {
+        faucet: objectSchema({
+          description: `Joystream's faucet configuration (needed for captcha-free membership creation)`,
+          properties: {
+            endpoint: { type: 'string', description: `Joystream's faucet URL` },
+            captchaBypassKey: {
+              type: 'string',
+              description: `Bearer Authentication Key needed to bypass captcha verification on Faucet`,
+            },
+          },
+          required: ['endpoint', 'captchaBypassKey'],
+        }),
         app: objectSchema({
           description: 'Joystream metaprotocol application specific configuration',
           properties: {
@@ -76,7 +87,7 @@ export const configSchema: JSONSchema4 = objectSchema({
           required: ['memberId', 'account'],
         }),
       },
-      required: ['app', 'channelCollaborator'],
+      required: ['faucet', 'app', 'channelCollaborator'],
     }),
     endpoints: objectSchema({
       description: 'Specifies external endpoints that the distributor node will connect to',

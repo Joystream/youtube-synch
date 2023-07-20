@@ -136,6 +136,7 @@ class YoutubeClient implements IYoutubeApi {
       accessToken: tokenResponse.access_token,
       refreshToken: tokenResponse.refresh_token,
       authorizationCode: code,
+      joystreamMemberId: undefined,
       createdAt: new Date(),
     }
     return user
@@ -146,7 +147,7 @@ class YoutubeClient implements IYoutubeApi {
 
     const channelResponse = await yt.channels
       .list({
-        part: ['snippet', 'contentDetails', 'statistics'],
+        part: ['snippet', 'contentDetails', 'statistics', 'brandingSettings'],
         mine: true,
       })
       .catch((err) => {
@@ -351,6 +352,7 @@ class YoutubeClient implements IYoutubeApi {
             videoCount: parseInt(channel.statistics?.videoCount ?? '0'),
             commentCount: parseInt(channel.statistics?.commentCount ?? '0'),
           },
+          bannerImageUrl: channel.brandingSettings?.image?.bannerExternalUrl,
           uploadsPlaylistId: channel.contentDetails?.relatedPlaylists?.uploads,
           language: channel.snippet?.defaultLanguage,
           performUnauthorizedSync: false,
@@ -489,8 +491,8 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
     const timeSeries = await this.quotaMonitoringClient?.listTimeSeries(request)
 
     // Get Youtube API quota limit
-    const quotaLimit = (timeSeries![0][0]?.points || [])[0]?.value?.int64Value
-    return Number(quotaLimit)
+    const quotaLimit = Number((timeSeries![0][0]?.points || [])[0]?.value?.int64Value)
+    return _.isFinite(quotaLimit) ? quotaLimit : Number.MAX_SAFE_INTEGER
   }
 
   async getQuotaUsage(): Promise<number> {

@@ -140,6 +140,10 @@ export class ContentCreationService {
         return await this.joystreamClient.hasQueryNodeProcessedBlock(blockNumber)
       })
 
+      // TODO: Added temporary fix to resolve duplicate video creation bug, create a proper fix by ensure that
+      // TODO: `processCreateVideoTask` is not called for the same video twice.
+      await this.dynamodbService.videos.updateState(video, 'CreatingVideo')
+
       // Extra validation to check state consistency
       const qnVideo = await this.joystreamClient.getVideoByYtResourceId(video.id)
       if (qnVideo) {
@@ -158,12 +162,12 @@ export class ContentCreationService {
     } catch (err) {
       this.logger.error(`Got error processing video`, { videoId: video.id, err })
       await this.dynamodbService.videos.updateState(video, 'VideoCreationFailed')
+    } finally {
+      // unset `activeTaskId` set
+      this.activeTaskId = ''
+      // Signal that the task is done
+      cb(null, null)
     }
-
-    // unset `activeTaskId` set
-    this.activeTaskId = ''
-    // Signal that the task is done
-    cb(null, null)
   }
 
   /**

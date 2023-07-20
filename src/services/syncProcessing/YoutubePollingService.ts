@@ -71,7 +71,7 @@ export class YoutubePollingService {
           `Completed Channels Ingestion. Videos of ${channels.length} channels will be prepared for syncing in this polling cycle....`
         )
 
-        await Promise.all(channels.map((channel) => this.performVideosIngestion(channel)))
+        await Promise.allSettled(channels.map((channel) => this.performVideosIngestion(channel)))
       } catch (err) {
         this.logger.error(`Critical Polling error`, { err })
       }
@@ -83,14 +83,16 @@ export class YoutubePollingService {
    */
   private async performChannelsIngestion(): Promise<YtChannel[]> {
     // get all channels that need to be ingested
-    const channelsToBeIngested = await this.dynamodbService.repo.channels.scan('shouldBeIngested', (s) =>
-      // * Unauthorized channels add by infra operator are exempted from periodic
-      // * ingestion as we don't have access to their access/refresh tokens
-      s.eq(true).and().filter('performUnauthorizedSync').eq(false)
-    )
+    const channelsWithSyncEnabled = async () =>
+      await this.dynamodbService.repo.channels.scan('shouldBeIngested', (s) =>
+        // * Unauthorized channels add by infra operator are exempted from periodic
+        // * ingestion as we don't have access to their access/refresh tokens
+        s.eq(true).and().filter('performUnauthorizedSync').eq(false)
+      )
 
-    // updated channel objects with uptodate info (e.g. subscriber count)
+    // updated channel objects with uptodate info
     const updatedChannels: YtChannel[] = []
+    const channelsToBeIngested = await channelsWithSyncEnabled()
     for (const ch of channelsToBeIngested) {
       try {
         const uptodateChannel = await this.youtubeApi.getChannel({
@@ -115,13 +117,32 @@ export class YoutubePollingService {
           continue
         }
 
-        updatedChannels.push({ ...ch, statistics: uptodateChannel.statistics })
+        // Update the current channel record if it changed
+        if (!_.isEqual(ch.statistics, uptodateChannel.statistics)) {
+          updatedChannels.push({ ...ch, statistics: uptodateChannel.statistics })
+        }
       } catch (err: unknown) {
         // if app permission is revoked by user from Google account then set `shouldBeIngested` to false & OptOut channel from
         // Ypp program,  because then trying to fetch user channel will throw error with code 400 and 'invalid_grant' message
         if (err instanceof GaxiosError && err.code === '400' && err.response?.data?.error === 'invalid_grant') {
           this.logger.warn(
             `Opting out '${ch.id}' from YPP program as their owner has revoked the permissions from Google settings`
+          )
+          updatedChannels.push({
+            ...ch,
+            yppStatus: 'OptedOut',
+            shouldBeIngested: false,
+            lastActedAt: new Date(),
+          })
+          continue
+          // ! Although type of `err.code` is string, the api api response returns it as number.
+        } else if (
+          err instanceof GaxiosError &&
+          err.code === (403 as any) &&
+          (err as GaxiosError).response?.data?.error?.errors[0]?.reason === 'authenticatedUserAccountSuspended'
+        ) {
+          this.logger.warn(
+            `Opting out '${ch.id}' from YPP program as their Youtube channel has been terminated by the Youtube.`
           )
           updatedChannels.push({
             ...ch,
@@ -151,20 +172,24 @@ export class YoutubePollingService {
     // save updated  channels
     await this.dynamodbService.repo.channels.upsertAll(updatedChannels)
 
-    return updatedChannels.filter((ch) => ch.shouldBeIngested)
+    return channelsWithSyncEnabled()
   }
 
   private async performVideosIngestion(channel: YtChannel) {
-    // get all sync-able videos of the channel
-    const allVideosIds = await this.ytdlpClient.getAllVideosIds(channel)
+    try {
+      // get all sync-able videos of the channel
+      const allVideosIds = await this.ytdlpClient.getAllVideosIds(channel)
 
-    // get all new video Ids that are not yet being tracked
-    const newVideosIds = await this.getNewVideosIds(channel, allVideosIds)
+      // get all new video Ids that are not yet being tracked
+      const newVideosIds = await this.getNewVideosIds(channel, allVideosIds)
 
-    //  get all new videos that are not yet being tracked
-    const newVideos = await this.youtubeApi.getVideos(channel, newVideosIds)
+      //  get all new videos that are not yet being tracked
+      const newVideos = await this.youtubeApi.getVideos(channel, newVideosIds)
 
-    // save all new videos to DB including
-    await this.dynamodbService.repo.videos.upsertAll(newVideos)
+      // save all new videos to DB including
+      await this.dynamodbService.repo.videos.upsertAll(newVideos)
+    } catch (err) {
+      this.logger.error('Failed to ingest videos for channel', { err, channelId: channel.joystreamChannelId })
+    }
   }
 }

@@ -44,12 +44,10 @@ export class ChannelsController {
     private dynamodbService: DynamodbService
   ) {}
 
-  @ApiOperation({
-    description: `Saves channel record of a YPP verified user`,
-  })
+  @Post()
   @ApiBody({ type: SaveChannelRequest })
   @ApiResponse({ type: SaveChannelResponse })
-  @Post()
+  @ApiOperation({ description: `Saves channel record of a YPP verified user` })
   async saveChannel(@Body() channelInfo: SaveChannelRequest): Promise<SaveChannelResponse> {
     try {
       const {
@@ -104,8 +102,8 @@ export class ChannelsController {
   }
 
   @Get(':joystreamChannelId')
-  @ApiOperation({ description: 'Retrieves channel by joystreamChannelId' })
   @ApiResponse({ type: ChannelDto })
+  @ApiOperation({ description: 'Retrieves channel by joystreamChannelId' })
   async get(@Param('joystreamChannelId', ParseIntPipe) id: number) {
     try {
       const channel = await this.dynamodbService.channels.getByJoystreamChannelId(id)
@@ -117,8 +115,8 @@ export class ChannelsController {
   }
 
   @Get()
-  @ApiOperation({ description: 'Retrieves the most recently verified 30 channels desc by date' })
   @ApiResponse({ type: ChannelDto })
+  @ApiOperation({ description: 'Retrieves the most recently verified 30 channels desc by date' })
   async getRecentVerifiedChannels() {
     try {
       const channels = await this.dynamodbService.channels.getRecent(30)
@@ -132,9 +130,7 @@ export class ChannelsController {
   @Put(':joystreamChannelId/ingest')
   @ApiBody({ type: IngestChannelDto })
   @ApiResponse({ type: ChannelDto })
-  @ApiOperation({
-    description: `Updates given channel ingestion/syncing status. Note: only channel owner can update the status`,
-  })
+  @ApiOperation({ description: `Updates given channel syncing status. Note: only channel owner can update the status` })
   async ingestChannel(
     @Param('joystreamChannelId', ParseIntPipe) id: number,
     @Body() { message, signature }: IngestChannelDto
@@ -219,9 +215,7 @@ export class ChannelsController {
 
   @Put('/suspend')
   @ApiBody({ type: SuspendChannelDto, isArray: true })
-  @ApiOperation({
-    description: `Authenticated endpoint to suspend given channel/s from YPP program`,
-  })
+  @ApiOperation({ description: `Authenticated endpoint to suspend given channel/s from YPP program` })
   async suspendChannels(
     @Headers('authorization') authorizationHeader: string,
     @Body(new ParseArrayPipe({ items: SuspendChannelDto, whitelist: true })) channels: SuspendChannelDto[]
@@ -256,9 +250,7 @@ export class ChannelsController {
 
   @Put('/verify')
   @ApiBody({ type: SuspendChannelDto, isArray: true })
-  @ApiOperation({
-    description: `Authenticated endpoint to verify given channel/s in YPP program`,
-  })
+  @ApiOperation({ description: `Authenticated endpoint to verify given channel/s in YPP program` })
   async verifyChannels(
     @Headers('authorization') authorizationHeader: string,
     @Body(new ParseArrayPipe({ items: VerifyChannelDto, whitelist: true })) channels: VerifyChannelDto[]
