@@ -3,6 +3,7 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import axios from 'axios'
 import { DynamodbService } from '../../../repository'
 import { ReadonlyConfig } from '../../../types'
+import { FaucetApiError } from '../../../types/errors'
 import { FaucetRegisterMembershipParams, FaucetRegisterMembershipResponse } from '../../../types/youtube'
 import { CreateMembershipRequest, CreateMembershipResponse } from '../dtos'
 
@@ -48,9 +49,19 @@ export class MembershipController {
 
   private async createMemberWithFaucet(params: FaucetRegisterMembershipParams): Promise<{ memberId: number }> {
     const { endpoint, captchaBypassKey } = this.config.joystream.faucet
-    const response = await axios.post<FaucetRegisterMembershipResponse>(endpoint, params, {
-      headers: { Authorization: `Bearer ${captchaBypassKey}` },
-    })
-    return response.data
+    try {
+      const response = await axios.post<FaucetRegisterMembershipResponse>(endpoint, params, {
+        headers: { Authorization: `Bearer ${captchaBypassKey}` },
+      })
+      return response.data
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new FaucetApiError(
+          error.response?.data?.error || error.cause || error.code,
+          `Failed to create membership through faucet for account address: ${params.account}`
+        )
+      }
+      throw error
+    }
   }
 }
