@@ -83,7 +83,7 @@ export class YoutubePollingService {
    */
   private async performChannelsIngestion(): Promise<YtChannel[]> {
     // get all channels that need to be ingested
-    const channelsWithSyncElabled = async () =>
+    const channelsWithSyncEnabled = async () =>
       await this.dynamodbService.repo.channels.scan('shouldBeIngested', (s) =>
         // * Unauthorized channels add by infra operator are exempted from periodic
         // * ingestion as we don't have access to their access/refresh tokens
@@ -92,7 +92,7 @@ export class YoutubePollingService {
 
     // updated channel objects with uptodate info
     const updatedChannels: YtChannel[] = []
-    const channelsToBeIngested = await channelsWithSyncElabled()
+    const channelsToBeIngested = await channelsWithSyncEnabled()
     for (const ch of channelsToBeIngested) {
       try {
         const uptodateChannel = await this.youtubeApi.getChannel({
@@ -135,6 +135,22 @@ export class YoutubePollingService {
             lastActedAt: new Date(),
           })
           continue
+          // ! Although type of `err.code` is string, the api api response returns it as number.
+        } else if (
+          err instanceof GaxiosError &&
+          err.code === (403 as any) &&
+          (err as GaxiosError).response?.data?.error?.errors[0]?.reason === 'authenticatedUserAccountSuspended'
+        ) {
+          this.logger.warn(
+            `Opting out '${ch.id}' from YPP program as their Youtube channel has been terminated by the Youtube.`
+          )
+          updatedChannels.push({
+            ...ch,
+            yppStatus: 'OptedOut',
+            shouldBeIngested: false,
+            lastActedAt: new Date(),
+          })
+          continue
         } else if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.CHANNEL_NOT_FOUND) {
           this.logger.warn(`Opting out '${ch.id}' from YPP program as Channel is not found on Youtube.`)
           updatedChannels.push({
@@ -156,7 +172,7 @@ export class YoutubePollingService {
     // save updated  channels
     await this.dynamodbService.repo.channels.upsertAll(updatedChannels)
 
-    return channelsWithSyncElabled()
+    return channelsWithSyncEnabled()
   }
 
   private async performVideosIngestion(channel: YtChannel) {
