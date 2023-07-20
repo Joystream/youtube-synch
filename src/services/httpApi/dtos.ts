@@ -173,10 +173,10 @@ export class CreateMembershipRequest {
   @IsUrl({ require_tld: false }) @ApiProperty({ required: true }) avatar: string
 
   // `about` information to associate with new Membership
-  @IsString() @ApiProperty() about: string
+  @ApiProperty() about: string
 
   // Membership name
-  @IsString() @ApiProperty() name: string
+  @ApiProperty() name: string
 }
 
 // Dto for create membership response

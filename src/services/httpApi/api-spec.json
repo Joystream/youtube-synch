@@ -126,7 +126,7 @@
       "put": {
         "operationId": "ChannelsController_ingestChannel",
         "summary": "",
-        "description": "Updates given channel ingestion/syncing status. Note: only channel owner can update the status",
+        "description": "Updates given channel syncing status. Note: only channel owner can update the status",
         "parameters": [
           {
             "name": "joystreamChannelId",
