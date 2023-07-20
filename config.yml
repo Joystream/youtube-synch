@@ -45,6 +45,9 @@ httpApi:
   port: 3001
   ownerKey: ypp-owner-key
 joystream:
+  faucet:
+    endpoint: http://localhost:3002/register
+    captchaBypassKey: some-random-key
   app:
     name: app-name
     # App auth key used for signing App Actions

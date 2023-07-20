@@ -107,6 +107,9 @@ export class YtUser {
   // User authorization code
   authorizationCode: string
 
+  // Corresponding Joystream member ID for Youtube user
+  joystreamMemberId: number | undefined
+
   // Record created At timestamp
   createdAt: Date
 }
@@ -252,4 +255,16 @@ export type VideoDownloadTask = YtVideo & {
 export type VideoCreationTask = YtVideo & {
   priorityScore: number
   filePath: string
+}
+
+export type FaucetRegisterMembershipParams = {
+  account: string
+  handle: string
+  avatar: string
+  about: string
+  name: string
+}
+
+export type FaucetRegisterMembershipResponse = {
+  memberId: number
 }

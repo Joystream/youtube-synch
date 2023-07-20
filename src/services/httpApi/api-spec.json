@@ -126,7 +126,7 @@
       "put": {
         "operationId": "ChannelsController_ingestChannel",
         "summary": "",
-        "description": "Updates given channel ingestion/syncing status. Note: only channel owner can update the status",
+        "description": "Updates given channel syncing status. Note: only channel owner can update the status",
         "parameters": [
           {
             "name": "joystreamChannelId",
@@ -688,6 +688,39 @@
           "status"
         ]
       }
+    },
+    "/membership": {
+      "post": {
+        "operationId": "MembershipController_createMembership",
+        "summary": "",
+        "description": "Create Joystream's on-chain Membership for a verfifed YPP user. It will forward request\n       to Joystream faucet with an Authorization header to circumvent captcha verfication by the faucet",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMembershipRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateMembershipResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "membership"
+        ]
+      }
     }
   },
   "info": {
@@ -1057,6 +1090,56 @@
       "Stats": {
         "type": "object",
         "properties": {}
+      },
+      "CreateMembershipRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "authorizationCode": {
+            "type": "string"
+          },
+          "account": {
+            "type": "string"
+          },
+          "handle": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "about": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "authorizationCode",
+          "account",
+          "handle",
+          "avatar",
+          "about",
+          "name"
+        ]
+      },
+      "CreateMembershipResponse": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "number"
+          },
+          "handle": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "memberId",
+          "handle"
+        ]
       }
     }
   }

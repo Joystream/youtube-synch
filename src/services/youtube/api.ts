@@ -136,6 +136,7 @@ class YoutubeClient implements IYoutubeApi {
       accessToken: tokenResponse.access_token,
       refreshToken: tokenResponse.refresh_token,
       authorizationCode: code,
+      joystreamMemberId: undefined,
       createdAt: new Date(),
     }
     return user
