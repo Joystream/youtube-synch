@@ -45,7 +45,13 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
       joystreamChannelLanguageIso: String,
 
       // Referrer's Joystream Channel ID
-      referrerChannelId: Number,
+      referrerChannelId: {
+        type: Number,
+        index: {
+          type: 'global',
+          name: 'referrerChannelId-index',
+        },
+      },
 
       // Channel's title
       title: String,
@@ -249,6 +255,17 @@ export class ChannelsService {
       throw new Error(`Could not find channel with id ${joystreamChannelId}`)
     }
     return result
+  }
+
+  /**
+   * @param joystreamChannelId
+   * @returns Returns list of all channels referred by given joystream channel
+   */
+  async getReferredChannels(referrerChannelId: number): Promise<YtChannel[]> {
+    const results = await this.channelsRepository.query({ referrerChannelId }, (q) =>
+      q.sort('descending').using('referrerChannelId-index')
+    )
+    return results
   }
 
   /**
