@@ -70,7 +70,7 @@ export default class PayReward extends DefaultCommandBase {
       await updateYppContact(c.contactId, {
         latest_ypp_reward_status: 'Paid',
         latest_ypp_reward: totalJoyReward.toString(),
-        total_ypp_rewards: new BN(c.total_ypp_rewards).addn(totalJoyReward).toString(),
+        total_ypp_rewards: new BN(c.total_ypp_rewards || 0).addn(totalJoyReward).toString(),
       })
     }
 

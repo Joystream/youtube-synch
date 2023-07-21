@@ -62,7 +62,7 @@ export default class PayReward extends DefaultCommandBase {
     await updateYppContact(channel.contactId, {
       latest_ypp_reward_status: 'Paid',
       latest_ypp_reward: totalJoyReward.toString(),
-      total_ypp_rewards: new BN(channel.total_ypp_rewards).addn(totalJoyReward).toString(),
+      total_ypp_rewards: new BN(channel.total_ypp_rewards || 0).addn(totalJoyReward).toString(),
     })
 
     this.log(chalk.green(`Successfully Updated Contact reward status in Hubspot!`))
