@@ -74,11 +74,6 @@ export class JoystreamClient {
     }
 
     if (blockNumber.gtn(qnState.lastCompleteBlock)) {
-      this.logger.debug(
-        `Query Node has not processed block ${blockNumber.toString()} yet. Last processed block: ${
-          qnState.lastCompleteBlock
-        }`
-      )
       return false
     }
 

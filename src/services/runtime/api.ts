@@ -122,7 +122,7 @@ export class RuntimeApi {
           return
         }
 
-        if (result.status.isInBlock) {
+        if (result.status.isInBlock || result.status.isFinalized) {
           unsubscribe()
           result.events
             .filter(({ event }) => event.section === 'system')
@@ -195,7 +195,7 @@ export class RuntimeApi {
 
     const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, creationParameters)
     const result = await this.sendExtrinsic(accountId, tx)
-
+    const blockHash = result.status.isInBlock ? result.status.asInBlock : result.status.asFinalized
     const [, , videoId, , assetsIds] = this.getEvent(result, 'content', 'VideoCreated').data
 
     if (assetsIds.size !== (assets.isSome ? assets.unwrap().objectCreationList.length : 0)) {
@@ -203,7 +203,7 @@ export class RuntimeApi {
     }
 
     return {
-      createdInBlock: (await this.api.rpc.chain.getHeader(result.status.asInBlock)).number.toBn(),
+      createdInBlock: (await this.api.rpc.chain.getHeader(blockHash)).number.toBn(),
       videoId,
       assetsIds: [...assetsIds],
     }

@@ -136,6 +136,7 @@ class YoutubeClient implements IYoutubeApi {
       accessToken: tokenResponse.access_token,
       refreshToken: tokenResponse.refresh_token,
       authorizationCode: code,
+      joystreamMemberId: undefined,
       createdAt: new Date(),
     }
     return user
@@ -146,7 +147,7 @@ class YoutubeClient implements IYoutubeApi {
 
     const channelResponse = await yt.channels
       .list({
-        part: ['snippet', 'contentDetails', 'statistics'],
+        part: ['snippet', 'contentDetails', 'statistics', 'brandingSettings'],
         mine: true,
       })
       .catch((err) => {
@@ -351,6 +352,7 @@ class YoutubeClient implements IYoutubeApi {
             videoCount: parseInt(channel.statistics?.videoCount ?? '0'),
             commentCount: parseInt(channel.statistics?.commentCount ?? '0'),
           },
+          bannerImageUrl: channel.brandingSettings?.image?.bannerExternalUrl,
           uploadsPlaylistId: channel.contentDetails?.relatedPlaylists?.uploads,
           language: channel.snippet?.defaultLanguage,
           performUnauthorizedSync: false,
