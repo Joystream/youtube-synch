@@ -172,7 +172,7 @@ export class ContentDownloadService {
     await Promise.all(
       pendingDownloadVideosByChannel.map(async ({ channelId, unsyncedVideos }) => {
         // Get total videos of channel
-        const { videoCount } = (await this.dynamodbService.channels.getByChannelId(channelId)).statistics
+        const { videoCount } = (await this.dynamodbService.channels.getById(channelId)).statistics
         const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / videoCount
 
         for (const v of unsyncedVideos) {

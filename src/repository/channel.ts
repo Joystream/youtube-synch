@@ -247,7 +247,7 @@ export class ChannelsService {
    * @param joystreamChannelId
    * @returns Returns channel by joystreamChannelId
    */
-  async getByJoystreamChannelId(joystreamChannelId: number): Promise<YtChannel> {
+  async getByJoystreamId(joystreamChannelId: number): Promise<YtChannel> {
     const [result] = await this.channelsRepository.query({ joystreamChannelId }, (q) =>
       q.sort('descending').using('joystreamChannelId-createdAt-index')
     )
@@ -255,6 +255,23 @@ export class ChannelsService {
       throw new Error(`Could not find channel with id ${joystreamChannelId}`)
     }
     return result
+  }
+
+  /**
+   * @param joystreamChannelId
+   * @returns Returns partner channel by joystreamChannelId (if any)
+   */
+  async findPartnerChannelByJoystreamId(joystreamChannelId: number): Promise<YtChannel | undefined> {
+    const [result] = await this.channelsRepository.query({ joystreamChannelId }, (q) =>
+      q
+        .sort('descending')
+        .filter('yppStatus')
+        .eq('Verified')
+        .or()
+        .eq('Unverified')
+        .using('joystreamChannelId-createdAt-index')
+    )
+    return result || undefined
   }
 
   /**
@@ -272,7 +289,7 @@ export class ChannelsService {
    * @param channelId
    * @returns Returns channel by youtube channelId
    */
-  async getByChannelId(channelId: string): Promise<YtChannel> {
+  async getById(channelId: string): Promise<YtChannel> {
     const result = await this.channelsRepository.get(channelId.toString())
     if (!result) {
       throw new Error(`Could not find channel with id ${channelId}`)
