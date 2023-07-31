@@ -82,12 +82,14 @@ class ReferredChannelDto {
   @ApiProperty() joystreamChannelId: number
   @ApiProperty() title: string
   @ApiProperty() subscribersCount: number
+  @ApiProperty() yppStatus: string
   @ApiProperty() createdAt: Date
 
   constructor(referrerChannel: YtChannel) {
     this.joystreamChannelId = referrerChannel.joystreamChannelId
     this.title = referrerChannel.title
     this.subscribersCount = referrerChannel.statistics.subscriberCount
+    this.yppStatus = referrerChannel.yppStatus
     this.createdAt = new Date(referrerChannel.createdAt)
   }
 }
