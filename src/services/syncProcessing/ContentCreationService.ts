@@ -16,7 +16,6 @@ import { PriorityQueue } from './PriorityQueue'
 export class ContentCreationService {
   private readonly DEFAULT_SUDO_PRIORITY = 10
 
-  private config: ReadonlyConfig
   private logger: Logger
   private joystreamClient: JoystreamClient
   private dynamodbService: IDynamodbService
@@ -26,13 +25,11 @@ export class ContentCreationService {
   private activeTaskId: string // video Id of the currently running video creation task
 
   constructor(
-    config: ReadonlyConfig,
     logging: LoggingService,
     dynamodbService: IDynamodbService,
     contentDownloadService: ContentDownloadService,
     joystreamClient: JoystreamClient
   ) {
-    this.config = config
     this.logger = logging.createLogger('ContentCreationService')
     this.dynamodbService = dynamodbService
     this.joystreamClient = joystreamClient
@@ -43,13 +40,13 @@ export class ContentCreationService {
     })
   }
 
-  async start() {
+  async start(interval: number) {
     this.logger.info(`Starting Video creation service.`)
 
     await this.ensureContentStateConsistency()
 
     // start video creation service
-    setTimeout(async () => this.createContentWithInterval(this.config.intervals.contentProcessing), 0)
+    setTimeout(async () => this.createContentWithInterval(interval), 0)
   }
 
   private async pendingOnchainCreationVideos() {

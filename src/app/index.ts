@@ -36,33 +36,34 @@ export class Service {
     this.dynamodbService = new DynamodbService(this.config.aws)
     this.youtubeApi = YoutubeApi.create(this.config)
     this.joystreamClient = new JoystreamClient(config, this.youtubeApi, this.queryNodeApi, this.logging)
-    this.youtubePollingService = new YoutubePollingService(
-      config,
-      this.logging,
-      this.youtubeApi,
-      this.dynamodbService,
-      this.joystreamClient
-    )
-    this.contentDownloadService = new ContentDownloadService(
-      config,
-      this.logging,
-      this.dynamodbService,
-      this.youtubeApi
-    )
-    this.contentCreationService = new ContentCreationService(
-      config,
-      this.logging,
-      this.dynamodbService,
-      this.contentDownloadService,
-      this.joystreamClient
-    )
-    this.contentUploadService = new ContentUploadService(
-      config,
-      this.logging,
-      this.dynamodbService,
-      this.contentDownloadService,
-      this.queryNodeApi
-    )
+
+    if (config.sync.enable) {
+      this.youtubePollingService = new YoutubePollingService(
+        this.logging,
+        this.youtubeApi,
+        this.dynamodbService,
+        this.joystreamClient
+      )
+      this.contentDownloadService = new ContentDownloadService(
+        config.sync,
+        this.logging,
+        this.dynamodbService,
+        this.youtubeApi
+      )
+      this.contentCreationService = new ContentCreationService(
+        this.logging,
+        this.dynamodbService,
+        this.contentDownloadService,
+        this.joystreamClient
+      )
+      this.contentUploadService = new ContentUploadService(
+        config.sync,
+        this.logging,
+        this.dynamodbService,
+        this.contentDownloadService,
+        this.queryNodeApi
+      )
+    }
   }
 
   private checkConfigDir(name: string, path: string): void {
@@ -87,9 +88,25 @@ export class Service {
   }
 
   private checkConfigDirectories(): void {
-    Object.entries(this.config.directories).forEach(([name, path]) => this.checkConfigDir(name, path))
+    if (this.config.sync.enable) {
+      this.checkConfigDir('sync.downloadsDir', this.config.sync.downloadsDir)
+    }
     if (this.config.logs?.file) {
       this.checkConfigDir('logs.file.path', this.config.logs.file.path)
+    }
+  }
+
+  private async startSync(): Promise<void> {
+    if (this.config.sync.enable) {
+      const {
+        intervals: { youtubePolling, contentProcessing },
+      } = this.config.sync
+      this.logger.verbose('Starting the Youtube-Synch service', { config: this.hideSecrets(this.config) })
+      // Null-assertion is safe here since intervals won't be not null due to Ajv schema validation
+      await this.youtubePollingService.start(youtubePolling)
+      await this.contentDownloadService.start(contentProcessing)
+      await this.contentCreationService.start(contentProcessing)
+      await this.contentUploadService.start(contentProcessing)
     }
   }
 
@@ -110,13 +127,9 @@ export class Service {
 
   public async start(): Promise<void> {
     try {
-      this.checkConfigDirectories()
       await bootstrapHttpApi(this.config, this.logging, this.dynamodbService, this.queryNodeApi, this.youtubeApi)
-      this.logger.verbose('Starting the Youtube-Synch service', { config: this.hideSecrets(this.config) })
-      await this.youtubePollingService.start()
-      await this.contentDownloadService.start()
-      await this.contentCreationService.start()
-      await this.contentUploadService.start()
+      this.checkConfigDirectories()
+      await this.startSync()
     } catch (err) {
       this.logger.error('Youtube-Synch service initialization failed!', { err })
       process.exit(-1)

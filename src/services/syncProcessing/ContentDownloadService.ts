@@ -15,7 +15,7 @@ import { PriorityQueue } from './PriorityQueue'
 export class ContentDownloadService {
   private readonly DEFAULT_SUDO_PRIORITY = 10
 
-  private config: ReadonlyConfig
+  private syncConfig: Required<ReadonlyConfig['sync']>
   private logger: Logger
   private youtubeApi: IYoutubeApi
   private dynamodbService: IDynamodbService
@@ -30,17 +30,17 @@ export class ContentDownloadService {
   }
 
   public get freeSpace(): number {
-    const freeSpace = this.config.limits.storage - this.contentSizeSum
+    const freeSpace = this.syncConfig.limits.storage - this.contentSizeSum
     return freeSpace > 0 ? freeSpace : 0
   }
 
   public constructor(
-    config: ReadonlyConfig,
+    syncConfig: Required<ReadonlyConfig['sync']>,
     logging: LoggingService,
     dynamodbService: IDynamodbService,
     youtubeApi: IYoutubeApi
   ) {
-    this.config = config
+    this.syncConfig = syncConfig
     this.logger = logging.createLogger('ContentDownloadService')
     this.dynamodbService = dynamodbService
     this.youtubeApi = youtubeApi
@@ -52,18 +52,18 @@ export class ContentDownloadService {
       (video: VideoDownloadTask, cb) => {
         cb(null, video.priorityScore)
       },
-      this.config.limits.maxConcurrentDownloads
+      this.syncConfig.limits.maxConcurrentDownloads
     )
   }
 
-  async start() {
+  async start(interval: number) {
     this.logger.info(`Starting Video download service.`)
 
     // Resolve already downloaded videos
     this.resolveDownloadedVideos()
 
     // start video creation service
-    setTimeout(async () => this.downloadContentWithInterval(this.config.intervals.contentProcessing), 0)
+    setTimeout(async () => this.downloadContentWithInterval(interval), 0)
   }
 
   public getVideoFilePath(resourceId: string): string | undefined {
@@ -80,7 +80,7 @@ export class ContentDownloadService {
 
   public async removeVideoFile(resourceId: string) {
     try {
-      const dir = this.config.directories.assets
+      const dir = this.syncConfig.downloadsDir
       const size = this.fileSize(resourceId)
       const files = await fsPromises.readdir(dir)
       for (const file of files) {
@@ -103,12 +103,12 @@ export class ContentDownloadService {
   private setVideoFilePath(resourceId: string, fileExt: string) {
     this.downloadedVideoPathByResourceId.set(
       resourceId,
-      path.join(this.config.directories.assets, `${resourceId}.${fileExt}`)
+      path.join(this.syncConfig.downloadsDir, `${resourceId}.${fileExt}`)
     )
   }
 
   private resolveDownloadedVideos() {
-    const videoDownloadsDir = this.config.directories.assets
+    const videoDownloadsDir = this.syncConfig.downloadsDir
     const resolvedDownloads = fs
       .readdirSync(videoDownloadsDir)
       .map((filePath) => filePath.split('.'))
@@ -202,7 +202,7 @@ export class ContentDownloadService {
         try {
           // download the video from youtube
           this.logger.info(`Downloading video`, { videoId: video.id, channelId: video.joystreamChannelId })
-          const { ext: fileExt } = await this.youtubeApi.downloadVideo(video.url, this.config.directories.assets)
+          const { ext: fileExt } = await this.youtubeApi.downloadVideo(video.url, this.syncConfig.downloadsDir)
           this.setVideoFilePath(video.id, fileExt)
           this.contentSizeSum += this.fileSize(video.id)
           this.logger.info(`Video downloaded.`, { videoId: video.id, channelId: video.joystreamChannelId })

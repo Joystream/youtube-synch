@@ -1,8 +1,19 @@
 endpoints:
   queryNode: http://localhost:8080/graphql
   joystreamNodeWs: ws://localhost:9944
-directories:
-  assets: ./local/data
+sync:
+  enable: true
+  downloadsDir: ./local/data
+  intervals: # in minutes
+    youtubePolling: 30
+    contentProcessing: 1
+  limits:
+    dailyApiQuota:
+      sync: 9500
+      signup: 500
+    maxConcurrentDownloads: 50
+    maxConcurrentUploads: 50
+    storage: 100G
 logs:
   file:
     level: debug
@@ -17,9 +28,6 @@ logs:
   #   auth:
   #     username: elastic-username
   #     password: elastic-password
-intervals: # in minutes
-  youtubePolling: 30
-  contentProcessing: 1
 youtube:
   clientId: google-client-id
   clientSecret: google-client-secret
@@ -31,16 +39,6 @@ aws:
   credentials:
     accessKeyId: access-key-id
     secretAccessKey: secret-access-key
-limits:
-  # Total daily Youtube quota is 10,000 which is shared between signup(5%) and sync(98%) services
-  dailyApiQuota:
-    sync: 9500
-    signup: 500
-  # How many videos should be concurrently downloaded from Youtube to be prepared for upload to Joystream
-  maxConcurrentDownloads: 50
-  # Max no. of videos that should be concurrently uploaded to Joystream's storage node
-  maxConcurrentUploads: 50
-  storage: 100G
 httpApi:
   port: 3001
   ownerKey: ypp-owner-key
@@ -50,7 +48,6 @@ joystream:
     captchaBypassKey: some-random-key
   app:
     name: app-name
-    # App auth key used for signing App Actions
     accountSeed: 'example_string_seed'
   channelCollaborator:
     memberId: collaborator-member-id

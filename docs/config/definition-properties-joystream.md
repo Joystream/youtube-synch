@@ -6,12 +6,31 @@
 
 | Property                                    | Type     | Required | Nullable       | Defined by                                                                                                                                                                                                                                             |
 | :------------------------------------------ | :------- | :------- | :------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [faucet](#faucet)                           | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-joystream-properties-faucet.md "https://joystream.org/schemas/youtube-synch/config#/properties/joystream/properties/faucet")                                                                   |
 | [app](#app)                                 | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-joystream-properties-app.md "https://joystream.org/schemas/youtube-synch/config#/properties/joystream/properties/app")                                                                         |
 | [channelCollaborator](#channelcollaborator) | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-joystream-properties-joystream-channel-collaborator-used-for-syncing-the-content.md "https://joystream.org/schemas/youtube-synch/config#/properties/joystream/properties/channelCollaborator") |
 
+## faucet
+
+Joystream's faucet configuration (needed for captcha-free membership creation)
+
+`faucet`
+
+*   is required
+
+*   Type: `object` ([Details](definition-properties-joystream-properties-faucet.md))
+
+*   cannot be null
+
+*   defined in: [Youtube Sync node configuration](definition-properties-joystream-properties-faucet.md "https://joystream.org/schemas/youtube-synch/config#/properties/joystream/properties/faucet")
+
+### faucet Type
+
+`object` ([Details](definition-properties-joystream-properties-faucet.md))
+
 ## app
 
-Joystream metaprotocol application specific configuration
+Joystream Metaprotocol App specific configuration
 
 `app`
 

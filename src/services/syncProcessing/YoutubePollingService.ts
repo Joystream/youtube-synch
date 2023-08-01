@@ -11,7 +11,6 @@ import { JoystreamClient } from '../runtime/client'
 import { IYoutubeApi, YtDlpClient } from '../youtube/api'
 
 export class YoutubePollingService {
-  private config: ReadonlyConfig
   private logger: Logger
   private youtubeApi: IYoutubeApi
   private ytdlpClient: YtDlpClient
@@ -19,26 +18,24 @@ export class YoutubePollingService {
   private dynamodbService: IDynamodbService
 
   public constructor(
-    config: ReadonlyConfig,
     logging: LoggingService,
     youtubeApi: IYoutubeApi,
     dynamodbService: IDynamodbService,
     joystreamClient: JoystreamClient
   ) {
-    this.config = config
-    this.logger = logging.createLogger('YoutubePollingService')
+  this.logger = logging.createLogger('YoutubePollingService')
     this.youtubeApi = youtubeApi
     this.ytdlpClient = new YtDlpClient()
     this.dynamodbService = dynamodbService
     this.joystreamClient = joystreamClient
   }
 
-  async start() {
+  async start(pollingInterval: number) {
     this.logger.info(`Starting Youtube channels & videos ingestion service.`)
-    this.logger.info(`Polling interval is set to ${this.config.intervals.youtubePolling} minute(s).`)
+    this.logger.info(`Polling interval is set to ${pollingInterval} minute(s).`)
 
     // start polling
-    setTimeout(async () => this.runPollingWithInterval(this.config.intervals.youtubePolling), 0)
+    setTimeout(async () => this.runPollingWithInterval(pollingInterval), 0)
   }
 
   // get IDs of all new videos of the channel
@@ -84,10 +81,20 @@ export class YoutubePollingService {
   private async performChannelsIngestion(): Promise<YtChannel[]> {
     // get all channels that need to be ingested
     const channelsWithSyncEnabled = async () =>
-      await this.dynamodbService.repo.channels.scan('shouldBeIngested', (s) =>
-        // * Unauthorized channels add by infra operator are exempted from periodic
-        // * ingestion as we don't have access to their access/refresh tokens
-        s.eq(true).and().filter('performUnauthorizedSync').eq(false)
+      await this.dynamodbService.repo.channels.scan('yppStatus', (s) =>
+        s
+          .eq('Verified')
+          .and()
+          .filter('shouldBeIngested')
+          .eq(true)
+          .and()
+          .filter('allowOperatorIngestion')
+          .eq(true)
+          .and()
+          // * Unauthorized channels add by infra operator are exempted from periodic
+          // * ingestion as we don't have access to their access/refresh tokens
+          .filter('performUnauthorizedSync')
+          .eq(false)
       )
 
     // updated channel objects with uptodate info

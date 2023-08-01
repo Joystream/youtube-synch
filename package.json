@@ -116,7 +116,7 @@
     "inquirer": "^8.1.2",
     "inquirer-date-prompt": "^2.0.0",
     "iso8601-duration": "^2.1.1",
-    "json-schema-to-typescript": "^10.1.4",
+    "json-schema-to-typescript": "^13.0.2",
     "lodash": "^4.17.21",
     "moment-timezone": "^0.5.43",
     "multihashes": "^4.0.3",

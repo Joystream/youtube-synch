@@ -11,7 +11,7 @@
 
 ## name
 
-Name of the application
+Name of the app
 
 `name`
 
@@ -29,7 +29,7 @@ Name of the application
 
 ## accountSeed
 
-Specifies the application auth key's string seed for generating ed25519 keypair
+Specifies the app auth key's string seed, for generating ed25519 keypair, to be used for signing App Actions
 
 `accountSeed`
 
