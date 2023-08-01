@@ -116,6 +116,10 @@ export class Service {
       youtube: _.mapValues(config.youtube, () => '###SECRET###' as const),
       httpApi: _.mapValues(config.httpApi, () => '###SECRET###' as const),
       joystream: _.mapValues(config.joystream, () => '###SECRET###' as const),
+      logs: {
+        ...config.logs,
+        elastic: _.mapValues(config.logs?.elastic, () => '###SECRET###' as const),
+      },
       aws: {
         ...config.aws,
         credentials: _.mapValues(config.aws?.credentials, () => '###SECRET###' as const),

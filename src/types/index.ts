@@ -1,16 +1,16 @@
 import { YoutubeSyncNodeConfiguration } from './generated/ConfigJson'
 
 type SyncEnabled = Omit<NonNullable<YoutubeSyncNodeConfiguration['sync']>, 'limits'> & {
-  enable: true,
-  downloadsDir: string, // make required when enabled
-  intervals: NonNullable<YoutubeSyncNodeConfiguration['sync']['intervals']>, // make required when enabled
+  enable: true
+  downloadsDir: string // make required when enabled
+  intervals: NonNullable<YoutubeSyncNodeConfiguration['sync']['intervals']> // make required when enabled
   limits: Omit<NonNullable<YoutubeSyncNodeConfiguration['sync']['limits']>, 'storage'> & { storage: number }
 }
 
 type SyncDisabled = Omit<NonNullable<YoutubeSyncNodeConfiguration['sync']>, 'limits'> & {
-  enable: false,
-  downloadsDir?: string, 
-  intervals?: YoutubeSyncNodeConfiguration['sync']['intervals'],
+  enable: false
+  downloadsDir?: string
+  intervals?: YoutubeSyncNodeConfiguration['sync']['intervals']
   limits?: Omit<NonNullable<YoutubeSyncNodeConfiguration['sync']['limits']>, 'storage'> & { storage: number }
 }
 
@@ -24,10 +24,11 @@ export type DeepReadonly<T> = { readonly [K in keyof T]: DeepReadonly<T[K]> }
 
 type Secret<T> = { [K in keyof T]: '###SECRET###' }
 
-export type DisplaySafeConfig = Omit<Config, 'youtube' | 'aws' | 'httpApi' | 'joystream'> & {
+export type DisplaySafeConfig = Omit<Config, 'youtube' | 'aws' | 'httpApi' | 'joystream' | 'logs'> & {
   httpApi: Secret<Config['httpApi']>
   youtube: Secret<Config['youtube']>
   joystream: Secret<Config['joystream']>
+  logs?:  { elastic:  Secret<NonNullable<Config['logs']>['elastic']> }
   aws?: { credentials: Secret<NonNullable<Config['aws']>['credentials']> }
 }
 
