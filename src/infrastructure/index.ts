@@ -50,13 +50,18 @@ const channelsTable = new aws.dynamodb.Table('channels', {
     },
     {
       name: 'phantomKey-createdAt-index',
-      hashKey: nameof<YtChannel>('phantomKey'), // we'll have a single value partition
+      hashKey: nameof<YtChannel>('phantomKey'), // we'll have a single value partition to enable sorting on createdAt
       rangeKey: nameof<YtChannel>('createdAt'),
       projectionType: 'ALL',
     },
     {
       hashKey: nameof<YtChannel>('id'),
       name: 'id-index',
+      projectionType: 'ALL',
+    },
+    {
+      hashKey: nameof<YtChannel>('referrerChannelId'),
+      name: 'referrerChannelId-index',
       projectionType: 'ALL',
     },
   ],

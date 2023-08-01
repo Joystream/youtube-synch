@@ -107,7 +107,8 @@ export class ChannelsController {
   async get(@Param('joystreamChannelId', ParseIntPipe) id: number) {
     try {
       const channel = await this.dynamodbService.channels.getByJoystreamChannelId(id)
-      return new ChannelDto(channel)
+      const referredChannels = await this.dynamodbService.channels.getReferredChannels(id)
+      return new ChannelDto(channel, referredChannels)
     } catch (error) {
       const message = error instanceof Error ? error.message : error
       throw new NotFoundException(message)

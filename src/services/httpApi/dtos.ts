@@ -53,13 +53,14 @@ export class ChannelDto {
   @ApiProperty() yppStatus: string
   @ApiProperty() joystreamChannelId: number
   @ApiProperty() referrerChannelId?: number
+  @ApiProperty() referredChannels: ReferredChannelDto[]
   @ApiProperty() videoCategoryId: string
   @ApiProperty() language: string
   @ApiProperty() thumbnails: ThumbnailsDto
   @ApiProperty() subscribersCount: number
   @ApiProperty() createdAt: Date
 
-  constructor(channel: YtChannel) {
+  constructor(channel: YtChannel, referredChannels?: YtChannel[]) {
     this.youtubeChannelId = channel.id
     this.title = channel.title
     this.description = channel.description
@@ -73,6 +74,23 @@ export class ChannelDto {
     this.aggregatedStats = channel.aggregatedStats
     this.thumbnails = channel.thumbnails
     this.createdAt = new Date(channel.createdAt)
+    this.referredChannels = referredChannels?.map((c) => new ReferredChannelDto(c)) || []
+  }
+}
+
+class ReferredChannelDto {
+  @ApiProperty() joystreamChannelId: number
+  @ApiProperty() title: string
+  @ApiProperty() subscribersCount: number
+  @ApiProperty() yppStatus: string
+  @ApiProperty() createdAt: Date
+
+  constructor(referrerChannel: YtChannel) {
+    this.joystreamChannelId = referrerChannel.joystreamChannelId
+    this.title = referrerChannel.title
+    this.subscribersCount = referrerChannel.statistics.subscriberCount
+    this.yppStatus = referrerChannel.yppStatus
+    this.createdAt = new Date(referrerChannel.createdAt)
   }
 }
 
