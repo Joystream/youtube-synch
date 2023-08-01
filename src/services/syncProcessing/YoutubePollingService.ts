@@ -3,7 +3,6 @@ import _ from 'lodash'
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
-import { ReadonlyConfig } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
 import { YtChannel } from '../../types/youtube'
 import { LoggingService } from '../logging'
@@ -23,7 +22,7 @@ export class YoutubePollingService {
     dynamodbService: IDynamodbService,
     joystreamClient: JoystreamClient
   ) {
-  this.logger = logging.createLogger('YoutubePollingService')
+    this.logger = logging.createLogger('YoutubePollingService')
     this.youtubeApi = youtubeApi
     this.ytdlpClient = new YtDlpClient()
     this.dynamodbService = dynamodbService
@@ -100,81 +99,80 @@ export class YoutubePollingService {
     // updated channel objects with uptodate info
     const updatedChannels: YtChannel[] = []
     const channelsToBeIngested = await channelsWithSyncEnabled()
-    for (const ch of channelsToBeIngested) {
-      try {
-        const uptodateChannel = await this.youtubeApi.getChannel({
-          id: ch.userId,
-          accessToken: ch.userAccessToken,
-          refreshToken: ch.userRefreshToken,
-        })
+    await Promise.allSettled(
+      channelsToBeIngested.map(async (ch) => {
+        try {
+          const uptodateChannel = await this.youtubeApi.getChannel({
+            id: ch.userId,
+            accessToken: ch.userAccessToken,
+            refreshToken: ch.userRefreshToken,
+          })
 
-        // ensure that Ypp collaborator member is still set as channel's collaborator
-        const isCollaboratorSet = await this.joystreamClient.doesChannelHaveCollaborator(ch.joystreamChannelId)
-        if (!isCollaboratorSet) {
-          this.logger.warn(
-            `Joystream Channel ${ch.joystreamChannelId} has either not set or revoked Ypp collaborator member ` +
-              `as channel's collaborator. Corresponding Youtube Channel '${ch.id}' is being opted out from Ypp program.`
-          )
-          updatedChannels.push({
-            ...ch,
-            yppStatus: 'OptedOut',
-            shouldBeIngested: false,
-            lastActedAt: new Date(),
-          })
-          continue
-        }
+          // ensure that Ypp collaborator member is still set as channel's collaborator
+          const isCollaboratorSet = await this.joystreamClient.doesChannelHaveCollaborator(ch.joystreamChannelId)
+          if (!isCollaboratorSet) {
+            this.logger.warn(
+              `Joystream Channel ${ch.joystreamChannelId} has either not set or revoked Ypp collaborator member ` +
+                `as channel's collaborator. Corresponding Youtube Channel '${ch.id}' is being opted out from Ypp program.`
+            )
+            updatedChannels.push({
+              ...ch,
+              yppStatus: 'OptedOut',
+              shouldBeIngested: false,
+              lastActedAt: new Date(),
+            })
+            return
+          }
 
-        // Update the current channel record if it changed
-        if (!_.isEqual(ch.statistics, uptodateChannel.statistics)) {
-          updatedChannels.push({ ...ch, statistics: uptodateChannel.statistics })
+          // Update the current channel record if it changed
+          if (!_.isEqual(ch.statistics, uptodateChannel.statistics)) {
+            updatedChannels.push({ ...ch, statistics: uptodateChannel.statistics })
+          }
+        } catch (err: unknown) {
+          // if app permission is revoked by user from Google account then set `shouldBeIngested` to false & OptOut channel from
+          // Ypp program,  because then trying to fetch user channel will throw error with code 400 and 'invalid_grant' message
+          if (err instanceof GaxiosError && err.code === '400' && err.response?.data?.error === 'invalid_grant') {
+            this.logger.warn(
+              `Opting out '${ch.id}' from YPP program as their owner has revoked the permissions from Google settings`
+            )
+            updatedChannels.push({
+              ...ch,
+              yppStatus: 'OptedOut',
+              shouldBeIngested: false,
+              lastActedAt: new Date(),
+            })
+            // ! Although type of `err.code` is string, the api api response returns it as number.
+          } else if (
+            err instanceof GaxiosError &&
+            err.code === (403 as any) &&
+            (err as GaxiosError).response?.data?.error?.errors[0]?.reason === 'authenticatedUserAccountSuspended'
+          ) {
+            this.logger.warn(
+              `Opting out '${ch.id}' from YPP program as their Youtube channel has been terminated by the Youtube.`
+            )
+            updatedChannels.push({
+              ...ch,
+              yppStatus: 'OptedOut',
+              shouldBeIngested: false,
+              lastActedAt: new Date(),
+            })
+          } else if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.CHANNEL_NOT_FOUND) {
+            this.logger.warn(`Opting out '${ch.id}' from YPP program as Channel is not found on Youtube.`)
+            updatedChannels.push({
+              ...ch,
+              yppStatus: 'OptedOut',
+              shouldBeIngested: false,
+              lastActedAt: new Date(),
+            })
+          } else if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED) {
+            this.logger.info('Youtube quota limit exceeded, skipping polling for now.')
+            return []
+          }
+          updatedChannels.push(ch)
+          this.logger.error('Failed to fetch updated channel info', { err, channelId: ch.joystreamChannelId })
         }
-      } catch (err: unknown) {
-        // if app permission is revoked by user from Google account then set `shouldBeIngested` to false & OptOut channel from
-        // Ypp program,  because then trying to fetch user channel will throw error with code 400 and 'invalid_grant' message
-        if (err instanceof GaxiosError && err.code === '400' && err.response?.data?.error === 'invalid_grant') {
-          this.logger.warn(
-            `Opting out '${ch.id}' from YPP program as their owner has revoked the permissions from Google settings`
-          )
-          updatedChannels.push({
-            ...ch,
-            yppStatus: 'OptedOut',
-            shouldBeIngested: false,
-            lastActedAt: new Date(),
-          })
-          continue
-          // ! Although type of `err.code` is string, the api api response returns it as number.
-        } else if (
-          err instanceof GaxiosError &&
-          err.code === (403 as any) &&
-          (err as GaxiosError).response?.data?.error?.errors[0]?.reason === 'authenticatedUserAccountSuspended'
-        ) {
-          this.logger.warn(
-            `Opting out '${ch.id}' from YPP program as their Youtube channel has been terminated by the Youtube.`
-          )
-          updatedChannels.push({
-            ...ch,
-            yppStatus: 'OptedOut',
-            shouldBeIngested: false,
-            lastActedAt: new Date(),
-          })
-          continue
-        } else if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.CHANNEL_NOT_FOUND) {
-          this.logger.warn(`Opting out '${ch.id}' from YPP program as Channel is not found on Youtube.`)
-          updatedChannels.push({
-            ...ch,
-            yppStatus: 'OptedOut',
-            shouldBeIngested: false,
-            lastActedAt: new Date(),
-          })
-          continue
-        } else if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED) {
-          this.logger.info('Youtube quota limit exceeded, skipping polling for now.')
-          return []
-        }
-        updatedChannels.push(ch)
-        this.logger.error('Failed to fetch updated channel info', { err, channelId: ch.joystreamChannelId })
-      }
-    }
+      })
+    )
 
     // save updated  channels
     await this.dynamodbService.repo.channels.upsertAll(updatedChannels)
