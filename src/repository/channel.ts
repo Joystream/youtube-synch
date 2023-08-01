@@ -275,6 +275,7 @@ export class ChannelsService {
         .filter('yppStatus')
         .eq('Verified')
         .or()
+        .filter('yppStatus')
         .eq('Unverified')
         .using('joystreamChannelId-createdAt-index')
     )
