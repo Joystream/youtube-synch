@@ -115,7 +115,14 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
       // Should this channel be ingested for automated Youtube/Joystream syncing?
       shouldBeIngested: {
         type: Boolean,
-        default: true,
+        default: false,
+      },
+
+      // Should this channel be ingested for automated Youtube/Joystream syncing? (operator managed flag)
+      // Both `shouldBeIngested` and `allowOperatorIngestion` should be set for sync to work.
+      allowOperatorIngestion: {
+        type: Boolean,
+        default: false,
       },
 
       // Should this channel be ingested for automated Youtube/Joystream syncing without explicit authorization granted to app?
