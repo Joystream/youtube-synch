@@ -188,7 +188,7 @@ export class CreateMembershipRequest {
   @IsString() @ApiProperty({ required: true }) handle: string
 
   // Membership avatar URL
-  @IsUrl({ require_tld: false }) @ApiProperty({ required: true }) avatar: string
+  @IsOptional() @IsUrl({ require_tld: false }) @ApiProperty({ required: true }) avatar: string
 
   // `about` information to associate with new Membership
   @ApiProperty() about: string
