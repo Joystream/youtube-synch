@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { JSONSchema4, JSONSchema4TypeName } from 'json-schema'
+import { JSONSchema7, JSONSchema7TypeName } from 'json-schema'
 import _ from 'lodash'
 import path from 'path'
 import YAML from 'yaml'
@@ -23,10 +23,6 @@ export class ConfigParserService {
     return path.resolve(path.dirname(this.configPath), p)
   }
 
-  public resolveConfigDirectoryPaths(paths: Config['directories']): Config['directories'] {
-    return _.mapValues(paths, (p) => this.resolvePath(p))
-  }
-
   private parseByteSize(byteSize: string) {
     const intValue = parseInt(byteSize)
     const unit = byteSize[byteSize.length - 1]
@@ -34,15 +30,18 @@ export class ConfigParserService {
     return intValue * Math.pow(1024, byteSizeUnits.indexOf(unit))
   }
 
-  private schemaTypeOf(schema: JSONSchema4, path: string[]): JSONSchema4['type'] {
+  private schemaTypeOf(schema: JSONSchema7, path: string[]): JSONSchema7['type'] | undefined {
     if (schema.properties && schema.properties[path[0]]) {
       const item = schema.properties[path[0]]
+      if (typeof item === 'boolean') {
+        throw new Error('Unsupported schema type')
+      }
       if (path.length > 1) {
         return this.schemaTypeOf(item, path.slice(1))
       }
       if (item.oneOf) {
-        const validTypesSet = new Set<JSONSchema4TypeName>()
-        item.oneOf.forEach(
+        const validTypesSet = new Set<JSONSchema7TypeName>()
+        ;(item.oneOf as JSONSchema7[]).forEach(
           (s) =>
             Array.isArray(s.type)
               ? s.type.forEach((t) => validTypesSet.add(t))
@@ -149,18 +148,24 @@ export class ConfigParserService {
     const configJson = this.validator.validate('Config', inputConfig)
 
     // Normalize values
-    const directories = this.resolveConfigDirectoryPaths(configJson.directories)
-    const storageLimit = this.parseByteSize(configJson.limits.storage)
+    const storageLimit = this.parseByteSize(configJson.sync.limits?.storage || '0B')
 
     const parsedConfig: Config = {
       ...configJson,
       version: this.getNodeVersion(),
-      directories,
-      limits: {
-        ...configJson.limits,
-        storage: storageLimit,
-      },
-    }
+      ...(configJson.sync.enable
+        ? {
+            sync: {
+              ...configJson.sync,
+              downloadsDir: this.resolvePath(configJson.sync.downloadsDir!),
+              limits: {
+                ...configJson.sync.limits,
+                storage: storageLimit,
+              },
+            },
+          }
+        : configJson.sync),
+    } as Config
 
     return parsedConfig
   }

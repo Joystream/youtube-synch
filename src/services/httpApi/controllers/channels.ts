@@ -253,7 +253,7 @@ export class ChannelsController {
           await this.dynamodbService.channels.save({
             ...channel,
             yppStatus: 'Suspended',
-            shouldBeIngested: false,
+            allowOperatorIngestion: false,
           })
         } else {
           // if channel suspension is revoked then its YT ingestion/syncing should not be resumed
@@ -285,10 +285,14 @@ export class ChannelsController {
 
         // channel is being verified
         if (isVerified) {
-          await this.dynamodbService.channels.save({ ...channel, yppStatus: 'Verified' })
+          await this.dynamodbService.channels.save({ ...channel, yppStatus: 'Verified', allowOperatorIngestion: true })
         } else {
           // channel is being unverified
-          await this.dynamodbService.channels.save({ ...channel, yppStatus: 'Unverified' })
+          await this.dynamodbService.channels.save({
+            ...channel,
+            yppStatus: 'Unverified',
+            allowOperatorIngestion: false,
+          })
         }
       }
     } catch (error) {

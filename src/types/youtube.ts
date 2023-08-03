@@ -77,6 +77,10 @@ export class YtChannel {
   // Should this channel be ingested for automated Youtube/Joystream syncing?
   shouldBeIngested: boolean
 
+  // Should this channel be ingested for automated Youtube/Joystream syncing? (operator managed flag)
+  // Both `shouldBeIngested` and `allowOperatorIngestion` should be set for sync to work.
+  allowOperatorIngestion: boolean
+
   // Should this channel be ingested for automated Youtube/Joystream syncing without explicit authorization granted to app?
   performUnauthorizedSync: boolean
 

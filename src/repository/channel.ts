@@ -104,6 +104,9 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
         },
       },
 
+      // Banner or Background image URL
+      bannerImageUrl: String,
+
       // user access token obtained from authorization code after successful authentication
       userAccessToken: String,
 
@@ -115,7 +118,14 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
       // Should this channel be ingested for automated Youtube/Joystream syncing?
       shouldBeIngested: {
         type: Boolean,
-        default: true,
+        default: false,
+      },
+
+      // Should this channel be ingested for automated Youtube/Joystream syncing? (operator managed flag)
+      // Both `shouldBeIngested` and `allowOperatorIngestion` should be set for sync to work.
+      allowOperatorIngestion: {
+        type: Boolean,
+        default: false,
       },
 
       // Should this channel be ingested for automated Youtube/Joystream syncing without explicit authorization granted to app?
@@ -268,6 +278,7 @@ export class ChannelsService {
         .filter('yppStatus')
         .eq('Verified')
         .or()
+        .filter('yppStatus')
         .eq('Unverified')
         .using('joystreamChannelId-createdAt-index')
     )
