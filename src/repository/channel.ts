@@ -104,6 +104,9 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
         },
       },
 
+      // Banner or Background image URL
+      bannerImageUrl: String,
+
       // user access token obtained from authorization code after successful authentication
       userAccessToken: String,
 
