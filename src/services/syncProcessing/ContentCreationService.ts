@@ -9,6 +9,7 @@ import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
 import { ContentDownloadService } from './ContentDownloadService'
 import { PriorityQueue } from './PriorityQueue'
+import { SyncLimits } from './syncLimitations'
 // TODO: keep hash calculation separate from extrinsic calling
 
 // Video content creation/processing service
@@ -88,8 +89,25 @@ export class ContentCreationService {
     await Promise.all(
       pendingOnchainCreationVideosByChannel.map(async ({ channelId, unsyncedVideos }) => {
         // Get total videos of channel
-        const { videoCount } = (await this.dynamodbService.channels.getById(channelId)).statistics
-        const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / videoCount
+        const channel = await this.dynamodbService.channels.getById(channelId)
+
+        const isSyncEnable = channel.shouldBeIngested && channel.allowOperatorIngestion
+        if (!isSyncEnable) {
+          this.logger.warn(
+            `Syncing is disabled for channel ${channel.joystreamChannelId}. Removing ` +
+              `all videos from syncing queue & deleting the records from the database.`
+          )
+          // Remove all videos from queue
+          unsyncedVideos.forEach((v) => this.queue.cancel(v as VideoCreationTask))
+          // Remove all the videos from db too (so that they wont be requeued)
+          await Promise.all(unsyncedVideos.map((v) => this.dynamodbService.videos.delete(v)))
+          // Remove the downloaded video file
+          await Promise.all(unsyncedVideos.map((v) => this.contentDownloadService.removeVideoFile(v.id)))
+          return
+        }
+
+        const totalVideos = Math.min(channel.statistics.videoCount, SyncLimits.videoCap(channel))
+        const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / totalVideos
 
         for (const v of unsyncedVideos) {
           const rank = this.queue.calculateVideoRank(
@@ -122,7 +140,7 @@ export class ContentCreationService {
             `${video.id} from syncing & deleting it's record from the database.`
         )
         await this.dynamodbService.videos.delete(video)
-        await this.contentDownloadService.removeVideoFile(video.id)
+        await this.contentDownloadService.removeVideoFile(video.id) // TODO: remove this after adding `isSyncEnable` check?
         return
       }
 
@@ -153,10 +171,20 @@ export class ContentCreationService {
       }
 
       await this.dynamodbService.videos.updateState(video, 'CreatingVideo')
-      const [createdVideo, createdInBlock] = await this.joystreamClient.createVideo(video, video.filePath)
+      const [createdVideo, createdInBlock, size] = await this.joystreamClient.createVideo(video, video.filePath)
       this.lastVideoCreationBlockByChannelId.set(video.joystreamChannelId, createdInBlock)
       await this.dynamodbService.videos.updateState(createdVideo, 'VideoCreated')
       this.logger.info(`Video created on chain.`, { videoId: video.id, channelId: video.joystreamChannelId })
+
+      // Update channel size limit
+      const channel = await this.dynamodbService.channels.getById(video.channelId)
+      const isHistoricalVideo = new Date(video.publishedAt) < channel.createdAt
+      if (isHistoricalVideo) {
+        await this.dynamodbService.channels.save({
+          ...channel,
+          historicalVideoSyncedSize: (channel.historicalVideoSyncedSize || 0) + size,
+        })
+      }
     } catch (err) {
       this.logger.error(`Got error processing video`, { videoId: video.id, err })
       await this.dynamodbService.videos.updateState(video, 'VideoCreationFailed')

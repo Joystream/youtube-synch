@@ -4,10 +4,11 @@ import sleep from 'sleep-promise'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
-import { YtChannel } from '../../types/youtube'
+import { YtChannel, YtDlpFlatPlaylistOutput } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
 import { IYoutubeApi, YtDlpClient } from '../youtube/api'
+import { SyncLimits } from './syncLimitations'
 
 export class YoutubePollingService {
   private logger: Logger
@@ -37,15 +38,14 @@ export class YoutubePollingService {
     setTimeout(async () => this.runPollingWithInterval(pollingInterval), 0)
   }
 
-  // get IDs of all new videos of the channel
-  private async getNewVideosIds(channel: YtChannel, allVideosIds: string[]): Promise<string[]> {
+  // get IDs of all videos of a channel that are still not tracked in DB
+  private async getUntrackedVideosIds(
+    channel: YtChannel,
+    videosIds: YtDlpFlatPlaylistOutput
+  ): Promise<YtDlpFlatPlaylistOutput> {
     // Get all the existing videos
     const existingVideos = await this.dynamodbService.repo.videos.query({ channelId: channel.id }, (q) => q)
-
-    return _.difference(
-      allVideosIds,
-      existingVideos.map((v) => v.id)
-    )
+    return _.differenceBy(videosIds, existingVideos, 'id')
   }
 
   /**
@@ -67,7 +67,12 @@ export class YoutubePollingService {
           `Completed Channels Ingestion. Videos of ${channels.length} channels will be prepared for syncing in this polling cycle....`
         )
 
-        await Promise.allSettled(channels.map((channel) => this.performVideosIngestion(channel)))
+        // Ingest videos of channels in a batch of 50 to limit IO/CPU resource consumption
+        const channelsBatch = _.chunk(channels, 50)
+        // Process each batch
+        for (let i = 0; i < channelsBatch.length; i++) {
+          await Promise.all(channelsBatch[i].map((channel) => this.performVideosIngestion(channel)))
+        }
       } catch (err) {
         this.logger.error(`Critical Polling error`, { err })
       }
@@ -170,7 +175,6 @@ export class YoutubePollingService {
               this.logger.info('Youtube quota limit exceeded, skipping polling for now.')
               return
             }
-            updatedChannels.push(ch)
             this.logger.error('Failed to fetch updated channel info', { err, channelId: ch.joystreamChannelId })
           }
         })
@@ -185,18 +189,34 @@ export class YoutubePollingService {
 
   private async performVideosIngestion(channel: YtChannel) {
     try {
-      // get all sync-able videos of the channel
-      const allVideosIds = await this.ytdlpClient.getAllVideosIds(channel)
+      //
+      const historicalVideosCountLimit = SyncLimits.videoCap(channel)
 
-      // get all new video Ids that are not yet being tracked
-      const newVideosIds = await this.getNewVideosIds(channel, allVideosIds)
+      // get all sync-able videos  within the channel limits
+      const videosIds = await this.ytdlpClient.getVideosIds(channel, historicalVideosCountLimit)
 
-      //  get all new videos that are not yet being tracked
-      const newVideos = await this.youtubeApi.getVideos(channel, newVideosIds)
+      // get all video Ids that are not yet being tracked
+      let untrackedVideosIds = await this.getUntrackedVideosIds(channel, videosIds)
+
+      // if size limit has reached, don't track new historical videos
+      if (SyncLimits.hasSizeLimitReached(channel)) {
+        untrackedVideosIds = untrackedVideosIds.filter((v) => v.publishedAt >= channel.createdAt)
+      }
+
+      //  get all videos that are not yet being tracked
+      const untrackedVideos = await this.youtubeApi.getVideos(
+        channel,
+        untrackedVideosIds.map((v) => v.id)
+      )
 
       // save all new videos to DB including
-      await this.dynamodbService.repo.videos.upsertAll(newVideos)
+      await this.dynamodbService.repo.videos.upsertAll(untrackedVideos)
     } catch (err) {
+      if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED) {
+        this.logger.info('Youtube quota limit exceeded, skipping polling for now.')
+        return
+      }
+
       this.logger.error('Failed to ingest videos for channel', { err, channelId: channel.joystreamChannelId })
     }
   }

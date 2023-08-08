@@ -65,13 +65,16 @@ export class YtChannel {
     videoCount: number
   }
 
-  aggregatedStats: number
+  // total size of historical videos synced (videos that were published on Youtube before YPP signup)
+  historicalVideoSyncedSize: number
 
   // Channel owner's access token
   userAccessToken: string
 
   // Channel owner's refresh token
   userRefreshToken: string
+
+  // Channel's playlist ID
   uploadsPlaylistId: string
 
   // Should this channel be ingested for automated Youtube/Joystream syncing?
@@ -260,6 +263,11 @@ export type VideoCreationTask = YtVideo & {
   priorityScore: number
   filePath: string
 }
+
+export type YtDlpFlatPlaylistOutput = {
+  id: string
+  publishedAt: Date
+}[]
 
 export type FaucetRegisterMembershipParams = {
   account: string

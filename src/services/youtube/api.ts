@@ -16,9 +16,8 @@ import ytdl from 'youtube-dl-exec'
 import { StatsRepository } from '../../repository'
 import { ReadonlyConfig, WithRequired, formattedJSON } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
-import { YtChannel, YtUser, YtVideo } from '../../types/youtube'
+import { YtChannel, YtDlpFlatPlaylistOutput, YtUser, YtVideo } from '../../types/youtube'
 
-import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
 import Schema$Video = youtube_v3.Schema$Video
 import Schema$Channel = youtube_v3.Schema$Channel
 
@@ -31,19 +30,44 @@ export class YtDlpClient {
     this.ytdlpPath = `${pkgDir.sync(__dirname)}/node_modules/youtube-dl-exec/bin/yt-dlp`
   }
 
-  async getAllVideosIds(channel: YtChannel): Promise<string[]> {
+  async getVideosIds(
+    channel: YtChannel,
+    limit?: number,
+    order: 'first' | 'last' = 'first'
+  ): Promise<YtDlpFlatPlaylistOutput> {
     try {
+      if (limit === undefined && order !== undefined) {
+        throw new Error('Order should only be provided if limit is provided')
+      }
+
+      let limitOption = ''
+      if (limit) {
+        limitOption = order === 'first' ? `-I :${limit}` : `-I -${limit}:-1`
+      }
+
       const { stdout } = await this.exec(
-        `${this.ytdlpPath} --flat-playlist --get-id https://www.youtube.com/playlist?list=${channel.uploadsPlaylistId}`
+        `${this.ytdlpPath} --extractor-args "youtubetab:approximate_date" -J --flat-playlist ${limitOption} https://www.youtube.com/playlist?list=${channel.uploadsPlaylistId}`,
+        { maxBuffer: Number.MAX_SAFE_INTEGER }
       )
 
-      // Each line of stdout is a video ID
-      const videoIDs = stdout.split('\n').filter((id: unknown) => id) // Remove any empty lines
-      return videoIDs
+      const videos: YtDlpFlatPlaylistOutput = []
+      JSON.parse(stdout).entries.forEach((category: any) => {
+        if (category.entries) {
+          category.entries.forEach((video: any) => {
+            videos.push({ id: video.id, publishedAt: new Date(video.timestamp * 1000) /** Convert UNIX to date */ })
+          })
+        } else {
+          videos.push({ id: category.id, publishedAt: new Date(category.timestamp * 1000) /** Convert UNIX to date */ })
+        }
+      })
+
+      return videos
     } catch (err) {
       throw err
     }
   }
+
+  async a() {}
 }
 
 export interface IYoutubeApi {
@@ -53,7 +77,6 @@ export interface IYoutubeApi {
     user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>
   ): Promise<{ channel: YtChannel; errors: YoutubeApiError[] }>
   getVideos(channel: YtChannel, ids: string[]): Promise<YtVideo[]>
-  getAllVideos(channel: YtChannel): Promise<YtVideo[]>
   downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl>
   getCreatorOnboardingRequirements(): ReadonlyConfig['creatorOnboardingRequirements']
 }
@@ -65,9 +88,11 @@ export interface IQuotaMonitoringClient {
 
 class YoutubeClient implements IYoutubeApi {
   private config: ReadonlyConfig
+  private ytdlpClient: YtDlpClient
 
   constructor(config: ReadonlyConfig) {
     this.config = config
+    this.ytdlpClient = new YtDlpClient()
   }
 
   getCreatorOnboardingRequirements() {
@@ -192,7 +217,9 @@ class YoutubeClient implements IYoutubeApi {
     videoCreationTimeCutoff.setHours(videoCreationTimeCutoff.getHours() - minimumVideoAgeHours)
 
     // filter all videos that are older than MINIMUM_VIDEO_AGE_HOURS
-    const videos = (await this.getAllVideos(channel)).filter((v) => new Date(v.publishedAt) < videoCreationTimeCutoff)
+    const videos = (await this.ytdlpClient.getVideosIds(channel, minimumVideoCount, 'last')).filter(
+      (v) => new Date(v.publishedAt) < videoCreationTimeCutoff
+    )
     if (videos.length < minimumVideoCount) {
       errors.push(
         new YoutubeApiError(
@@ -231,15 +258,6 @@ class YoutubeClient implements IYoutubeApi {
     const yt = this.getYoutube(channel.userAccessToken, channel.userRefreshToken)
     try {
       return this.iterateVideos(yt, channel, ids)
-    } catch (error) {
-      throw new Error(`Failed to fetch videos for channel ${channel.title}. Error: ${error}`)
-    }
-  }
-
-  async getAllVideos(channel: YtChannel) {
-    const yt = this.getYoutube(channel.userAccessToken, channel.userRefreshToken)
-    try {
-      return this.iterateAllVideos(yt, channel)
     } catch (error) {
       throw new Error(`Failed to fetch videos for channel ${channel.title}. Error: ${error}`)
     }
@@ -285,51 +303,6 @@ class YoutubeClient implements IYoutubeApi {
     return videos
   }
 
-  private async iterateAllVideos(youtube: youtube_v3.Youtube, channel: YtChannel, limit?: number) {
-    let videos: YtVideo[] = []
-    let nextPageToken: string | undefined
-
-    do {
-      const nextPage = await youtube.playlistItems
-        .list({
-          part: ['contentDetails', 'snippet', 'id', 'status'],
-          playlistId: channel.uploadsPlaylistId,
-          maxResults: 50,
-          pageToken: nextPageToken,
-        })
-        .catch((err) => {
-          if (err instanceof FetchError && err.code === 'ENOTFOUND') {
-            throw new YoutubeApiError(ExitCodes.YoutubeApi.YOUTUBE_API_NOT_CONNECTED, err.message)
-          }
-          throw err
-        })
-      nextPageToken = nextPage.data.nextPageToken ?? ''
-
-      // Filter `public` videos as only those would be synced
-      const videosPage = nextPage.data.items?.filter((v) => v.status?.privacyStatus === 'public') ?? []
-
-      const videosDetailsPage = videosPage.length
-        ? (
-            await youtube.videos
-              .list({
-                id: videosPage?.map((v) => v.snippet?.resourceId?.videoId ?? ``),
-                part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status', 'statistics'],
-              })
-              .catch((err) => {
-                if (err instanceof FetchError && err.code === 'ENOTFOUND') {
-                  throw new YoutubeApiError(ExitCodes.YoutubeApi.YOUTUBE_API_NOT_CONNECTED, err.message)
-                }
-                throw err
-              })
-          ).data?.items ?? []
-        : []
-
-      const page = this.mapAllVideos(videosPage, videosDetailsPage, channel)
-      videos = [...videos, ...page]
-    } while (nextPageToken && (limit === undefined || videos.length < limit))
-    return videos
-  }
-
   private mapChannels(user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>, channels: Schema$Channel[]) {
     return channels.map<YtChannel>(
       (channel) =>
@@ -353,6 +326,7 @@ class YoutubeClient implements IYoutubeApi {
             videoCount: parseInt(channel.statistics?.videoCount ?? '0'),
             commentCount: parseInt(channel.statistics?.commentCount ?? '0'),
           },
+          historicalVideoSyncedSize: 0,
           bannerImageUrl: channel.brandingSettings?.image?.bannerExternalUrl,
           uploadsPlaylistId: channel.contentDetails?.relatedPlaylists?.uploads,
           language: channel.snippet?.defaultLanguage,
@@ -398,46 +372,6 @@ class YoutubeClient implements IYoutubeApi {
               container: video.fileDetails?.container,
               uploadStatus: video.status?.uploadStatus,
               viewCount: parseInt(video.statistics?.viewCount ?? '0'),
-              state: 'New',
-            }
-        )
-        // filter out videos that are not public, processed, have live-stream or age-restriction, since those can't be synced yet
-        .filter(
-          (v) => v.uploadStatus === 'processed' && v.liveStreamingDetails === undefined && v.ytRating === undefined
-        )
-    )
-  }
-
-  private mapAllVideos(videos: Schema$PlaylistItem[], videosDetails: Schema$Video[], channel: YtChannel): YtVideo[] {
-    return (
-      videos
-        .map(
-          (video, i) =>
-            <YtVideo>{
-              id: video.snippet?.resourceId?.videoId,
-              description: video.snippet?.description,
-              title: video.snippet?.title,
-              channelId: video.snippet?.channelId,
-              thumbnails: {
-                high: video.snippet?.thumbnails?.high?.url,
-                medium: video.snippet?.thumbnails?.medium?.url,
-                standard: video.snippet?.thumbnails?.standard?.url,
-                default: video.snippet?.thumbnails?.default?.url,
-              },
-              url: `https://youtube.com/watch?v=${video.snippet?.resourceId?.videoId}`,
-              publishedAt: video.contentDetails?.videoPublishedAt,
-              createdAt: new Date(),
-              category: channel.videoCategoryId,
-              languageIso: channel.joystreamChannelLanguageIso,
-              joystreamChannelId: channel.joystreamChannelId,
-              privacyStatus: video.status?.privacyStatus,
-              ytRating: videosDetails[i].contentDetails?.contentRating?.ytRating,
-              liveStreamingDetails: videosDetails[i].liveStreamingDetails,
-              license: videosDetails[i].status?.license,
-              duration: toSeconds(parse(videosDetails[i].contentDetails?.duration ?? 'PT0S')),
-              container: videosDetails[i].fileDetails?.container,
-              uploadStatus: videosDetails[i].status?.uploadStatus,
-              viewCount: parseInt(videosDetails[i].statistics?.viewCount ?? '0'),
               state: 'New',
             }
         )

@@ -93,6 +93,9 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
         },
       },
 
+      // total size of historical videos (videos that were published on Youtube before YPP signup) synced
+      historicalVideoSyncedSize: Number,
+
       thumbnails: {
         type: Object,
         schema: {
