@@ -391,7 +391,7 @@ class YoutubeClient implements IYoutubeApi {
               joystreamChannelId: channel.joystreamChannelId,
               privacyStatus: video.status?.privacyStatus,
               ytRating: video.contentDetails?.contentRating?.ytRating,
-              liveBroadcastContent: video.snippet?.liveBroadcastContent,
+              liveStreamingDetails: video.liveStreamingDetails,
               license: video.status?.license,
               duration: toSeconds(parse(video.contentDetails?.duration ?? 'PT0S')),
               container: video.fileDetails?.container,
@@ -401,7 +401,7 @@ class YoutubeClient implements IYoutubeApi {
             }
         )
         // filter out videos that are not public, processed, have live-stream or age-restriction, since those can't be synced yet
-        .filter((v) => v.uploadStatus === 'processed' && v.liveBroadcastContent === 'none' && v.ytRating === undefined)
+        .filter((v) => v.uploadStatus === 'processed' && v.liveStreamingDetails === undefined && v.ytRating === undefined)
     )
   }
 
@@ -429,7 +429,7 @@ class YoutubeClient implements IYoutubeApi {
               joystreamChannelId: channel.joystreamChannelId,
               privacyStatus: video.status?.privacyStatus,
               ytRating: videosDetails[i].contentDetails?.contentRating?.ytRating,
-              liveBroadcastContent: videosDetails[i].snippet?.liveBroadcastContent,
+              liveStreamingDetails: videosDetails[i].liveStreamingDetails,
               license: videosDetails[i].status?.license,
               duration: toSeconds(parse(videosDetails[i].contentDetails?.duration ?? 'PT0S')),
               container: videosDetails[i].fileDetails?.container,
@@ -439,7 +439,9 @@ class YoutubeClient implements IYoutubeApi {
             }
         )
         // filter out videos that are not public, processed, have live-stream or age-restriction, since those can't be synced yet
-        .filter((v) => v.uploadStatus === 'processed' && v.liveBroadcastContent === 'none' && v.ytRating === undefined)
+        .filter(
+          (v) => v.uploadStatus === 'processed' && v.liveStreamingDetails === undefined && v.ytRating === undefined
+        )
     )
   }
 }

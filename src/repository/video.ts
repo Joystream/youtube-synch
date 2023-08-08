@@ -79,9 +79,6 @@ function videoRepository(tablePrefix: ResourcePrefix) {
       // Video's container
       container: String,
 
-      // Indicates if the video is an upcoming/active live broadcast. else it's "none"
-      liveBroadcastContent: String,
-
       // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
       joystreamVideo: {
         type: Object,

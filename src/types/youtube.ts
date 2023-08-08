@@ -213,8 +213,8 @@ export class YtVideo {
   // Media container format
   container: string
 
-  // Indicates if the video is an upcoming/active live broadcast. else it's "none"
-  liveBroadcastContent: 'upcoming' | 'live' | 'none'
+  // Indicates if the video is/was a livestream
+  liveStreamingDetails: any | undefined
 
   // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
   joystreamVideo: JoystreamVideo

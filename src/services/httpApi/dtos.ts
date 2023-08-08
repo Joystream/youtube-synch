@@ -48,7 +48,6 @@ export class ChannelDto {
   @ApiProperty() youtubeChannelId: string
   @ApiProperty() title: string
   @ApiProperty() description: string
-  @ApiProperty() aggregatedStats: number
   @ApiProperty() shouldBeIngested: boolean
   @ApiProperty() yppStatus: string
   @ApiProperty() joystreamChannelId: number
@@ -71,7 +70,6 @@ export class ChannelDto {
     this.language = channel.language
     this.shouldBeIngested = channel.shouldBeIngested
     this.yppStatus = channel.yppStatus
-    this.aggregatedStats = channel.aggregatedStats
     this.thumbnails = channel.thumbnails
     this.createdAt = new Date(channel.createdAt)
     this.referredChannels = referredChannels?.map((c) => new ReferredChannelDto(c)) || []
