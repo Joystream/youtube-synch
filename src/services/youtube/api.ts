@@ -13,6 +13,7 @@ import path from 'path'
 import pkgDir from 'pkg-dir'
 import { promisify } from 'util'
 import ytdl from 'youtube-dl-exec'
+import { StatsRepository } from '../../repository'
 import { ReadonlyConfig, WithRequired, formattedJSON } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
 import { YtChannel, YtUser, YtVideo } from '../../types/youtube'
@@ -401,7 +402,9 @@ class YoutubeClient implements IYoutubeApi {
             }
         )
         // filter out videos that are not public, processed, have live-stream or age-restriction, since those can't be synced yet
-        .filter((v) => v.uploadStatus === 'processed' && v.liveStreamingDetails === undefined && v.ytRating === undefined)
+        .filter(
+          (v) => v.uploadStatus === 'processed' && v.liveStreamingDetails === undefined && v.ytRating === undefined
+        )
     )
   }
 
@@ -451,7 +454,7 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
   private googleCloudProjectId: string
   private DEFAULT_MAX_ALLOWED_QUOTA_USAGE = 95 // 95%
 
-  constructor(private decorated: IYoutubeApi, private config: ReadonlyConfig) {
+  constructor(private decorated: IYoutubeApi, private config: ReadonlyConfig, private statsRepo: StatsRepository) {
     // Use the client id to get the google cloud project id
     this.googleCloudProjectId = this.config.youtube.clientId.split('-')[0]
 
@@ -548,6 +551,10 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
   async getVerifiedChannel(user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>) {
     // These is no api quota check for this operation, as we allow untracked access to channel verification/signup endpoint.
     const verifiedChannel = await this.decorated.getVerifiedChannel(user)
+
+    // increase used quota count by 1 because only one page is returned
+    await this.increaseUsedQuota({ signupQuotaIncrement: 1 })
+
     return verifiedChannel
   }
 
@@ -562,6 +569,10 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
 
     // get channels from api
     const channels = await this.decorated.getChannel(user)
+
+    // increase used quota count by 1 because only one page is returned
+    await this.increaseUsedQuota({ syncQuotaIncrement: 1 })
+
     return channels
   }
 
@@ -576,25 +587,26 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
 
     // get videos from api
     const videos = await this.decorated.getVideos(channel, ids)
-    return videos
-  }
 
-  async getAllVideos(channel: YtChannel) {
-    // ensure have some left api quota
-    if (!(await this.canCallYoutube())) {
-      throw new YoutubeApiError(
-        ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED,
-        'No more quota left. Please try again later.'
-      )
-    }
+    // increase used quota count, 1 api call is being used per page of 50 videos
+    await this.increaseUsedQuota({ syncQuotaIncrement: Math.ceil(videos.length / 50) })
 
-    // get videos from api
-    const videos = await this.decorated.getAllVideos(channel)
     return videos
   }
 
   downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
     return this.decorated.downloadVideo(videoUrl, outPath)
+  }
+
+  private async increaseUsedQuota({ syncQuotaIncrement = 0, signupQuotaIncrement = 0 }) {
+    // Quota resets at Pacific Time, and pst is 8 hours behind UTC
+    const stats = await this.statsRepo.getOrSetTodaysStats()
+    const statsModel = await this.statsRepo.getModel()
+
+    await statsModel.update(
+      { partition: 'stats', date: stats.date },
+      { $ADD: { syncQuotaUsed: syncQuotaIncrement, signupQuotaUsed: signupQuotaIncrement } }
+    )
   }
 
   private async canCallYoutube(): Promise<boolean> {
@@ -611,7 +623,7 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
 }
 
 export const YoutubeApi = {
-  create(config: ReadonlyConfig): IYoutubeApi {
-    return new QuotaMonitoringClient(new YoutubeClient(config), config)
+  create(config: ReadonlyConfig, statsRepo: StatsRepository): IYoutubeApi {
+    return new QuotaMonitoringClient(new YoutubeClient(config), config, statsRepo)
   },
 }
