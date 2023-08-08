@@ -8,14 +8,12 @@
 | :-------------------------------------------------------------- | :------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [joystream](#joystream)                                         | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-joystream.md "https://joystream.org/schemas/youtube-synch/config#/properties/joystream")                                             |
 | [endpoints](#endpoints)                                         | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-endpoints.md "https://joystream.org/schemas/youtube-synch/config#/properties/endpoints")                                             |
-| [directories](#directories)                                     | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-directories.md "https://joystream.org/schemas/youtube-synch/config#/properties/directories")                                         |
 | [logs](#logs)                                                   | `object` | Optional | cannot be null | [Youtube Sync node configuration](definition-properties-logs.md "https://joystream.org/schemas/youtube-synch/config#/properties/logs")                                                       |
-| [limits](#limits)                                               | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-limits.md "https://joystream.org/schemas/youtube-synch/config#/properties/limits")                                                   |
-| [intervals](#intervals)                                         | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-intervals.md "https://joystream.org/schemas/youtube-synch/config#/properties/intervals")                                             |
 | [youtube](#youtube)                                             | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-youtube-oauth2-client-configuration.md "https://joystream.org/schemas/youtube-synch/config#/properties/youtube")                     |
 | [aws](#aws)                                                     | `object` | Optional | cannot be null | [Youtube Sync node configuration](definition-properties-aws-configurations-needed-to-connect-with-dynamodb-instance.md "https://joystream.org/schemas/youtube-synch/config#/properties/aws") |
 | [creatorOnboardingRequirements](#creatoronboardingrequirements) | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements")     |
 | [httpApi](#httpapi)                                             | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-public-api-configuration.md "https://joystream.org/schemas/youtube-synch/config#/properties/httpApi")                                |
+| [sync](#sync)                                                   | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync")                   |
 
 ## joystream
 
@@ -53,24 +51,6 @@ Specifies external endpoints that the distributor node will connect to
 
 `object` ([Details](definition-properties-endpoints.md))
 
-## directories
-
-Specifies paths where node's data will be stored
-
-`directories`
-
-*   is required
-
-*   Type: `object` ([Details](definition-properties-directories.md))
-
-*   cannot be null
-
-*   defined in: [Youtube Sync node configuration](definition-properties-directories.md "https://joystream.org/schemas/youtube-synch/config#/properties/directories")
-
-### directories Type
-
-`object` ([Details](definition-properties-directories.md))
-
 ## logs
 
 Specifies the logging configuration
@@ -88,42 +68,6 @@ Specifies the logging configuration
 ### logs Type
 
 `object` ([Details](definition-properties-logs.md))
-
-## limits
-
-Specifies youtube-synch service limits.
-
-`limits`
-
-*   is required
-
-*   Type: `object` ([Details](definition-properties-limits.md))
-
-*   cannot be null
-
-*   defined in: [Youtube Sync node configuration](definition-properties-limits.md "https://joystream.org/schemas/youtube-synch/config#/properties/limits")
-
-### limits Type
-
-`object` ([Details](definition-properties-limits.md))
-
-## intervals
-
-Specifies how often periodic tasks (for example youtube state polling) are executed.
-
-`intervals`
-
-*   is required
-
-*   Type: `object` ([Details](definition-properties-intervals.md))
-
-*   cannot be null
-
-*   defined in: [Youtube Sync node configuration](definition-properties-intervals.md "https://joystream.org/schemas/youtube-synch/config#/properties/intervals")
-
-### intervals Type
-
-`object` ([Details](definition-properties-intervals.md))
 
 ## youtube
 
@@ -196,3 +140,21 @@ Public api configuration
 ### httpApi Type
 
 `object` ([Public api configuration](definition-properties-public-api-configuration.md))
+
+## sync
+
+YT-synch's syncronization related settings
+
+`sync`
+
+*   is required
+
+*   Type: `object` ([YT-synch syncronization related settings](definition-properties-yt-synch-syncronization-related-settings.md))
+
+*   cannot be null
+
+*   defined in: [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync")
+
+### sync Type
+
+`object` ([YT-synch syncronization related settings](definition-properties-yt-synch-syncronization-related-settings.md))

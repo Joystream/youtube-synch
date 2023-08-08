@@ -1,30 +1,22 @@
-import { JSONSchema4 } from 'json-schema'
+import { JSONSchema7 } from 'json-schema'
 import * as winston from 'winston'
 import { objectSchema } from './utils'
+import { boolean } from '@oclif/command/lib/flags'
 
 export const byteSizeUnits = ['B', 'K', 'M', 'G', 'T']
 export const byteSizeRegex = new RegExp(`^[0-9]+(${byteSizeUnits.join('|')})$`)
 
-const logLevelSchema: JSONSchema4 = {
+const logLevelSchema: JSONSchema7 = {
   description: 'Minimum level of logs sent to this output',
   type: 'string',
   enum: [...Object.keys(winston.config.npm.levels)],
 }
 
-export const configSchema: JSONSchema4 = objectSchema({
+export const configSchema: JSONSchema7 = objectSchema({
   '$id': 'https://joystream.org/schemas/youtube-synch/config',
   title: 'Youtube Sync node configuration',
   description: 'Configuration schema for Youtube synch service node',
-  required: [
-    'joystream',
-    'endpoints',
-    'directories',
-    'limits',
-    'intervals',
-    'youtube',
-    'creatorOnboardingRequirements',
-    'httpApi',
-  ],
+  required: ['joystream', 'endpoints', 'youtube', 'creatorOnboardingRequirements', 'httpApi', 'sync'],
   properties: {
     joystream: objectSchema({
       description: 'Joystream network related configuration',
@@ -41,11 +33,11 @@ export const configSchema: JSONSchema4 = objectSchema({
           required: ['endpoint', 'captchaBypassKey'],
         }),
         app: objectSchema({
-          description: 'Joystream metaprotocol application specific configuration',
+          description: 'Joystream Metaprotocol App specific configuration',
           properties: {
-            name: { type: 'string', description: 'Name of the application' },
+            name: { type: 'string', description: 'Name of the app' },
             accountSeed: {
-              description: `Specifies the application auth key's string seed for generating ed25519 keypair`,
+              description: `Specifies the app auth key's string seed, for generating ed25519 keypair, to be used for signing App Actions`,
               type: 'string',
             },
           },
@@ -102,16 +94,6 @@ export const configSchema: JSONSchema4 = objectSchema({
         },
       },
       required: ['queryNode', 'joystreamNodeWs'],
-    }),
-    directories: objectSchema({
-      description: "Specifies paths where node's data will be stored",
-      properties: {
-        assets: {
-          description: 'Path to a directory where all the cached assets will be stored',
-          type: 'string',
-        },
-      },
-      required: ['assets'],
     }),
     logs: objectSchema({
       description: 'Specifies the logging configuration',
@@ -181,55 +163,6 @@ export const configSchema: JSONSchema4 = objectSchema({
         }),
       },
       required: [],
-    }),
-    limits: objectSchema({
-      description: 'Specifies youtube-synch service limits.',
-      properties: {
-        dailyApiQuota: objectSchema({
-          title: 'Specifies daily Youtube API quota rationing scheme for Youtube Partner Program',
-          description: 'Specifies daily Youtube API quota rationing scheme for Youtube Partner Program',
-          properties: {
-            sync: { type: 'number', default: 9500 },
-            signup: { type: 'number', default: 500 },
-          },
-          required: ['sync', 'signup'],
-        }),
-        maxConcurrentDownloads: {
-          description:
-            'Max no. of videos that should be concurrently downloaded from Youtube to be prepared for upload to Joystream',
-          type: 'number',
-          default: 50,
-        },
-        maxConcurrentUploads: {
-          description: `Max no. of videos that should be concurrently uploaded to Joystream's storage node`,
-          type: 'number',
-          default: 50,
-        },
-        storage: {
-          description: 'Maximum total size of all downloaded assets stored in `directories.assets`',
-          type: 'string',
-          pattern: byteSizeRegex.source,
-        },
-      },
-      required: ['dailyApiQuota', 'maxConcurrentDownloads', 'maxConcurrentUploads', 'storage'],
-    }),
-    intervals: objectSchema({
-      description: 'Specifies how often periodic tasks (for example youtube state polling) are executed.',
-      properties: {
-        youtubePolling: {
-          description:
-            'After how many minutes, the polling service should poll the Youtube api for channels state update',
-          type: 'integer',
-          minimum: 1,
-        },
-        contentProcessing: {
-          description:
-            'After how many minutes, the service should scan the database for new content to start downloading, on-chain creation & uploading to storage node',
-          type: 'integer',
-          minimum: 1,
-        },
-      },
-      required: ['youtubePolling', 'contentProcessing'],
     }),
     youtube: objectSchema({
       title: 'Youtube Oauth2 Client configuration',
@@ -314,6 +247,77 @@ export const configSchema: JSONSchema4 = objectSchema({
         ownerKey: { type: 'string' },
       },
       required: ['port', 'ownerKey'],
+    }),
+    sync: objectSchema({
+      title: `YT-synch syncronization related settings`,
+      description: `YT-synch's syncronization related settings`,
+      properties: {
+        enable: {
+          description: 'Option to enable/disable syncing while starting the service',
+          type: 'boolean',
+          default: true,
+        },
+        downloadsDir: {
+          description: 'Path to a directory where all the downloaded assets will be stored',
+          type: 'string',
+        },
+        intervals: objectSchema({
+          description: 'Specifies how often periodic tasks (for example youtube state polling) are executed.',
+          properties: {
+            youtubePolling: {
+              description:
+                'After how many minutes, the polling service should poll the Youtube api for channels state update',
+              type: 'integer',
+              minimum: 1,
+            },
+            contentProcessing: {
+              description:
+                'After how many minutes, the service should scan the database for new content to start downloading, on-chain creation & uploading to storage node',
+              type: 'integer',
+              minimum: 1,
+            },
+          },
+          required: ['youtubePolling', 'contentProcessing'],
+        }),
+        limits: objectSchema({
+          description: 'Specifies youtube-synch service limits.',
+          properties: {
+            dailyApiQuota: objectSchema({
+              title: 'Specifies daily Youtube API quota rationing scheme for Youtube Partner Program',
+              description: 'Specifies daily Youtube API quota rationing scheme for Youtube Partner Program',
+              properties: {
+                sync: { type: 'number', default: 9500 },
+                signup: { type: 'number', default: 500 },
+              },
+              required: ['sync', 'signup'],
+            }),
+            maxConcurrentDownloads: {
+              description:
+                'Max no. of videos that should be concurrently downloaded from Youtube to be prepared for upload to Joystream',
+              type: 'number',
+              default: 50,
+            },
+            maxConcurrentUploads: {
+              description: `Max no. of videos that should be concurrently uploaded to Joystream's storage node`,
+              type: 'number',
+              default: 50,
+            },
+            storage: {
+              description: 'Maximum total size of all downloaded assets stored in `downloadsDir`',
+              type: 'string',
+              pattern: byteSizeRegex.source,
+            },
+          },
+          required: ['dailyApiQuota', 'maxConcurrentDownloads', 'maxConcurrentUploads', 'storage'],
+        }),
+      },
+      if: {
+        properties: { enable: { const: true } },
+      },
+      then: {
+        required: ['downloadsDir', 'intervals', 'limits'],
+      },
+      required: ['enable'],
     }),
   },
 })

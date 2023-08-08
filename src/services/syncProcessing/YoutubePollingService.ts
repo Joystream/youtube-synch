@@ -3,15 +3,14 @@ import _ from 'lodash'
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
-import { ReadonlyConfig } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
-import { YtChannel } from '../../types/youtube'
+import { YtChannel, YtDlpFlatPlaylistOutput } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
 import { IYoutubeApi, YtDlpClient } from '../youtube/api'
+import { SyncLimits } from './syncLimitations'
 
 export class YoutubePollingService {
-  private config: ReadonlyConfig
   private logger: Logger
   private youtubeApi: IYoutubeApi
   private ytdlpClient: YtDlpClient
@@ -19,13 +18,11 @@ export class YoutubePollingService {
   private dynamodbService: IDynamodbService
 
   public constructor(
-    config: ReadonlyConfig,
     logging: LoggingService,
     youtubeApi: IYoutubeApi,
     dynamodbService: IDynamodbService,
     joystreamClient: JoystreamClient
   ) {
-    this.config = config
     this.logger = logging.createLogger('YoutubePollingService')
     this.youtubeApi = youtubeApi
     this.ytdlpClient = new YtDlpClient()
@@ -33,23 +30,22 @@ export class YoutubePollingService {
     this.joystreamClient = joystreamClient
   }
 
-  async start() {
+  async start(pollingInterval: number) {
     this.logger.info(`Starting Youtube channels & videos ingestion service.`)
-    this.logger.info(`Polling interval is set to ${this.config.intervals.youtubePolling} minute(s).`)
+    this.logger.info(`Polling interval is set to ${pollingInterval} minute(s).`)
 
     // start polling
-    setTimeout(async () => this.runPollingWithInterval(this.config.intervals.youtubePolling), 0)
+    setTimeout(async () => this.runPollingWithInterval(pollingInterval), 0)
   }
 
-  // get IDs of all new videos of the channel
-  private async getNewVideosIds(channel: YtChannel, allVideosIds: string[]): Promise<string[]> {
+  // get IDs of all videos of a channel that are still not tracked in DB
+  private async getUntrackedVideosIds(
+    channel: YtChannel,
+    videosIds: YtDlpFlatPlaylistOutput
+  ): Promise<YtDlpFlatPlaylistOutput> {
     // Get all the existing videos
     const existingVideos = await this.dynamodbService.repo.videos.query({ channelId: channel.id }, (q) => q)
-
-    return _.difference(
-      allVideosIds,
-      existingVideos.map((v) => v.id)
-    )
+    return _.differenceBy(videosIds, existingVideos, 'id')
   }
 
   /**
@@ -71,7 +67,12 @@ export class YoutubePollingService {
           `Completed Channels Ingestion. Videos of ${channels.length} channels will be prepared for syncing in this polling cycle....`
         )
 
-        await Promise.allSettled(channels.map((channel) => this.performVideosIngestion(channel)))
+        // Ingest videos of channels in a batch of 50 to limit IO/CPU resource consumption
+        const channelsBatch = _.chunk(channels, 50)
+        // Process each batch
+        for (let i = 0; i < channelsBatch.length; i++) {
+          await Promise.all(channelsBatch[i].map((channel) => this.performVideosIngestion(channel)))
+        }
       } catch (err) {
         this.logger.error(`Critical Polling error`, { err })
       }
@@ -84,90 +85,101 @@ export class YoutubePollingService {
   private async performChannelsIngestion(): Promise<YtChannel[]> {
     // get all channels that need to be ingested
     const channelsWithSyncEnabled = async () =>
-      await this.dynamodbService.repo.channels.scan('shouldBeIngested', (s) =>
-        // * Unauthorized channels add by infra operator are exempted from periodic
-        // * ingestion as we don't have access to their access/refresh tokens
-        s.eq(true).and().filter('performUnauthorizedSync').eq(false)
+      await this.dynamodbService.repo.channels.scan('yppStatus', (s) =>
+        s
+          .eq('Verified')
+          .and()
+          .filter('shouldBeIngested')
+          .eq(true)
+          .and()
+          .filter('allowOperatorIngestion')
+          .eq(true)
+          .and()
+          // * Unauthorized channels add by infra operator are exempted from periodic
+          // * ingestion as we don't have access to their access/refresh tokens
+          .filter('performUnauthorizedSync')
+          .eq(false)
       )
 
     // updated channel objects with uptodate info
-    const updatedChannels: YtChannel[] = []
     const channelsToBeIngested = await channelsWithSyncEnabled()
-    for (const ch of channelsToBeIngested) {
-      try {
-        const uptodateChannel = await this.youtubeApi.getChannel({
-          id: ch.userId,
-          accessToken: ch.userAccessToken,
-          refreshToken: ch.userRefreshToken,
+    const updatedChannels = (
+      await Promise.all(
+        channelsToBeIngested.map(async (ch) => {
+          try {
+            const uptodateChannel = await this.youtubeApi.getChannel({
+              id: ch.userId,
+              accessToken: ch.userAccessToken,
+              refreshToken: ch.userRefreshToken,
+            })
+
+            // ensure that Ypp collaborator member is still set as channel's collaborator
+            const isCollaboratorSet = await this.joystreamClient.doesChannelHaveCollaborator(ch.joystreamChannelId)
+            if (!isCollaboratorSet) {
+              this.logger.warn(
+                `Joystream Channel ${ch.joystreamChannelId} has either not set or revoked Ypp collaborator member ` +
+                  `as channel's collaborator. Corresponding Youtube Channel '${ch.id}' is being opted out from Ypp program.`
+              )
+              return {
+                ...ch,
+                yppStatus: 'OptedOut',
+                shouldBeIngested: false,
+                lastActedAt: new Date(),
+              }
+            }
+
+            // Update the current channel record if it changed
+            if (!_.isEqual(ch.statistics, uptodateChannel.statistics)) {
+              return { ...ch, statistics: uptodateChannel.statistics }
+            }
+          } catch (err: unknown) {
+            // if app permission is revoked by user from Google account then set `shouldBeIngested` to false & OptOut channel from
+            // Ypp program,  because then trying to fetch user channel will throw error with code 400 and 'invalid_grant' message
+            if (err instanceof GaxiosError && err.code === '400' && err.response?.data?.error === 'invalid_grant') {
+              this.logger.warn(
+                `Opting out '${ch.id}' from YPP program as their owner has revoked the permissions from Google settings`
+              )
+              return {
+                ...ch,
+                yppStatus: 'OptedOut',
+                shouldBeIngested: false,
+                lastActedAt: new Date(),
+              }
+              // ! Although type of `err.code` is string, the api api response returns it as number.
+            } else if (
+              err instanceof GaxiosError &&
+              err.code === (403 as any) &&
+              (err as GaxiosError).response?.data?.error?.errors[0]?.reason === 'authenticatedUserAccountSuspended'
+            ) {
+              this.logger.warn(
+                `Opting out '${ch.id}' from YPP program as their Youtube channel has been terminated by the Youtube.`
+              )
+              return {
+                ...ch,
+                yppStatus: 'OptedOut',
+                shouldBeIngested: false,
+                lastActedAt: new Date(),
+              }
+            } else if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.CHANNEL_NOT_FOUND) {
+              this.logger.warn(`Opting out '${ch.id}' from YPP program as Channel is not found on Youtube.`)
+              return {
+                ...ch,
+                yppStatus: ' OptedOut',
+                shouldBeIngested: false,
+                lastActedAt: new Date(),
+              }
+            } else if (
+              err instanceof YoutubeApiError &&
+              err.code === ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED
+            ) {
+              this.logger.info('Youtube quota limit exceeded, skipping polling for now.')
+              return
+            }
+            this.logger.error('Failed to fetch updated channel info', { err, channelId: ch.joystreamChannelId })
+          }
         })
-
-        // ensure that Ypp collaborator member is still set as channel's collaborator
-        const isCollaboratorSet = await this.joystreamClient.doesChannelHaveCollaborator(ch.joystreamChannelId)
-        if (!isCollaboratorSet) {
-          this.logger.warn(
-            `Joystream Channel ${ch.joystreamChannelId} has either not set or revoked Ypp collaborator member ` +
-              `as channel's collaborator. Corresponding Youtube Channel '${ch.id}' is being opted out from Ypp program.`
-          )
-          updatedChannels.push({
-            ...ch,
-            yppStatus: 'OptedOut',
-            shouldBeIngested: false,
-            lastActedAt: new Date(),
-          })
-          continue
-        }
-
-        // Update the current channel record if it changed
-        if (!_.isEqual(ch.statistics, uptodateChannel.statistics)) {
-          updatedChannels.push({ ...ch, statistics: uptodateChannel.statistics })
-        }
-      } catch (err: unknown) {
-        // if app permission is revoked by user from Google account then set `shouldBeIngested` to false & OptOut channel from
-        // Ypp program,  because then trying to fetch user channel will throw error with code 400 and 'invalid_grant' message
-        if (err instanceof GaxiosError && err.code === '400' && err.response?.data?.error === 'invalid_grant') {
-          this.logger.warn(
-            `Opting out '${ch.id}' from YPP program as their owner has revoked the permissions from Google settings`
-          )
-          updatedChannels.push({
-            ...ch,
-            yppStatus: 'OptedOut',
-            shouldBeIngested: false,
-            lastActedAt: new Date(),
-          })
-          continue
-          // ! Although type of `err.code` is string, the api api response returns it as number.
-        } else if (
-          err instanceof GaxiosError &&
-          err.code === (403 as any) &&
-          (err as GaxiosError).response?.data?.error?.errors[0]?.reason === 'authenticatedUserAccountSuspended'
-        ) {
-          this.logger.warn(
-            `Opting out '${ch.id}' from YPP program as their Youtube channel has been terminated by the Youtube.`
-          )
-          updatedChannels.push({
-            ...ch,
-            yppStatus: 'OptedOut',
-            shouldBeIngested: false,
-            lastActedAt: new Date(),
-          })
-          continue
-        } else if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.CHANNEL_NOT_FOUND) {
-          this.logger.warn(`Opting out '${ch.id}' from YPP program as Channel is not found on Youtube.`)
-          updatedChannels.push({
-            ...ch,
-            yppStatus: 'OptedOut',
-            shouldBeIngested: false,
-            lastActedAt: new Date(),
-          })
-          continue
-        } else if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED) {
-          this.logger.info('Youtube quota limit exceeded, skipping polling for now.')
-          return []
-        }
-        updatedChannels.push(ch)
-        this.logger.error('Failed to fetch updated channel info', { err, channelId: ch.joystreamChannelId })
-      }
-    }
+      )
+    ).filter((ch): ch is YtChannel => ch !== undefined)
 
     // save updated  channels
     await this.dynamodbService.repo.channels.upsertAll(updatedChannels)
@@ -177,18 +189,34 @@ export class YoutubePollingService {
 
   private async performVideosIngestion(channel: YtChannel) {
     try {
-      // get all sync-able videos of the channel
-      const allVideosIds = await this.ytdlpClient.getAllVideosIds(channel)
+      //
+      const historicalVideosCountLimit = SyncLimits.videoCap(channel)
 
-      // get all new video Ids that are not yet being tracked
-      const newVideosIds = await this.getNewVideosIds(channel, allVideosIds)
+      // get all sync-able videos  within the channel limits
+      const videosIds = await this.ytdlpClient.getVideosIds(channel, historicalVideosCountLimit)
 
-      //  get all new videos that are not yet being tracked
-      const newVideos = await this.youtubeApi.getVideos(channel, newVideosIds)
+      // get all video Ids that are not yet being tracked
+      let untrackedVideosIds = await this.getUntrackedVideosIds(channel, videosIds)
+
+      // if size limit has reached, don't track new historical videos
+      if (SyncLimits.hasSizeLimitReached(channel)) {
+        untrackedVideosIds = untrackedVideosIds.filter((v) => v.publishedAt >= channel.createdAt)
+      }
+
+      //  get all videos that are not yet being tracked
+      const untrackedVideos = await this.youtubeApi.getVideos(
+        channel,
+        untrackedVideosIds.map((v) => v.id)
+      )
 
       // save all new videos to DB including
-      await this.dynamodbService.repo.videos.upsertAll(newVideos)
+      await this.dynamodbService.repo.videos.upsertAll(untrackedVideos)
     } catch (err) {
+      if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED) {
+        this.logger.info('Youtube quota limit exceeded, skipping polling for now.')
+        return
+      }
+
       this.logger.error('Failed to ingest videos for channel', { err, channelId: channel.joystreamChannelId })
     }
   }

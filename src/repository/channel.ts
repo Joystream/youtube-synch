@@ -45,7 +45,13 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
       joystreamChannelLanguageIso: String,
 
       // Referrer's Joystream Channel ID
-      referrerChannelId: Number,
+      referrerChannelId: {
+        type: Number,
+        index: {
+          type: 'global',
+          name: 'referrerChannelId-index',
+        },
+      },
 
       // Channel's title
       title: String,
@@ -87,6 +93,9 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
         },
       },
 
+      // total size of historical videos (videos that were published on Youtube before YPP signup) synced
+      historicalVideoSyncedSize: Number,
+
       thumbnails: {
         type: Object,
         schema: {
@@ -97,6 +106,9 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
           standard: String,
         },
       },
+
+      // Banner or Background image URL
+      bannerImageUrl: String,
 
       // user access token obtained from authorization code after successful authentication
       userAccessToken: String,
@@ -109,7 +121,14 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
       // Should this channel be ingested for automated Youtube/Joystream syncing?
       shouldBeIngested: {
         type: Boolean,
-        default: true,
+        default: false,
+      },
+
+      // Should this channel be ingested for automated Youtube/Joystream syncing? (operator managed flag)
+      // Both `shouldBeIngested` and `allowOperatorIngestion` should be set for sync to work.
+      allowOperatorIngestion: {
+        type: Boolean,
+        default: false,
       },
 
       // Should this channel be ingested for automated Youtube/Joystream syncing without explicit authorization granted to app?
@@ -241,7 +260,7 @@ export class ChannelsService {
    * @param joystreamChannelId
    * @returns Returns channel by joystreamChannelId
    */
-  async getByJoystreamChannelId(joystreamChannelId: number): Promise<YtChannel> {
+  async getByJoystreamId(joystreamChannelId: number): Promise<YtChannel> {
     const [result] = await this.channelsRepository.query({ joystreamChannelId }, (q) =>
       q.sort('descending').using('joystreamChannelId-createdAt-index')
     )
@@ -252,10 +271,39 @@ export class ChannelsService {
   }
 
   /**
+   * @param joystreamChannelId
+   * @returns Returns partner channel by joystreamChannelId (if any)
+   */
+  async findPartnerChannelByJoystreamId(joystreamChannelId: number): Promise<YtChannel | undefined> {
+    const [result] = await this.channelsRepository.query({ joystreamChannelId }, (q) =>
+      q
+        .sort('descending')
+        .filter('yppStatus')
+        .eq('Verified')
+        .or()
+        .filter('yppStatus')
+        .eq('Unverified')
+        .using('joystreamChannelId-createdAt-index')
+    )
+    return result || undefined
+  }
+
+  /**
+   * @param joystreamChannelId
+   * @returns Returns list of all channels referred by given joystream channel
+   */
+  async getReferredChannels(referrerChannelId: number): Promise<YtChannel[]> {
+    const results = await this.channelsRepository.query({ referrerChannelId }, (q) =>
+      q.sort('descending').using('referrerChannelId-index')
+    )
+    return results
+  }
+
+  /**
    * @param channelId
    * @returns Returns channel by youtube channelId
    */
-  async getByChannelId(channelId: string): Promise<YtChannel> {
+  async getById(channelId: string): Promise<YtChannel> {
     const result = await this.channelsRepository.get(channelId.toString())
     if (!result) {
       throw new Error(`Could not find channel with id ${channelId}`)

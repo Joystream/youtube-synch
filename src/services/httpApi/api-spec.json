@@ -836,6 +836,12 @@
           "referrerChannelId": {
             "type": "number"
           },
+          "referredChannels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "videoCategoryId": {
             "type": "string"
           },
@@ -862,6 +868,7 @@
           "yppStatus",
           "joystreamChannelId",
           "referrerChannelId",
+          "referredChannels",
           "videoCategoryId",
           "language",
           "thumbnails",

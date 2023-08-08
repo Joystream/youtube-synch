@@ -1,3 +1,4 @@
+import { JSONSchema4 } from 'json-schema'
 import fs from 'fs'
 import { compile } from 'json-schema-to-typescript'
 import path from 'path'
@@ -8,7 +9,7 @@ const prettierConfig = require('@joystream/prettier-config')
 
 Object.entries(schemas).forEach(([schemaKey, schema]) => {
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  compile(schema, `${schemaKey}Json`, {
+  compile(schema as JSONSchema4, `${schemaKey}Json`, {
     style: prettierConfig,
     ignoreMinAndMaxItems: true,
   })

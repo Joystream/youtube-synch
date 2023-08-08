@@ -1,0 +1,3 @@
+## captchaBypassKey Type
+
+`string`

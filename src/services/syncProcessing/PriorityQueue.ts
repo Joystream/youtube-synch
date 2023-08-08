@@ -12,17 +12,21 @@ export class PriorityQueue<Task, ProcessingType extends 'batchProcessor' | 'sequ
       task: ProcessingType extends 'sequentialProcessor' ? Task : Task[],
       cb: (error?: any, result?: null) => void
     ) => void,
-    priorityFunc: (task: Task, cb: (error: any, priority: number) => void) => void,
+    priority: (task: Task, cb: (error: any, priority: number) => void) => void,
     batchSize?: ProcessingType extends 'batchProcessor' ? number : never
   ) {
     this.queue = new Queue(processingFunc, {
-      priority: priorityFunc,
+      priority,
       batchSize,
     })
   }
 
   public push(task: Task) {
     return this.queue.push(task)
+  }
+
+  public cancel(task: Task) {
+    return this.queue.cancel(task)
   }
 
   // Measure the priority of a video for download / creation queue.

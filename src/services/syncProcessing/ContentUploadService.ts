@@ -9,7 +9,7 @@ import { ContentDownloadService } from './ContentDownloadService'
 
 // Video content upload service
 export class ContentUploadService {
-  private config: ReadonlyConfig
+  private syncConfig: Required<ReadonlyConfig['sync']>
   private logger: Logger
   private logging: LoggingService
   private dynamodbService: IDynamodbService
@@ -18,13 +18,13 @@ export class ContentUploadService {
   private queryNodeApi: QueryNodeApi
 
   public constructor(
-    config: ReadonlyConfig,
+    syncConfig: Required<ReadonlyConfig['sync']>,
     logging: LoggingService,
     dynamodbService: IDynamodbService,
     contentDownloadService: ContentDownloadService,
     queryNodeApi: QueryNodeApi
   ) {
-    this.config = config
+    this.syncConfig = syncConfig
     this.logger = logging.createLogger('ContentUploadService')
     this.logging = logging
     this.dynamodbService = dynamodbService
@@ -33,13 +33,13 @@ export class ContentUploadService {
     this.storageNodeApi = new StorageNodeApi(this.logging, this.queryNodeApi)
   }
 
-  async start() {
+  async start(interval: number) {
     this.logger.info(`Starting service to upload video assets to storage-node.`)
 
     await this.ensureUploadStateConsistency()
 
     // start assets upload service
-    setTimeout(async () => this.uploadAssetsWithInterval(this.config.intervals.contentProcessing), 0)
+    setTimeout(async () => this.uploadAssetsWithInterval(interval), 0)
   }
 
   /**
@@ -74,7 +74,7 @@ export class ContentUploadService {
       await sleep(sleepInterval)
       try {
         this.logger.info(`Resume service....`)
-        await this.uploadPendingAssets(this.config.limits.maxConcurrentUploads)
+        await this.uploadPendingAssets(this.syncConfig.limits.maxConcurrentUploads)
       } catch (err) {
         this.logger.error(`Critical Upload error`, { err })
       }

@@ -4,19 +4,18 @@ import pWaitFor from 'p-wait-for'
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
-import { ReadonlyConfig } from '../../types'
 import { VideoCreationTask } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
 import { ContentDownloadService } from './ContentDownloadService'
 import { PriorityQueue } from './PriorityQueue'
+import { SyncLimits } from './syncLimitations'
 // TODO: keep hash calculation separate from extrinsic calling
 
 // Video content creation/processing service
 export class ContentCreationService {
   private readonly DEFAULT_SUDO_PRIORITY = 10
 
-  private config: ReadonlyConfig
   private logger: Logger
   private joystreamClient: JoystreamClient
   private dynamodbService: IDynamodbService
@@ -26,13 +25,11 @@ export class ContentCreationService {
   private activeTaskId: string // video Id of the currently running video creation task
 
   constructor(
-    config: ReadonlyConfig,
     logging: LoggingService,
     dynamodbService: IDynamodbService,
     contentDownloadService: ContentDownloadService,
     joystreamClient: JoystreamClient
   ) {
-    this.config = config
     this.logger = logging.createLogger('ContentCreationService')
     this.dynamodbService = dynamodbService
     this.joystreamClient = joystreamClient
@@ -43,13 +40,13 @@ export class ContentCreationService {
     })
   }
 
-  async start() {
+  async start(interval: number) {
     this.logger.info(`Starting Video creation service.`)
 
     await this.ensureContentStateConsistency()
 
     // start video creation service
-    setTimeout(async () => this.createContentWithInterval(this.config.intervals.contentProcessing), 0)
+    setTimeout(async () => this.createContentWithInterval(interval), 0)
   }
 
   private async pendingOnchainCreationVideos() {
@@ -92,8 +89,25 @@ export class ContentCreationService {
     await Promise.all(
       pendingOnchainCreationVideosByChannel.map(async ({ channelId, unsyncedVideos }) => {
         // Get total videos of channel
-        const { videoCount } = (await this.dynamodbService.channels.getByChannelId(channelId)).statistics
-        const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / videoCount
+        const channel = await this.dynamodbService.channels.getById(channelId)
+
+        const isSyncEnable = channel.shouldBeIngested && channel.allowOperatorIngestion
+        if (!isSyncEnable) {
+          this.logger.warn(
+            `Syncing is disabled for channel ${channel.joystreamChannelId}. Removing ` +
+              `all videos from syncing queue & deleting the records from the database.`
+          )
+          // Remove all videos from queue
+          unsyncedVideos.forEach((v) => this.queue.cancel(v as VideoCreationTask))
+          // Remove all the videos from db too (so that they wont be requeued)
+          await Promise.all(unsyncedVideos.map((v) => this.dynamodbService.videos.delete(v)))
+          // Remove the downloaded video file
+          await Promise.all(unsyncedVideos.map((v) => this.contentDownloadService.removeVideoFile(v.id)))
+          return
+        }
+
+        const totalVideos = Math.min(channel.statistics.videoCount, SyncLimits.videoCap(channel))
+        const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / totalVideos
 
         for (const v of unsyncedVideos) {
           const rank = this.queue.calculateVideoRank(
@@ -126,7 +140,7 @@ export class ContentCreationService {
             `${video.id} from syncing & deleting it's record from the database.`
         )
         await this.dynamodbService.videos.delete(video)
-        await this.contentDownloadService.removeVideoFile(video.id)
+        await this.contentDownloadService.removeVideoFile(video.id) // TODO: remove this after adding `isSyncEnable` check?
         return
       }
 
@@ -151,14 +165,26 @@ export class ContentCreationService {
           `Inconsistent state. Youtube video ${video.id} was already created on Joystream but the service tried to recreate it.`,
           { videoId: video.id, channelId: video.joystreamChannelId }
         )
-        process.exit(-1)
+        await this.ensureContentStateConsistency()
+        return
+        // process.exit(-1)
       }
 
       await this.dynamodbService.videos.updateState(video, 'CreatingVideo')
-      const [createdVideo, createdInBlock] = await this.joystreamClient.createVideo(video, video.filePath)
+      const [createdVideo, createdInBlock, size] = await this.joystreamClient.createVideo(video, video.filePath)
       this.lastVideoCreationBlockByChannelId.set(video.joystreamChannelId, createdInBlock)
       await this.dynamodbService.videos.updateState(createdVideo, 'VideoCreated')
       this.logger.info(`Video created on chain.`, { videoId: video.id, channelId: video.joystreamChannelId })
+
+      // Update channel size limit
+      const channel = await this.dynamodbService.channels.getById(video.channelId)
+      const isHistoricalVideo = new Date(video.publishedAt) < channel.createdAt
+      if (isHistoricalVideo) {
+        await this.dynamodbService.channels.save({
+          ...channel,
+          historicalVideoSyncedSize: (channel.historicalVideoSyncedSize || 0) + size,
+        })
+      }
     } catch (err) {
       this.logger.error(`Got error processing video`, { videoId: video.id, err })
       await this.dynamodbService.videos.updateState(video, 'VideoCreationFailed')

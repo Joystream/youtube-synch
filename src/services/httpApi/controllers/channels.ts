@@ -60,6 +60,10 @@ export class ChannelsController {
         referrerChannelId,
       } = channelInfo
 
+      /**
+       *  Input Validation
+       */
+
       if (referrerChannelId === joystreamChannelId) {
         throw new Error('Referrer channel cannot be the same as the channel being verified.')
       }
@@ -72,14 +76,27 @@ export class ChannelsController {
         throw new Error('Invalid request author. Permission denied.')
       }
 
+      // ensure that Joystream channel exists
+      const jsChannel = await this.qnApi.getChannelById(joystreamChannelId.toString())
+      if (!jsChannel) {
+        throw new Error(`Joystream Channel ${joystreamChannelId} does not exist.`)
+      }
+
+      // ensure that Joystream channel isn't associated with any other participant channel
+      const existingJsChannel = await this.dynamodbService.channels.findPartnerChannelByJoystreamId(joystreamChannelId)
+      if (existingJsChannel) {
+        throw new Error(
+          `Joystream Channel ${joystreamChannelId} already connected with Youtube Channel ${existingJsChannel.id}.`
+        )
+      }
+
       // get channel from user
       const { channel } = await this.youtubeApi.getVerifiedChannel(user)
 
       // reset authorization code to prevent repeated save channel requests by authorization code re-use
       const updatedUser: YtUser = { ...user, email, authorizationCode: randomBytes(10).toString('hex') }
 
-      const joystreamChannelLanguageIso = (await this.qnApi.getChannelById(joystreamChannelId.toString()))?.language
-        ?.iso
+      const joystreamChannelLanguageIso = jsChannel.language?.iso
       const updatedChannel: YtChannel = {
         ...channel,
         email,
@@ -106,8 +123,9 @@ export class ChannelsController {
   @ApiOperation({ description: 'Retrieves channel by joystreamChannelId' })
   async get(@Param('joystreamChannelId', ParseIntPipe) id: number) {
     try {
-      const channel = await this.dynamodbService.channels.getByJoystreamChannelId(id)
-      return new ChannelDto(channel)
+      const channel = await this.dynamodbService.channels.getByJoystreamId(id)
+      const referredChannels = await this.dynamodbService.channels.getReferredChannels(id)
+      return new ChannelDto(channel, referredChannels)
     } catch (error) {
       const message = error instanceof Error ? error.message : error
       throw new NotFoundException(message)
@@ -136,7 +154,7 @@ export class ChannelsController {
     @Body() { message, signature }: IngestChannelDto
   ) {
     try {
-      const channel = await this.dynamodbService.channels.getByJoystreamChannelId(id)
+      const channel = await this.dynamodbService.channels.getByJoystreamId(id)
 
       // Ensure channel is not suspended or opted out
       if (channel.yppStatus === 'Suspended' || channel.yppStatus === 'OptedOut') {
@@ -180,7 +198,7 @@ export class ChannelsController {
     @Body() { message, signature }: OptoutChannelDto
   ) {
     try {
-      const channel = await this.dynamodbService.channels.getByJoystreamChannelId(id)
+      const channel = await this.dynamodbService.channels.getByJoystreamId(id)
 
       // Ensure channel is not suspended
       if (channel.yppStatus === 'Suspended') {
@@ -228,14 +246,14 @@ export class ChannelsController {
 
     try {
       for (const { joystreamChannelId, isSuspended } of channels) {
-        const channel = await this.dynamodbService.channels.getByJoystreamChannelId(joystreamChannelId)
+        const channel = await this.dynamodbService.channels.getByJoystreamId(joystreamChannelId)
 
         // if channel is being suspended then its YT ingestion/syncing should also be stopped
         if (isSuspended) {
           await this.dynamodbService.channels.save({
             ...channel,
             yppStatus: 'Suspended',
-            shouldBeIngested: false,
+            allowOperatorIngestion: false,
           })
         } else {
           // if channel suspension is revoked then its YT ingestion/syncing should not be resumed
@@ -263,14 +281,18 @@ export class ChannelsController {
 
     try {
       for (const { joystreamChannelId, isVerified } of channels) {
-        const channel = await this.dynamodbService.channels.getByJoystreamChannelId(joystreamChannelId)
+        const channel = await this.dynamodbService.channels.getByJoystreamId(joystreamChannelId)
 
         // channel is being verified
         if (isVerified) {
-          await this.dynamodbService.channels.save({ ...channel, yppStatus: 'Verified' })
+          await this.dynamodbService.channels.save({ ...channel, yppStatus: 'Verified', allowOperatorIngestion: true })
         } else {
           // channel is being unverified
-          await this.dynamodbService.channels.save({ ...channel, yppStatus: 'Unverified' })
+          await this.dynamodbService.channels.save({
+            ...channel,
+            yppStatus: 'Unverified',
+            allowOperatorIngestion: false,
+          })
         }
       }
     } catch (error) {
@@ -286,7 +308,7 @@ export class ChannelsController {
   })
   async getVideos(@Param('joystreamChannelId', ParseIntPipe) id: number): Promise<YtVideo[]> {
     try {
-      const channelId = (await this.dynamodbService.channels.getByJoystreamChannelId(id)).id
+      const channelId = (await this.dynamodbService.channels.getByJoystreamId(id)).id
       const result = await this.dynamodbService.repo.videos.query({ channelId }, (q) => q.sort('descending'))
       return result
     } catch (error) {
