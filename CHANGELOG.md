@@ -1,3 +1,15 @@
+### 2.0.0
+
+- Updates minimum required NodeJS version to `v18`.
+- Adds `referredChannels` field in `GET /channels/{joystreamChannelId}` endpoint's response.
+- Adds configuration option to enable/disable syncing by operators.
+- Introduced feature to sync videos of only `Verified` channels.
+- Introduced feature for per channel based sync limits.
+- **FIX**: Adds validation against multiple signups by same Joystream channel.
+- **FIX**: Hide elasticsearch credentials in the logs.
+- **FIX**: Make `avatar` optional in create membership (`POST /membership`) request.
+- **FIX**: Youtube Quota usage query endpoint.
+
 ### 1.5.0
 
 - Adds new `POST /membership` endpoint for captcha-free membership creation of verified YPP users. Requires Faucet endpoint (`joystream.faucet.endpoint`) and Bearer Authentication token (`joystream.faucet.captchaBypassKey`) in the configuration, as the request handler calls Joystream Faucet as an authenticated actor.
