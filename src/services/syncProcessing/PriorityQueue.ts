@@ -29,7 +29,6 @@ export class PriorityQueue<Task, ProcessingType extends 'batchProcessor' | 'sequ
     return this.queue.cancel(task)
   }
 
-
   public stats() {
     return this.queue.getStats()
   }
