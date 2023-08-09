@@ -24,6 +24,11 @@ export class ThumbnailsDto {
   @ApiProperty() standard: string
 }
 
+export class StatusDto {
+  @ApiProperty() version: string
+  @ApiProperty() syncStatus: 'enabled' | 'disabled'
+}
+
 export class CollaboratorStatusDto {
   @ApiProperty() memberId: string
   @ApiProperty() controllerAccount: string

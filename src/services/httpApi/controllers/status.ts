@@ -5,7 +5,7 @@ import { DynamodbService } from '../../../repository'
 import { ReadonlyConfig } from '../../../types'
 import { Stats } from '../../../types/youtube'
 import { RuntimeApi } from '../../runtime/api'
-import { CollaboratorStatusDto } from '../dtos'
+import { CollaboratorStatusDto, StatusDto } from '../dtos'
 
 @Controller('status')
 @ApiTags('status')
@@ -15,6 +15,24 @@ export class StatusController {
     private runtimeApi: RuntimeApi,
     @Inject('config') private config: ReadonlyConfig
   ) {}
+
+  @Get()
+  @ApiResponse({ type: StatusDto })
+  @ApiOperation({ description: `Get status info of YT-Synch service` })
+  async getStatus(): Promise<StatusDto> {
+    try {
+      // Get complete quota usage statss
+      const {
+        version,
+        sync: { enable },
+      } = this.config
+
+      return { version, syncStatus: enable ? 'enabled' : 'disabled' }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
+  }
 
   @Get('quota-usage')
   @ApiResponse({ type: Stats, isArray: true })

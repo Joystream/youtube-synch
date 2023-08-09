@@ -617,6 +617,29 @@
         ]
       }
     },
+    "/status": {
+      "get": {
+        "operationId": "StatusController_getStatus",
+        "summary": "",
+        "description": "Get status info of YT-Synch service",
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "status"
+        ]
+      }
+    },
     "/status/quota-usage": {
       "get": {
         "operationId": "StatusController_getQuotaStats",
@@ -821,9 +844,6 @@
           "description": {
             "type": "string"
           },
-          "aggregatedStats": {
-            "type": "number"
-          },
           "shouldBeIngested": {
             "type": "boolean"
           },
@@ -863,7 +883,6 @@
           "youtubeChannelId",
           "title",
           "description",
-          "aggregatedStats",
           "shouldBeIngested",
           "yppStatus",
           "joystreamChannelId",
@@ -1097,6 +1116,21 @@
       "Stats": {
         "type": "object",
         "properties": {}
+      },
+      "StatusDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "syncStatus": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "syncStatus"
+        ]
       },
       "CreateMembershipRequest": {
         "type": "object",
