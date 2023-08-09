@@ -24,6 +24,10 @@ export class ContentCreationService {
   private lastVideoCreationBlockByChannelId: Map<number, BN> // JsChannelId -> Last video creation block number
   private activeTaskId: string // video Id of the currently running video creation task
 
+  get totalTasks(): number {
+    return this.queue.stats().peak
+  }
+
   constructor(
     logging: LoggingService,
     dynamodbService: IDynamodbService,

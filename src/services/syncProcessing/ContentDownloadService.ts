@@ -26,6 +26,10 @@ export class ContentDownloadService {
   private downloadedVideoPathByResourceId: Map<string, string>
   private contentSizeSum = 0
 
+  get totalTasks(): number {
+    return this.downloadQueue.stats().peak
+  }
+
   public get usedSpace(): number {
     return this.contentSizeSum
   }

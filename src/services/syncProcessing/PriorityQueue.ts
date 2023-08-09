@@ -29,6 +29,11 @@ export class PriorityQueue<Task, ProcessingType extends 'batchProcessor' | 'sequ
     return this.queue.cancel(task)
   }
 
+
+  public stats() {
+    return this.queue.getStats()
+  }
+
   // Measure the priority of a video for download / creation queue.
   private measure(sudoPriority: number, percentage: number, publishedAt: number) {
     const currentUnixTime = Date.now()

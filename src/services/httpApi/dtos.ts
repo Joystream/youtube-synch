@@ -27,6 +27,7 @@ export class ThumbnailsDto {
 export class StatusDto {
   @ApiProperty() version: string
   @ApiProperty() syncStatus: 'enabled' | 'disabled'
+  @ApiProperty() syncBacklog: number
 }
 
 export class CollaboratorStatusDto {

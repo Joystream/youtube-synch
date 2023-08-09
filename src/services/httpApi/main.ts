@@ -10,6 +10,8 @@ import { ReadonlyConfig, formattedJSON } from '../../types'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
 import { RuntimeApi } from '../runtime/api'
+import { ContentCreationService } from '../syncProcessing/ContentCreationService'
+import { ContentDownloadService } from '../syncProcessing/ContentDownloadService'
 import { IYoutubeApi } from '../youtube/api'
 import {
   ChannelsController,
@@ -42,13 +44,15 @@ export async function bootstrapHttpApi(
   config: ReadonlyConfig,
   logging: LoggingService,
   dynamodbService: DynamodbService,
+  runtimeApi: RuntimeApi,
   queryNodeApi: QueryNodeApi,
-  youtubeApi: IYoutubeApi
+  youtubeApi: IYoutubeApi,
+  contentCreationService: ContentCreationService,
+  contentDownloadService: ContentDownloadService
 ) {
   // make sure WASM crypto module is ready
   await cryptoWaitReady()
 
-  const runtimeApi = new RuntimeApi(config.endpoints.joystreamNodeWs, logging)
   const objectAppModule: DynamicModule = {
     module: ApiModule,
     imports: [],
@@ -73,6 +77,14 @@ export async function bootstrapHttpApi(
       {
         provide: RuntimeApi,
         useValue: runtimeApi,
+      },
+      {
+        provide: ContentCreationService,
+        useValue: contentCreationService,
+      },
+      {
+        provide: ContentDownloadService,
+        useValue: contentDownloadService,
       },
       {
         provide: 'youtube',

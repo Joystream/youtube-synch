@@ -1125,11 +1125,15 @@
           },
           "syncStatus": {
             "type": "string"
+          },
+          "syncBacklog": {
+            "type": "number"
           }
         },
         "required": [
           "version",
-          "syncStatus"
+          "syncStatus",
+          "syncBacklog"
         ]
       },
       "CreateMembershipRequest": {

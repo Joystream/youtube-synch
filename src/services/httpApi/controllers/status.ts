@@ -5,6 +5,8 @@ import { DynamodbService } from '../../../repository'
 import { ReadonlyConfig } from '../../../types'
 import { Stats } from '../../../types/youtube'
 import { RuntimeApi } from '../../runtime/api'
+import { ContentCreationService } from '../../syncProcessing/ContentCreationService'
+import { ContentDownloadService } from '../../syncProcessing/ContentDownloadService'
 import { CollaboratorStatusDto, StatusDto } from '../dtos'
 
 @Controller('status')
@@ -13,6 +15,8 @@ export class StatusController {
   constructor(
     private dynamodbService: DynamodbService,
     private runtimeApi: RuntimeApi,
+    private contentCreationService: ContentCreationService,
+    private contentDownloadService: ContentDownloadService,
     @Inject('config') private config: ReadonlyConfig
   ) {}
 
@@ -27,7 +31,8 @@ export class StatusController {
         sync: { enable },
       } = this.config
 
-      return { version, syncStatus: enable ? 'enabled' : 'disabled' }
+      const syncBacklog = this.contentCreationService.totalTasks + this.contentDownloadService.totalTasks
+      return { version, syncStatus: enable ? 'enabled' : 'disabled', syncBacklog }
     } catch (error) {
       const message = error instanceof Error ? error.message : error
       throw new NotFoundException(message)
