@@ -1,11 +1,17 @@
 import Queue from 'better-queue'
 
 // Youtube videos download service
-export class PriorityQueue<Task, ProcessingType extends 'batchProcessor' | 'sequentialProcessor'> {
+export class PriorityQueue<
+  Task extends { id: string },
+  ProcessingType extends 'batchProcessor' | 'sequentialProcessor'
+> {
   private readonly MAX_SUDO_PRIORITY = 100
   private readonly OLDEST_PUBLISHED_DATE = 946684800 // Unix timestamp of year 2000
 
   private queue: Queue<Task>
+  // Queue elements set, it is used to calculate the size of queue since since `BetterQueue.getStats()` does not work correctly
+  private taskIds: Set<string>
+  private activeTaskIds: Set<string>
 
   public constructor(
     processingFunc: (
@@ -15,22 +21,63 @@ export class PriorityQueue<Task, ProcessingType extends 'batchProcessor' | 'sequ
     priority: (task: Task, cb: (error: any, priority: number) => void) => void,
     batchSize?: ProcessingType extends 'batchProcessor' ? number : never
   ) {
-    this.queue = new Queue(processingFunc, {
+    const patchedProcessingFunc = (
+      task: ProcessingType extends 'sequentialProcessor' ? Task : Task[],
+      cb: (error?: any, result?: null) => void
+    ) => {
+      // add task to active tasks set
+      if (task instanceof Array) {
+        task.forEach((t) => this.activeTaskIds.add(t.id))
+      } else {
+        this.activeTaskIds.add(task.id)
+      }
+
+      processingFunc(task, (error, result) => {
+        // remove task from both `activeTasks` set & `queueSet`
+        if (task instanceof Array) {
+          task.forEach((t) => this.taskIds.delete(t.id))
+          task.forEach((t) => this.activeTaskIds.delete(t.id))
+        } else {
+          this.taskIds.delete(task.id)
+          this.activeTaskIds.delete(task.id)
+        }
+        cb(error, result)
+      })
+    }
+
+    this.taskIds = new Set()
+    this.activeTaskIds = new Set()
+    this.queue = new Queue(patchedProcessingFunc, {
       priority,
       batchSize,
     })
   }
 
   public push(task: Task) {
-    return this.queue.push(task)
+    /**
+     * If a new task with ID is added to better-queue and old task with the same ID already exists,
+     * by default, the new replaces the previous task. However, this is not true while the old task has
+     * started processing when the new task was added, in this case both task will be processed, leading
+     * to duplicate processing. To avoid this, new task wont be added if the old task with the same ID
+     * is being processed.
+     */
+    if (!this.activeTaskIds.has(task.id)) {
+      this.taskIds.add(task.id)
+      return this.queue.push(task)
+    }
   }
 
   public cancel(task: Task) {
+    this.taskIds.delete(task.id)
     return this.queue.cancel(task)
   }
 
-  public stats() {
-    return this.queue.getStats()
+  public get stats() {
+    return {
+      totalTasks: this.taskIds.size,
+      activeTasks: this.activeTaskIds.size,
+      activeTaskIds: this.activeTaskIds,
+    }
   }
 
   // Measure the priority of a video for download / creation queue.
