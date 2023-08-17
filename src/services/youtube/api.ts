@@ -63,11 +63,12 @@ export class YtDlpClient {
 
       return videos
     } catch (err) {
+      if (err instanceof Error && err.message.includes('The playlist does not exist')) {
+        return []
+      }
       throw err
     }
   }
-
-  async a() {}
 }
 
 export interface IYoutubeApi {
