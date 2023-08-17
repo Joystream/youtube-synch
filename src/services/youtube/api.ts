@@ -286,7 +286,15 @@ class YoutubeClient implements IYoutubeApi {
             await youtube.videos
               .list({
                 id: idsChunk,
-                part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status', 'statistics'],
+                part: [
+                  'id',
+                  'status',
+                  'snippet',
+                  'statistics',
+                  'fileDetails',
+                  'contentDetails',
+                  'liveStreamingDetails',
+                ],
               })
               .catch((err) => {
                 if (err instanceof FetchError && err.code === 'ENOTFOUND') {
@@ -377,7 +385,11 @@ class YoutubeClient implements IYoutubeApi {
         )
         // filter out videos that are not public, processed, have live-stream or age-restriction, since those can't be synced yet
         .filter(
-          (v) => v.uploadStatus === 'processed' && v.liveStreamingDetails === undefined && v.ytRating === undefined
+          (v) =>
+            v.uploadStatus === 'processed' &&
+            v.privacyStatus === 'public' &&
+            v.liveStreamingDetails === undefined &&
+            v.ytRating === undefined
         )
     )
   }
