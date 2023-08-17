@@ -21,10 +21,16 @@ export class ContentDownloadService {
   private youtubeApi: IYoutubeApi
   private dynamodbService: IDynamodbService
   private downloadQueue: PriorityQueue<VideoDownloadTask, 'batchProcessor'>
-  private activeDownloadsIds: string[]
-  private activeDownloadsCount: number
   private downloadedVideoPathByResourceId: Map<string, string>
   private contentSizeSum = 0
+
+  get totalTasks(): number {
+    return this.downloadQueue.stats.totalTasks
+  }
+
+  private get activeTasks(): number {
+    return this.downloadQueue.stats.activeTasks
+  }
 
   public get usedSpace(): number {
     return this.contentSizeSum
@@ -45,8 +51,6 @@ export class ContentDownloadService {
     this.logger = logging.createLogger('ContentDownloadService')
     this.dynamodbService = dynamodbService
     this.youtubeApi = youtubeApi
-    this.activeDownloadsIds = []
-    this.activeDownloadsCount = 0
     this.downloadedVideoPathByResourceId = new Map()
     this.downloadQueue = new PriorityQueue(
       this.processDownloadTasks.bind(this),
@@ -128,7 +132,7 @@ export class ContentDownloadService {
   private async pendingDownloadVideos() {
     const allUnsyncedVideos = await this.dynamodbService.videos.getAllUnsyncedVideos()
     return allUnsyncedVideos.filter((v) => {
-      return !this.activeDownloadsIds.includes(v.id) && this.getVideoFilePath(v.id) === undefined
+      return !this.downloadQueue.stats.activeTaskIds.has(v.id) && this.getVideoFilePath(v.id) === undefined
     })
   }
 
@@ -156,7 +160,7 @@ export class ContentDownloadService {
     const pendingDownloadVideos = await this.pendingDownloadVideos()
 
     this.logger.verbose(`Video downloads progress status`, {
-      activeDownloadsCount: this.activeDownloadsCount,
+      activeDownloadsCount: this.activeTasks,
       pendingDownloadsCount: pendingDownloadVideos.length,
     })
 
@@ -208,10 +212,6 @@ export class ContentDownloadService {
 
   /// Process download tasks based on their priority.
   private async processDownloadTasks(videos: VideoDownloadTask[], cb: (error?: any, result?: null) => void) {
-    // set `activeDownloadsIds`
-    this.activeDownloadsIds = videos.map((v) => v.id)
-    this.activeDownloadsCount = videos.length
-
     await Promise.all(
       videos.map(async (video) => {
         try {
@@ -220,6 +220,8 @@ export class ContentDownloadService {
           const { ext: fileExt } = await this.youtubeApi.downloadVideo(video.url, this.syncConfig.downloadsDir)
           this.setVideoFilePath(video.id, fileExt)
           const size = this.fileSize(video.id)
+          this.contentSizeSum += size
+          this.logger.info(`Video downloaded.`, { videoId: video.id, channelId: video.joystreamChannelId })
 
           // ensure syncing this video won't violate per channel limits
           const channel = await this.dynamodbService.channels.getById(video.channelId)
@@ -229,25 +231,22 @@ export class ContentDownloadService {
 
             if (hasLimitReached) {
               // TODO: should this check be in ContentCreationService
-              // delete this video file
-              await this.removeVideoFile(video.id)
               // delete all tracked historical videos that hasn't been created yet
               const videos = await this.dynamodbService.videos.getHistoricalUnsyncedVideosOfChannel(channel)
               this.logger.warn(
-                `Size limit for channel's historical has reached. Removing all historical not-downloaded videos`
-              )
-              await Promise.all(
-                videos.map(async (v) => !this.getVideoFilePath(v.id) && (await this.dynamodbService.videos.delete(v)))
+                `Size limit for channel's historical videos has reached. Removing all historical - not yet created - videos`,
+                { channelId: channel.id }
               )
 
+              // Remove all videos from queue
+              videos.forEach((v) => this.downloadQueue.cancel(v as VideoDownloadTask))
+              // Remove all the videos from db too (so that they wont be requeued)
+              await Promise.all(videos.map((v) => this.dynamodbService.videos.delete(v)))
+              // Remove the downloaded video files
+              await Promise.all(videos.map((v) => this.getVideoFilePath(v.id) && this.removeVideoFile(v.id)))
               return
             }
           }
-
-          // TODO: remove all historical not-downloaded videos if limit reached
-
-          this.contentSizeSum += size
-          this.logger.info(`Video downloaded.`, { videoId: video.id, channelId: video.joystreamChannelId })
         } catch (err) {
           const errorMsg = (err as Error).message
           if (errorMsg.includes('Video unavailable')) {
@@ -274,14 +273,10 @@ export class ContentDownloadService {
             this.logger.error(`Got error downloading video. Retrying...`, { videoId: video.id, err })
           }
         } finally {
-          this.activeDownloadsCount--
+          // Signal that the batch is done
+          cb(null, null)
         }
       })
     )
-
-    // unset `activeDownloadsIds` set
-    this.activeDownloadsIds = []
-    // Signal that the batch is done
-    cb(null, null)
   }
 }
