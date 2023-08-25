@@ -31,7 +31,10 @@ export default class PayReward extends DefaultCommandBase {
     const { channelId, rationale, joyPrice, payerMemberId } = this.parse(PayReward).flags
 
     const channel = await getContactToPay(channelId)
-    console.log(channel)
+    if (!channel) {
+      this.error(chalk.red(`No payable channel found by Id: ${channelId}`))
+    }
+
     const signupReward = parseInt(channel.sign_up_reward_in_usd || '0') / parseFloat(joyPrice)
     const referralReward = parseInt(channel.latest_referral_reward_in_usd || '0') / parseFloat(joyPrice)
     const syncReward = parseInt(channel.videos_sync_reward || '0') / parseFloat(joyPrice)
@@ -50,8 +53,7 @@ export default class PayReward extends DefaultCommandBase {
     await this.requireConfirmation('Do you confirm the reward payment for the channel?', false)
 
     await this.joystreamCli.directChannelPayment({
-      channelId: channel.gleev_channel_id,
-      amount: this.asHapi(totalJoyReward),
+      payments: [{ channelId: channel.gleev_channel_id, amount: this.asHapi(totalJoyReward) }],
       rationale,
       payerMemberId,
     })

@@ -14,6 +14,7 @@ USAGE
   $ youtube-synch payRewards
 
 OPTIONS
+  -b, --batchSize=batchSize              [default: 1] Number of channels to pay rewards to in a single transaction
   -d, --rationale=rationale              Reason why payment is being made
   -p, --joyPrice=joyPrice                (required) Price of JOY token
   -y, --yes                              Answer "yes" to any prompt, skipping any manual confirmations

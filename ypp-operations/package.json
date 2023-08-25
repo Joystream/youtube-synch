@@ -4,6 +4,7 @@
   "main": "lib/index.js",
   "license": "MIT",
   "scripts": {
+    "postinstall": "patch-package",
     "postpack": "rm -f oclif.manifest.json",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "build": "rm -rf lib && tsc --build tsconfig.json",
@@ -15,6 +16,8 @@
     "/oclif.manifest.json"
   ],
   "devDependencies": {
+    "@oclif/dev-cli": "^1",
+    "@types/lowdb": "^1.0.11",
     "@types/node-cron": "^3.0.8",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.60.1",
@@ -22,20 +25,23 @@
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^4.2.1",
     "ts-node": "^10.9.1",
-    "typescript": "^5.1.3",
-    "@oclif/dev-cli": "^1"
+    "typescript": "^5.1.3"
   },
   "dependencies": {
-    "axios": "^1.4.0",
     "@hubspot/api-client": "^9.0.0",
     "@joystream/cli": "1.2.0",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
     "aws-sdk": "^2.1405.0",
+    "axios": "^1.4.0",
     "chalk": "^4.0.0",
     "dynamoose": "^3.1.0",
-    "node-cron": "^3.0.2"
+    "lowdb": "1.0.0",
+    "node-cron": "^3.0.2",
+    "patch-package": "^6.4.7",
+    "pkg-dir": "4.2.0",
+    "postinstall-postinstall": "^2.1.0"
   },
   "oclif": {
     "repositoryPrefix": "<%- repo %>/blob/main/src/cli/<%- commandPath %>",

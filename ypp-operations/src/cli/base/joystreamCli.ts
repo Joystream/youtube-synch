@@ -9,8 +9,10 @@ const CLI_ROOT_PATH = path.resolve(__dirname, '../../../node_modules/@joystream/
 
 // ICreatedContentData
 export interface ChannelPaymentParams {
-  channelId: string
-  amount: string
+  payments: {
+    channelId: string
+    amount: string
+  }[]
   rationale: string | undefined
   payerMemberId: string
 }
@@ -44,8 +46,7 @@ export abstract class CLI {
     return [...this.defaultArgs, ...customArgs]
   }
 
-  async run(command: string, customArgs: string[] = [], requireSuccess = true): Promise<CommandResult> {
-    const debugCli = process.env.DEBUG === 'true'
+  async run(command: string, customArgs: string[] = []): Promise<CommandResult> {
     const { env } = this
 
     const func = async (): Promise<{
@@ -165,8 +166,8 @@ export class JoystreamCLI extends CLI {
   /**
     Runs Joystream CLI command.
   */
-  async run(command: string, customArgs: string[] = [], requireSuccess = true): Promise<CommandResult> {
-    return super.run(command, customArgs, requireSuccess)
+  async run(command: string, customArgs: string[] = []): Promise<CommandResult> {
+    return super.run(command, customArgs)
   }
 
   /**
@@ -184,20 +185,22 @@ export class JoystreamCLI extends CLI {
   }
 
   /**
-    Creates a new channel.
+    make payment to a single channel.
   */
   async directChannelPayment(args: ChannelPaymentParams): Promise<number> {
+    const channelsAndAmountsArgs = args.payments.flatMap(({ channelId, amount }) => [
+      `--channelId`,
+      channelId,
+      `--amount`,
+      amount,
+    ])
     const { out, stderr, exitCode } = await this.run('content:directChannelPayment', [
-      '--channelId',
-      args.channelId,
-      '--amount',
-      args.amount,
+      ...channelsAndAmountsArgs,
       '--rationale',
       args.rationale || '',
       '--useMemberId',
       args.payerMemberId,
     ])
-    console.log('here ')
 
     if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
       throw new Error(`Unexpected CLI failure on direct channel payment: "${stderr}"`)
