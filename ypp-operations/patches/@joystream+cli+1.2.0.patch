@@ -1,0 +1,112 @@
+diff --git a/node_modules/@joystream/cli/lib/commands/content/directChannelPayment.js b/node_modules/@joystream/cli/lib/commands/content/directChannelPayment.js
+index ef59e00..8a361e6 100644
+--- a/node_modules/@joystream/cli/lib/commands/content/directChannelPayment.js
++++ b/node_modules/@joystream/cli/lib/commands/content/directChannelPayment.js
+@@ -1,36 +1,35 @@
+ "use strict";
+ Object.defineProperty(exports, "__esModule", { value: true });
+ const tslib_1 = require("tslib");
+-const ContentDirectoryCommandBase_1 = tslib_1.__importDefault(require("../../base/ContentDirectoryCommandBase"));
+-const serialization_1 = require("../../helpers/serialization");
+ const metadata_protobuf_1 = require("@joystream/metadata-protobuf");
+ const command_1 = require("@oclif/command");
+-const UploadCommandBase_1 = tslib_1.__importDefault(require("../../base/UploadCommandBase"));
+-const ExitCodes_1 = tslib_1.__importDefault(require("../../ExitCodes"));
+-const long_1 = tslib_1.__importDefault(require("long"));
++const util_1 = require("@polkadot/util");
+ const chalk_1 = tslib_1.__importDefault(require("chalk"));
++const long_1 = tslib_1.__importDefault(require("long"));
++const ContentDirectoryCommandBase_1 = tslib_1.__importDefault(require("../../base/ContentDirectoryCommandBase"));
++const UploadCommandBase_1 = tslib_1.__importDefault(require("../../base/UploadCommandBase"));
++const display_1 = require("../../helpers/display");
++const serialization_1 = require("../../helpers/serialization");
+ class DirectChannelPaymentCommand extends ContentDirectoryCommandBase_1.default {
+     async run() {
+-        const { rewardAccount, channelId, amount, rationale, videoId } = this.parse(DirectChannelPaymentCommand).flags;
+-        if (!channelId && !rewardAccount) {
++        const { rewardAccount: rewardAccounts, channelId: channelIds, amount: amounts, rationale, videoId, } = this.parse(DirectChannelPaymentCommand).flags;
++        if (!channelIds.length && !rewardAccounts.length) {
+             this._help();
+             return;
+         }
+-        const channel = channelId
+-            ? await this.getQNApi().getChannelById(channelId)
+-            : await this.getQNApi().getChannelByRewardAccount(rewardAccount || '');
+-        if (channelId && !channel) {
+-            this.error(`Channel with ID ${channelId} does not exist`, { exit: ExitCodes_1.default.InvalidInput });
+-        }
+-        else if (!channel) {
+-            this.error(`Channel with reward account ${rewardAccount} does not exist`, { exit: ExitCodes_1.default.InvalidInput });
++        const channels = [];
++        if (channelIds.length) {
++            for (const channelId of channelIds) {
++                const channel = await this.getQNApi().getChannelById(channelId);
++                if (channel)
++                    channels.push(channel);
++            }
+         }
+-        if (videoId) {
+-            const video = await this.getApi().videoById(videoId);
+-            if (video.inChannel.toString() !== channel.id) {
+-                this.error(`Video with id ${videoId} does not exist in payee channel`, {
+-                    exit: ExitCodes_1.default.InvalidInput,
+-                });
++        else {
++            for (const rewardAccount of rewardAccounts) {
++                const channel = await this.getQNApi().getChannelByRewardAccount(rewardAccount || '');
++                if (channel)
++                    channels.push(channel);
+             }
+         }
+         const meta = new metadata_protobuf_1.MemberRemarked({
+@@ -40,14 +39,27 @@ class DirectChannelPaymentCommand extends ContentDirectoryCommandBase_1.default
+             }),
+         });
+         const message = (0, serialization_1.metadataToString)(metadata_protobuf_1.MemberRemarked, meta);
+-        const [memberId, controllerAccount, payment] = await this.getValidatedMemberRemarkParams({
+-            account: channel.rewardAccount,
+-            amount,
+-        });
++        const { id, membership: { controllerAccount }, } = await this.getRequiredMemberContext(true);
++        const txs = await Promise.all(channels.map(async (channel, i) => {
++            const [memberId, , payment] = await this.getValidatedMemberRemarkParams({
++                account: channel.rewardAccount,
++                amount: amounts[i],
++            });
++            return this.getApi().getOriginalApi().tx.members.memberRemark(memberId, message, payment);
++        }));
+         const keypair = await this.getDecodedPair(controllerAccount);
+-        const result = await this.sendAndFollowNamedTx(keypair, 'members', 'memberRemark', [memberId, message, payment]);
+-        const [id] = this.getEvent(result, 'members', 'MemberRemarked').data;
+-        this.log(chalk_1.default.green(`Member ${id} successfully paid channel ${channelId} with amount ${amount}!`));
++        const result = await this.sendAndFollowNamedTx(keypair, 'utility', 'batchAll', [txs]);
++        this.getEvent(result, 'utility', 'BatchCompleted');
++        if (channels.length > 0) {
++            this.log(chalk_1.default.green(`Member ${id} successfully paid to channels`));
++            (0, display_1.displayTable)(channels.map((channel, i) => ({
++                'ChannelId': channel.id,
++                'Payment Amount': (0, util_1.formatBalance)(amounts[i]),
++            })), 3);
++        }
++        else {
++            this.log('No channel payments made');
++        }
+     }
+ }
+ exports.default = DirectChannelPaymentCommand;
+@@ -55,12 +67,15 @@ DirectChannelPaymentCommand.description = `Make direct payment to channel's rewa
+ DirectChannelPaymentCommand.flags = Object.assign({ rewardAccount: command_1.flags.string({
+         description: 'Reward account of the channel to be paid',
+         exclusive: ['channelId'],
++        multiple: true,
+     }), channelId: command_1.flags.string({
+         description: 'ID of the channel to be paid',
+         exclusive: ['rewardAccount'],
++        multiple: true,
+     }), amount: command_1.flags.string({
+         required: true,
+         description: 'JOY amount to be paid',
++        multiple: true,
+     }), rationale: command_1.flags.string({
+         char: 'r',
+         required: true,
