@@ -1,13 +1,10 @@
-import { countChannelsReferredAfter, recheck } from './recheckVideoState'
-
 export * from './config'
-export * from './dynamoHook'
+export * from './dynamodb'
 export * from './hubspot'
 
 // Start processing the DynamoDB stream
-// loadConfig()
 // startStreamProcessing()
 
-// getAllVerifiedChannels()
-countChannelsReferredAfter(25948, '2023-06-20').then(console.log)
-recheck()
+// getAllSuspendedChannels()
+// latestReferrerRewardInUsd(channelId, '2023-08-11').then(console.log)
+// updateHubspotWithCalculatedRewards()
