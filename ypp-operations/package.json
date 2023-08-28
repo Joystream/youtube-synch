@@ -32,15 +32,16 @@
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
+    "@types/uuid": "^9.0.1",
     "aws-sdk": "^2.1405.0",
     "axios": "^1.4.0",
     "chalk": "^4.0.0",
+    "dotenv": "10.0.0",
     "dynamoose": "^3.1.0",
     "node-cron": "^3.0.2",
     "patch-package": "^6.4.7",
     "postinstall-postinstall": "^2.1.0",
-    "uuid": "^9.0.0",
-    "@types/uuid": "^9.0.1"
+    "uuid": "^9.0.0"
   },
   "oclif": {
     "repositoryPrefix": "<%- repo %>/blob/main/src/cli/<%- commandPath %>",
