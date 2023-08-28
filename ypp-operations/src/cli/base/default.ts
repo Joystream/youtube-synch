@@ -3,9 +3,6 @@ import { ApiPromise, WsProvider } from '@polkadot/api'
 import BN from 'bn.js'
 import chalk from 'chalk'
 import inquirer, { DistinctQuestion } from 'inquirer'
-import low, { LowdbAsync } from 'lowdb'
-import FileAsync from 'lowdb/adapters/FileAsync'
-import pkgDir from 'pkg-dir'
 import ExitCodes from './ExitCodes'
 import { JoystreamCLI } from './joystreamCli'
 
@@ -16,15 +13,10 @@ type ChannelsPaid = {
 export default abstract class DefaultCommandBase extends Command {
   protected autoConfirm!: boolean
   protected joystreamCli!: JoystreamCLI
-  protected wal!: LowdbAsync<ChannelsPaid>
   protected jsonPrettyIdent = ''
   protected tokenDecimals: number
   protected indentGroupsOpened = 0
   protected api: ApiPromise
-
-  // WAL(Write-ahead-log) file path, needed to pay channel rewards & update the hubspot in an atomic operation
-  private WAL_FILE_NAME = `wal.json`
-  private WAL_FILE_PATH = `${pkgDir.sync(__dirname)}/${this.WAL_FILE_NAME}`
 
   static flags = {
     yes: flags.boolean({
@@ -60,11 +52,6 @@ export default abstract class DefaultCommandBase extends Command {
     this.tokenDecimals = properties.tokenDecimals.unwrap()[0].toNumber()
     this.joystreamCli = await this.createJoystreamCli(rpcEndpoint, queryNodeEndpoint)
     this.autoConfirm = !!(process.env.AUTO_CONFIRM === 'true' || parseInt(process.env.AUTO_CONFIRM || '') || yes)
-
-    // Create WAL file if it doesn't exist
-    const defaultData: ChannelsPaid = { channels: [] }
-    const adapter = new FileAsync<ChannelsPaid>(this.WAL_FILE_PATH)
-    this.wal = await low(adapter)
   }
 
   async getAccountNonce(account: string) {

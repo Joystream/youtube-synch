@@ -17,7 +17,6 @@
   ],
   "devDependencies": {
     "@oclif/dev-cli": "^1",
-    "@types/lowdb": "^1.0.11",
     "@types/node-cron": "^3.0.8",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.60.1",
@@ -37,11 +36,11 @@
     "axios": "^1.4.0",
     "chalk": "^4.0.0",
     "dynamoose": "^3.1.0",
-    "lowdb": "1.0.0",
     "node-cron": "^3.0.2",
     "patch-package": "^6.4.7",
-    "pkg-dir": "4.2.0",
-    "postinstall-postinstall": "^2.1.0"
+    "postinstall-postinstall": "^2.1.0",
+    "uuid": "^9.0.0",
+    "@types/uuid": "^9.0.1"
   },
   "oclif": {
     "repositoryPrefix": "<%- repo %>/blob/main/src/cli/<%- commandPath %>",
