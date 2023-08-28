@@ -20,6 +20,7 @@ export default abstract class DefaultCommandBase extends Command {
   protected jsonPrettyIdent = ''
   protected tokenDecimals: number
   protected indentGroupsOpened = 0
+  protected api: ApiPromise
 
   // WAL(Write-ahead-log) file path, needed to pay channel rewards & update the hubspot in an atomic operation
   private WAL_FILE_NAME = `wal.json`
@@ -51,10 +52,10 @@ export default abstract class DefaultCommandBase extends Command {
   async init(): Promise<void> {
     const { yes, rpcEndpoint, queryNodeEndpoint } = this.parse(this.constructor as typeof DefaultCommandBase).flags
     const wsProvider: WsProvider = new WsProvider(rpcEndpoint)
-    const api = new ApiPromise({ provider: wsProvider })
-    await api.isReadyOrError
+    this.api = new ApiPromise({ provider: wsProvider })
+    await this.api.isReadyOrError
 
-    const [properties] = await Promise.all([api.rpc.system.properties(), api.rpc.system.chainType()])
+    const [properties] = await Promise.all([this.api.rpc.system.properties(), this.api.rpc.system.chainType()])
 
     this.tokenDecimals = properties.tokenDecimals.unwrap()[0].toNumber()
     this.joystreamCli = await this.createJoystreamCli(rpcEndpoint, queryNodeEndpoint)
@@ -64,6 +65,15 @@ export default abstract class DefaultCommandBase extends Command {
     const defaultData: ChannelsPaid = { channels: [] }
     const adapter = new FileAsync<ChannelsPaid>(this.WAL_FILE_PATH)
     this.wal = await low(adapter)
+  }
+
+  async getAccountNonce(account: string) {
+    return (await this.api.rpc.system.accountNextIndex(account)).toNumber()
+  }
+
+  async getJoystreamMemberControllerAccount(memberId: string) {
+    const membership = (await this.api.query.members.membershipById(Number(memberId))) as any
+    return membership.unwrap().controllerAccount.toString()
   }
 
   asHapi(joy: number) {

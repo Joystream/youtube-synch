@@ -167,7 +167,7 @@ export type HubspotYPPContact = {
   referral_reward: string // Latest Referral Reward (in JOY)
   videos_sync_reward_in_joy: string // Videos Sync Reward (in JOY)
 
-  latest_ypp_reward: string // Latest Overall YPP Reward
+  latest_ypp_reward: string // Latest Overall YPP Reward (in JOY)
   total_ypp_rewards: string // Total YPP Rewards in JOY
   latest_ypp_reward_status: 'Not calculated' | 'Paid' | 'To Pay' // Latest YPP Reward Status
 }
@@ -180,7 +180,26 @@ export const payableContactProps = [
   'sign_up_reward_in_usd',
   'latest_referral_reward_in_usd',
   'videos_sync_reward',
+  'latest_ypp_reward',
   'total_ypp_rewards',
 ] as const
-
 export type PayableContact = Pick<HubspotYPPContact, typeof payableContactProps[number]>
+
+export const payContactsInputProps = ['latest_ypp_reward_status', 'latest_ypp_reward', 'total_ypp_rewards'] as const
+export type PayContactsInput = {
+  id: string
+  properties: Pick<HubspotYPPContact, typeof payContactsInputProps[number]>
+}[]
+
+export const revertPayingContactsInputProps = [
+  'latest_ypp_reward_status',
+  'sign_up_reward_in_usd',
+  'latest_referral_reward_in_usd',
+  'videos_sync_reward',
+  'latest_ypp_reward',
+  'total_ypp_rewards',
+] as const
+export type RevertPayingContactsInput = {
+  id: string
+  properties: Pick<HubspotYPPContact, typeof revertPayingContactsInputProps[number]>
+}[]

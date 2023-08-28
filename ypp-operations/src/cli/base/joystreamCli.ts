@@ -1,4 +1,3 @@
-import ExitCodes from '@joystream/cli/lib/ExitCodes'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { spawn } from 'child_process'
 import fs, { mkdirSync, rmdirSync } from 'fs'
@@ -19,9 +18,7 @@ export interface ChannelPaymentParams {
 
 export type CommandResult = {
   exitCode: number
-  stdout: string
-  stderr: string
-  out: string
+  exitSignal: string | null
 }
 
 export abstract class CLI {
@@ -50,9 +47,8 @@ export abstract class CLI {
     const { env } = this
 
     const func = async (): Promise<{
-      stdout: string
-      stderr: string
       exitCode: number
+      exitSignal: string | null
     }> => {
       return new Promise((resolve, reject) => {
         const child = spawn(this.binPath, [command, ...this.getArgs(customArgs)], {
@@ -61,39 +57,23 @@ export abstract class CLI {
           cwd: this.rootPath,
         })
 
-        let stdout = ''
-        let stderr = ''
-
-        // child.stdout.on('data', (data) => {
-        //   if (debugCli) console.log(data.toString())
-        //   stdout += data
-        // })
-
-        // child.stderr.on('data', (data) => {
-        //   if (debugCli) console.error(data.toString())
-        //   stderr += data
-        // })
-
         child.on('error', (error) => {
           reject(error)
         })
 
-        child.on('close', (code) => {
+        child.on('close', (code, signal) => {
           resolve({
-            stdout,
-            stderr,
             exitCode: code || 0,
+            exitSignal: signal,
           })
         })
       })
     }
 
-    const { stdout, stderr, exitCode } = await func()
+    const { exitCode, exitSignal } = await func()
     const response = {
       exitCode,
-      stdout,
-      stderr,
-      out: stdout.trim(),
+      exitSignal,
     }
 
     return response
@@ -171,30 +151,16 @@ export class JoystreamCLI extends CLI {
   }
 
   /**
-    Getter for temporary-file manager.
+    make payment to a channel/s.
   */
-  public getTmpFileManager(): TmpFileManager {
-    return this.tmpFileManager
-  }
-
-  /*
-    Decide if CLI error indicates that storage provider is not available.
-  */
-  private isErrorDueToNoStorage(exitCode: number): boolean {
-    return exitCode === ExitCodes.ActionCurrentlyUnavailable
-  }
-
-  /**
-    make payment to a single channel.
-  */
-  async directChannelPayment(args: ChannelPaymentParams): Promise<number> {
+  async directChannelPayment(args: ChannelPaymentParams): Promise<void> {
     const channelsAndAmountsArgs = args.payments.flatMap(({ channelId, amount }) => [
       `--channelId`,
       channelId,
       `--amount`,
       amount,
     ])
-    const { out, stderr, exitCode } = await this.run('content:directChannelPayment', [
+    const { exitCode, exitSignal } = await this.run('content:directChannelPayment', [
       ...channelsAndAmountsArgs,
       '--rationale',
       args.rationale || '',
@@ -202,10 +168,13 @@ export class JoystreamCLI extends CLI {
       args.payerMemberId,
     ])
 
-    if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
-      throw new Error(`Unexpected CLI failure on direct channel payment: "${stderr}"`)
+    if (exitCode || exitSignal) {
+      throw new Error(
+        `Failed to execute joystreamCLI.content:directChannelPayment command, ${JSON.stringify({
+          exitCode,
+          exitSignal,
+        })}`
+      )
     }
-
-    return parseInt(out)
   }
 }

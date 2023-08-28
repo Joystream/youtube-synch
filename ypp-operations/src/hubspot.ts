@@ -1,9 +1,10 @@
 import { Client } from '@hubspot/api-client'
 import axios, { AxiosResponse, isAxiosError } from 'axios'
+import _ from 'lodash'
 import { loadConfig as config } from './config'
 import { HubspotYPPContact, PayableContact, YtChannel, payableContactProps } from './types'
 
-const hubspotClient: Client = new Client({ accessToken: config('HUBSPOT_API_KEY') })
+export const hubspotClient: Client = new Client({ accessToken: config('HUBSPOT_API_KEY') })
 
 export async function getYppContactByEmail(email: string): Promise<string | undefined> {
   const token = config('HUBSPOT_API_KEY')
@@ -105,7 +106,7 @@ export async function getAllContacts(): Promise<
   }
 }
 
-export async function getContactToPay(gleevChannelId: string): Promise<PayableContact> {
+export async function getContactToPay(gleevChannelId: string): Promise<PayableContact | undefined> {
   try {
     const response = await hubspotClient.crm.contacts.searchApi.doSearch({
       filterGroups: [
@@ -142,6 +143,7 @@ export async function getContactToPay(gleevChannelId: string): Promise<PayableCo
       sign_up_reward_in_usd: contact.properties.sign_up_reward_in_usd,
       latest_referral_reward_in_usd: contact.properties.latest_referral_reward_in_usd,
       videos_sync_reward: contact.properties.videos_sync_reward,
+      latest_ypp_reward: contact.properties.latest_ypp_reward,
       total_ypp_rewards: contact.properties.total_ypp_rewards,
     }))
     return contacts[0]
@@ -189,6 +191,7 @@ export async function getContactsToPay(): Promise<PayableContact[]> {
           sign_up_reward_in_usd: contact.properties.sign_up_reward_in_usd,
           latest_referral_reward_in_usd: contact.properties.latest_referral_reward_in_usd,
           videos_sync_reward: contact.properties.videos_sync_reward,
+          latest_ypp_reward: contact.properties.latest_ypp_reward,
           total_ypp_rewards: contact.properties.total_ypp_rewards,
         }))
       )
@@ -210,6 +213,21 @@ export async function updateYppContact(contactId: string, properties: Partial<Hu
   }
 }
 
+// Function to update multiple Hubspot YPP contacts
+export async function updateYppContacts(
+  updateInputs: Array<{ id: string; properties: Partial<HubspotYPPContact> }>
+): Promise<void> {
+  const batchedInputs = _.chunk(updateInputs, 100)
+  try {
+    for (const inputs of batchedInputs) {
+      await hubspotClient.crm.contacts.batchApi.update({ inputs })
+    }
+  } catch (err) {
+    console.log('Error: Failed to update contacts in Hubspot', err)
+    throw err
+  }
+}
+
 // Function to create a Hubspot YPP contact
 export async function createYppContact(properties: Partial<HubspotYPPContact>): Promise<void> {
   try {
@@ -220,10 +238,14 @@ export async function createYppContact(properties: Partial<HubspotYPPContact>): 
 }
 
 export async function addOrUpdateYppContact(item: YtChannel, contactId?: string): Promise<void> {
-  if (contactId) {
-    return await updateYppContact(contactId, mapDynamoItemToContactFields(item))
-  } else {
-    return await createYppContact(mapDynamoItemToContactFields(item))
+  try {
+    if (contactId) {
+      return await updateYppContact(contactId, mapDynamoItemToContactFields(item))
+    } else {
+      return await createYppContact(mapDynamoItemToContactFields(item))
+    }
+  } catch (error) {
+    console.error(error)
   }
 }
 
@@ -236,7 +258,6 @@ function mapDynamoItemToContactFields(item: YtChannel): Partial<HubspotYPPContac
     gleev_channel_id: item.joystreamChannelId.toString(),
     lifecyclestage: 'customer',
     hs_lead_status: 'CONNECTED', // Lead Status
-    // latest_ypp_reward_status: 'Not calculated',
     date_signed_up_to_ypp: new Date(item.createdAt).setUTCHours(0, 0, 0, 0).toString(), // Date Signed up to YPP
   }
 }

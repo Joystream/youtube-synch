@@ -12,20 +12,16 @@ async function getRecords(ShardIterator: string) {
 let lastProcessingAt = 0
 let isProcessing = false
 async function processRecords(records: AWS.DynamoDBStreams.GetRecordsOutput) {
-  console.log('total records', records.Records?.length)
   if (records.Records?.find((r) => r.eventName === 'MODIFY')) {
     console.log('found modify')
 
     if (!isProcessing && lastProcessingAt < Date.now() - 180000) {
       isProcessing = true
-      // setTimeout(async () => {
-      console.log('timeout')
       const channels = await getAllVerifiedChannels()
       for (const ch of channels) {
         const contactId = await getYppContactByEmail(ch.email)
         await addOrUpdateYppContact(ch, contactId)
       }
-      // }, 180000) // 3 minutes
       lastProcessingAt = Date.now()
     }
   }

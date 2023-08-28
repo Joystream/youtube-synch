@@ -30,16 +30,29 @@ let conf = {
   AWS_DYNAMO_STREAM_ARN: '',
   HUBSPOT_API_KEY: '',
 
-  CHECK_NEW_SYNCED_VIDEOS_INTERVAL_IN_HOURS: 1,
-
   BASE_SIGNUP_REWARD_IN_USD: 20,
-  BASE_REFERRAL_REWARD_IN_USD: 9,
-  BASE_SYNC_REWARD_IN_USD: 3,
+  BASE_REFERRAL_REWARD_IN_USD: 10,
+
+  // Sync rewards per tier
+  TIER_1_SYNC_REWARD_IN_USD: 1,
+  TIER_2_SYNC_REWARD_IN_USD: 2,
+  TIER_3_SYNC_REWARD_IN_USD: 5,
+
+  // Sync rewards capped to max of 3 videos per week.
+  MAX_REWARDED_VIDEOS_PER_WEEK: 3,
+
+  // Minimum video duration in minutes for a video to be eligible for sync rewards.
+  MIN_VIDEO_DURATION_IN_MINS: 5,
 }
 
 export function loadConfig<K extends keyof typeof conf>(key: K): typeof conf[K] {
+  if (conf[key]) return conf[key]
+
   if (typeof conf[key] === 'number') {
-    return readEnvInt(key, 1) as typeof conf[K]
+    conf[key] = readEnvInt(key, conf[key]) as typeof conf[K]
+    return conf[key]
   }
-  return readEnvString(key) as typeof conf[K]
+
+  conf[key] = readEnvString(key, conf[key] as string) as typeof conf[K]
+  return conf[key]
 }
