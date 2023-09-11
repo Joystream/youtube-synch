@@ -6,6 +6,7 @@ import { DynamodbService } from '../repository'
 import { bootstrapHttpApi } from '../services/httpApi/main'
 import { LoggingService } from '../services/logging'
 import { QueryNodeApi } from '../services/query-node/api'
+import { RuntimeApi } from '../services/runtime/api'
 import { JoystreamClient } from '../services/runtime/client'
 import { ContentCreationService } from '../services/syncProcessing/ContentCreationService'
 import { ContentDownloadService } from '../services/syncProcessing/ContentDownloadService'
@@ -21,6 +22,7 @@ export class Service {
   private youtubeApi: IYoutubeApi
   private queryNodeApi: QueryNodeApi
   private dynamodbService: DynamodbService
+  private runtimeApi: RuntimeApi
   private joystreamClient: JoystreamClient
   private youtubePollingService: YoutubePollingService
   private contentDownloadService: ContentDownloadService
@@ -34,35 +36,37 @@ export class Service {
     this.logger = this.logging.createLogger('Server')
     this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
     this.dynamodbService = new DynamodbService(this.config.aws)
-    this.youtubeApi = YoutubeApi.create(this.config)
-    this.joystreamClient = new JoystreamClient(config, this.youtubeApi, this.queryNodeApi, this.logging)
-    this.youtubePollingService = new YoutubePollingService(
-      config,
-      this.logging,
-      this.youtubeApi,
-      this.dynamodbService,
-      this.joystreamClient
-    )
-    this.contentDownloadService = new ContentDownloadService(
-      config,
-      this.logging,
-      this.dynamodbService,
-      this.youtubeApi
-    )
-    this.contentCreationService = new ContentCreationService(
-      config,
-      this.logging,
-      this.dynamodbService,
-      this.contentDownloadService,
-      this.joystreamClient
-    )
-    this.contentUploadService = new ContentUploadService(
-      config,
-      this.logging,
-      this.dynamodbService,
-      this.contentDownloadService,
-      this.queryNodeApi
-    )
+    this.youtubeApi = YoutubeApi.create(this.config, this.dynamodbService.repo.stats)
+    this.runtimeApi = new RuntimeApi(config.endpoints.joystreamNodeWs, this.logging)
+    this.joystreamClient = new JoystreamClient(config, this.runtimeApi, this.queryNodeApi, this.logging)
+
+    if (config.sync.enable) {
+      this.youtubePollingService = new YoutubePollingService(
+        this.logging,
+        this.youtubeApi,
+        this.dynamodbService,
+        this.joystreamClient
+      )
+      this.contentDownloadService = new ContentDownloadService(
+        config.sync,
+        this.logging,
+        this.dynamodbService,
+        this.youtubeApi
+      )
+      this.contentCreationService = new ContentCreationService(
+        this.logging,
+        this.dynamodbService,
+        this.contentDownloadService,
+        this.joystreamClient
+      )
+      this.contentUploadService = new ContentUploadService(
+        config.sync,
+        this.logging,
+        this.dynamodbService,
+        this.contentDownloadService,
+        this.queryNodeApi
+      )
+    }
   }
 
   private checkConfigDir(name: string, path: string): void {
@@ -87,9 +91,25 @@ export class Service {
   }
 
   private checkConfigDirectories(): void {
-    Object.entries(this.config.directories).forEach(([name, path]) => this.checkConfigDir(name, path))
+    if (this.config.sync.enable) {
+      this.checkConfigDir('sync.downloadsDir', this.config.sync.downloadsDir)
+    }
     if (this.config.logs?.file) {
       this.checkConfigDir('logs.file.path', this.config.logs.file.path)
+    }
+  }
+
+  private async startSync(): Promise<void> {
+    if (this.config.sync.enable) {
+      const {
+        intervals: { youtubePolling, contentProcessing },
+      } = this.config.sync
+      this.logger.verbose('Starting the Youtube-Synch service', { config: this.hideSecrets(this.config) })
+      // Null-assertion is safe here since intervals won't be not null due to Ajv schema validation
+      await this.youtubePollingService.start(youtubePolling)
+      await this.contentDownloadService.start(contentProcessing)
+      await this.contentCreationService.start(contentProcessing)
+      await this.contentUploadService.start(contentProcessing)
     }
   }
 
@@ -99,6 +119,10 @@ export class Service {
       youtube: _.mapValues(config.youtube, () => '###SECRET###' as const),
       httpApi: _.mapValues(config.httpApi, () => '###SECRET###' as const),
       joystream: _.mapValues(config.joystream, () => '###SECRET###' as const),
+      logs: {
+        ...config.logs,
+        elastic: _.mapValues(config.logs?.elastic, () => '###SECRET###' as const),
+      },
       aws: {
         ...config.aws,
         credentials: _.mapValues(config.aws?.credentials, () => '###SECRET###' as const),
@@ -110,13 +134,18 @@ export class Service {
 
   public async start(): Promise<void> {
     try {
+      await bootstrapHttpApi(
+        this.config,
+        this.logging,
+        this.dynamodbService,
+        this.runtimeApi,
+        this.queryNodeApi,
+        this.youtubeApi,
+        this.contentCreationService,
+        this.contentDownloadService
+      )
       this.checkConfigDirectories()
-      await bootstrapHttpApi(this.config, this.logging, this.dynamodbService, this.queryNodeApi, this.youtubeApi)
-      this.logger.verbose('Starting the Youtube-Synch service', { config: this.hideSecrets(this.config) })
-      await this.youtubePollingService.start()
-      await this.contentDownloadService.start()
-      await this.contentCreationService.start()
-      await this.contentUploadService.start()
+      await this.startSync()
     } catch (err) {
       this.logger.error('Youtube-Synch service initialization failed!', { err })
       process.exit(-1)

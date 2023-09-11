@@ -1,6 +1,6 @@
 {
   "name": "youtube-sync",
-  "version": "1.5.0",
+  "version": "2.1.0",
   "license": "MIT",
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
@@ -116,7 +116,7 @@
     "inquirer": "^8.1.2",
     "inquirer-date-prompt": "^2.0.0",
     "iso8601-duration": "^2.1.1",
-    "json-schema-to-typescript": "^10.1.4",
+    "json-schema-to-typescript": "^13.0.2",
     "lodash": "^4.17.21",
     "moment-timezone": "^0.5.43",
     "multihashes": "^4.0.3",
@@ -139,11 +139,11 @@
     "ytpl": "^2.3.0"
   },
   "engines": {
-    "node": ">=14.0.0",
-    "yarn": "^1.22.15"
+    "node": ">=18.6.0",
+    "yarn": "^1.22.19"
   },
   "volta": {
-    "node": "14.18.0",
-    "yarn": "1.22.15"
+    "node": "18.6.0",
+    "yarn": "1.22.19"
   }
 }

@@ -5,7 +5,7 @@ import { AnyItem } from 'dynamoose/dist/Item'
 import { Query, QueryResponse, Scan, ScanResponse } from 'dynamoose/dist/ItemRetriever'
 import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
-import { ResourcePrefix, VideoState, YtVideo, videoStates } from '../types/youtube'
+import { ResourcePrefix, VideoState, YtChannel, YtVideo, videoStates } from '../types/youtube'
 
 function videoRepository(tablePrefix: ResourcePrefix) {
   const videoSchema = new dynamoose.Schema(
@@ -78,9 +78,6 @@ function videoRepository(tablePrefix: ResourcePrefix) {
 
       // Video's container
       container: String,
-
-      // Indicates if the video is an upcoming/active live broadcast. else it's "none"
-      liveBroadcastContent: String,
 
       // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
       joystreamVideo: {
@@ -254,6 +251,16 @@ export class VideosService {
 
   async getVideosPendingOnchainCreation(): Promise<YtVideo[]> {
     return [...(await this.getVideosInState('VideoCreationFailed')), ...(await this.getVideosInState('New'))]
+  }
+
+  async getHistoricalUnsyncedVideosOfChannel(channel: YtChannel): Promise<YtVideo[]> {
+    const videos = await this.videosRepository.query({ channelId: channel.id }, (q) =>
+      q.using('channelId-publishedAt-index')
+    )
+
+    return videos.filter(
+      (v) => new Date(v.publishedAt) < channel.createdAt && (v.state === 'New' || v.state === 'VideoCreationFailed')
+    )
   }
 
   /**

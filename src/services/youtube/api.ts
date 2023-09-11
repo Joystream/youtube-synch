@@ -13,11 +13,11 @@ import path from 'path'
 import pkgDir from 'pkg-dir'
 import { promisify } from 'util'
 import ytdl from 'youtube-dl-exec'
+import { StatsRepository } from '../../repository'
 import { ReadonlyConfig, WithRequired, formattedJSON } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
-import { YtChannel, YtUser, YtVideo } from '../../types/youtube'
+import { YtChannel, YtDlpFlatPlaylistOutput, YtUser, YtVideo } from '../../types/youtube'
 
-import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
 import Schema$Video = youtube_v3.Schema$Video
 import Schema$Channel = youtube_v3.Schema$Channel
 
@@ -30,18 +30,61 @@ export class YtDlpClient {
     this.ytdlpPath = `${pkgDir.sync(__dirname)}/node_modules/youtube-dl-exec/bin/yt-dlp`
   }
 
-  async getAllVideosIds(channel: YtChannel): Promise<string[]> {
-    try {
-      const { stdout } = await this.exec(
-        `${this.ytdlpPath} --flat-playlist --get-id https://www.youtube.com/playlist?list=${channel.uploadsPlaylistId}`
-      )
-
-      // Each line of stdout is a video ID
-      const videoIDs = stdout.split('\n').filter((id: unknown) => id) // Remove any empty lines
-      return videoIDs
-    } catch (err) {
-      throw err
+  async getVideosIds(
+    channel: YtChannel,
+    limit?: number,
+    order?: 'first' | 'last',
+    videoType: ('videos' | 'shorts' | 'streams')[] = ['videos', 'shorts'] // Excluding the livestreams from syncing
+  ): Promise<YtDlpFlatPlaylistOutput> {
+    if (limit === undefined && order !== undefined) {
+      throw new Error('Order should only be provided if limit is provided')
     }
+
+    let limitOption = ''
+    if (limit) {
+      limitOption = !order || order === 'first' ? `-I :${limit}` : `-I -${limit}:-1`
+    }
+
+    const allVideos = await Promise.all(
+      videoType.map(async (type) => {
+        try {
+          const { stdout } = await this.exec(
+            `${this.ytdlpPath} --extractor-args "youtubetab:approximate_date" -J --flat-playlist ${limitOption} https://www.youtube.com/channel/${channel.id}/${type}`,
+            { maxBuffer: Number.MAX_SAFE_INTEGER }
+          )
+
+          const videos: YtDlpFlatPlaylistOutput = []
+          JSON.parse(stdout).entries.forEach((category: any) => {
+            if (category.entries) {
+              category.entries.forEach((video: any) => {
+                videos.push({ id: video.id, publishedAt: new Date(video.timestamp * 1000) /** Convert UNIX to date */ })
+              })
+            } else {
+              videos.push({
+                id: category.id,
+                publishedAt: new Date(category.timestamp * 1000) /** Convert UNIX to date */,
+              })
+            }
+          })
+
+          return videos
+        } catch (err) {
+          console.log(`YtDlpClient error: ${err}`)
+          return []
+        }
+      })
+    )
+
+    // Flatten all videos and then sort based on the `order` parameter
+    const flattenedAndSortedVideos = allVideos.flat().sort((a, b) => {
+      if (order === 'last') {
+        return a.publishedAt.getTime() - b.publishedAt.getTime() // Oldest first
+      } else {
+        // Default to 'first' if order is not provided
+        return b.publishedAt.getTime() - a.publishedAt.getTime() // Most recent first
+      }
+    })
+    return limit ? flattenedAndSortedVideos.slice(0, limit) : flattenedAndSortedVideos
   }
 }
 
@@ -52,7 +95,6 @@ export interface IYoutubeApi {
     user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>
   ): Promise<{ channel: YtChannel; errors: YoutubeApiError[] }>
   getVideos(channel: YtChannel, ids: string[]): Promise<YtVideo[]>
-  getAllVideos(channel: YtChannel): Promise<YtVideo[]>
   downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl>
   getCreatorOnboardingRequirements(): ReadonlyConfig['creatorOnboardingRequirements']
 }
@@ -64,9 +106,11 @@ export interface IQuotaMonitoringClient {
 
 class YoutubeClient implements IYoutubeApi {
   private config: ReadonlyConfig
+  private ytdlpClient: YtDlpClient
 
   constructor(config: ReadonlyConfig) {
     this.config = config
+    this.ytdlpClient = new YtDlpClient()
   }
 
   getCreatorOnboardingRequirements() {
@@ -191,7 +235,9 @@ class YoutubeClient implements IYoutubeApi {
     videoCreationTimeCutoff.setHours(videoCreationTimeCutoff.getHours() - minimumVideoAgeHours)
 
     // filter all videos that are older than MINIMUM_VIDEO_AGE_HOURS
-    const videos = (await this.getAllVideos(channel)).filter((v) => new Date(v.publishedAt) < videoCreationTimeCutoff)
+    const videos = (await this.ytdlpClient.getVideosIds(channel, minimumVideoCount, 'last')).filter(
+      (v) => new Date(v.publishedAt) < videoCreationTimeCutoff
+    )
     if (videos.length < minimumVideoCount) {
       errors.push(
         new YoutubeApiError(
@@ -235,15 +281,6 @@ class YoutubeClient implements IYoutubeApi {
     }
   }
 
-  async getAllVideos(channel: YtChannel) {
-    const yt = this.getYoutube(channel.userAccessToken, channel.userRefreshToken)
-    try {
-      return this.iterateAllVideos(yt, channel)
-    } catch (error) {
-      throw new Error(`Failed to fetch videos for channel ${channel.title}. Error: ${error}`)
-    }
-  }
-
   async downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
     const response = await ytdl(videoUrl, {
       noWarnings: true,
@@ -267,7 +304,15 @@ class YoutubeClient implements IYoutubeApi {
             await youtube.videos
               .list({
                 id: idsChunk,
-                part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status', 'statistics'],
+                part: [
+                  'id',
+                  'status',
+                  'snippet',
+                  'statistics',
+                  'fileDetails',
+                  'contentDetails',
+                  'liveStreamingDetails',
+                ],
               })
               .catch((err) => {
                 if (err instanceof FetchError && err.code === 'ENOTFOUND') {
@@ -281,51 +326,6 @@ class YoutubeClient implements IYoutubeApi {
       const page = this.mapVideos(videosPage, channel)
       videos = [...videos, ...page]
     }
-    return videos
-  }
-
-  private async iterateAllVideos(youtube: youtube_v3.Youtube, channel: YtChannel, limit?: number) {
-    let videos: YtVideo[] = []
-    let nextPageToken: string | undefined
-
-    do {
-      const nextPage = await youtube.playlistItems
-        .list({
-          part: ['contentDetails', 'snippet', 'id', 'status'],
-          playlistId: channel.uploadsPlaylistId,
-          maxResults: 50,
-          pageToken: nextPageToken,
-        })
-        .catch((err) => {
-          if (err instanceof FetchError && err.code === 'ENOTFOUND') {
-            throw new YoutubeApiError(ExitCodes.YoutubeApi.YOUTUBE_API_NOT_CONNECTED, err.message)
-          }
-          throw err
-        })
-      nextPageToken = nextPage.data.nextPageToken ?? ''
-
-      // Filter `public` videos as only those would be synced
-      const videosPage = nextPage.data.items?.filter((v) => v.status?.privacyStatus === 'public') ?? []
-
-      const videosDetailsPage = videosPage.length
-        ? (
-            await youtube.videos
-              .list({
-                id: videosPage?.map((v) => v.snippet?.resourceId?.videoId ?? ``),
-                part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status', 'statistics'],
-              })
-              .catch((err) => {
-                if (err instanceof FetchError && err.code === 'ENOTFOUND') {
-                  throw new YoutubeApiError(ExitCodes.YoutubeApi.YOUTUBE_API_NOT_CONNECTED, err.message)
-                }
-                throw err
-              })
-          ).data?.items ?? []
-        : []
-
-      const page = this.mapAllVideos(videosPage, videosDetailsPage, channel)
-      videos = [...videos, ...page]
-    } while (nextPageToken && (limit === undefined || videos.length < limit))
     return videos
   }
 
@@ -352,12 +352,14 @@ class YoutubeClient implements IYoutubeApi {
             videoCount: parseInt(channel.statistics?.videoCount ?? '0'),
             commentCount: parseInt(channel.statistics?.commentCount ?? '0'),
           },
+          historicalVideoSyncedSize: 0,
           bannerImageUrl: channel.brandingSettings?.image?.bannerExternalUrl,
           uploadsPlaylistId: channel.contentDetails?.relatedPlaylists?.uploads,
           language: channel.snippet?.defaultLanguage,
-          performUnauthorizedSync: false,
           publishedAt: channel.snippet?.publishedAt,
-          shouldBeIngested: true,
+          performUnauthorizedSync: false,
+          shouldBeIngested: false,
+          allowOperatorIngestion: false,
           yppStatus: 'Unverified',
           createdAt: new Date(),
           lastActedAt: new Date(),
@@ -400,45 +402,13 @@ class YoutubeClient implements IYoutubeApi {
             }
         )
         // filter out videos that are not public, processed, have live-stream or age-restriction, since those can't be synced yet
-        .filter((v) => v.uploadStatus === 'processed' && v.liveBroadcastContent === 'none' && v.ytRating === undefined)
-    )
-  }
-
-  private mapAllVideos(videos: Schema$PlaylistItem[], videosDetails: Schema$Video[], channel: YtChannel): YtVideo[] {
-    return (
-      videos
-        .map(
-          (video, i) =>
-            <YtVideo>{
-              id: video.snippet?.resourceId?.videoId,
-              description: video.snippet?.description,
-              title: video.snippet?.title,
-              channelId: video.snippet?.channelId,
-              thumbnails: {
-                high: video.snippet?.thumbnails?.high?.url,
-                medium: video.snippet?.thumbnails?.medium?.url,
-                standard: video.snippet?.thumbnails?.standard?.url,
-                default: video.snippet?.thumbnails?.default?.url,
-              },
-              url: `https://youtube.com/watch?v=${video.snippet?.resourceId?.videoId}`,
-              publishedAt: video.contentDetails?.videoPublishedAt,
-              createdAt: new Date(),
-              category: channel.videoCategoryId,
-              languageIso: channel.joystreamChannelLanguageIso,
-              joystreamChannelId: channel.joystreamChannelId,
-              privacyStatus: video.status?.privacyStatus,
-              ytRating: videosDetails[i].contentDetails?.contentRating?.ytRating,
-              liveBroadcastContent: videosDetails[i].snippet?.liveBroadcastContent,
-              license: videosDetails[i].status?.license,
-              duration: toSeconds(parse(videosDetails[i].contentDetails?.duration ?? 'PT0S')),
-              container: videosDetails[i].fileDetails?.container,
-              uploadStatus: videosDetails[i].status?.uploadStatus,
-              viewCount: parseInt(videosDetails[i].statistics?.viewCount ?? '0'),
-              state: 'New',
-            }
+        .filter(
+          (v) =>
+            v.uploadStatus === 'processed' &&
+            v.privacyStatus === 'public' &&
+            v.liveBroadcastContent === 'none' &&
+            v.ytRating === undefined
         )
-        // filter out videos that are not public, processed, have live-stream or age-restriction, since those can't be synced yet
-        .filter((v) => v.uploadStatus === 'processed' && v.liveBroadcastContent === 'none' && v.ytRating === undefined)
     )
   }
 }
@@ -448,7 +418,7 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
   private googleCloudProjectId: string
   private DEFAULT_MAX_ALLOWED_QUOTA_USAGE = 95 // 95%
 
-  constructor(private decorated: IYoutubeApi, private config: ReadonlyConfig) {
+  constructor(private decorated: IYoutubeApi, private config: ReadonlyConfig, private statsRepo: StatsRepository) {
     // Use the client id to get the google cloud project id
     this.googleCloudProjectId = this.config.youtube.clientId.split('-')[0]
 
@@ -545,6 +515,10 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
   async getVerifiedChannel(user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>) {
     // These is no api quota check for this operation, as we allow untracked access to channel verification/signup endpoint.
     const verifiedChannel = await this.decorated.getVerifiedChannel(user)
+
+    // increase used quota count by 1 because only one page is returned
+    await this.increaseUsedQuota({ signupQuotaIncrement: 1 })
+
     return verifiedChannel
   }
 
@@ -559,6 +533,10 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
 
     // get channels from api
     const channels = await this.decorated.getChannel(user)
+
+    // increase used quota count by 1 because only one page is returned
+    await this.increaseUsedQuota({ syncQuotaIncrement: 1 })
+
     return channels
   }
 
@@ -573,25 +551,26 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
 
     // get videos from api
     const videos = await this.decorated.getVideos(channel, ids)
-    return videos
-  }
 
-  async getAllVideos(channel: YtChannel) {
-    // ensure have some left api quota
-    if (!(await this.canCallYoutube())) {
-      throw new YoutubeApiError(
-        ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED,
-        'No more quota left. Please try again later.'
-      )
-    }
+    // increase used quota count, 1 api call is being used per page of 50 videos
+    await this.increaseUsedQuota({ syncQuotaIncrement: Math.ceil(videos.length / 50) })
 
-    // get videos from api
-    const videos = await this.decorated.getAllVideos(channel)
     return videos
   }
 
   downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
     return this.decorated.downloadVideo(videoUrl, outPath)
+  }
+
+  private async increaseUsedQuota({ syncQuotaIncrement = 0, signupQuotaIncrement = 0 }) {
+    // Quota resets at Pacific Time, and pst is 8 hours behind UTC
+    const stats = await this.statsRepo.getOrSetTodaysStats()
+    const statsModel = await this.statsRepo.getModel()
+
+    await statsModel.update(
+      { partition: 'stats', date: stats.date },
+      { $ADD: { syncQuotaUsed: syncQuotaIncrement, signupQuotaUsed: signupQuotaIncrement } }
+    )
   }
 
   private async canCallYoutube(): Promise<boolean> {
@@ -608,7 +587,7 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
 }
 
 export const YoutubeApi = {
-  create(config: ReadonlyConfig): IYoutubeApi {
-    return new QuotaMonitoringClient(new YoutubeClient(config), config)
+  create(config: ReadonlyConfig, statsRepo: StatsRepository): IYoutubeApi {
+    return new QuotaMonitoringClient(new YoutubeClient(config), config, statsRepo)
   },
 }

@@ -24,6 +24,12 @@ export class ThumbnailsDto {
   @ApiProperty() standard: string
 }
 
+export class StatusDto {
+  @ApiProperty() version: string
+  @ApiProperty() syncStatus: 'enabled' | 'disabled'
+  @ApiProperty() syncBacklog: number
+}
+
 export class CollaboratorStatusDto {
   @ApiProperty() memberId: string
   @ApiProperty() controllerAccount: string
@@ -48,18 +54,18 @@ export class ChannelDto {
   @ApiProperty() youtubeChannelId: string
   @ApiProperty() title: string
   @ApiProperty() description: string
-  @ApiProperty() aggregatedStats: number
   @ApiProperty() shouldBeIngested: boolean
   @ApiProperty() yppStatus: string
   @ApiProperty() joystreamChannelId: number
   @ApiProperty() referrerChannelId?: number
+  @ApiProperty() referredChannels: ReferredChannelDto[]
   @ApiProperty() videoCategoryId: string
   @ApiProperty() language: string
   @ApiProperty() thumbnails: ThumbnailsDto
   @ApiProperty() subscribersCount: number
   @ApiProperty() createdAt: Date
 
-  constructor(channel: YtChannel) {
+  constructor(channel: YtChannel, referredChannels?: YtChannel[]) {
     this.youtubeChannelId = channel.id
     this.title = channel.title
     this.description = channel.description
@@ -70,9 +76,25 @@ export class ChannelDto {
     this.language = channel.language
     this.shouldBeIngested = channel.shouldBeIngested
     this.yppStatus = channel.yppStatus
-    this.aggregatedStats = channel.aggregatedStats
     this.thumbnails = channel.thumbnails
     this.createdAt = new Date(channel.createdAt)
+    this.referredChannels = referredChannels?.map((c) => new ReferredChannelDto(c)) || []
+  }
+}
+
+class ReferredChannelDto {
+  @ApiProperty() joystreamChannelId: number
+  @ApiProperty() title: string
+  @ApiProperty() subscribersCount: number
+  @ApiProperty() yppStatus: string
+  @ApiProperty() createdAt: Date
+
+  constructor(referrerChannel: YtChannel) {
+    this.joystreamChannelId = referrerChannel.joystreamChannelId
+    this.title = referrerChannel.title
+    this.subscribersCount = referrerChannel.statistics.subscriberCount
+    this.yppStatus = referrerChannel.yppStatus
+    this.createdAt = new Date(referrerChannel.createdAt)
   }
 }
 
@@ -170,7 +192,7 @@ export class CreateMembershipRequest {
   @IsString() @ApiProperty({ required: true }) handle: string
 
   // Membership avatar URL
-  @IsUrl({ require_tld: false }) @ApiProperty({ required: true }) avatar: string
+  @IsOptional() @IsUrl({ require_tld: false }) @ApiProperty({ required: true }) avatar: string
 
   // `about` information to associate with new Membership
   @ApiProperty() about: string

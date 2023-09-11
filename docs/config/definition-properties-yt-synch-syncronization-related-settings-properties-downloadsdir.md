@@ -1,0 +1,3 @@
+## downloadsDir Type
+
+`string`

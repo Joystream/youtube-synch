@@ -26,7 +26,6 @@ import { Thumbnails, YtVideo } from '../../types/youtube'
 import { AppActionSignatureInput, computeFileHashAndSize, signAppActionCommitmentForVideo } from '../../utils/hasher'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
-import { IYoutubeApi } from '../youtube/api'
 import { RuntimeApi } from './api'
 import { asValidatedMetadata, metadataToBytes } from './serialization'
 import { AccountsUtil } from './signer'
@@ -44,16 +43,14 @@ export class JoystreamClient {
   private runtimeApi: RuntimeApi
   private accounts: AccountsUtil
   private qnApi: QueryNodeApi
-  private youtubeApi: IYoutubeApi
   private config: ReadonlyConfig
   private logger: Logger
 
-  constructor(config: ReadonlyConfig, youtubeApi: IYoutubeApi, qnApi: QueryNodeApi, logging: LoggingService) {
+  constructor(config: ReadonlyConfig, runtimeApi: RuntimeApi, qnApi: QueryNodeApi, logging: LoggingService) {
     this.logger = logging.createLogger('JoystreamClient')
     this.qnApi = qnApi
     this.config = config
-    this.youtubeApi = youtubeApi
-    this.runtimeApi = new RuntimeApi(this.config.endpoints.joystreamNodeWs, logging)
+    this.runtimeApi = runtimeApi
     this.accounts = new AccountsUtil(this.config.joystream)
   }
 
@@ -100,13 +97,13 @@ export class JoystreamClient {
     return isCollaboratorSet
   }
 
-  async createVideo(video: YtVideo, videoFilePath: string): Promise<[YtVideo, BN]> {
+  async createVideo(video: YtVideo, videoFilePath: string): Promise<[YtVideo, BN, number]> {
     const collaborator = await this.qnApi.memberById(this.collaboratorId)
     if (!collaborator) {
       throw new Error(`Joystream member with id ${this.collaboratorId} not found`)
     }
     // Video metadata & assets
-    const { meta: rawAction, assets } = await this.prepareVideoInput(this.runtimeApi, video, videoFilePath)
+    const { meta: rawAction, assets, size } = await this.prepareVideoInput(this.runtimeApi, video, videoFilePath)
 
     const creatorId = video.joystreamChannelId.toString()
     const nonce = (await this.qnApi.getChannelById(creatorId || ''))?.totalVideosCreated || 0
@@ -137,6 +134,7 @@ export class JoystreamClient {
         },
       },
       createdVideo.createdInBlock,
+      size,
     ]
   }
 
@@ -163,7 +161,7 @@ export class JoystreamClient {
     api: RuntimeApi,
     video: YtVideo,
     filePath: string
-  ): Promise<{ meta: Bytes; assets: Option<PalletContentStorageAssetsRecord> }> {
+  ): Promise<{ meta: Bytes; assets: Option<PalletContentStorageAssetsRecord>; size: number }> {
     const inputAssets: VideoInputAssets = {}
     const videoHashStream = fs.createReadStream(filePath)
     const { hash: videoHash, size: videoSize } = await computeFileHashAndSize(videoHashStream)
@@ -212,14 +210,21 @@ export class JoystreamClient {
 
     const meta = metadataToBytes(ContentMetadata, { videoMetadata })
 
-    return { meta, assets }
+    return { meta, assets, size: videoSize + thumbnailPhotoSize }
   }
 }
 
 export async function getThumbnailAsset(thumbnails: Thumbnails) {
-  // * We are using `medium` thumbnail because it has correct aspect ratio for Atlas (16/9)
-  const response = await axios.get<Readable>(thumbnails.medium, { responseType: 'stream' })
-  return response.data
+  try {
+    // * We are using `medium` thumbnail because it has correct aspect ratio for Atlas (16/9)
+    const response = await axios.get<Readable>(thumbnails.medium, { responseType: 'stream' })
+    return response.data
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw error.toJSON()
+    }
+    throw error
+  }
 }
 
 async function prepareAssetsForExtrinsic(
@@ -290,7 +295,7 @@ function getVideoFFProbeMetadata(filePath: string): Promise<VideoFFProbeMetadata
           duration: videoStream.duration !== undefined ? Math.ceil(Number(videoStream.duration)) || 0 : undefined,
         })
       } else {
-        reject(new Error('No video stream found in file'))
+        reject(new Error('NoVideoStreamInFile'))
       }
     })
   })

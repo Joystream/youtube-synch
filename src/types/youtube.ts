@@ -65,17 +65,24 @@ export class YtChannel {
     videoCount: number
   }
 
-  aggregatedStats: number
+  // total size of historical videos synced (videos that were published on Youtube before YPP signup)
+  historicalVideoSyncedSize: number
 
   // Channel owner's access token
   userAccessToken: string
 
   // Channel owner's refresh token
   userRefreshToken: string
+
+  // Channel's playlist ID
   uploadsPlaylistId: string
 
   // Should this channel be ingested for automated Youtube/Joystream syncing?
   shouldBeIngested: boolean
+
+  // Should this channel be ingested for automated Youtube/Joystream syncing? (operator managed flag)
+  // Both `shouldBeIngested` and `allowOperatorIngestion` should be set for sync to work.
+  allowOperatorIngestion: boolean
 
   // Should this channel be ingested for automated Youtube/Joystream syncing without explicit authorization granted to app?
   performUnauthorizedSync: boolean
@@ -256,6 +263,11 @@ export type VideoCreationTask = YtVideo & {
   priorityScore: number
   filePath: string
 }
+
+export type YtDlpFlatPlaylistOutput = {
+  id: string
+  publishedAt: Date
+}[]
 
 export type FaucetRegisterMembershipParams = {
   account: string
