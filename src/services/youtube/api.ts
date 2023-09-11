@@ -33,41 +33,59 @@ export class YtDlpClient {
   async getVideosIds(
     channel: YtChannel,
     limit?: number,
-    order: 'first' | 'last' = 'first'
+    order?: 'first' | 'last',
+    videoType: ('videos' | 'shorts' | 'streams')[] = ['videos', 'shorts'] // Excluding the livestreams from syncing
   ): Promise<YtDlpFlatPlaylistOutput> {
-    try {
-      if (limit === undefined && order !== undefined) {
-        throw new Error('Order should only be provided if limit is provided')
-      }
+    if (limit === undefined && order !== undefined) {
+      throw new Error('Order should only be provided if limit is provided')
+    }
 
-      let limitOption = ''
-      if (limit) {
-        limitOption = order === 'first' ? `-I :${limit}` : `-I -${limit}:-1`
-      }
+    let limitOption = ''
+    if (limit) {
+      limitOption = !order || order === 'first' ? `-I :${limit}` : `-I -${limit}:-1`
+    }
 
-      const { stdout } = await this.exec(
-        `${this.ytdlpPath} --extractor-args "youtubetab:approximate_date" -J --flat-playlist ${limitOption} https://www.youtube.com/playlist?list=${channel.uploadsPlaylistId}`,
-        { maxBuffer: Number.MAX_SAFE_INTEGER }
-      )
+    const allVideos = await Promise.all(
+      videoType.map(async (type) => {
+        try {
+          const { stdout } = await this.exec(
+            `${this.ytdlpPath} --extractor-args "youtubetab:approximate_date" -J --flat-playlist ${limitOption} https://www.youtube.com/channel/${channel.id}/${type}`,
+            { maxBuffer: Number.MAX_SAFE_INTEGER }
+          )
 
-      const videos: YtDlpFlatPlaylistOutput = []
-      JSON.parse(stdout).entries.forEach((category: any) => {
-        if (category.entries) {
-          category.entries.forEach((video: any) => {
-            videos.push({ id: video.id, publishedAt: new Date(video.timestamp * 1000) /** Convert UNIX to date */ })
+          const videos: YtDlpFlatPlaylistOutput = []
+          JSON.parse(stdout).entries.forEach((category: any) => {
+            if (category.entries) {
+              category.entries.forEach((video: any) => {
+                videos.push({ id: video.id, publishedAt: new Date(video.timestamp * 1000) /** Convert UNIX to date */ })
+              })
+            } else {
+              videos.push({
+                id: category.id,
+                publishedAt: new Date(category.timestamp * 1000) /** Convert UNIX to date */,
+              })
+            }
           })
-        } else {
-          videos.push({ id: category.id, publishedAt: new Date(category.timestamp * 1000) /** Convert UNIX to date */ })
+
+          return videos
+        } catch (err) {
+          console.log(`YtDlpClient error: ${err}`)
+          return []
         }
       })
+    )
 
-      return videos
-    } catch (err) {
-      throw err
-    }
+    // Flatten all videos and then sort based on the `order` parameter
+    const flattenedAndSortedVideos = allVideos.flat().sort((a, b) => {
+      if (order === 'last') {
+        return a.publishedAt.getTime() - b.publishedAt.getTime() // Oldest first
+      } else {
+        // Default to 'first' if order is not provided
+        return b.publishedAt.getTime() - a.publishedAt.getTime() // Most recent first
+      }
+    })
+    return limit ? flattenedAndSortedVideos.slice(0, limit) : flattenedAndSortedVideos
   }
-
-  async a() {}
 }
 
 export interface IYoutubeApi {
@@ -286,7 +304,15 @@ class YoutubeClient implements IYoutubeApi {
             await youtube.videos
               .list({
                 id: idsChunk,
-                part: ['contentDetails', 'fileDetails', 'snippet', 'id', 'status', 'statistics'],
+                part: [
+                  'id',
+                  'status',
+                  'snippet',
+                  'statistics',
+                  'fileDetails',
+                  'contentDetails',
+                  'liveStreamingDetails',
+                ],
               })
               .catch((err) => {
                 if (err instanceof FetchError && err.code === 'ENOTFOUND') {
@@ -366,7 +392,7 @@ class YoutubeClient implements IYoutubeApi {
               joystreamChannelId: channel.joystreamChannelId,
               privacyStatus: video.status?.privacyStatus,
               ytRating: video.contentDetails?.contentRating?.ytRating,
-              liveStreamingDetails: video.liveStreamingDetails,
+              liveBroadcastContent: video.snippet?.liveBroadcastContent,
               license: video.status?.license,
               duration: toSeconds(parse(video.contentDetails?.duration ?? 'PT0S')),
               container: video.fileDetails?.container,
@@ -377,7 +403,11 @@ class YoutubeClient implements IYoutubeApi {
         )
         // filter out videos that are not public, processed, have live-stream or age-restriction, since those can't be synced yet
         .filter(
-          (v) => v.uploadStatus === 'processed' && v.liveStreamingDetails === undefined && v.ytRating === undefined
+          (v) =>
+            v.uploadStatus === 'processed' &&
+            v.privacyStatus === 'public' &&
+            v.liveBroadcastContent === 'none' &&
+            v.ytRating === undefined
         )
     )
   }

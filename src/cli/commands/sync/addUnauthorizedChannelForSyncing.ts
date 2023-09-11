@@ -195,7 +195,7 @@ export default class AddUnauthorizedChannelForSyncing extends RuntimeApiCommandB
         privacyStatus: 'public',
         uploadStatus: 'processed',
         joystreamChannelId: c.joystreamChannelId,
-        liveStreamingDetails: video.isLive || undefined,
+        liveBroadcastContent: video.isLive ? 'live' : 'none',
         state: 'New',
         viewCount: 0,
       } as YtVideo)

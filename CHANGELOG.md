@@ -1,3 +1,8 @@
+### 2.1.0
+
+- return syncBacklog field in `GET /status` endpoint
+- **FIX**: Adds fix for premiere videos not syncing bug
+
 ### 2.0.0
 
 - Updates minimum required NodeJS version to `v18`.

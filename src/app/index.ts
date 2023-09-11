@@ -6,6 +6,7 @@ import { DynamodbService } from '../repository'
 import { bootstrapHttpApi } from '../services/httpApi/main'
 import { LoggingService } from '../services/logging'
 import { QueryNodeApi } from '../services/query-node/api'
+import { RuntimeApi } from '../services/runtime/api'
 import { JoystreamClient } from '../services/runtime/client'
 import { ContentCreationService } from '../services/syncProcessing/ContentCreationService'
 import { ContentDownloadService } from '../services/syncProcessing/ContentDownloadService'
@@ -21,6 +22,7 @@ export class Service {
   private youtubeApi: IYoutubeApi
   private queryNodeApi: QueryNodeApi
   private dynamodbService: DynamodbService
+  private runtimeApi: RuntimeApi
   private joystreamClient: JoystreamClient
   private youtubePollingService: YoutubePollingService
   private contentDownloadService: ContentDownloadService
@@ -35,7 +37,8 @@ export class Service {
     this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
     this.dynamodbService = new DynamodbService(this.config.aws)
     this.youtubeApi = YoutubeApi.create(this.config, this.dynamodbService.repo.stats)
-    this.joystreamClient = new JoystreamClient(config, this.youtubeApi, this.queryNodeApi, this.logging)
+    this.runtimeApi = new RuntimeApi(config.endpoints.joystreamNodeWs, this.logging)
+    this.joystreamClient = new JoystreamClient(config, this.runtimeApi, this.queryNodeApi, this.logging)
 
     if (config.sync.enable) {
       this.youtubePollingService = new YoutubePollingService(
@@ -131,7 +134,16 @@ export class Service {
 
   public async start(): Promise<void> {
     try {
-      await bootstrapHttpApi(this.config, this.logging, this.dynamodbService, this.queryNodeApi, this.youtubeApi)
+      await bootstrapHttpApi(
+        this.config,
+        this.logging,
+        this.dynamodbService,
+        this.runtimeApi,
+        this.queryNodeApi,
+        this.youtubeApi,
+        this.contentCreationService,
+        this.contentDownloadService
+      )
       this.checkConfigDirectories()
       await this.startSync()
     } catch (err) {

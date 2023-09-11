@@ -22,7 +22,15 @@ export class ContentCreationService {
   private contentDownloadService: ContentDownloadService
   private queue: PriorityQueue<VideoCreationTask, 'sequentialProcessor'>
   private lastVideoCreationBlockByChannelId: Map<number, BN> // JsChannelId -> Last video creation block number
-  private activeTaskId: string // video Id of the currently running video creation task
+
+  get totalTasks(): number {
+    return this.queue.stats.totalTasks
+  }
+
+  private get activeTaskId(): string | undefined {
+    // Since `ContentCreationService` is using sequentialProcessor, so there will be only one active task at max
+    return [...this.queue.stats.activeTaskIds.values()][0]
+  }
 
   constructor(
     logging: LoggingService,
@@ -110,8 +118,13 @@ export class ContentCreationService {
         const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / totalVideos
 
         for (const v of unsyncedVideos) {
+          let sudoPriority = this.DEFAULT_SUDO_PRIORITY
+          if (new Date(v.publishedAt) > channel.createdAt && v.duration > 300) {
+            sudoPriority += 50
+          }
+
           const rank = this.queue.calculateVideoRank(
-            this.DEFAULT_SUDO_PRIORITY,
+            sudoPriority,
             percentageOfCreatorBacklogNotSynched,
             Date.parse(v.publishedAt)
           )
@@ -127,9 +140,6 @@ export class ContentCreationService {
   }
 
   private async processCreateVideoTask(video: VideoCreationTask, cb: (error?: any, result?: null) => void) {
-    // set `activeTaskId`
-    this.activeTaskId = video.id
-
     try {
       // * Pre-validation
       // If the channel opted out of YPP program, then skip creating the video
@@ -180,17 +190,19 @@ export class ContentCreationService {
       const channel = await this.dynamodbService.channels.getById(video.channelId)
       const isHistoricalVideo = new Date(video.publishedAt) < channel.createdAt
       if (isHistoricalVideo) {
+        const historicalVideoSyncedSize = (channel.historicalVideoSyncedSize || 0) + size
         await this.dynamodbService.channels.save({
           ...channel,
-          historicalVideoSyncedSize: (channel.historicalVideoSyncedSize || 0) + size,
+          historicalVideoSyncedSize,
         })
       }
     } catch (err) {
       this.logger.error(`Got error processing video`, { videoId: video.id, err })
       await this.dynamodbService.videos.updateState(video, 'VideoCreationFailed')
+      if (err instanceof Error && err.message === 'NoVideoStreamInFile') {
+        await this.contentDownloadService.removeVideoFile(video.id)
+      }
     } finally {
-      // unset `activeTaskId` set
-      this.activeTaskId = ''
       // Signal that the task is done
       cb(null, null)
     }

@@ -26,7 +26,6 @@ import { Thumbnails, YtVideo } from '../../types/youtube'
 import { AppActionSignatureInput, computeFileHashAndSize, signAppActionCommitmentForVideo } from '../../utils/hasher'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
-import { IYoutubeApi } from '../youtube/api'
 import { RuntimeApi } from './api'
 import { asValidatedMetadata, metadataToBytes } from './serialization'
 import { AccountsUtil } from './signer'
@@ -44,16 +43,14 @@ export class JoystreamClient {
   private runtimeApi: RuntimeApi
   private accounts: AccountsUtil
   private qnApi: QueryNodeApi
-  private youtubeApi: IYoutubeApi
   private config: ReadonlyConfig
   private logger: Logger
 
-  constructor(config: ReadonlyConfig, youtubeApi: IYoutubeApi, qnApi: QueryNodeApi, logging: LoggingService) {
+  constructor(config: ReadonlyConfig, runtimeApi: RuntimeApi, qnApi: QueryNodeApi, logging: LoggingService) {
     this.logger = logging.createLogger('JoystreamClient')
     this.qnApi = qnApi
     this.config = config
-    this.youtubeApi = youtubeApi
-    this.runtimeApi = new RuntimeApi(this.config.endpoints.joystreamNodeWs, logging)
+    this.runtimeApi = runtimeApi
     this.accounts = new AccountsUtil(this.config.joystream)
   }
 
@@ -298,7 +295,7 @@ function getVideoFFProbeMetadata(filePath: string): Promise<VideoFFProbeMetadata
           duration: videoStream.duration !== undefined ? Math.ceil(Number(videoStream.duration)) || 0 : undefined,
         })
       } else {
-        reject(new Error('No video stream found in file'))
+        reject(new Error('NoVideoStreamInFile'))
       }
     })
   })
