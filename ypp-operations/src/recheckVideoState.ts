@@ -4,14 +4,8 @@ import { getAllContacts, updateYppContact } from './hubspot'
 import { HubspotYPPContact } from './types'
 
 function latestSyncRewardInUsd({ tier, syncedCount }: { tier: number; syncedCount: number }): number {
-  const perSyncedVideoReward =
-    tier === 1
-      ? config('TIER_1_SYNC_REWARD_IN_USD')
-      : tier == 2
-      ? config('TIER_2_SYNC_REWARD_IN_USD')
-      : config('TIER_3_SYNC_REWARD_IN_USD')
-  const maxRewardedVideos =
-    syncedCount < config('MAX_REWARDED_VIDEOS_PER_WEEK') ? syncedCount : config('MAX_REWARDED_VIDEOS_PER_WEEK')
+  const perSyncedVideoReward = tier - 1
+  const maxRewardedVideos = Math.min(syncedCount, config('MAX_REWARDED_VIDEOS_PER_WEEK'))
 
   return perSyncedVideoReward * maxRewardedVideos
 }
@@ -34,7 +28,9 @@ export async function updateHubspotWithCalculatedRewards() {
 
     // If this is the first time we are checking for this channel contact, we should give them the sign up reward
     let sign_up_reward_in_usd =
-      contact.latestDateChecked === null ? config('BASE_SIGNUP_REWARD_IN_USD') * rewardMultiplier : 0
+      contact.latestDateChecked === null || contact.latestDateChecked === ''
+        ? config(`TIER_${contact.tier}_SIGNUP_REWARD_IN_USD`)
+        : 0
     let latest_referral_reward_in_usd = await latestReferrerRewardInUsd(
       contact.gleev_channel_id,
       contact.latestDateChecked || contact.dateSignedUpToYpp

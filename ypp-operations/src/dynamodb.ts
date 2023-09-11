@@ -47,13 +47,19 @@ async function processShard(shardId: string) {
 }
 
 export async function startStreamProcessing() {
-  const stream = await dynamodbstreams.describeStream({ StreamArn: config('AWS_DYNAMO_STREAM_ARN') }).promise()
-  for (const shard of stream?.StreamDescription?.Shards || []) {
-    // Process each shard in asynchronously (avoiding `await`)
-    if (shard.ShardId) {
-      processShard(shard.ShardId)
-    }
+  const channels = await getAllVerifiedChannels()
+  for (const ch of channels) {
+    console.log(ch.email)
+    const contactId = await getYppContactByEmail(ch.email)
+    await addOrUpdateYppContact(ch, contactId)
   }
+  // const stream = await dynamodbstreams.describeStream({ StreamArn: config('AWS_DYNAMO_STREAM_ARN') }).promise()
+  // for (const shard of stream?.StreamDescription?.Shards || []) {
+  //   // Process each shard in asynchronously (avoiding `await`)
+  //   if (shard.ShardId) {
+  //     processShard(shard.ShardId)
+  //   }
+  // }
 }
 
 export async function countVideosSyncedAfter(channelId: string, date: string): Promise<number> {
@@ -102,9 +108,19 @@ export async function latestReferrerRewardInUsd(referrerId: number, date: string
 
   let reward = 0
   for (const ch of referredChannels) {
-    const tier = ch.statistics.subscriberCount < 5000 ? 1 : ch.statistics.subscriberCount < 50000 ? 2 : 3
-    const rewardMultiplier = tier == 1 ? 1 : tier == 2 ? 2.5 : 5
-    reward += config('BASE_REFERRAL_REWARD_IN_USD') * rewardMultiplier
+    const tier =
+      ch.statistics.subscriberCount <= 1_000
+        ? 1
+        : ch.statistics.subscriberCount <= 5_000
+        ? 2
+        : ch.statistics.subscriberCount <= 25_000
+        ? 3
+        : ch.statistics.subscriberCount <= 50_000
+        ? 4
+        : ch.statistics.subscriberCount <= 100_000
+        ? 5
+        : 6
+    reward += config(`TIER_${tier}_REFERRAL_REWARD_IN_USD`)
   }
 
   return reward

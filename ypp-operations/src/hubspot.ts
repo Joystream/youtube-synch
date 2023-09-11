@@ -23,6 +23,9 @@ export async function getYppContactByEmail(email: string): Promise<string | unde
     if (isAxiosError(error) && error.response?.status === 404) {
       console.log(`Contact with email ${email} not found`)
       return
+    } else if (isAxiosError(error) && error.code === 'ECONNRESET') {
+      console.log('Failed to get contact from Hubspot. Retrying...')
+      return getYppContactByEmail(email)
     }
     throw error
   }
@@ -34,7 +37,7 @@ export async function getAllContacts(): Promise<
     email: string
     channelId: string
     latestDateChecked: string
-    tier: number
+    tier: 1 | 2 | 3 | 4 | 5 | 6
     yppRewardStatus: string
     dateSignedUpToYpp: string
     sign_up_reward_in_usd: number
@@ -90,16 +93,22 @@ export async function getAllContacts(): Promise<
           videos_sync_reward_in_usd: parseInt(contact.properties.videos_sync_reward || '0'),
           gleev_channel_id: parseInt(contact.properties.gleev_channel_id || '0'),
           tier:
-            parseInt(contact.properties.total_subscribers) < 5000
+            parseInt(contact.properties.total_subscribers) <= 1_000
               ? 1
-              : parseInt(contact.properties.total_subscribers) < 50000
+              : parseInt(contact.properties.total_subscribers) <= 5_000
               ? 2
-              : 3,
+              : parseInt(contact.properties.total_subscribers) <= 25_000
+              ? 3
+              : parseInt(contact.properties.total_subscribers) <= 50_000
+              ? 4
+              : parseInt(contact.properties.total_subscribers) <= 100_000
+              ? 5
+              : 6,
         }))
       )
       nextPage = Number(response.paging?.next?.after)
     } while (nextPage)
-    return contacts
+    return contacts as any
   } catch (err) {
     console.error(err)
     throw err
@@ -209,7 +218,11 @@ export async function updateYppContact(contactId: string, properties: Partial<Hu
   try {
     await hubspotClient.crm.contacts.basicApi.update(contactId, { properties })
   } catch (err) {
-    console.error(err)
+    if (isAxiosError(err) && err.code === 'ECONNRESET') {
+      console.log('Failed to update contact in Hubspot. Retrying...')
+      return updateYppContact(contactId, properties)
+    }
+    throw err
   }
 }
 
@@ -223,7 +236,10 @@ export async function updateYppContacts(
       await hubspotClient.crm.contacts.batchApi.update({ inputs })
     }
   } catch (err) {
-    console.log('Error: Failed to update contacts in Hubspot', err)
+    if (isAxiosError(err) && err.code === 'ECONNRESET') {
+      console.log('Failed to update contacts in Hubspot. Retrying...')
+      return updateYppContacts(updateInputs)
+    }
     throw err
   }
 }
@@ -233,19 +249,19 @@ export async function createYppContact(properties: Partial<HubspotYPPContact>): 
   try {
     await hubspotClient.crm.contacts.basicApi.create({ properties, associations: [] })
   } catch (err) {
-    console.error(err)
+    if (isAxiosError(err) && err.code === 'ECONNRESET') {
+      console.log('Failed to create contacts in Hubspot. Retrying...')
+      return createYppContact(properties)
+    }
+    throw err
   }
 }
 
 export async function addOrUpdateYppContact(item: YtChannel, contactId?: string): Promise<void> {
-  try {
-    if (contactId) {
-      return await updateYppContact(contactId, mapDynamoItemToContactFields(item))
-    } else {
-      return await createYppContact(mapDynamoItemToContactFields(item))
-    }
-  } catch (error) {
-    console.error(error)
+  if (contactId) {
+    return await updateYppContact(contactId, mapDynamoItemToContactFields(item))
+  } else {
+    return await createYppContact(mapDynamoItemToContactFields(item))
   }
 }
 
