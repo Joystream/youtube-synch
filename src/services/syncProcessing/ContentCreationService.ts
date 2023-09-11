@@ -118,8 +118,13 @@ export class ContentCreationService {
         const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / totalVideos
 
         for (const v of unsyncedVideos) {
+          let sudoPriority = this.DEFAULT_SUDO_PRIORITY
+          if (new Date(v.publishedAt) > channel.createdAt && v.duration > 300) {
+            sudoPriority += 50
+          }
+
           const rank = this.queue.calculateVideoRank(
-            this.DEFAULT_SUDO_PRIORITY,
+            sudoPriority,
             percentageOfCreatorBacklogNotSynched,
             Date.parse(v.publishedAt)
           )
@@ -194,6 +199,9 @@ export class ContentCreationService {
     } catch (err) {
       this.logger.error(`Got error processing video`, { videoId: video.id, err })
       await this.dynamodbService.videos.updateState(video, 'VideoCreationFailed')
+      if (err instanceof Error && err.message === 'NoVideoStreamInFile') {
+        await this.contentDownloadService.removeVideoFile(video.id)
+      }
     } finally {
       // Signal that the task is done
       cb(null, null)
