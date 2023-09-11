@@ -195,8 +195,12 @@ export class ContentDownloadService {
         const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / totalVideos
 
         for (const v of unsyncedVideos) {
+          let sudoPriority = this.DEFAULT_SUDO_PRIORITY
+          if (new Date(v.publishedAt) > channel.createdAt && v.duration > 300) {
+            sudoPriority *= 2
+          }
           const rank = this.downloadQueue.calculateVideoRank(
-            this.DEFAULT_SUDO_PRIORITY,
+            sudoPriority,
             percentageOfCreatorBacklogNotSynched,
             Date.parse(v.publishedAt)
           )
@@ -267,6 +271,16 @@ export class ContentDownloadService {
           } else if (errorMsg.includes('The downloaded file is empty')) {
             await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
             this.logger.error(`The downloaded file is empty. Skipping from syncing...`, {
+              videoId: video.id,
+            })
+          } else if (errorMsg.includes('This video has been removed by the uploader')) {
+            await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
+            this.logger.error(`This video has been removed by the uploader. Skipping from syncing...`, {
+              videoId: video.id,
+            })
+          } else if (errorMsg.includes('This video is private')) {
+            await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
+            this.logger.error(`This video is private. Skipping from syncing...`, {
               videoId: video.id,
             })
           } else {

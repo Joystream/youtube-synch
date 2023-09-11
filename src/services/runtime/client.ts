@@ -295,7 +295,7 @@ function getVideoFFProbeMetadata(filePath: string): Promise<VideoFFProbeMetadata
           duration: videoStream.duration !== undefined ? Math.ceil(Number(videoStream.duration)) || 0 : undefined,
         })
       } else {
-        reject(new Error('No video stream found in file'))
+        reject(new Error('NoVideoStreamInFile'))
       }
     })
   })
