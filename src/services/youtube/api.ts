@@ -235,17 +235,35 @@ class YoutubeClient implements IYoutubeApi {
     videoCreationTimeCutoff.setHours(videoCreationTimeCutoff.getHours() - minimumVideoAgeHours)
 
     // filter all videos that are older than MINIMUM_VIDEO_AGE_HOURS
-    const videos = (await this.ytdlpClient.getVideosIds(channel, minimumVideoCount, 'last')).filter(
+    const oldVideos = (await this.ytdlpClient.getVideosIds(channel, minimumVideoCount, 'last')).filter(
       (v) => new Date(v.publishedAt) < videoCreationTimeCutoff
     )
-    if (videos.length < minimumVideoCount) {
+    if (oldVideos.length < minimumVideoCount) {
       errors.push(
         new YoutubeApiError(
           ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_VIDEOS,
-          `Channel ${channel.id} with ${videos.length} videos does not meet Youtube ` +
+          `Channel ${channel.id} with ${oldVideos.length} videos does not meet Youtube ` +
             `Partner Program requirement of at least ${minimumVideoCount} videos, each ${(
               minimumVideoAgeHours / 720
             ).toPrecision(2)} month old`,
+          channel.statistics.videoCount,
+          minimumVideoCount
+        )
+      )
+    }
+
+    // filter at least one video should be newer than MINIMUM_VIDEO_AGE_HOURS
+    const newVideo = (await this.ytdlpClient.getVideosIds(channel, 1)).filter(
+      (v) => new Date(v.publishedAt) > videoCreationTimeCutoff
+    )
+    if (newVideo.length ) {
+      errors.push(
+        new YoutubeApiError(
+          ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_NEW_VIDEO_REQUIREMENT,
+          `Channel ${channel.id} with ${newVideo.length} videos does not meet Youtube ` +
+            `Partner Program requirement of at least 1 video, newer than ${(minimumVideoAgeHours / 720).toPrecision(
+              2
+            )} month old.`,
           channel.statistics.videoCount,
           minimumVideoCount
         )
