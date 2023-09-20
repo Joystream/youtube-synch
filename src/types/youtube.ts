@@ -96,6 +96,24 @@ export class YtChannel {
 
   // Needs a dummy partition key on GSI to be able to query by createdAt fields
   phantomKey: 'phantomData'
+
+  static isSuspended({ yppStatus }: YtChannel) {
+    return (
+      yppStatus === 'Suspended::DuplicateContent' ||
+      yppStatus === 'Suspended::ProgramTermsExploit' ||
+      yppStatus === 'Suspended::SubparQuality' ||
+      yppStatus === 'Suspended::UnsupportedTopic'
+    )
+  }
+
+  static isVerified({ yppStatus }: YtChannel) {
+    return (
+      yppStatus === 'Verified::Bronze' ||
+      yppStatus === 'Verified::Silver' ||
+      yppStatus === 'Verified::Gold' ||
+      yppStatus === 'Verified::Diamond'
+    )
+  }
 }
 
 export class YtUser {
@@ -146,7 +164,23 @@ export enum VideoStates {
   VideoUnavailable = 8,
 }
 
-const readonlyChannelYppStatus = ['Unverified', 'Verified', 'Suspended', 'OptedOut'] as const
+export enum ChannelYppStatusVerified {
+  Bronze = 'Bronze',
+  Silver = 'Silver',
+  Gold = 'Gold',
+  Diamond = 'Diamond',
+}
+
+export enum ChannelYppStatusSuspended {
+  SubparQuality = 'SubparQuality',
+  DuplicateContent = 'DuplicateContent',
+  UnsupportedTopic = 'UnsupportedTopic',
+  ProgramTermsExploit = 'ProgramTermsExploit',
+}
+
+export const verifiedVariants = Object.values(ChannelYppStatusVerified).map((status) => `Verified::${status}` as const)
+const suspendedVariants = Object.values(ChannelYppStatusSuspended).map((status) => `Suspended::${status}` as const)
+const readonlyChannelYppStatus = ['Unverified', ...verifiedVariants, ...suspendedVariants, 'OptedOut'] as const
 
 export const videoStates = Object.keys(VideoStates).filter((v) => isNaN(Number(v)))
 

@@ -206,6 +206,48 @@
         ]
       }
     },
+    "/channels/{joystreamChannelId}/category": {
+      "put": {
+        "operationId": "ChannelsController_updateCategoryChannel",
+        "summary": "",
+        "description": "Updates given channel's videos category. Note: only channel owner can update the status",
+        "parameters": [
+          {
+            "name": "joystreamChannelId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChannelCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
     "/channels/suspend": {
       "put": {
         "operationId": "ChannelsController_suspendChannels",
@@ -266,7 +308,7 @@
               "schema": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/SuspendChannelDto"
+                  "$ref": "#/components/schemas/VerifyChannelDto"
                 }
               }
             }
@@ -955,19 +997,72 @@
           "message"
         ]
       },
+      "UpdateChannelCategoryMessage": {
+        "type": "object",
+        "properties": {
+          "videoCategoryId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "videoCategoryId"
+        ]
+      },
+      "UpdateChannelCategoryDto": {
+        "type": "object",
+        "properties": {
+          "signature": {
+            "type": "string"
+          },
+          "message": {
+            "$ref": "#/components/schemas/UpdateChannelCategoryMessage"
+          }
+        },
+        "required": [
+          "signature",
+          "message"
+        ]
+      },
       "SuspendChannelDto": {
         "type": "object",
         "properties": {
           "joystreamChannelId": {
             "type": "number"
           },
-          "isSuspended": {
-            "type": "boolean"
+          "yppStatus": {
+            "type": "string",
+            "enum": [
+              "SubparQuality",
+              "DuplicateContent",
+              "UnsupportedTopic",
+              "ProgramTermsExploit"
+            ]
           }
         },
         "required": [
           "joystreamChannelId",
-          "isSuspended"
+          "yppStatus"
+        ]
+      },
+      "VerifyChannelDto": {
+        "type": "object",
+        "properties": {
+          "joystreamChannelId": {
+            "type": "number"
+          },
+          "yppStatus": {
+            "type": "string",
+            "enum": [
+              "Bronze",
+              "Silver",
+              "Gold",
+              "Diamond"
+            ]
+          }
+        },
+        "required": [
+          "joystreamChannelId",
+          "yppStatus"
         ]
       },
       "VideoDto": {
@@ -1096,6 +1191,9 @@
           "channelDescription": {
             "type": "string"
           },
+          "channelLanguage": {
+            "type": "string"
+          },
           "avatarUrl": {
             "type": "string"
           },
@@ -1109,6 +1207,7 @@
           "channelHandle",
           "channelTitle",
           "channelDescription",
+          "channelLanguage",
           "avatarUrl",
           "bannerUrl"
         ]

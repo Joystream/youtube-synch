@@ -14,6 +14,7 @@ import { DynamodbService } from '../../../repository'
 import { ExitCodes, YoutubeApiError } from '../../../types/errors'
 import { IYoutubeApi } from '../../youtube/api'
 import { UserDto, VerifyChannelRequest, VerifyChannelResponse } from '../dtos'
+import { YtChannel } from '../../../types/youtube'
 
 @Controller('users')
 @ApiTags('channels')
@@ -37,13 +38,13 @@ export class UsersController {
 
       // Ensure 1. selected YT channel is not already registered for YPP program
       // OR 2. even if registered previously it has opted out.
-      if (registeredChannel?.yppStatus === 'Verified' || registeredChannel?.yppStatus === 'Unverified') {
+      if (YtChannel.isVerified(registeredChannel) || registeredChannel?.yppStatus === 'Unverified') {
         throw new YoutubeApiError(
           ExitCodes.YoutubeApi.CHANNEL_ALREADY_REGISTERED,
           `Selected Youtube channel is already registered for YPP program`,
           registeredChannel.joystreamChannelId
         )
-      } else if (registeredChannel?.yppStatus === 'Suspended') {
+      } else if (YtChannel.isSuspended(registeredChannel)) {
         throw new YoutubeApiError(
           ExitCodes.YoutubeApi.CHANNEL_STATUS_SUSPENDED,
           `A suspended channel cannot re opt-in for YPP program`,
