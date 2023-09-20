@@ -18,7 +18,7 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { signatureVerify } from '@polkadot/util-crypto'
 import { randomBytes } from 'crypto'
 import { DynamodbService } from '../../../repository'
-import { YtChannel, YtUser, YtVideo } from '../../../types/youtube'
+import { YtChannel, YtUser } from '../../../types/youtube'
 import { QueryNodeApi } from '../../query-node/api'
 import { IYoutubeApi } from '../../youtube/api'
 import {
@@ -33,8 +33,7 @@ import {
   UpdateChannelCategoryDto,
   UserDto,
   VerifyChannelDto,
-  VideoDto,
-  WhitelistChannelDto,
+  WhitelistChannelDto
 } from '../dtos'
 
 @Controller('channels')
@@ -300,30 +299,6 @@ export class ChannelsController {
       const message = error instanceof Error ? error.message : error
       throw new NotFoundException(message)
     }
-  }
-
-  @Get(':joystreamChannelId/videos')
-  @ApiResponse({ type: VideoDto, isArray: true })
-  @ApiOperation({
-    description: `Retrieves all videos (in the backend system) for a given youtube channel by its corresponding joystream channel Id.`,
-  })
-  async getVideos(@Param('joystreamChannelId', ParseIntPipe) id: number): Promise<YtVideo[]> {
-    try {
-      const channelId = (await this.dynamodbService.channels.getByJoystreamId(id)).id
-      const result = await this.dynamodbService.repo.videos.query({ channelId }, (q) => q.sort('descending'))
-      return result
-    } catch (error) {
-      const message = error instanceof Error ? error.message : error
-      throw new NotFoundException(message)
-    }
-  }
-
-  @Get(':id/videos/:videoId')
-  @ApiResponse({ type: ChannelDto })
-  @ApiOperation({ description: 'Retrieves particular video by it`s channel id' })
-  async getVideo(@Param('id') id: string, @Param('videoId') videoId: string) {
-    const result = await this.dynamodbService.repo.videos.get(id, videoId)
-    return result
   }
 
   @Post('/whitelist')

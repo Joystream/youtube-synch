@@ -2,19 +2,15 @@ import {
   BadRequestException,
   Body,
   Controller,
-  Get,
   Inject,
-  NotFoundException,
-  Param,
-  Post,
-  Query,
+  Post
 } from '@nestjs/common'
-import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { DynamodbService } from '../../../repository'
 import { ExitCodes, YoutubeApiError } from '../../../types/errors'
-import { IYoutubeApi } from '../../youtube/api'
-import { UserDto, VerifyChannelRequest, VerifyChannelResponse } from '../dtos'
 import { YtChannel } from '../../../types/youtube'
+import { IYoutubeApi } from '../../youtube/api'
+import { VerifyChannelRequest, VerifyChannelResponse } from '../dtos'
 
 @Controller('users')
 @ApiTags('channels')
@@ -75,48 +71,11 @@ export class UsersController {
         avatarUrl: channel.thumbnails.medium,
         bannerUrl: channel.bannerImageUrl,
         channelHandle: channel.customUrl,
-        channelLanguage: channel.language
+        channelLanguage: channel.language,
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : error
       throw new BadRequestException(message)
-    }
-  }
-
-  @ApiOperation({ description: 'Retrieves authenticated user by id' })
-  @ApiResponse({ type: UserDto })
-  @Get(':id')
-  async get(@Param('id') id: string): Promise<UserDto> {
-    try {
-      // Get user with given id
-      const result = await this.dynamodbService.users.get(id)
-
-      // prepare & return user response
-      return new UserDto(result)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : error
-      throw new NotFoundException(message)
-    }
-  }
-
-  @Get()
-  @ApiQuery({ type: String, required: false, name: 'search' })
-  @ApiOperation({
-    description: `Searches users added to the system. Use optional 'search' param to filter the results by email.`,
-  })
-  @ApiResponse({ type: UserDto, isArray: true })
-  async find(@Query('search') search: string): Promise<UserDto[]> {
-    try {
-      // find users with given email
-      const users = await this.dynamodbService.users.usersByEmail(search)
-
-      // prepare response
-      const result = users.map((user) => new UserDto(user))
-
-      return result
-    } catch (error) {
-      const message = error instanceof Error ? error.message : error
-      throw new NotFoundException(message)
     }
   }
 }
