@@ -4,7 +4,7 @@ import sleep from 'sleep-promise'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
-import { YtChannel, YtDlpFlatPlaylistOutput } from '../../types/youtube'
+import { YtChannel, YtDlpFlatPlaylistOutput, verifiedVariants } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
 import { IYoutubeApi, YtDlpClient } from '../youtube/api'
@@ -85,19 +85,19 @@ export class YoutubePollingService {
   private async performChannelsIngestion(): Promise<YtChannel[]> {
     // get all channels that need to be ingested
     const channelsWithSyncEnabled = async () =>
-      await this.dynamodbService.repo.channels.scan('yppStatus', (s) =>
-        s
-          .eq('Verified')
-          .and()
-          .filter('shouldBeIngested')
+      await this.dynamodbService.repo.channels.scan({}, (scan) =>
+        scan
+          .filter('yppStatus')
+          .in(['Unverified', ...verifiedVariants])
+          .where('shouldBeIngested')
           .eq(true)
           .and()
-          .filter('allowOperatorIngestion')
+          .where('allowOperatorIngestion')
           .eq(true)
           .and()
           // * Unauthorized channels add by infra operator are exempted from periodic
           // * ingestion as we don't have access to their access/refresh tokens
-          .filter('performUnauthorizedSync')
+          .where('performUnauthorizedSync')
           .eq(false)
       )
 
