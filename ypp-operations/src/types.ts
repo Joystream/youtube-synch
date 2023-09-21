@@ -146,8 +146,10 @@ export type VideoState =
   | 'VideoUnavailable'
 
 export type HubspotYPPContact = {
+  // Hubspot system properties
   vid: string
   contactId: string
+
   channel_title: string
   channel_url: string
   email: string

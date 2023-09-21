@@ -31,7 +31,7 @@ export async function getYppContactByEmail(email: string): Promise<string | unde
   }
 }
 
-export async function getAllContacts(): Promise<
+export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] = ['customer']): Promise<
   {
     contactId: string
     email: string
@@ -58,8 +58,8 @@ export async function getAllContacts(): Promise<
             filters: [
               {
                 propertyName: 'lifecyclestage',
-                operator: 'EQ',
-                value: 'customer',
+                operator: 'IN',
+                values: lifecyclestage,
               },
             ],
           },
@@ -67,6 +67,7 @@ export async function getAllContacts(): Promise<
         sorts: [],
         properties: [
           'email',
+          'gleev_channel_id',
           'channel_url',
           'gleev_channel_id',
           'total_subscribers',
@@ -77,33 +78,38 @@ export async function getAllContacts(): Promise<
           'latest_referral_reward_in_usd',
           'videos_sync_reward',
         ],
-        limit: 50,
+        limit: 100,
         after: nextPage,
       })
+
       contacts.push(
         ...response.results.map((contact) => ({
           contactId: contact.id,
           email: contact.properties.email,
-          channelId: contact.properties.channel_url.split('/')[1],
-          latestDateChecked: contact.properties.latest_ypp_period_wc,
-          yppRewardStatus: contact.properties.latest_ypp_reward_status,
-          dateSignedUpToYpp: contact.properties.date_signed_up_to_ypp,
-          sign_up_reward_in_usd: parseInt(contact.properties.sign_up_reward_in_usd || '0'),
-          latest_referral_reward_in_usd: parseInt(contact.properties.latest_referral_reward_in_usd || '0'),
-          videos_sync_reward_in_usd: parseInt(contact.properties.videos_sync_reward || '0'),
-          gleev_channel_id: parseInt(contact.properties.gleev_channel_id || '0'),
-          tier:
-            parseInt(contact.properties.total_subscribers) <= 1_000
-              ? 1
-              : parseInt(contact.properties.total_subscribers) <= 5_000
-              ? 2
-              : parseInt(contact.properties.total_subscribers) <= 25_000
-              ? 3
-              : parseInt(contact.properties.total_subscribers) <= 50_000
-              ? 4
-              : parseInt(contact.properties.total_subscribers) <= 100_000
-              ? 5
-              : 6,
+          ...(contact.properties.lifecyclestage === 'customer'
+            ? {
+                channelId: contact.properties.channel_url.split('/')[1],
+                latestDateChecked: contact.properties.latest_ypp_period_wc,
+                yppRewardStatus: contact.properties.latest_ypp_reward_status,
+                dateSignedUpToYpp: contact.properties.date_signed_up_to_ypp,
+                sign_up_reward_in_usd: parseInt(contact.properties.sign_up_reward_in_usd || '0'),
+                latest_referral_reward_in_usd: parseInt(contact.properties.latest_referral_reward_in_usd || '0'),
+                videos_sync_reward_in_usd: parseInt(contact.properties.videos_sync_reward || '0'),
+                gleev_channel_id: parseInt(contact.properties.gleev_channel_id || '0'),
+                tier:
+                  parseInt(contact.properties.total_subscribers) <= 1000
+                    ? 1
+                    : parseInt(contact.properties.total_subscribers) <= 5000
+                    ? 2
+                    : parseInt(contact.properties.total_subscribers) <= 25000
+                    ? 3
+                    : parseInt(contact.properties.total_subscribers) <= 50000
+                    ? 4
+                    : parseInt(contact.properties.total_subscribers) <= 100000
+                    ? 5
+                    : 6,
+              }
+            : {}),
         }))
       )
       nextPage = Number(response.paging?.next?.after)
@@ -257,6 +263,30 @@ export async function createYppContact(properties: Partial<HubspotYPPContact>): 
   }
 }
 
+// Function to create multiple Hubspot YPP contacts
+export async function createYppContacts(
+  createInputs: Array<{ properties: Partial<HubspotYPPContact>; associations?: any[] }>
+): Promise<void> {
+  // Set default associations if not provided
+  const enrichedInputs = createInputs.map((input) => ({
+    ...input,
+    associations: input.associations || [],
+  }))
+
+  const batchedInputs = _.chunk(enrichedInputs, 100)
+  try {
+    for (const inputs of batchedInputs) {
+      await hubspotClient.crm.contacts.batchApi.create({ inputs })
+    }
+  } catch (err) {
+    if (isAxiosError(err) && err.code === 'ECONNRESET') {
+      console.log('Failed to create contacts in Hubspot. Retrying...')
+      return createYppContacts(createInputs)
+    }
+    throw err
+  }
+}
+
 export async function addOrUpdateYppContact(item: YtChannel, contactId?: string): Promise<void> {
   if (contactId) {
     return await updateYppContact(contactId, mapDynamoItemToContactFields(item))
@@ -265,7 +295,7 @@ export async function addOrUpdateYppContact(item: YtChannel, contactId?: string)
   }
 }
 
-function mapDynamoItemToContactFields(item: YtChannel): Partial<HubspotYPPContact> {
+export function mapDynamoItemToContactFields(item: YtChannel): Partial<HubspotYPPContact> {
   return {
     channel_title: item.title,
     channel_url: `channel/${item.id}`,

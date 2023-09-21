@@ -1,10 +1,13 @@
-export * from './config'
-export * from './dynamodb'
-export * from './hubspot'
+import cron from 'node-cron'
+import { addNewYppContactsToHubspot } from './recheckVideoState'
 
-// Start processing the DynamoDB stream
-// startStreamProcessing()
+const CHECK_INTERVAL_IN_MINS = 30
+cron.schedule(`*/${CHECK_INTERVAL_IN_MINS} * * * *`, async () => {
+  console.log(`Running a task every ${CHECK_INTERVAL_IN_MINS} minutes`)
+  const start = Date.now()
+  await addNewYppContactsToHubspot()
 
-// getAllSuspendedChannels()
-// latestReferrerRewardInUsd(channelId, '2023-08-11').then(console.log)
-// updateHubspotWithCalculatedRewards()
+  const end = Date.now()
+  const duration = (end - start) / 1000 // Convert to seconds
+  console.log(`Task completed. Execution time: ${duration} seconds.\n`)
+})

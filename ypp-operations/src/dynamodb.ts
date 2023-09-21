@@ -1,66 +1,8 @@
 import AWS from './aws-config'
 import { loadConfig as config } from './config'
-import { addOrUpdateYppContact, getYppContactByEmail } from './hubspot'
 import { YtChannel } from './types'
 
-const dynamodbstreams = new AWS.DynamoDBStreams({ apiVersion: '2012-08-10' })
 const documentClient = new AWS.DynamoDB.DocumentClient()
-
-async function getRecords(ShardIterator: string) {
-  return dynamodbstreams.getRecords({ ShardIterator }).promise()
-}
-
-let lastProcessingAt = 0
-let isProcessing = false
-async function processRecords(records: AWS.DynamoDBStreams.GetRecordsOutput) {
-  if (records.Records?.find((r) => r.eventName === 'MODIFY')) {
-    console.log('found modify')
-
-    if (!isProcessing && lastProcessingAt < Date.now() - 180000) {
-      isProcessing = true
-      const channels = await getAllVerifiedChannels()
-      for (const ch of channels) {
-        console.log(ch.email)
-        const contactId = await getYppContactByEmail(ch.email)
-        await addOrUpdateYppContact(ch, contactId)
-      }
-      lastProcessingAt = Date.now()
-    }
-  }
-}
-
-async function processShard(shardId: string) {
-  const shardIteratorResult = await dynamodbstreams
-    .getShardIterator({
-      StreamArn: config('AWS_DYNAMO_STREAM_ARN'),
-      ShardId: shardId,
-      ShardIteratorType: 'TRIM_HORIZON',
-    })
-    .promise()
-
-  let ShardIterator = shardIteratorResult.ShardIterator
-  while (ShardIterator) {
-    const records = await getRecords(ShardIterator)
-    await processRecords(records)
-    ShardIterator = records.NextShardIterator
-  }
-}
-
-export async function startStreamProcessing() {
-  const channels = await getAllVerifiedChannels()
-  for (const ch of channels) {
-    console.log(ch.email)
-    const contactId = await getYppContactByEmail(ch.email)
-    await addOrUpdateYppContact(ch, contactId)
-  }
-  // const stream = await dynamodbstreams.describeStream({ StreamArn: config('AWS_DYNAMO_STREAM_ARN') }).promise()
-  // for (const shard of stream?.StreamDescription?.Shards || []) {
-  //   // Process each shard in asynchronously (avoiding `await`)
-  //   if (shard.ShardId) {
-  //     processShard(shard.ShardId)
-  //   }
-  // }
-}
 
 export async function countVideosSyncedAfter(channelId: string, date: string): Promise<number> {
   const params = {

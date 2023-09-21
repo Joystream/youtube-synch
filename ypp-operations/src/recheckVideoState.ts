@@ -1,6 +1,7 @@
+import _ from 'lodash'
 import { loadConfig as config } from './config'
-import { countVideosSyncedAfter, latestReferrerRewardInUsd } from './dynamodb'
-import { getAllContacts, updateYppContact } from './hubspot'
+import { countVideosSyncedAfter, getAllVerifiedChannels, latestReferrerRewardInUsd } from './dynamodb'
+import { createYppContacts, getAllYppContacts, mapDynamoItemToContactFields, updateYppContact } from './hubspot'
 import { HubspotYPPContact } from './types'
 
 function latestSyncRewardInUsd({ tier, syncedCount }: { tier: number; syncedCount: number }): number {
@@ -11,7 +12,7 @@ function latestSyncRewardInUsd({ tier, syncedCount }: { tier: number; syncedCoun
 }
 
 export async function updateHubspotWithCalculatedRewards() {
-  const contacts = await getAllContacts()
+  const contacts = await getAllYppContacts()
   for (const contact of contacts) {
     // If the contact record is already checked & updated for this cycle, skip
     if (contact.latestDateChecked === new Date().toISOString().split('T')[0]) {
@@ -56,4 +57,17 @@ export async function updateHubspotWithCalculatedRewards() {
     }
     await updateYppContact(contact.contactId, contactRewardFields)
   }
+}
+
+export async function addNewYppContactsToHubspot() {
+  console.log('Adding new YPP contacts to Hubspot...')
+  const channels = await getAllVerifiedChannels()
+  const existingContacts = await getAllYppContacts(['customer', 'lead'])
+
+  const nonExistentContacts = _.differenceBy(channels, existingContacts, (item) => item.email.toLowerCase()).map(
+    (ch) => ({ properties: mapDynamoItemToContactFields(ch) })
+  )
+
+  console.log('Total new contacts count: ', nonExistentContacts.length)
+  await createYppContacts(nonExistentContacts)
 }
