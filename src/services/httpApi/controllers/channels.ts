@@ -25,15 +25,16 @@ import {
   ChannelDto,
   ChannelInductionRequirementsDto,
   IngestChannelDto,
-  OperatorIngestionStatusDto,
   OptoutChannelDto,
   SaveChannelRequest,
   SaveChannelResponse,
+  SetChannelCategoryByOperatorDto,
+  SetOperatorIngestionStatusDto,
   SuspendChannelDto,
   UpdateChannelCategoryDto,
   UserDto,
   VerifyChannelDto,
-  WhitelistChannelDto
+  WhitelistChannelDto,
 } from '../dtos'
 
 @Controller('channels')
@@ -229,13 +230,13 @@ export class ChannelsController {
     await this.ensureOperatorAuthorization(authorizationHeader)
 
     try {
-      for (const { joystreamChannelId, yppStatus } of channels) {
+      for (const { joystreamChannelId, reason } of channels) {
         const channel = await this.dynamodbService.channels.getByJoystreamId(joystreamChannelId)
 
         // if channel is being suspended then its YT ingestion/syncing should also be stopped
         await this.dynamodbService.channels.save({
           ...channel,
-          yppStatus: `Suspended::${yppStatus}`,
+          yppStatus: `Suspended::${reason}`,
           allowOperatorIngestion: false,
         })
       }
@@ -256,13 +257,13 @@ export class ChannelsController {
     await this.ensureOperatorAuthorization(authorizationHeader)
 
     try {
-      for (const { joystreamChannelId, yppStatus } of channels) {
+      for (const { joystreamChannelId, tier } of channels) {
         const channel = await this.dynamodbService.channels.getByJoystreamId(joystreamChannelId)
 
         // channel is being verified
         await this.dynamodbService.channels.save({
           ...channel,
-          yppStatus: `Verified::${yppStatus}`,
+          yppStatus: `Verified::${tier}`,
           allowOperatorIngestion: true,
         })
       }
@@ -273,14 +274,14 @@ export class ChannelsController {
   }
 
   @Put('/operatorIngestion')
-  @ApiBody({ type: OperatorIngestionStatusDto, isArray: true })
+  @ApiBody({ type: SetOperatorIngestionStatusDto, isArray: true })
   @ApiOperation({
     description: `Authenticated endpoint to set operator ingestion status ("allowOperatorIngestion" field) of given channel/s in YPP program`,
   })
   async setOperatorIngestionStatusOfChannels(
     @Headers('authorization') authorizationHeader: string,
-    @Body(new ParseArrayPipe({ items: OperatorIngestionStatusDto, whitelist: true }))
-    channels: OperatorIngestionStatusDto[]
+    @Body(new ParseArrayPipe({ items: SetOperatorIngestionStatusDto, whitelist: true }))
+    channels: SetOperatorIngestionStatusDto[]
   ) {
     // ensure operator authorization
     await this.ensureOperatorAuthorization(authorizationHeader)
@@ -293,6 +294,35 @@ export class ChannelsController {
         await this.dynamodbService.channels.save({
           ...channel,
           allowOperatorIngestion,
+        })
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
+  }
+
+  @Put('/category')
+  @ApiBody({ type: SetChannelCategoryByOperatorDto, isArray: true })
+  @ApiOperation({
+    description: `Authenticated endpoint to update video category of channel/s in YPP program by the Operator`,
+  })
+  async setChannelCategoryByOperator(
+    @Headers('authorization') authorizationHeader: string,
+    @Body(new ParseArrayPipe({ items: SetChannelCategoryByOperatorDto, whitelist: true }))
+    channels: SetChannelCategoryByOperatorDto[]
+  ) {
+    // ensure operator authorization
+    await this.ensureOperatorAuthorization(authorizationHeader)
+
+    try {
+      for (const { joystreamChannelId, videoCategoryId } of channels) {
+        const channel = await this.dynamodbService.channels.getByJoystreamId(joystreamChannelId)
+
+        // set operator ingestion status
+        await this.dynamodbService.channels.save({
+          ...channel,
+          videoCategoryId,
         })
       }
     } catch (error) {
