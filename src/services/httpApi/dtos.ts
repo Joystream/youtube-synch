@@ -319,7 +319,7 @@ export class SuspendChannelDto {
   // yppStatus
   @IsEnum(ChannelYppStatusSuspended)
   @ApiProperty({ required: true, enum: ChannelYppStatusSuspended })
-  yppStatus: ChannelYppStatusSuspended
+  reason: ChannelYppStatusSuspended
 }
 
 export class VerifyChannelDto {
@@ -329,15 +329,23 @@ export class VerifyChannelDto {
   // yppStatus
   @IsEnum(ChannelYppStatusVerified)
   @ApiProperty({ required: true, enum: ChannelYppStatusVerified })
-  yppStatus: ChannelYppStatusVerified
+  tier: ChannelYppStatusVerified
 }
 
-export class OperatorIngestionStatusDto {
+export class SetOperatorIngestionStatusDto {
   // Channel Id
   @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
 
   // Whether to enable/disable ingestion (true/false)
   @IsBoolean() @ApiProperty({ required: true }) allowOperatorIngestion: boolean
+}
+
+export class SetChannelCategoryByOperatorDto {
+  // Channel Id
+  @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
+
+  // VideoCategory ID to set for given channel
+  @IsBoolean() @ApiProperty({ required: true }) videoCategoryId: string
 }
 
 export class WhitelistChannelDto {

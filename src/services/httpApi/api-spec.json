@@ -324,34 +324,37 @@
         ]
       }
     },
-    "/channels/{joystreamChannelId}/videos": {
-      "get": {
-        "operationId": "ChannelsController_getVideos",
+    "/channels/operatorIngestion": {
+      "put": {
+        "operationId": "ChannelsController_setOperatorIngestionStatusOfChannels",
         "summary": "",
-        "description": "Retrieves all videos (in the backend system) for a given youtube channel by its corresponding joystream channel Id.",
+        "description": "Authenticated endpoint to set operator ingestion status (\"allowOperatorIngestion\" field) of given channel/s in YPP program",
         "parameters": [
           {
-            "name": "joystreamChannelId",
+            "name": "authorization",
             "required": true,
-            "in": "path",
+            "in": "header",
             "schema": {
-              "type": "number"
+              "type": "string"
             }
           }
         ],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/VideoDto"
-                  }
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SetOperatorIngestionStatusDto"
                 }
               }
             }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
           }
         },
         "tags": [
@@ -359,39 +362,37 @@
         ]
       }
     },
-    "/channels/{id}/videos/{videoId}": {
-      "get": {
-        "operationId": "ChannelsController_getVideo",
+    "/channels/category": {
+      "put": {
+        "operationId": "ChannelsController_setChannelCategoryByOperator",
         "summary": "",
-        "description": "Retrieves particular video by it`s channel id",
+        "description": "Authenticated endpoint to update video category of channel/s in YPP program by the Operator",
         "parameters": [
           {
-            "name": "id",
+            "name": "authorization",
             "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "videoId",
-            "required": true,
-            "in": "path",
+            "in": "header",
             "schema": {
               "type": "string"
             }
           }
         ],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChannelDto"
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SetChannelCategoryByOperatorDto"
                 }
               }
             }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
           }
         },
         "tags": [
@@ -533,71 +534,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VerifyChannelResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "channels"
-        ]
-      },
-      "get": {
-        "operationId": "UsersController_find",
-        "summary": "",
-        "description": "Searches users added to the system. Use optional 'search' param to filter the results by email.",
-        "parameters": [
-          {
-            "name": "search",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/UserDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "channels"
-        ]
-      }
-    },
-    "/users/{id}": {
-      "get": {
-        "operationId": "UsersController_get",
-        "summary": "",
-        "description": "Retrieves authenticated user by id",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserDto"
                 }
               }
             }
@@ -1029,7 +965,7 @@
           "joystreamChannelId": {
             "type": "number"
           },
-          "yppStatus": {
+          "reason": {
             "type": "string",
             "enum": [
               "SubparQuality",
@@ -1041,7 +977,7 @@
         },
         "required": [
           "joystreamChannelId",
-          "yppStatus"
+          "reason"
         ]
       },
       "VerifyChannelDto": {
@@ -1050,7 +986,7 @@
           "joystreamChannelId": {
             "type": "number"
           },
-          "yppStatus": {
+          "tier": {
             "type": "string",
             "enum": [
               "Bronze",
@@ -1062,66 +998,37 @@
         },
         "required": [
           "joystreamChannelId",
-          "yppStatus"
+          "tier"
         ]
       },
-      "VideoDto": {
+      "SetOperatorIngestionStatusDto": {
         "type": "object",
         "properties": {
-          "url": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "category": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "playlistId": {
-            "type": "string"
-          },
-          "resourceId": {
-            "type": "string"
-          },
-          "channelId": {
-            "type": "string"
-          },
-          "thumbnails": {
-            "$ref": "#/components/schemas/ThumbnailsDto"
-          },
-          "state": {
-            "type": "object"
-          },
-          "duration": {
+          "joystreamChannelId": {
             "type": "number"
           },
-          "language": {
-            "type": "string"
-          },
-          "joystreamVideo": {
-            "type": "object"
+          "allowOperatorIngestion": {
+            "type": "boolean"
           }
         },
         "required": [
-          "url",
-          "title",
-          "description",
-          "category",
-          "id",
-          "playlistId",
-          "resourceId",
-          "channelId",
-          "thumbnails",
-          "state",
-          "duration",
-          "language",
-          "joystreamVideo"
+          "joystreamChannelId",
+          "allowOperatorIngestion"
+        ]
+      },
+      "SetChannelCategoryByOperatorDto": {
+        "type": "object",
+        "properties": {
+          "joystreamChannelId": {
+            "type": "number"
+          },
+          "videoCategoryId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "joystreamChannelId",
+          "videoCategoryId"
         ]
       },
       "WhitelistChannelDto": {
