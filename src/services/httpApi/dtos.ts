@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsDate,
   IsEmail,
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -13,7 +14,15 @@ import {
   ValidateNested,
 } from 'class-validator'
 import { Config } from '../../types'
-import { JoystreamVideo, VideoState, YtChannel, YtUser, YtVideo } from '../../types/youtube'
+import {
+  ChannelYppStatusSuspended,
+  ChannelYppStatusVerified,
+  JoystreamVideo,
+  VideoState,
+  YtChannel,
+  YtUser,
+  YtVideo,
+} from '../../types/youtube'
 
 // NestJS Data Transfer Objects (DTO)s
 
@@ -133,6 +142,9 @@ export class VerifyChannelResponse {
   // Youtube Channel description
   @IsString() @ApiProperty({ required: true }) channelDescription: string
 
+  // Youtube Channel default language
+  @IsString() @ApiProperty() channelLanguage: string
+
   // Youtube Channel avatar URL
   @IsString() @ApiProperty({ required: true }) avatarUrl: string
 
@@ -232,26 +244,46 @@ export class VideoDto extends YtVideo {
 }
 
 class IngestChannelMessage {
+  // Whether to enable/disable ingestion (true/false)
   @IsBoolean() shouldBeIngested: boolean
+
+  // VideoCategory ID (that should be added to auto synced videos)
   @ValidateIf((c: IngestChannelMessage) => c.shouldBeIngested)
   @IsString()
   @ApiProperty({ required: true })
   videoCategoryId: string
 
+  // Action timestamp (being used to prevent message replay)
   @Type(() => Date)
   @IsDate()
   timestamp: Date
 }
 
 class OptoutChannelMessage {
+  // true/false
   @IsBoolean() optout: boolean
+
+  // Action timestamp (being used to prevent message replay)
+  @Type(() => Date)
+  @IsDate()
+  timestamp: Date
+}
+
+class UpdateChannelCategoryMessage {
+  // VideoCategory ID (that should be added to auto synced videos)
+  @IsString() @ApiProperty({ required: true }) videoCategoryId: string
+
+  // Action timestamp (being used to prevent message replay)
   @Type(() => Date)
   @IsDate()
   timestamp: Date
 }
 
 export class IngestChannelDto {
+  // signature
   @IsString() @ApiProperty({ required: true }) signature: string
+
+  // message object
   @ApiProperty({ required: true })
   @ValidateNested()
   @Type(() => IngestChannelMessage)
@@ -259,21 +291,61 @@ export class IngestChannelDto {
 }
 
 export class OptoutChannelDto {
+  // signature
   @IsString() @ApiProperty({ required: true }) signature: string
+
+  // message object
   @ApiProperty({ required: true })
   @ValidateNested()
   @Type(() => OptoutChannelMessage)
   message: OptoutChannelMessage
 }
 
+export class UpdateChannelCategoryDto {
+  // signature
+  @IsString() @ApiProperty({ required: true }) signature: string
+
+  // message object
+  @ApiProperty({ required: true })
+  @ValidateNested()
+  @Type(() => UpdateChannelCategoryMessage)
+  message: UpdateChannelCategoryMessage
+}
+
 export class SuspendChannelDto {
+  // Channel Id
   @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
-  @IsBoolean() @ApiProperty({ required: true }) isSuspended: boolean
+
+  // yppStatus
+  @IsEnum(ChannelYppStatusSuspended)
+  @ApiProperty({ required: true, enum: ChannelYppStatusSuspended })
+  reason: ChannelYppStatusSuspended
 }
 
 export class VerifyChannelDto {
+  // Channel Id
   @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
-  @IsBoolean() @ApiProperty({ required: true }) isVerified: boolean
+
+  // yppStatus
+  @IsEnum(ChannelYppStatusVerified)
+  @ApiProperty({ required: true, enum: ChannelYppStatusVerified })
+  tier: ChannelYppStatusVerified
+}
+
+export class SetOperatorIngestionStatusDto {
+  // Channel Id
+  @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
+
+  // Whether to enable/disable ingestion (true/false)
+  @IsBoolean() @ApiProperty({ required: true }) allowOperatorIngestion: boolean
+}
+
+export class SetChannelCategoryByOperatorDto {
+  // Channel Id
+  @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
+
+  // VideoCategory ID to set for given channel
+  @IsBoolean() @ApiProperty({ required: true }) videoCategoryId: string
 }
 
 export class WhitelistChannelDto {

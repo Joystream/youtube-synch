@@ -40,6 +40,10 @@ const channelsTable = new aws.dynamodb.Table('channels', {
       name: nameof<YtChannel>('phantomKey'),
       type: 'S',
     },
+    {
+      name: nameof<YtChannel>('referrerChannelId'),
+      type: 'N',
+    },
   ],
   globalSecondaryIndexes: [
     {
