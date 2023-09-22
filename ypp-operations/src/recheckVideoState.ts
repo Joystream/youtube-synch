@@ -68,6 +68,6 @@ export async function addNewYppContactsToHubspot() {
     (ch) => ({ properties: mapDynamoItemToContactFields(ch) })
   )
 
-  console.log('Total new contacts count: ', nonExistentContacts.length)
   await createYppContacts(nonExistentContacts)
+  console.log('Total new contacts count: ', nonExistentContacts.length)
 }

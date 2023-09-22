@@ -67,6 +67,7 @@ export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] 
         sorts: [],
         properties: [
           'email',
+          'lifecyclestage',
           'gleev_channel_id',
           'channel_url',
           'gleev_channel_id',
