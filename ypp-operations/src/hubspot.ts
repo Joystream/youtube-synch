@@ -4,7 +4,13 @@ import _ from 'lodash'
 import { loadConfig as config } from './config'
 import { HubspotYPPContact, PayableContact, YtChannel, payableContactProps } from './types'
 
-export const hubspotClient: Client = new Client({ accessToken: config('HUBSPOT_API_KEY') })
+export const hubspotClient: Client = new Client({
+  accessToken: config('HUBSPOT_API_KEY'),
+  limiterOptions: {
+    minTime: 1000, // Add rate-limiting to avoid "secondly limit reached error"
+    // (https://community.hubspot.com/t5/APIs-Integrations/Error-You-have-reached-your-secondly-limit/m-p/269485)
+  },
+})
 
 export async function getYppContactByEmail(email: string): Promise<string | undefined> {
   const token = config('HUBSPOT_API_KEY')
