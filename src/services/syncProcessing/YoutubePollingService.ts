@@ -7,13 +7,12 @@ import { ExitCodes, YoutubeApiError } from '../../types/errors'
 import { YtChannel, YtDlpFlatPlaylistOutput, verifiedVariants } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
-import { IYoutubeApi, YtDlpClient } from '../youtube/api'
-import { SyncLimits } from './syncLimitations'
+import { IYoutubeApi } from '../youtube/api'
+import { SyncUtils } from './utils'
 
 export class YoutubePollingService {
   private logger: Logger
   private youtubeApi: IYoutubeApi
-  private ytdlpClient: YtDlpClient
   private joystreamClient: JoystreamClient
   private dynamodbService: IDynamodbService
 
@@ -25,14 +24,14 @@ export class YoutubePollingService {
   ) {
     this.logger = logging.createLogger('YoutubePollingService')
     this.youtubeApi = youtubeApi
-    this.ytdlpClient = new YtDlpClient()
     this.dynamodbService = dynamodbService
     this.joystreamClient = joystreamClient
   }
 
   async start(pollingInterval: number) {
-    this.logger.info(`Starting Youtube channels & videos ingestion service.`)
-    this.logger.info(`Polling interval is set to ${pollingInterval} minute(s).`)
+    this.logger.info(
+      `Starting Youtube channels & videos ingestion service with polling interval of ${pollingInterval} minute(s).`
+    )
 
     // start polling
     setTimeout(async () => this.runPollingWithInterval(pollingInterval), 0)
@@ -187,19 +186,18 @@ export class YoutubePollingService {
     return channelsWithSyncEnabled()
   }
 
-  private async performVideosIngestion(channel: YtChannel) {
+  public async performVideosIngestion(channel: YtChannel) {
     try {
-      //
-      const historicalVideosCountLimit = SyncLimits.videoCap(channel)
+      const historicalVideosCountLimit = SyncUtils.videoCap(channel)
 
-      // get all sync-able videos  within the channel limits
-      const videosIds = await this.ytdlpClient.getVideosIds(channel, historicalVideosCountLimit)
+      // get iDs of all sync-able videos within the channel limits
+      const videosIds = await this.youtubeApi.ytdlpClient.getVideosIds(channel, historicalVideosCountLimit)
 
       // get all video Ids that are not yet being tracked
       let untrackedVideosIds = await this.getUntrackedVideosIds(channel, videosIds)
 
       // if size limit has reached, don't track new historical videos
-      if (SyncLimits.hasSizeLimitReached(channel)) {
+      if (SyncUtils.hasSizeLimitReached(channel)) {
         untrackedVideosIds = untrackedVideosIds.filter((v) => v.publishedAt >= channel.createdAt)
       }
 

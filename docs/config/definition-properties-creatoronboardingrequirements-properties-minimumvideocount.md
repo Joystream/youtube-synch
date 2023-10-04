@@ -1,3 +1,0 @@
-## minimumVideoCount Type
-
-`number`

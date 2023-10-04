@@ -1,3 +1,5 @@
+import { VideoMetadataAndHash } from '../services/syncProcessing/ContentMetadataService'
+
 type DeploymentEnv = 'dev' | 'local' | 'testing' | 'prod'
 const deploymentEnv = process.env.DEPLOYMENT_ENV as DeploymentEnv | undefined
 
@@ -160,7 +162,8 @@ export enum VideoStates {
   UploadStarted = 6,
   // Video upload to Joystream succeeded
   UploadSucceeded = 7,
-  // Video was deleted from Youtube or set to private after being tracked by  YT-synch service
+  // Video was deleted from Youtube or set to private after being tracked by
+  // YT-synch service or skipped from syncing by the YT-synch service itself.
   VideoUnavailable = 8,
 }
 
@@ -289,13 +292,26 @@ export const getImages = (channel: YtChannel) => {
 
 const urlAsArray = (url: string) => (url ? [url] : [])
 
-export type VideoDownloadTask = YtVideo & {
-  priorityScore: number
+export type DownloadJobData = YtVideo & {
+  priority: number
 }
 
-export type VideoCreationTask = YtVideo & {
-  priorityScore: number
+export type DownloadJobOutput = {
   filePath: string
+}
+
+export type CreateVideoJobData = YtVideo & {
+  priority: number
+}
+
+export type MetadataJobData = YtVideo & {
+  priority: number
+}
+
+export type MetadataJobOutput = VideoMetadataAndHash
+
+export type UploadJobData = YtVideo & {
+  priority: number
 }
 
 export type YtDlpFlatPlaylistOutput = {
@@ -313,4 +329,10 @@ export type FaucetRegisterMembershipParams = {
 
 export type FaucetRegisterMembershipResponse = {
   memberId: number
+}
+
+export type ChannelSyncStatus = {
+  backlogCount: number
+  placeInSyncQueue: number
+  fullSyncEta: number
 }
