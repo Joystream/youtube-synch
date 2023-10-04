@@ -229,6 +229,16 @@ export class ChannelsRepository implements IRepository<YtChannel> {
     })
   }
 
+  async batchSave(videos: YtChannel[]): Promise<void> {
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const result = await this.model.batchPut(videos)
+      if (result.unprocessedItems.length) {
+        console.log('Unprocessed items', result.unprocessedItems.length)
+        return await this.batchSave(result.unprocessedItems as YtChannel[])
+      }
+    })
+  }
+
   async delete(id: string, userId: string): Promise<void> {
     return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
       await this.model.delete({ id, userId })
@@ -348,5 +358,14 @@ export class ChannelsService {
    */
   async save(channel: YtChannel): Promise<YtChannel> {
     return await this.channelsRepository.save(channel)
+  }
+
+  /**
+   *
+   * @param channels
+   * @returns Updated channels
+   */
+  async batchSave(channels: YtChannel[]): Promise<void> {
+    return await this.channelsRepository.batchSave(channels)
   }
 }

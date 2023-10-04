@@ -53,6 +53,13 @@ export interface YoutubeSyncNodeConfiguration {
      * Joystream node websocket api uri (for example: ws://localhost:9944)
      */
     joystreamNodeWs: string
+    /**
+     * Redis server host and port, required by BullMQ
+     */
+    redis: {
+      host: string
+      port: number
+    }
   }
   /**
    * Specifies the logging configuration

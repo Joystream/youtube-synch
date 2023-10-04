@@ -91,8 +91,16 @@ export const configSchema: JSONSchema7 = objectSchema({
           description: 'Joystream node websocket api uri (for example: ws://localhost:9944)',
           type: 'string',
         },
+        redis: objectSchema({
+          description: 'Redis server host and port, required by BullMQ',
+          properties: {
+            host: { type: 'string' },
+            port: { type: 'number' },
+          },
+          required: ['host', 'port'],
+        }),
       },
-      required: ['queryNode', 'joystreamNodeWs'],
+      required: ['queryNode', 'joystreamNodeWs', 'redis'],
     }),
     logs: objectSchema({
       description: 'Specifies the logging configuration',

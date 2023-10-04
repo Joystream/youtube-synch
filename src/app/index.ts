@@ -8,9 +8,7 @@ import { LoggingService } from '../services/logging'
 import { QueryNodeApi } from '../services/query-node/api'
 import { RuntimeApi } from '../services/runtime/api'
 import { JoystreamClient } from '../services/runtime/client'
-import { ContentCreationService } from '../services/syncProcessing/ContentCreationService'
-import { ContentDownloadService } from '../services/syncProcessing/ContentDownloadService'
-import { ContentUploadService } from '../services/syncProcessing/ContentUploadService'
+import { ContentProcessingService } from '../services/syncProcessing'
 import { YoutubePollingService } from '../services/syncProcessing/YoutubePollingService'
 import { IYoutubeApi, YoutubeApi } from '../services/youtube/api'
 import { Config, DisplaySafeConfig } from '../types'
@@ -25,9 +23,7 @@ export class Service {
   private runtimeApi: RuntimeApi
   private joystreamClient: JoystreamClient
   private youtubePollingService: YoutubePollingService
-  private contentDownloadService: ContentDownloadService
-  private contentCreationService: ContentCreationService
-  private contentUploadService: ContentUploadService
+  private contentProcessingService: ContentProcessingService
   private isStopping = false
 
   constructor(config: Config) {
@@ -47,23 +43,12 @@ export class Service {
         this.dynamodbService,
         this.joystreamClient
       )
-      this.contentDownloadService = new ContentDownloadService(
-        config.sync,
+      this.contentProcessingService = new ContentProcessingService(
+        { ...config.sync, ...config.endpoints },
         this.logging,
         this.dynamodbService,
-        this.youtubeApi
-      )
-      this.contentCreationService = new ContentCreationService(
-        this.logging,
-        this.dynamodbService,
-        this.contentDownloadService,
-        this.joystreamClient
-      )
-      this.contentUploadService = new ContentUploadService(
-        config.sync,
-        this.logging,
-        this.dynamodbService,
-        this.contentDownloadService,
+        this.youtubeApi,
+        this.joystreamClient,
         this.queryNodeApi
       )
     }
@@ -107,9 +92,7 @@ export class Service {
       this.logger.verbose('Starting the Youtube-Synch service', { config: this.hideSecrets(this.config) })
       // Null-assertion is safe here since intervals won't be not null due to Ajv schema validation
       await this.youtubePollingService.start(youtubePolling)
-      await this.contentDownloadService.start(contentProcessing)
-      await this.contentCreationService.start(contentProcessing)
-      await this.contentUploadService.start(contentProcessing)
+      await this.contentProcessingService.start(contentProcessing)
     }
   }
 
@@ -141,8 +124,8 @@ export class Service {
         this.runtimeApi,
         this.queryNodeApi,
         this.youtubeApi,
-        this.contentCreationService,
-        this.contentDownloadService
+        this.youtubePollingService,
+        this.contentProcessingService
       )
       this.checkConfigDirectories()
       await this.startSync()

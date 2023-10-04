@@ -671,7 +671,7 @@
       "get": {
         "operationId": "StatusController_getCollaboratorStatus",
         "summary": "",
-        "description": "Get youtube quota usage information for today",
+        "description": "Get Joystream collaborator account info",
         "parameters": [],
         "responses": {
           "default": {
@@ -826,7 +826,19 @@
             "type": "boolean"
           },
           "yppStatus": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "Unverified",
+              "Verified::Bronze",
+              "Verified::Silver",
+              "Verified::Gold",
+              "Verified::Diamond",
+              "Suspended::SubparQuality",
+              "Suspended::DuplicateContent",
+              "Suspended::UnsupportedTopic",
+              "Suspended::ProgramTermsExploit",
+              "OptedOut"
+            ]
           },
           "joystreamChannelId": {
             "type": "number"
@@ -855,6 +867,9 @@
           "createdAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "syncStatus": {
+            "type": "object"
           }
         },
         "required": [
@@ -870,7 +885,8 @@
           "language",
           "thumbnails",
           "subscribersCount",
-          "createdAt"
+          "createdAt",
+          "syncStatus"
         ]
       },
       "SaveChannelResponse": {

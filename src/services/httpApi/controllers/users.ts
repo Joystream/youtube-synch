@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Inject,
-  Post
-} from '@nestjs/common'
+import { BadRequestException, Body, Controller, Inject, Post } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { DynamodbService } from '../../../repository'
 import { ExitCodes, YoutubeApiError } from '../../../types/errors'
@@ -34,18 +28,20 @@ export class UsersController {
 
       // Ensure 1. selected YT channel is not already registered for YPP program
       // OR 2. even if registered previously it has opted out.
-      if (YtChannel.isVerified(registeredChannel) || registeredChannel?.yppStatus === 'Unverified') {
-        throw new YoutubeApiError(
-          ExitCodes.YoutubeApi.CHANNEL_ALREADY_REGISTERED,
-          `Selected Youtube channel is already registered for YPP program`,
-          registeredChannel.joystreamChannelId
-        )
-      } else if (YtChannel.isSuspended(registeredChannel)) {
-        throw new YoutubeApiError(
-          ExitCodes.YoutubeApi.CHANNEL_STATUS_SUSPENDED,
-          `A suspended channel cannot re opt-in for YPP program`,
-          registeredChannel.joystreamChannelId
-        )
+      if (registeredChannel) {
+        if (YtChannel.isVerified(registeredChannel) || registeredChannel.yppStatus === 'Unverified') {
+          throw new YoutubeApiError(
+            ExitCodes.YoutubeApi.CHANNEL_ALREADY_REGISTERED,
+            `Selected Youtube channel is already registered for YPP program`,
+            registeredChannel.joystreamChannelId
+          )
+        } else if (YtChannel.isSuspended(registeredChannel)) {
+          throw new YoutubeApiError(
+            ExitCodes.YoutubeApi.CHANNEL_STATUS_SUSPENDED,
+            `A suspended channel cannot re opt-in for YPP program`,
+            registeredChannel.joystreamChannelId
+          )
+        }
       }
 
       const { channel, errors } = await this.youtube.getVerifiedChannel(user)

@@ -15,6 +15,8 @@ import {
 } from 'class-validator'
 import { Config } from '../../types'
 import {
+  ChannelSyncStatus,
+  ChannelYppStatus,
   ChannelYppStatusSuspended,
   ChannelYppStatusVerified,
   JoystreamVideo,
@@ -22,6 +24,7 @@ import {
   YtChannel,
   YtUser,
   YtVideo,
+  channelYppStatus,
 } from '../../types/youtube'
 
 // NestJS Data Transfer Objects (DTO)s
@@ -74,12 +77,25 @@ export class ChannelInductionRequirementsDto {
   }
 }
 
+class ChannelSyncStatusDto {
+  @ApiProperty({ description: 'No. of videos in sync backlog for the channel' }) backlogCount: number
+  @ApiProperty({ description: 'ETA (seconds) to fully sync all planned videos of the channel' }) fullSyncEta: number
+  @ApiProperty({ description: 'Place in the sync queue of the earliest video for the channel,' })
+  placeInSyncQueue: number
+
+  constructor(syncStatus?: ChannelSyncStatus) {
+    this.backlogCount = syncStatus?.backlogCount || 0
+    this.fullSyncEta = syncStatus?.fullSyncEta || 0
+    this.placeInSyncQueue = syncStatus?.placeInSyncQueue || 0
+  }
+}
+
 export class ChannelDto {
   @ApiProperty() youtubeChannelId: string
   @ApiProperty() title: string
   @ApiProperty() description: string
   @ApiProperty() shouldBeIngested: boolean
-  @ApiProperty() yppStatus: string
+  @ApiProperty({ enum: channelYppStatus }) yppStatus: ChannelYppStatus
   @ApiProperty() joystreamChannelId: number
   @ApiProperty() referrerChannelId?: number
   @ApiProperty() referredChannels: ReferredChannelDto[]
@@ -88,8 +104,9 @@ export class ChannelDto {
   @ApiProperty() thumbnails: ThumbnailsDto
   @ApiProperty() subscribersCount: number
   @ApiProperty() createdAt: Date
+  @ApiProperty() syncStatus?: ChannelSyncStatus
 
-  constructor(channel: YtChannel, referredChannels?: YtChannel[]) {
+  constructor(channel: YtChannel, referredChannels?: YtChannel[], syncStatus?: ChannelSyncStatus) {
     this.youtubeChannelId = channel.id
     this.title = channel.title
     this.description = channel.description
@@ -102,6 +119,7 @@ export class ChannelDto {
     this.yppStatus = channel.yppStatus
     this.thumbnails = channel.thumbnails
     this.createdAt = new Date(channel.createdAt)
+    this.syncStatus = new ChannelSyncStatusDto(syncStatus)
     this.referredChannels = referredChannels?.map((c) => new ReferredChannelDto(c)) || []
   }
 }

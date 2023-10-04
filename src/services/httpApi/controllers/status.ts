@@ -5,8 +5,7 @@ import { DynamodbService } from '../../../repository'
 import { ReadonlyConfig } from '../../../types'
 import { Stats } from '../../../types/youtube'
 import { RuntimeApi } from '../../runtime/api'
-import { ContentCreationService } from '../../syncProcessing/ContentCreationService'
-import { ContentDownloadService } from '../../syncProcessing/ContentDownloadService'
+import { ContentProcessingService } from '../../syncProcessing'
 import { CollaboratorStatusDto, StatusDto } from '../dtos'
 
 @Controller('status')
@@ -15,8 +14,7 @@ export class StatusController {
   constructor(
     private dynamodbService: DynamodbService,
     private runtimeApi: RuntimeApi,
-    private contentCreationService: ContentCreationService,
-    private contentDownloadService: ContentDownloadService,
+    private contentProcessingService: ContentProcessingService,
     @Inject('config') private config: ReadonlyConfig
   ) {}
 
@@ -31,7 +29,7 @@ export class StatusController {
         sync: { enable },
       } = this.config
 
-      const syncBacklog = this.contentCreationService.totalTasks + this.contentDownloadService.totalTasks
+      const { totalJobs: syncBacklog } = await this.contentProcessingService.getJobsStat()
       return { version, syncStatus: enable ? 'enabled' : 'disabled', syncBacklog }
     } catch (error) {
       const message = error instanceof Error ? error.message : error
@@ -68,7 +66,7 @@ export class StatusController {
 
   @Get('collaborator')
   @ApiResponse({ type: Stats })
-  @ApiOperation({ description: `Get youtube quota usage information for today` })
+  @ApiOperation({ description: `Get Joystream collaborator account info` })
   async getCollaboratorStatus(): Promise<CollaboratorStatusDto> {
     const ONE_JOY = new BN(10_000_000_000)
     try {
