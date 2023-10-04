@@ -34,7 +34,7 @@ export class YtDlpClient {
     channel: YtChannel,
     limit?: number,
     order?: 'first' | 'last',
-    videoType: ('videos' | 'shorts' | 'streams')[] = ['videos', 'shorts'] // Excluding the livestreams from syncing
+    videoType: ('videos' | 'shorts' | 'streams')[] = ['videos', 'shorts'] // Excluding the live streams from syncing
   ): Promise<YtDlpFlatPlaylistOutput> {
     if (limit === undefined && order !== undefined) {
       throw new Error('Order should only be provided if limit is provided')
@@ -89,6 +89,7 @@ export class YtDlpClient {
 }
 
 export interface IYoutubeApi {
+  ytdlpClient: YtDlpClient
   getUserFromCode(code: string, youtubeRedirectUri: string): Promise<YtUser>
   getChannel(user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>): Promise<YtChannel>
   getVerifiedChannel(
@@ -106,7 +107,7 @@ export interface IQuotaMonitoringClient {
 
 class YoutubeClient implements IYoutubeApi {
   private config: ReadonlyConfig
-  private ytdlpClient: YtDlpClient
+  readonly ytdlpClient: YtDlpClient
 
   constructor(config: ReadonlyConfig) {
     this.config = config
@@ -530,6 +531,14 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
     })
 
     return quotaUsage
+  }
+
+  /**
+   * Implement IYoutubeApi interface
+   **/
+
+  get ytdlpClient() {
+    return this.decorated.ytdlpClient
   }
 
   getCreatorOnboardingRequirements() {

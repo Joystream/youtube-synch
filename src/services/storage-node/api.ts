@@ -4,6 +4,7 @@ import BN from 'bn.js'
 import FormData from 'form-data'
 import fs from 'fs'
 import _ from 'lodash'
+import pWaitFor from 'p-wait-for'
 import { Logger } from 'winston'
 import { ExitCodes, StorageApiError } from '../../types/errors'
 import { YtVideo } from '../../types/youtube'
@@ -43,7 +44,11 @@ export class StorageNodeApi {
 
   private async upload(assets: AssetUploadInput[]) {
     // Since both assets belong to the same bag, we can use any asset ID to get bag info
-    const bagId = await this.queryNodeApi.getStorageBagInfoForAsset(assets[0].dataObjectId.toString())
+    const assetId = assets[0].dataObjectId.toString()
+    await pWaitFor(async () => !!(await this.queryNodeApi.getStorageBagInfoForAsset(assetId, false)))
+    const bagId = (await this.queryNodeApi.getStorageBagInfoForAsset(assetId)) || ''
+
+    // Get a random active storage node for given bag
     const operator = await this.getRandomActiveStorageNodeInfo(bagId)
     if (!operator) {
       throw new StorageApiError(ExitCodes.StorageApi.NO_ACTIVE_STORAGE_PROVIDER, 'No active storage node found')

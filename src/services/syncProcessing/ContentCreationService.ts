@@ -1,210 +1,156 @@
+import { SubmittableExtrinsic } from '@polkadot/api/types'
+import type { ISubmittableResult } from '@polkadot/types/types'
 import BN from 'bn.js'
+import { Job } from 'bullmq'
 import _ from 'lodash'
-import pWaitFor from 'p-wait-for'
-import sleep from 'sleep-promise'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
-import { VideoCreationTask } from '../../types/youtube'
+import { CreateVideoJobData, MetadataJobOutput, YtChannel } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
-import { ContentDownloadService } from './ContentDownloadService'
-import { PriorityQueue } from './PriorityQueue'
-import { SyncLimits } from './syncLimitations'
-// TODO: keep hash calculation separate from extrinsic calling
+import { SyncUtils } from './utils'
 
 // Video content creation/processing service
 export class ContentCreationService {
-  private readonly DEFAULT_SUDO_PRIORITY = 10
-
-  private logger: Logger
-  private joystreamClient: JoystreamClient
-  private dynamodbService: IDynamodbService
-  private contentDownloadService: ContentDownloadService
-  private queue: PriorityQueue<VideoCreationTask, 'sequentialProcessor'>
+  readonly logger: Logger
   private lastVideoCreationBlockByChannelId: Map<number, BN> // JsChannelId -> Last video creation block number
-
-  get totalTasks(): number {
-    return this.queue.stats.totalTasks
-  }
-
-  private get activeTaskId(): string | undefined {
-    // Since `ContentCreationService` is using sequentialProcessor, so there will be only one active task at max
-    return [...this.queue.stats.activeTaskIds.values()][0]
-  }
 
   constructor(
     logging: LoggingService,
-    dynamodbService: IDynamodbService,
-    contentDownloadService: ContentDownloadService,
-    joystreamClient: JoystreamClient
+    private dynamodbService: IDynamodbService,
+    private joystreamClient: JoystreamClient
   ) {
     this.logger = logging.createLogger('ContentCreationService')
     this.dynamodbService = dynamodbService
     this.joystreamClient = joystreamClient
-    this.contentDownloadService = contentDownloadService
     this.lastVideoCreationBlockByChannelId = new Map()
-    this.queue = new PriorityQueue(this.processCreateVideoTask.bind(this), (video: VideoCreationTask, cb) => {
-      cb(null, video.priorityScore)
-    })
   }
 
-  async start(interval: number) {
-    this.logger.info(`Starting Video creation service.`)
-
+  async start() {
     await this.ensureContentStateConsistency()
-
-    // start video creation service
-    setTimeout(async () => this.createContentWithInterval(interval), 0)
   }
 
-  private async pendingOnchainCreationVideos() {
-    const videos = await this.dynamodbService.videos.getVideosPendingOnchainCreation()
-    return videos.filter((v) => {
-      return v.id !== this.activeTaskId && this.contentDownloadService.getVideoFilePath(v.id)
-    })
-  }
+  async process(jobs: Job<CreateVideoJobData>[]): Promise<Job<CreateVideoJobData>[]> {
+    const txByJob: Map<Job<CreateVideoJobData>, SubmittableExtrinsic<'promise', ISubmittableResult>> = new Map()
 
-  /**
-   * Create new videos after specified interval.
-   * @param downloadIntervalMinutes - defines an interval between new content creation.
-   * @returns void promise.
-   */
-  private async createContentWithInterval(processingIntervalMinutes: number) {
-    const sleepInterval = processingIntervalMinutes * 60 * 1000
-    while (true) {
-      this.logger.info(`Content creation service paused for ${processingIntervalMinutes} minute(s).`)
-      await sleep(sleepInterval)
-      try {
-        this.logger.info(`Resume service....`)
-        await this.prepareContentForOnchainCreation()
-      } catch (err) {
-        this.logger.error(`Critical content creation error`, { err })
-      }
+    // updated channel data (historicalVideoSyncedSize)
+    const updatedChannels: YtChannel[] = []
+
+    // Helper function to return the planned/completed jobs
+    const jobsToComplete = () => {
+      const jobs = [...txByJob.keys()]
+      const data = jobs.map((j) => j.data)
+      return { jobs, data }
     }
-  }
 
-  // Prepare new content for downloading with updated priority
-  private async prepareContentForOnchainCreation() {
-    // Get all videos whose media assets have been downloaded & prepared
-    const videos = await this.pendingOnchainCreationVideos()
-    this.logger.verbose(`Videos with pending on-chain creation.`, { videosCount: videos.length })
-
-    const pendingOnchainCreationVideosByChannel = _(videos)
-      .groupBy((v) => v.channelId)
-      .map((videos, channelId) => ({ channelId, unsyncedVideos: [...videos] }))
-      .value()
-
-    await Promise.all(
-      pendingOnchainCreationVideosByChannel.map(async ({ channelId, unsyncedVideos }) => {
-        // Get total videos of channel
-        const channel = await this.dynamodbService.channels.getById(channelId)
-
-        const isSyncEnable = channel.shouldBeIngested && channel.allowOperatorIngestion
-        if (!isSyncEnable) {
-          this.logger.warn(
-            `Syncing is disabled for channel ${channel.joystreamChannelId}. Removing ` +
-              `all videos from syncing queue & deleting the records from the database.`
-          )
-          // Remove all videos from queue
-          unsyncedVideos.forEach((v) => this.queue.cancel(v as VideoCreationTask))
-          // Remove all the videos from db too (so that they wont be requeued)
-          await Promise.all(unsyncedVideos.map((v) => this.dynamodbService.videos.delete(v)))
-          // Remove the downloaded video file
-          await Promise.all(unsyncedVideos.map((v) => this.contentDownloadService.removeVideoFile(v.id)))
-          return
-        }
-
-        const totalVideos = Math.min(channel.statistics.videoCount, SyncLimits.videoCap(channel))
-        const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / totalVideos
-
-        for (const v of unsyncedVideos) {
-          let sudoPriority = this.DEFAULT_SUDO_PRIORITY
-          if (new Date(v.publishedAt) > channel.createdAt && v.duration > 300) {
-            sudoPriority += 50
-          }
-
-          const rank = this.queue.calculateVideoRank(
-            sudoPriority,
-            percentageOfCreatorBacklogNotSynched,
-            Date.parse(v.publishedAt)
-          )
-          const task = {
-            ...v,
-            priorityScore: rank,
-            filePath: this.contentDownloadService.expectedVideoFilePath(v.id),
-          }
-          this.queue.push(task)
-        }
-      })
-    )
-  }
-
-  private async processCreateVideoTask(video: VideoCreationTask, cb: (error?: any, result?: null) => void) {
     try {
-      // * Pre-validation
-      // If the channel opted out of YPP program, then skip creating the video
-      const isCollaboratorSet = await this.joystreamClient.doesChannelHaveCollaborator(video.joystreamChannelId)
-      if (!isCollaboratorSet) {
-        this.logger.warn(
-          `Channel ${video.joystreamChannelId} opted out of YPP program. So skipping the video ` +
-            `${video.id} from syncing & deleting it's record from the database.`
-        )
-        await this.dynamodbService.videos.delete(video)
-        await this.contentDownloadService.removeVideoFile(video.id) // TODO: remove this after adding `isSyncEnable` check?
-        return
+      const [app, collaborator] = await Promise.all([
+        this.joystreamClient.getApp(),
+        this.joystreamClient.getCollaboratorMember(),
+      ])
+
+      const tasksByJoystreamChannelId = _(jobs)
+        .groupBy((j) => j.data.joystreamChannelId)
+        .map((jobs, joystreamChannelId) => ({ joystreamChannelId, jobs: [...jobs] }))
+        .value()
+
+      await Promise.all(
+        tasksByJoystreamChannelId.map(async ({ joystreamChannelId, jobs }) => {
+          const channelId = Number(joystreamChannelId)
+          const blockNumber = this.lastVideoCreationBlockByChannelId.get(channelId) || new BN(0)
+          if (!(await this.joystreamClient.hasQueryNodeProcessedBlock(blockNumber))) {
+            return []
+          }
+
+          const [channel, appActionNonce, extrinsicDefaults] = await Promise.all([
+            this.dynamodbService.channels.getByJoystreamId(channelId),
+            this.joystreamClient.totalVideosCreatedByChannel(channelId),
+            this.joystreamClient.createVideoExtrinsicDefaults(channelId),
+          ])
+
+          await Promise.all(
+            jobs.map(async (job, i) => {
+              // get computed metadata object
+              const videoMetadata = Object.values(await job.getChildrenValues<MetadataJobOutput>())[0]
+              if (!videoMetadata) {
+                throw new Error(`Failed to get video metadata from 'completed' child job: ${job.id}`)
+              }
+
+              // TODO: Remove this. temporary fix to ensure no duplicate videos created
+              const qnVideo = await this.joystreamClient.getVideoByYtResourceId(job.data.id)
+              if (qnVideo) {
+                this.logger.error(
+                  `Inconsistent state. Youtube video ${job.data.id} was already created on Joystream but the service tried to recreate it.`,
+                  { videoId: job.data.id, channelId: job.data.joystreamChannelId }
+                )
+                await this.dynamodbService.videos.updateState(job.data, 'CreatingVideo')
+                process.exit(1)
+              }
+
+              // create submittable tx
+              const tx = await this.joystreamClient.createVideoTx(
+                app.id,
+                appActionNonce + i,
+                collaborator,
+                extrinsicDefaults,
+                { ...job.data, videoMetadata }
+              )
+
+              // set submittable tx for each job
+              txByJob.set(job, tx)
+
+              // update historicalVideoSyncedSize by adding the size of historical videos
+              const isHistoricalVideo = new Date(job.data.publishedAt) < channel.createdAt
+              if (isHistoricalVideo) {
+                const size = SyncUtils.getSizeFromVideoMetadata(videoMetadata)
+                channel.historicalVideoSyncedSize += size
+              }
+            })
+          )
+
+          updatedChannels.push(channel)
+        })
+      )
+
+      // No jobs planned to be executed in this batch
+      if (jobsToComplete().jobs.length === 0) {
+        return []
       }
 
-      /**
-       * If the last synced video of the same channel is still being processed by the QN, then skip creating the next video
-       * of that channel because  QN will return outdated `totalVideosCreated` field and incorrect AppAction message will be
-       * constructed for the next video, which would lead to youtube attribution information missing in the QN video metadata.
-       */
-      await pWaitFor(async () => {
-        const blockNumber = this.lastVideoCreationBlockByChannelId.get(video.joystreamChannelId) || new BN(0)
-        return await this.joystreamClient.hasQueryNodeProcessedBlock(blockNumber)
+      // pre-commit videos state to 'CreatingVideo' to lock the videos
+      await this.dynamodbService.videos.batchUpdateState(jobsToComplete().data, 'CreatingVideo')
+
+      // send batch extrinsic
+      const { blockNumber, result } = await this.joystreamClient.sendBatchExtrinsic(collaborator.controllerAccount, [
+        ...txByJob.values(),
+      ])
+
+      // update last video creation block number
+      updatedChannels.map((c) => this.lastVideoCreationBlockByChannelId.set(c.joystreamChannelId, blockNumber))
+
+      // update jobs data
+      await Promise.all(jobsToComplete().jobs.map((j, i) => j.updateData({ ...j.data, ...result[i] })))
+
+      // post creation videos and channels state updates
+      await this.dynamodbService.videos.batchUpdateState(jobsToComplete().data, 'VideoCreated')
+      await this.dynamodbService.channels.batchSave(updatedChannels)
+
+      this.logger.info(`Successfully created ${txByJob.size} videos on chain using TX batch.`, {
+        videoIds: jobsToComplete().data.map((j) => j.id),
       })
 
-      // TODO: Added temporary fix to resolve duplicate video creation bug, create a proper fix by ensure that
-      // TODO: `processCreateVideoTask` is not called for the same video twice.
-      await this.dynamodbService.videos.updateState(video, 'CreatingVideo')
-
-      // Extra validation to check state consistency
-      const qnVideo = await this.joystreamClient.getVideoByYtResourceId(video.id)
-      if (qnVideo) {
-        this.logger.error(
-          `Inconsistent state. Youtube video ${video.id} was already created on Joystream but the service tried to recreate it.`,
-          { videoId: video.id, channelId: video.joystreamChannelId }
-        )
-        await this.ensureContentStateConsistency()
-        return
-        // process.exit(-1)
-      }
-
-      await this.dynamodbService.videos.updateState(video, 'CreatingVideo')
-      const [createdVideo, createdInBlock, size] = await this.joystreamClient.createVideo(video, video.filePath)
-      this.lastVideoCreationBlockByChannelId.set(video.joystreamChannelId, createdInBlock)
-      await this.dynamodbService.videos.updateState(createdVideo, 'VideoCreated')
-      this.logger.info(`Video created on chain.`, { videoId: video.id, channelId: video.joystreamChannelId })
-
-      // Update channel size limit
-      const channel = await this.dynamodbService.channels.getById(video.channelId)
-      const isHistoricalVideo = new Date(video.publishedAt) < channel.createdAt
-      if (isHistoricalVideo) {
-        const historicalVideoSyncedSize = (channel.historicalVideoSyncedSize || 0) + size
-        await this.dynamodbService.channels.save({
-          ...channel,
-          historicalVideoSyncedSize,
-        })
-      }
+      // return completed jobs
+      return jobsToComplete().jobs
     } catch (err) {
-      this.logger.error(`Got error processing video`, { videoId: video.id, err })
-      await this.dynamodbService.videos.updateState(video, 'VideoCreationFailed')
-      if (err instanceof Error && err.message === 'NoVideoStreamInFile') {
-        await this.contentDownloadService.removeVideoFile(video.id)
-      }
-    } finally {
-      // Signal that the task is done
-      cb(null, null)
+      this.logger.error(`Got error creating ${txByJob.size} videos`, {
+        videoIds: jobsToComplete().data.map((j) => j.id),
+        err,
+      })
+
+      await this.dynamodbService.videos.batchUpdateState(jobsToComplete().data, 'VideoCreationFailed')
+
+      // No Job was completed
+      return []
     }
   }
 
