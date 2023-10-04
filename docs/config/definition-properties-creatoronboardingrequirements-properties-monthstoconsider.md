@@ -1,0 +1,3 @@
+## monthsToConsider Type
+
+`number`
