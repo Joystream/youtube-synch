@@ -5,6 +5,7 @@ import IORedis from 'ioredis'
 import _ from 'lodash'
 import { Logger } from 'winston'
 import { DynamodbService } from '../../repository'
+import { ReadonlyConfig } from '../../types'
 import { YtVideo } from '../../types/youtube'
 import { SyncUtils } from './utils'
 
@@ -47,10 +48,12 @@ export class PriorityJobQueue<
   private concurrencyOrBatchSize: number
   readonly queue: Queue<T>
   private worker: Worker
+  private connection: IORedis
 
-  constructor(private connection: IORedis, options: PriorityQueueOptions<P, T, R, I>) {
+  constructor(redis: ReadonlyConfig['endpoints']['redis'], options: PriorityQueueOptions<P, T, R, I>) {
     this.logger = options.processorInstance.logger
     this.concurrencyOrBatchSize = options.concurrencyOrBatchSize
+    this.connection = new IORedis(redis.port, redis.host, { maxRetriesPerRequest: null })
 
     // Reuse the ioredis instance
     this.queue = new Queue(options.name, { connection: this.connection })
@@ -181,9 +184,11 @@ export class JobsFlowManager {
   private flowProducer: FlowProducer
   private jobQueuesByName: Map<string, PriorityJobQueue> = new Map()
   private queueEventsByName: Map<string, QueueEvents> = new Map()
+  private connection: IORedis
 
-  constructor(private connection: IORedis) {
-    this.flowProducer = new FlowProducer({ connection })
+  constructor(private redis: ReadonlyConfig['endpoints']['redis']) {
+    this.connection = new IORedis(redis.port, redis.host, { maxRetriesPerRequest: null })
+    this.flowProducer = new FlowProducer({ connection: this.connection })
   }
 
   /**
@@ -194,7 +199,7 @@ export class JobsFlowManager {
       throw new Error(`Job queue with name ${options.name} already exists`)
     }
 
-    const jobQueue = new PriorityJobQueue(this.connection, options)
+    const jobQueue = new PriorityJobQueue(this.redis, options)
 
     this.jobQueuesByName.set(options.name, jobQueue)
   }

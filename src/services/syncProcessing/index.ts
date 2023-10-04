@@ -21,7 +21,6 @@ export class ContentProcessingService {
   private readonly QUEUE_NAME_PREFIXES = ['Upload', 'Creation', 'Metadata', 'Download'] as const
 
   private jobsManager: JobsFlowManager
-  private redisConn: IORedis
   private logger: Logger
   private contentDownloadService: ContentDownloadService
   private contentMetadataService: ContentMetadataService
@@ -29,7 +28,7 @@ export class ContentProcessingService {
   private contentUploadService: ContentUploadService
 
   constructor(
-    private config: Required<ReadonlyConfig['sync']> & Required<ReadonlyConfig['endpoints']>,
+    private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['endpoints'],
     logging: LoggingService,
     private dynamodbService: DynamodbService,
     youtubeApi: IYoutubeApi,
@@ -37,9 +36,7 @@ export class ContentProcessingService {
     queryNodeApi: QueryNodeApi
   ) {
     this.logger = logging.createLogger('ContentProcessingService')
-    const { host, port } = this.config.redis
-    this.redisConn = new IORedis(port, host, { maxRetriesPerRequest: null })
-    this.jobsManager = new JobsFlowManager(this.redisConn)
+    this.jobsManager = new JobsFlowManager(this.config.redis)
 
     this.contentDownloadService = new ContentDownloadService(config, logging, this.dynamodbService, youtubeApi)
     this.contentMetadataService = new ContentMetadataService(logging)
@@ -89,7 +86,9 @@ export class ContentProcessingService {
 
     // Clean up queue state on startup from redis. This is being done to avoid having
     // inconsistent state between queue (redis) and dynamodb (which is persistent storage).
-    await this.redisConn.flushall()
+    const { host, port } = this.config.redis
+    const connection = new IORedis(port, host, { maxRetriesPerRequest: null })
+    await connection.flushall()
 
     await this.contentDownloadService.start()
     await this.contentMetadataService.start()
