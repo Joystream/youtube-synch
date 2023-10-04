@@ -21,6 +21,7 @@ export class ContentProcessingService {
   private readonly QUEUE_NAME_PREFIXES = ['Upload', 'Creation', 'Metadata', 'Download'] as const
 
   private jobsManager: JobsFlowManager
+  private redisConn: IORedis
   private logger: Logger
   private contentDownloadService: ContentDownloadService
   private contentMetadataService: ContentMetadataService
@@ -28,7 +29,7 @@ export class ContentProcessingService {
   private contentUploadService: ContentUploadService
 
   constructor(
-    private syncConfig: Required<ReadonlyConfig['sync']>,
+    private config: Required<ReadonlyConfig['sync']> & Required<ReadonlyConfig['endpoints']>,
     logging: LoggingService,
     private dynamodbService: DynamodbService,
     youtubeApi: IYoutubeApi,
@@ -36,15 +37,18 @@ export class ContentProcessingService {
     queryNodeApi: QueryNodeApi
   ) {
     this.logger = logging.createLogger('ContentProcessingService')
-    this.jobsManager = new JobsFlowManager()
-    this.contentDownloadService = new ContentDownloadService(syncConfig, logging, this.dynamodbService, youtubeApi)
+    const { host, port } = this.config.redis
+    this.redisConn = new IORedis(port, host, { maxRetriesPerRequest: null })
+    this.jobsManager = new JobsFlowManager(this.redisConn)
+
+    this.contentDownloadService = new ContentDownloadService(config, logging, this.dynamodbService, youtubeApi)
     this.contentMetadataService = new ContentMetadataService(logging)
     this.contentCreationService = new ContentCreationService(logging, this.dynamodbService, this.joystreamClient)
     this.contentUploadService = new ContentUploadService(logging, this.dynamodbService, queryNodeApi)
 
     // create job queues
 
-    const { maxConcurrentDownloads, maxConcurrentUploads, createVideoTxBatchSize } = this.syncConfig.limits
+    const { maxConcurrentDownloads, maxConcurrentUploads, createVideoTxBatchSize } = this.config.limits
     this.jobsManager.createJobQueue({
       name: 'DownloadQueue',
       processorType: 'concurrent',
@@ -85,9 +89,7 @@ export class ContentProcessingService {
 
     // Clean up queue state on startup from redis. This is being done to avoid having
     // inconsistent state between queue (redis) and dynamodb (which is persistent storage).
-    const redisConnection = new IORedis({ maxRetriesPerRequest: null })
-    await redisConnection.flushall()
-    redisConnection.disconnect()
+    await this.redisConn.flushall()
 
     await this.contentDownloadService.start()
     await this.contentMetadataService.start()
@@ -126,13 +128,10 @@ export class ContentProcessingService {
 
     await Promise.all(
       allUnsyncedVideosByChannelId.map(async ({ channelId, unsyncedVideos }) => {
-        // Get total videos of channel
         const channel = await this.dynamodbService.channels.getById(channelId)
-
         const totalVideos = Math.min(channel.statistics.videoCount, SyncUtils.videoCap(channel))
         const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / totalVideos
 
-        const jobQueue = this.jobsManager.getJobQueue('UploadQueue')
         for (const video of unsyncedVideos) {
           let sudoPriority = SyncUtils.DEFAULT_SUDO_PRIORITY
           if (new Date(video.publishedAt) > channel.createdAt && video.duration > 300) {
@@ -169,7 +168,7 @@ export class ContentProcessingService {
     const sizeLimitReached = SyncUtils.hasSizeLimitReached(channel)
     const isCollaboratorSet = await this.joystreamClient.doesChannelHaveCollaborator(channel.joystreamChannelId)
     const isHistoricalVideo = new Date(video.publishedAt) < channel.createdAt
-    const freeSpace = this.syncConfig.limits.storage - SyncUtils.usedSpace
+    const freeSpace = this.config.limits.storage - SyncUtils.usedSpace
 
     const spaceCondition = freeSpace > 0 || (freeSpace === 0 && video.joystreamVideo !== undefined)
 

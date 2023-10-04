@@ -47,12 +47,10 @@ export class PriorityJobQueue<
   private concurrencyOrBatchSize: number
   readonly queue: Queue<T>
   private worker: Worker
-  private connection: IORedis
 
-  constructor(options: PriorityQueueOptions<P, T, R, I>) {
+  constructor(private connection: IORedis, options: PriorityQueueOptions<P, T, R, I>) {
     this.logger = options.processorInstance.logger
     this.concurrencyOrBatchSize = options.concurrencyOrBatchSize
-    this.connection = new IORedis({ maxRetriesPerRequest: null })
 
     // Reuse the ioredis instance
     this.queue = new Queue(options.name, { connection: this.connection })
@@ -183,11 +181,9 @@ export class JobsFlowManager {
   private flowProducer: FlowProducer
   private jobQueuesByName: Map<string, PriorityJobQueue> = new Map()
   private queueEventsByName: Map<string, QueueEvents> = new Map()
-  private connection: IORedis
 
-  constructor() {
-    this.connection = new IORedis({ maxRetriesPerRequest: null })
-    this.flowProducer = new FlowProducer()
+  constructor(private connection: IORedis) {
+    this.flowProducer = new FlowProducer({ connection })
   }
 
   /**
@@ -198,7 +194,7 @@ export class JobsFlowManager {
       throw new Error(`Job queue with name ${options.name} already exists`)
     }
 
-    const jobQueue = new PriorityJobQueue(options)
+    const jobQueue = new PriorityJobQueue(this.connection, options)
 
     this.jobQueuesByName.set(options.name, jobQueue)
   }

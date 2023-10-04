@@ -1,6 +1,9 @@
 endpoints:
   queryNode: http://localhost:8080/graphql
   joystreamNodeWs: ws://localhost:9944
+  redis:
+    host: localhost
+    port: 6379
 sync:
   enable: true
   downloadsDir: ./local/data
