@@ -46,16 +46,31 @@ export class CollaboratorStatusDto {
 }
 
 export class ChannelInductionRequirementsDto {
-  @ApiProperty() MINIMUM_SUBSCRIBERS_COUNT: number
-  @ApiProperty() MINIMUM_VIDEO_COUNT: number
-  @ApiProperty() MINIMUM_VIDEO_AGE_HOURS: number
-  @ApiProperty() MINIMUM_CHANNEL_AGE_HOURS: number
+  @ApiProperty({ description: 'Minimum number of subscribers required for signup' })
+  MINIMUM_SUBSCRIBERS_COUNT: number
+
+  @ApiProperty({ description: 'Minimum total number of videos required for signup' })
+  MINIMUM_TOTAL_VIDEOS_COUNT: number
+
+  @ApiProperty({ description: 'Minimum age of videos in hours for signup' })
+  MINIMUM_VIDEO_AGE_HOURS: number
+
+  @ApiProperty({ description: 'Minimum age of the channel in hours for signup' })
+  MINIMUM_CHANNEL_AGE_HOURS: number
+
+  @ApiProperty({ description: 'Minimum number of videos posted per month' })
+  MINIMUM_VIDEOS_PER_MONTH: number
+
+  @ApiProperty({ description: 'Number of latest months to consider for the monthly video posting requirement' })
+  MONTHS_TO_CONSIDER: number
 
   constructor(requirements: Config['creatorOnboardingRequirements']) {
     this.MINIMUM_SUBSCRIBERS_COUNT = requirements.minimumSubscribersCount
-    this.MINIMUM_VIDEO_COUNT = requirements.minimumVideoCount
+    this.MINIMUM_TOTAL_VIDEOS_COUNT = requirements.minimumVideosCount
     this.MINIMUM_VIDEO_AGE_HOURS = requirements.minimumVideoAgeHours
     this.MINIMUM_CHANNEL_AGE_HOURS = requirements.minimumChannelAgeHours
+    this.MINIMUM_VIDEOS_PER_MONTH = 1
+    this.MONTHS_TO_CONSIDER = 1
   }
 }
 

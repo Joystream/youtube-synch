@@ -57,11 +57,15 @@ joystream:
 creatorOnboardingRequirements:
   # ! Production values
   minimumSubscribersCount: 50
-  minimumVideoCount: 10
+  minimumVideosCount: 10
   minimumVideoAgeHours: 720 # (24 hours x 30 days) 1 month
   minimumChannelAgeHours: 2160 # (3 x 24 hours x 30 days) 3 months
+  minimumVideosPerMonth: 1
+  monthsToConsider: 1
   # ! Development values
   # minimumSubscribersCount: 1
-  # minimumVideoCount: 2
+  # minimumVideosCount: 1
   # minimumVideoAgeHours: 1
   # minimumChannelAgeHours: 1
+  # minimumVideosPerMonth: 1
+  # monthsToConsider: 1
