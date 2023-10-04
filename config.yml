@@ -13,6 +13,7 @@ sync:
       signup: 500
     maxConcurrentDownloads: 50
     maxConcurrentUploads: 50
+    createVideoTxBatchSize: 10
     storage: 100G
 logs:
   file:

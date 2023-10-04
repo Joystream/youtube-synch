@@ -311,6 +311,11 @@ export const configSchema: JSONSchema7 = objectSchema({
               type: 'number',
               default: 50,
             },
+            createVideoTxBatchSize: {
+              description: `No. of videos that should be created in a batched 'create_video' tx`,
+              type: 'number',
+              default: 10,
+            },
             maxConcurrentUploads: {
               description: `Max no. of videos that should be concurrently uploaded to Joystream's storage node`,
               type: 'number',
@@ -322,7 +327,13 @@ export const configSchema: JSONSchema7 = objectSchema({
               pattern: byteSizeRegex.source,
             },
           },
-          required: ['dailyApiQuota', 'maxConcurrentDownloads', 'maxConcurrentUploads', 'storage'],
+          required: [
+            'dailyApiQuota',
+            'maxConcurrentDownloads',
+            'createVideoTxBatchSize',
+            'maxConcurrentUploads',
+            'storage',
+          ],
         }),
       },
       if: {
