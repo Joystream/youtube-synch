@@ -1,4 +1,4 @@
-import { FlowJob, Job, JobsOptions } from 'bullmq'
+import { FlowJob, Job } from 'bullmq'
 import IORedis from 'ioredis'
 import _ from 'lodash'
 import sleep from 'sleep-promise'
@@ -77,8 +77,8 @@ export class ContentProcessingService {
     // log starting and completed events for each job
     const downloadQueueEvents = this.jobsManager.getQueueEvents('DownloadQueue')
     const uploadQueueEvents = this.jobsManager.getQueueEvents('UploadQueue')
-    downloadQueueEvents.on('active', (jobId) => this.logger.debug(`Started new job: `, { jobId }))
-    uploadQueueEvents.on('completed', (jobId) => this.logger.debug(`Completed a job: `, { jobId }))
+    downloadQueueEvents.on('active', ({ jobId }) => this.logger.verbose(`Started processing of job:`, { jobId }))
+    uploadQueueEvents.on('completed', ({ jobId }) => this.logger.verbose(`Completed processing of job:`, { jobId }))
   }
 
   async start(interval: number) {
@@ -191,21 +191,12 @@ export class ContentProcessingService {
   }
 
   private createFlow(video: YtVideo, priority: number): FlowJob {
-    // Job name
-    const jobName = 'flowJob'
-
-    // Job options
-    const jobOptions: JobsOptions = {
-      priority,
-      failParentOnFailure: true,
-    }
-
     const jobUnit = (jobType: typeof this.QUEUE_NAME_PREFIXES[number]) => {
       return {
-        name: jobName,
+        name: 'flowJob',
         data: video,
         queueName: `${jobType}Queue`,
-        opts: { ...jobOptions, jobId: `${jobType}:${video.id}` },
+        opts: { priority, failParentOnFailure: true, jobId: video.id },
       }
     }
 

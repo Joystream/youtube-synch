@@ -56,7 +56,7 @@ export class StorageNodeApi {
 
     for (const { dataObjectId, file } of assets) {
       try {
-        this.logger.verbose('Uploading asset', { dataObjectId: dataObjectId.toString() })
+        this.logger.debug('Uploading asset', { dataObjectId: dataObjectId.toString() })
 
         const formData = new FormData()
         formData.append('file', file, 'video.mp4')
