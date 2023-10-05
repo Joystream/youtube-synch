@@ -101,9 +101,9 @@ export class YtChannel {
 
   static isSuspended({ yppStatus }: YtChannel) {
     return (
-      yppStatus === 'Suspended::DuplicateContent' ||
+      yppStatus === 'Suspended::CopyrightBreach' ||
       yppStatus === 'Suspended::ProgramTermsExploit' ||
-      yppStatus === 'Suspended::SubparQuality' ||
+      yppStatus === 'Suspended::MisleadingContent' ||
       yppStatus === 'Suspended::UnsupportedTopic'
     )
   }
@@ -175,10 +175,10 @@ export enum ChannelYppStatusVerified {
 }
 
 export enum ChannelYppStatusSuspended {
-  SubparQuality = 'SubparQuality',
-  DuplicateContent = 'DuplicateContent',
-  UnsupportedTopic = 'UnsupportedTopic',
+  CopyrightBreach = 'CopyrightBreach',
+  MisleadingContent = 'MisleadingContent',
   ProgramTermsExploit = 'ProgramTermsExploit',
+  UnsupportedTopic = 'UnsupportedTopic',
 }
 
 export const verifiedVariants = Object.values(ChannelYppStatusVerified).map((status) => `Verified::${status}` as const)
