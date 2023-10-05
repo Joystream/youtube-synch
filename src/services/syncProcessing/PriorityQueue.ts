@@ -6,7 +6,7 @@ import _ from 'lodash'
 import { Logger } from 'winston'
 import { DynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
-import { YtVideo } from '../../types/youtube'
+import { YtChannel, YtVideo } from '../../types/youtube'
 import { SyncUtils } from './utils'
 
 export type TaskType<T = YtVideo> = { id: string; priority: number } & T
@@ -158,7 +158,7 @@ export class PriorityJobQueue<
         // Get total videos of channel
         const channel = await channels.getById(channelId)
 
-        const totalVideos = Math.min(channel.statistics.videoCount, SyncUtils.videoCap(channel))
+        const totalVideos = YtChannel.totalVideos(channel)
         const percentageOfCreatorBacklogNotSynched = (unprocessedJobs.length * 100) / totalVideos
 
         for (const job of unprocessedJobs) {

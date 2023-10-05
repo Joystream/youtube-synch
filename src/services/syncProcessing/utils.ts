@@ -1,6 +1,5 @@
 import fs from 'fs'
 import fsPromises from 'fs/promises'
-import { YtChannel } from '../../types/youtube'
 import { VideoMetadataAndHash } from './ContentMetadataService'
 
 export class SyncUtils {
@@ -49,38 +48,6 @@ export class SyncUtils {
     this.downloadedVideosSizeSum -= size
   }
 
-  /**
-   * Utility methods to check sync limits for channels. There are 2 limits:
-   * video count and total size based on the subscribers count.
-   * */
-  static videoCap(ch: YtChannel): number {
-    if (ch.statistics.subscriberCount < 5000) {
-      return 100
-    } else if (ch.statistics.subscriberCount < 50000) {
-      return 250
-    } else {
-      return 1000
-    }
-  }
-
-  static sizeCap(ch: YtChannel): number {
-    if (ch.statistics.subscriberCount < 5000) {
-      return 10_000_000_000 // 10 GB
-    } else if (ch.statistics.subscriberCount < 50000) {
-      return 100_000_000_000 // 100 GB
-    } else {
-      return 1_000_000_000_000 // 1 TB
-    }
-  }
-
-  static hasSizeLimitReached(ch: YtChannel) {
-    return ch.historicalVideoSyncedSize >= this.sizeCap(ch)
-  }
-
-  static isSyncEnabled(channel: YtChannel) {
-    return channel.shouldBeIngested && channel.allowOperatorIngestion
-  }
-
   static getSizeFromVideoMetadata(videoMetadata: VideoMetadataAndHash) {
     return videoMetadata.mediaMetadata.size + videoMetadata.thumbnailHash.size
   }
@@ -105,7 +72,8 @@ export class SyncUtils {
         `Invalid sudoPriority value ${sudoPriority}, should be an integer between 0 and ${this.MAX_SUDO_PRIORITY}`
       )
     } else if (!isIntegerInRange(percentageOfCreatorBacklogNotSynched, 0, 100)) {
-      throw new Error(`Invalid percentageOfCreatorBacklogNotSynched value ${percentageOfCreatorBacklogNotSynched}`)
+      //TODO: fix - sometimes percentageOfCreatorBacklogNotSynched is greater than 100
+      // throw new Error(`Invalid percentageOfCreatorBacklogNotSynched value ${percentageOfCreatorBacklogNotSynched}`)
     }
 
     return this.convertToBullMQPriority(

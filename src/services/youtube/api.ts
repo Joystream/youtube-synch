@@ -30,7 +30,7 @@ export class YtDlpClient {
     this.ytdlpPath = `${pkgDir.sync(__dirname)}/node_modules/youtube-dl-exec/bin/yt-dlp`
   }
 
-  async getVideosIds(
+  async getVideos(
     channel: YtChannel,
     limit?: number,
     order?: 'first' | 'last',
@@ -69,8 +69,10 @@ export class YtDlpClient {
 
           return videos
         } catch (err) {
-          console.log(`YtDlpClient error: ${err}`)
-          return []
+          if (err instanceof Error && err.message.includes(`This channel does not have a ${type} tab`)) {
+            return []
+          }
+          throw err
         }
       })
     )
@@ -243,7 +245,7 @@ class YoutubeClient implements IYoutubeApi {
     videoCreationTimeCutoff.setHours(videoCreationTimeCutoff.getHours() - minimumVideoAgeHours)
 
     // filter all videos that are older than 'minimumVideoAgeHours'
-    const oldVideos = (await this.ytdlpClient.getVideosIds(channel, minimumVideosCount, 'last')).filter(
+    const oldVideos = (await this.ytdlpClient.getVideos(channel, minimumVideosCount, 'last')).filter(
       (v) => v.publishedAt < videoCreationTimeCutoff
     )
     if (oldVideos.length < minimumVideosCount) {
@@ -265,7 +267,7 @@ class YoutubeClient implements IYoutubeApi {
     const nMonthsAgo = new Date()
     nMonthsAgo.setMonth(nMonthsAgo.getMonth() - 1)
 
-    const newVideos = (await this.ytdlpClient.getVideosIds(channel, minimumVideosPerMonth)).filter(
+    const newVideos = (await this.ytdlpClient.getVideos(channel, minimumVideosPerMonth)).filter(
       (v) => v.publishedAt > nMonthsAgo
     )
     if (newVideos.length < minimumVideosPerMonth) {

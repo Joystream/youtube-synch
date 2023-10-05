@@ -5,7 +5,7 @@ import path from 'path'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
-import { DownloadJobData, DownloadJobOutput } from '../../types/youtube'
+import { DownloadJobData, DownloadJobOutput, YtChannel } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { IYoutubeApi } from '../youtube/api'
 import { SyncUtils } from './utils'
@@ -106,7 +106,7 @@ export class ContentDownloadService {
       const channel = await this.dynamodbService.channels.getById(video.channelId)
       const isHistoricalVideo = new Date(video.publishedAt) < channel.createdAt
       if (isHistoricalVideo) {
-        const sizeLimitReached = channel.historicalVideoSyncedSize + size > SyncUtils.sizeCap(channel)
+        const sizeLimitReached = channel.historicalVideoSyncedSize + size > YtChannel.sizeCap(channel)
         if (sizeLimitReached) {
           throw new Error(`size cap for historical videos of channel ${channel.id} has reached.`)
         }

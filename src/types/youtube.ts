@@ -116,6 +116,43 @@ export class YtChannel {
       yppStatus === 'Verified::Diamond'
     )
   }
+
+  static isSyncEnabled(channel: YtChannel) {
+    return channel.shouldBeIngested && channel.allowOperatorIngestion
+  }
+
+  static totalVideos(channel: YtChannel) {
+    return Math.min(channel.statistics.videoCount, YtChannel.videoCap(channel))
+  }
+
+  /**
+   * Utility methods to check sync limits for channels. There are 2 limits:
+   * video count and total size based on the subscribers count.
+   * */
+
+  static videoCap(channel: YtChannel): number {
+    if (channel.statistics.subscriberCount < 5000) {
+      return 100
+    } else if (channel.statistics.subscriberCount < 50000) {
+      return 250
+    } else {
+      return 1000
+    }
+  }
+
+  static sizeCap(channel: YtChannel): number {
+    if (channel.statistics.subscriberCount < 5000) {
+      return 10_000_000_000 // 10 GB
+    } else if (channel.statistics.subscriberCount < 50000) {
+      return 100_000_000_000 // 100 GB
+    } else {
+      return 1_000_000_000_000 // 1 TB
+    }
+  }
+
+  static hasSizeLimitReached(channel: YtChannel) {
+    return channel.historicalVideoSyncedSize >= this.sizeCap(channel)
+  }
 }
 
 export class YtUser {
