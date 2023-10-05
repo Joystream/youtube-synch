@@ -122,6 +122,38 @@
         ]
       }
     },
+    "/channels/{joystreamChannelId}/referrals": {
+      "get": {
+        "operationId": "ChannelsController_getReferredChannels",
+        "summary": "",
+        "description": "Retrieves channel referrals by joystreamChannelId",
+        "parameters": [
+          {
+            "name": "joystreamChannelId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
     "/channels/{joystreamChannelId}/ingest": {
       "put": {
         "operationId": "ChannelsController_ingestChannel",
@@ -833,10 +865,10 @@
               "Verified::Silver",
               "Verified::Gold",
               "Verified::Diamond",
-              "Suspended::SubparQuality",
-              "Suspended::DuplicateContent",
-              "Suspended::UnsupportedTopic",
+              "Suspended::CopyrightBreach",
+              "Suspended::MisleadingContent",
               "Suspended::ProgramTermsExploit",
+              "Suspended::UnsupportedTopic",
               "OptedOut"
             ]
           },
@@ -845,12 +877,6 @@
           },
           "referrerChannelId": {
             "type": "number"
-          },
-          "referredChannels": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           },
           "videoCategoryId": {
             "type": "string"
@@ -880,7 +906,6 @@
           "yppStatus",
           "joystreamChannelId",
           "referrerChannelId",
-          "referredChannels",
           "videoCategoryId",
           "language",
           "thumbnails",
@@ -984,10 +1009,10 @@
           "reason": {
             "type": "string",
             "enum": [
-              "SubparQuality",
-              "DuplicateContent",
-              "UnsupportedTopic",
-              "ProgramTermsExploit"
+              "CopyrightBreach",
+              "MisleadingContent",
+              "ProgramTermsExploit",
+              "UnsupportedTopic"
             ]
           }
         },

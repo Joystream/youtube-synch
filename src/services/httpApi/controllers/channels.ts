@@ -29,6 +29,7 @@ import {
   ChannelInductionRequirementsDto,
   IngestChannelDto,
   OptoutChannelDto,
+  ReferredChannelDto,
   SaveChannelRequest,
   SaveChannelResponse,
   SetChannelCategoryByOperatorDto,
@@ -131,13 +132,25 @@ export class ChannelsController {
   @ApiOperation({ description: 'Retrieves channel by joystreamChannelId' })
   async get(@Param('joystreamChannelId', ParseIntPipe) id: number) {
     try {
-      const [channel, referredChannels, syncStatus] = await Promise.all([
+      const [channel, syncStatus] = await Promise.all([
         this.dynamodbService.channels.getByJoystreamId(id),
-        this.dynamodbService.channels.getReferredChannels(id),
         this.contentProcessingService.getJobsStatForChannel(id),
       ])
 
-      return new ChannelDto(channel, referredChannels, syncStatus)
+      return new ChannelDto(channel, syncStatus)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
+  }
+
+  @Get(':joystreamChannelId/referrals')
+  @ApiResponse({ type: ChannelDto })
+  @ApiOperation({ description: 'Retrieves channel referrals by joystreamChannelId' })
+  async getReferredChannels(@Param('joystreamChannelId', ParseIntPipe) id: number) {
+    try {
+      const referredChannels = await this.dynamodbService.channels.getReferredChannels(id)
+      return referredChannels.map((c) => new ReferredChannelDto(c))
     } catch (error) {
       const message = error instanceof Error ? error.message : error
       throw new NotFoundException(message)
