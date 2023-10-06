@@ -105,11 +105,12 @@ export class PriorityJobQueue<
 
     const getNJobs = async (n: number): Promise<Job[]> => {
       let jobs: Job[] = []
-      do {
-        const job = await this.worker.getNextJob(randomUUID(), { block: true })
+      while (jobs.length < n) {
+        const job = await this.worker.getNextJob(randomUUID())
+
         if (!job) return jobs
         jobs.push(job)
-      } while (jobs.length <= n)
+      }
       return jobs
     }
 
