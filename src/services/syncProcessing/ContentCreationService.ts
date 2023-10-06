@@ -49,13 +49,13 @@ export class ContentCreationService {
         this.joystreamClient.getCollaboratorMember(),
       ])
 
-      const tasksByJoystreamChannelId = _(jobs)
+      const jobsByJoystreamChannelId = _(jobs)
         .groupBy((j) => j.data.joystreamChannelId)
         .map((jobs, joystreamChannelId) => ({ joystreamChannelId, jobs: [...jobs] }))
         .value()
 
       await Promise.all(
-        tasksByJoystreamChannelId.map(async ({ joystreamChannelId, jobs }) => {
+        jobsByJoystreamChannelId.map(async ({ joystreamChannelId, jobs }) => {
           const channelId = Number(joystreamChannelId)
           const blockNumber = this.lastVideoCreationBlockByChannelId.get(channelId) || new BN(0)
           if (!(await this.joystreamClient.hasQueryNodeProcessedBlock(blockNumber))) {
@@ -142,15 +142,17 @@ export class ContentCreationService {
       // return completed jobs
       return jobsToComplete().jobs
     } catch (err) {
-      this.logger.error(`Got error creating ${txByJob.size} videos`, {
-        videoIds: jobsToComplete().data.map((j) => j.id),
-        err,
-      })
+      err = new Error(
+        `Got error creating ${txByJob.size} videos: \n ${JSON.stringify({
+          videoIds: jobsToComplete().data.map((j) => j.id),
+          err: (err as Error).message,
+        })}`
+      )
 
       await this.dynamodbService.videos.batchUpdateState(jobsToComplete().data, 'VideoCreationFailed')
 
       // No Job was completed
-      return []
+      throw err
     }
   }
 
