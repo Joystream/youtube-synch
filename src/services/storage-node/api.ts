@@ -81,12 +81,13 @@ export class StorageNodeApi {
         if (axios.isAxiosError(error) && error.response) {
           const storageNodeUrl = error.config?.url
           const { status, data } = error.response
-          this.logger.error(`${storageNodeUrl} - errorCode: ${status}, msg: ${data?.message}`)
 
           if (data?.message?.includes(`Data object ${dataObjectId} has already been accepted by storage node`)) {
             // No need to throw an error, we can continue with the next asset
             continue
           }
+
+          this.logger.error(`${storageNodeUrl} - errorCode: ${status}, msg: ${data?.message}`)
         }
 
         throw error

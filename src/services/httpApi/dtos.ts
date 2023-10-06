@@ -72,8 +72,8 @@ export class ChannelInductionRequirementsDto {
     this.MINIMUM_TOTAL_VIDEOS_COUNT = requirements.minimumVideosCount
     this.MINIMUM_VIDEO_AGE_HOURS = requirements.minimumVideoAgeHours
     this.MINIMUM_CHANNEL_AGE_HOURS = requirements.minimumChannelAgeHours
-    this.MINIMUM_VIDEOS_PER_MONTH = 1
-    this.MONTHS_TO_CONSIDER = 1
+    this.MINIMUM_VIDEOS_PER_MONTH = requirements.minimumVideosPerMonth
+    this.MONTHS_TO_CONSIDER = requirements.monthsToConsider
   }
 }
 
