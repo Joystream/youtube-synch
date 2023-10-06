@@ -369,7 +369,10 @@ export class ChannelsController {
 
     try {
       for (const { channelHandle } of channels) {
-        await this.dynamodbService.repo.whitelistChannels.save({ channelHandle, createdAt: new Date() })
+        await this.dynamodbService.repo.whitelistChannels.save({
+          channelHandle: channelHandle.toLowerCase(),
+          createdAt: new Date(),
+        })
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : error
@@ -388,7 +391,7 @@ export class ChannelsController {
     await this.ensureOperatorAuthorization(authorizationHeader)
 
     try {
-      const whitelistChannel = await this.dynamodbService.repo.whitelistChannels.get(channelHandle)
+      const whitelistChannel = await this.dynamodbService.repo.whitelistChannels.get(channelHandle.toLowerCase())
 
       if (!whitelistChannel) {
         throw new NotFoundException(`Channel with handle ${channelHandle} is not whitelisted`)
