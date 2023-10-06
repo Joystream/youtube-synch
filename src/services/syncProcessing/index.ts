@@ -246,11 +246,11 @@ export class ContentProcessingService {
     return this.jobsManager.getJobQueues().map((q) => q.queue)
   }
 
-  public async getJobsStat() {
-    const totalJobs = await this.jobsManager
+  public async getJobsCount() {
+    const totalCount = await this.jobsManager
       .getJobQueue('UploadQueue')
       .queue.getJobCountByTypes('prioritized', 'waiting-children', 'active')
-    return { totalJobs }
+    return { totalCount }
   }
 
   public async getJobsStatForChannel(joystreamChannelId: number): Promise<ChannelSyncStatus> {

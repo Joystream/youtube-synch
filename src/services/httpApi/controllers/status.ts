@@ -29,7 +29,7 @@ export class StatusController {
         sync: { enable },
       } = this.config
 
-      const { totalJobs: syncBacklog } = await this.contentProcessingService.getJobsStat()
+      const { totalCount: syncBacklog } = await this.contentProcessingService.getJobsCount()
       return { version, syncStatus: enable ? 'enabled' : 'disabled', syncBacklog }
     } catch (error) {
       const message = error instanceof Error ? error.message : error
