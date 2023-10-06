@@ -68,45 +68,46 @@ export class ContentCreationService {
             this.joystreamClient.createVideoExtrinsicDefaults(channelId),
           ])
 
-          await Promise.all(
-            jobs.map(async (job, i) => {
-              // get computed metadata object
-              const videoMetadata = Object.values(await job.getChildrenValues<MetadataJobOutput>())[0]
-              if (!videoMetadata) {
-                throw new Error(`Failed to get video metadata from 'completed' child job: ${job.id}`)
-              }
+          // Important: Don't use Promise.all(jobs.map(...)) here, as we need to sequentially construct the
+          // TXs from jobs and place them in the batched tx call in the same order as the jobs. This is to
+          // correctly construct app action nonce (using job's index in the "jobs" array) for each video.
+          for (const [i, job] of jobs.entries()) {
+            // get computed metadata object
+            const videoMetadata = Object.values(await job.getChildrenValues<MetadataJobOutput>())[0]
+            if (!videoMetadata) {
+              throw new Error(`Failed to get video metadata from 'completed' child job: ${job.id}`)
+            }
 
-              // TODO: Remove this. temporary fix to ensure no duplicate videos created
-              const qnVideo = await this.joystreamClient.getVideoByYtResourceId(job.data.id)
-              if (qnVideo) {
-                this.logger.error(
-                  `Inconsistent state. Youtube video ${job.data.id} was already created on Joystream but the service tried to recreate it.`,
-                  { videoId: job.data.id, channelId: job.data.joystreamChannelId }
-                )
-                await this.dynamodbService.videos.updateState(job.data, 'CreatingVideo')
-                process.exit(1)
-              }
-
-              // create submittable tx
-              const tx = await this.joystreamClient.createVideoTx(
-                app.id,
-                appActionNonce + i,
-                collaborator,
-                extrinsicDefaults,
-                { ...job.data, videoMetadata }
+            // TODO: Remove this. temporary fix to ensure no duplicate videos created
+            const qnVideo = await this.joystreamClient.getVideoByYtResourceId(job.data.id)
+            if (qnVideo) {
+              this.logger.error(
+                `Inconsistent state. Youtube video ${job.data.id} was already created on Joystream but the service tried to recreate it.`,
+                { videoId: job.data.id, channelId: job.data.joystreamChannelId }
               )
+              await this.dynamodbService.videos.updateState(job.data, 'CreatingVideo')
+              process.exit(1)
+            }
 
-              // set submittable tx for each job
-              txByJob.set(job, tx)
+            // create submittable tx
+            const tx = await this.joystreamClient.createVideoTx(
+              app.id,
+              appActionNonce + i,
+              collaborator,
+              extrinsicDefaults,
+              { ...job.data, videoMetadata }
+            )
 
-              // update historicalVideoSyncedSize by adding the size of historical videos
-              const isHistoricalVideo = new Date(job.data.publishedAt) < channel.createdAt
-              if (isHistoricalVideo) {
-                const size = SyncUtils.getSizeFromVideoMetadata(videoMetadata)
-                channel.historicalVideoSyncedSize += size
-              }
-            })
-          )
+            // set submittable tx for each job
+            txByJob.set(job, tx)
+
+            // update historicalVideoSyncedSize by adding the size of historical videos
+            const isHistoricalVideo = new Date(job.data.publishedAt) < channel.createdAt
+            if (isHistoricalVideo) {
+              const size = SyncUtils.getSizeFromVideoMetadata(videoMetadata)
+              channel.historicalVideoSyncedSize += size
+            }
+          }
 
           updatedChannels.push(channel)
         })
