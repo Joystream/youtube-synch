@@ -120,6 +120,10 @@ export class ContentProcessingService {
   private async prepareVideosForProcessing() {
     const allUnsyncedVideos = await this.dynamodbService.videos.getAllUnsyncedVideos()
 
+    if (this.config.limits.storage - SyncUtils.usedSpace < 0) {
+      this.logger.warn(`Local disk space is fully used. The processing of new videos will be postponed.`)
+    }
+
     const allUnsyncedVideosByChannelId = _(allUnsyncedVideos)
       .groupBy((v) => v.channelId)
       .map((videos, channelId) => ({ channelId, unsyncedVideos: [...videos] }))
@@ -128,7 +132,7 @@ export class ContentProcessingService {
     await Promise.all(
       allUnsyncedVideosByChannelId.map(async ({ channelId, unsyncedVideos }) => {
         const channel = await this.dynamodbService.channels.getById(channelId)
-        const totalVideos = Math.min(channel.statistics.videoCount, SyncUtils.videoCap(channel))
+        const totalVideos = YtChannel.totalVideos(channel)
         const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / totalVideos
 
         for (const video of unsyncedVideos) {
@@ -163,12 +167,14 @@ export class ContentProcessingService {
    * based on it's channel state before adding it to the processing queue.
    */
   private async ensureVideoCanBeProcessed(video: YtVideo, channel: YtChannel): Promise<boolean> {
-    const isSyncEnabled = SyncUtils.isSyncEnabled(channel)
-    const sizeLimitReached = SyncUtils.hasSizeLimitReached(channel)
+    const isSyncEnabled = YtChannel.isSyncEnabled(channel)
+    const sizeLimitReached = YtChannel.hasSizeLimitReached(channel)
     const isCollaboratorSet = await this.joystreamClient.doesChannelHaveCollaborator(channel.joystreamChannelId)
     const isHistoricalVideo = new Date(video.publishedAt) < channel.createdAt
     const freeSpace = this.config.limits.storage - SyncUtils.usedSpace
 
+    // Consider video for processing if it has been created on-chain, and only needs
+    // to be uploaded on the storage network. Otherwise postpone the video creation.
     const spaceCondition = freeSpace > 0 || (freeSpace === 0 && video.joystreamVideo !== undefined)
 
     return (
@@ -182,7 +188,7 @@ export class ContentProcessingService {
   private async isActiveJobFlow(videoId: string): Promise<boolean> {
     for (const jobType of this.QUEUE_NAME_PREFIXES) {
       const jobQueue = this.jobsManager.getJobQueue(`${jobType}Queue`)
-      const state = await (await Job.fromId(jobQueue.queue, `${jobType}:${videoId}`))?.getState()
+      const state = await (await Job.fromId(jobQueue.queue, videoId))?.getState()
       if (state === 'active' || state === 'delayed' || state === 'prioritized' || state === 'waiting-children') {
         return true
       }
@@ -240,11 +246,11 @@ export class ContentProcessingService {
     return this.jobsManager.getJobQueues().map((q) => q.queue)
   }
 
-  public async getJobsStat() {
-    const totalJobs = await this.jobsManager
+  public async getJobsCount() {
+    const totalCount = await this.jobsManager
       .getJobQueue('UploadQueue')
       .queue.getJobCountByTypes('prioritized', 'waiting-children', 'active')
-    return { totalJobs }
+    return { totalCount }
   }
 
   public async getJobsStatForChannel(joystreamChannelId: number): Promise<ChannelSyncStatus> {
@@ -260,12 +266,16 @@ export class ContentProcessingService {
       return indices
     }, [])
 
-    // TODO: improve ETA calculation
-    const CONFIGURED_ETA_PER_JOB = 60 * 1000 // 1 min
-    const fullSyncEta = channelJobsIndices.reduce((eta, index) => eta + CONFIGURED_ETA_PER_JOB * index, 0)
+    // TODO: another improvement -> get all the ['active', 'prioritized', 'waiting-children'] jobs separately and then assign different eta to each stage respectively
+
+    // TODO: improve ETA calculation by taking into consideration the size of each video as well as its place in the queue
+
+    const CONFIGURED_ETA_PER_JOB_IN_SECS = 60 // 1 min
+    const fullSyncEta = channelJobsIndices.reduce((eta, index) => eta + CONFIGURED_ETA_PER_JOB_IN_SECS * index, 0)
 
     return {
       backlogCount: channelJobsIndices.length,
+      // TODO: if channelJobsIndices[0] < maxUploadsCount, then placeInSyncQueue = 1
       placeInSyncQueue: channelJobsIndices[0],
       fullSyncEta,
     }

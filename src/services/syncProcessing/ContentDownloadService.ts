@@ -5,7 +5,7 @@ import path from 'path'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
-import { DownloadJobData, DownloadJobOutput } from '../../types/youtube'
+import { DownloadJobData, DownloadJobOutput, YtChannel } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { IYoutubeApi } from '../youtube/api'
 import { SyncUtils } from './utils'
@@ -44,15 +44,17 @@ export class ContentDownloadService {
   private async removeVideoFile(videoId: string) {
     try {
       const dir = this.syncConfig.downloadsDir
-      const size = this.fileSize(videoId)
       const files = await fsPromises.readdir(dir)
       for (const file of files) {
         if (file.startsWith(videoId)) {
-          await fsPromises.unlink(path.join(dir, file))
+          const filePath = path.join(dir, file)
+          const size = fs.statSync(filePath).size
+          SyncUtils.updateUsedStorageSize(-size)
+
+          await fsPromises.unlink(filePath)
         }
       }
       SyncUtils.downloadedVideoFilePaths.delete(videoId)
-      SyncUtils.updateUsedStorageSize(-size)
     } catch (err) {
       this.logger.error(`Failed to delete media file for video. File not found.`, { videoId: videoId, err })
     }
@@ -106,7 +108,7 @@ export class ContentDownloadService {
       const channel = await this.dynamodbService.channels.getById(video.channelId)
       const isHistoricalVideo = new Date(video.publishedAt) < channel.createdAt
       if (isHistoricalVideo) {
-        const sizeLimitReached = channel.historicalVideoSyncedSize + size > SyncUtils.sizeCap(channel)
+        const sizeLimitReached = channel.historicalVideoSyncedSize + size > YtChannel.sizeCap(channel)
         if (sizeLimitReached) {
           throw new Error(`size cap for historical videos of channel ${channel.id} has reached.`)
         }
@@ -121,7 +123,6 @@ export class ContentDownloadService {
         { message: 'Postprocessing:' },
         { message: 'The downloaded file is empty' },
         { message: 'This video is private' },
-        { message: 'removed by the uploader' },
         { message: 'removed by the uploader' },
         { message: 'size cap for historical videos' },
       ]

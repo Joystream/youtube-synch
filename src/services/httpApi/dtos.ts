@@ -72,8 +72,8 @@ export class ChannelInductionRequirementsDto {
     this.MINIMUM_TOTAL_VIDEOS_COUNT = requirements.minimumVideosCount
     this.MINIMUM_VIDEO_AGE_HOURS = requirements.minimumVideoAgeHours
     this.MINIMUM_CHANNEL_AGE_HOURS = requirements.minimumChannelAgeHours
-    this.MINIMUM_VIDEOS_PER_MONTH = 1
-    this.MONTHS_TO_CONSIDER = 1
+    this.MINIMUM_VIDEOS_PER_MONTH = requirements.minimumVideosPerMonth
+    this.MONTHS_TO_CONSIDER = requirements.monthsToConsider
   }
 }
 
@@ -98,7 +98,6 @@ export class ChannelDto {
   @ApiProperty({ enum: channelYppStatus }) yppStatus: ChannelYppStatus
   @ApiProperty() joystreamChannelId: number
   @ApiProperty() referrerChannelId?: number
-  @ApiProperty() referredChannels: ReferredChannelDto[]
   @ApiProperty() videoCategoryId: string
   @ApiProperty() language: string
   @ApiProperty() thumbnails: ThumbnailsDto
@@ -106,7 +105,7 @@ export class ChannelDto {
   @ApiProperty() createdAt: Date
   @ApiProperty() syncStatus?: ChannelSyncStatus
 
-  constructor(channel: YtChannel, referredChannels?: YtChannel[], syncStatus?: ChannelSyncStatus) {
+  constructor(channel: YtChannel, syncStatus?: ChannelSyncStatus) {
     this.youtubeChannelId = channel.id
     this.title = channel.title
     this.description = channel.description
@@ -120,11 +119,10 @@ export class ChannelDto {
     this.thumbnails = channel.thumbnails
     this.createdAt = new Date(channel.createdAt)
     this.syncStatus = new ChannelSyncStatusDto(syncStatus)
-    this.referredChannels = referredChannels?.map((c) => new ReferredChannelDto(c)) || []
   }
 }
 
-class ReferredChannelDto {
+export class ReferredChannelDto {
   @ApiProperty() joystreamChannelId: number
   @ApiProperty() title: string
   @ApiProperty() subscribersCount: number

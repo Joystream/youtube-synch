@@ -8,7 +8,6 @@ import { YtChannel, YtDlpFlatPlaylistOutput, verifiedVariants } from '../../type
 import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
 import { IYoutubeApi } from '../youtube/api'
-import { SyncUtils } from './utils'
 
 export class YoutubePollingService {
   private logger: Logger
@@ -188,16 +187,16 @@ export class YoutubePollingService {
 
   public async performVideosIngestion(channel: YtChannel) {
     try {
-      const historicalVideosCountLimit = SyncUtils.videoCap(channel)
+      const historicalVideosCountLimit = YtChannel.videoCap(channel)
 
       // get iDs of all sync-able videos within the channel limits
-      const videosIds = await this.youtubeApi.ytdlpClient.getVideosIds(channel, historicalVideosCountLimit)
+      const videosIds = await this.youtubeApi.ytdlpClient.getVideos(channel, historicalVideosCountLimit)
 
       // get all video Ids that are not yet being tracked
       let untrackedVideosIds = await this.getUntrackedVideosIds(channel, videosIds)
 
       // if size limit has reached, don't track new historical videos
-      if (SyncUtils.hasSizeLimitReached(channel)) {
+      if (YtChannel.hasSizeLimitReached(channel)) {
         untrackedVideosIds = untrackedVideosIds.filter((v) => v.publishedAt >= channel.createdAt)
       }
 

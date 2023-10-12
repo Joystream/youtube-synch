@@ -101,9 +101,9 @@ export class YtChannel {
 
   static isSuspended({ yppStatus }: YtChannel) {
     return (
-      yppStatus === 'Suspended::DuplicateContent' ||
+      yppStatus === 'Suspended::CopyrightBreach' ||
       yppStatus === 'Suspended::ProgramTermsExploit' ||
-      yppStatus === 'Suspended::SubparQuality' ||
+      yppStatus === 'Suspended::MisleadingContent' ||
       yppStatus === 'Suspended::UnsupportedTopic'
     )
   }
@@ -115,6 +115,43 @@ export class YtChannel {
       yppStatus === 'Verified::Gold' ||
       yppStatus === 'Verified::Diamond'
     )
+  }
+
+  static isSyncEnabled(channel: YtChannel) {
+    return channel.shouldBeIngested && channel.allowOperatorIngestion
+  }
+
+  static totalVideos(channel: YtChannel) {
+    return Math.min(channel.statistics.videoCount, YtChannel.videoCap(channel))
+  }
+
+  /**
+   * Utility methods to check sync limits for channels. There are 2 limits:
+   * video count and total size based on the subscribers count.
+   * */
+
+  static videoCap(channel: YtChannel): number {
+    if (channel.statistics.subscriberCount < 5000) {
+      return 100
+    } else if (channel.statistics.subscriberCount < 50000) {
+      return 250
+    } else {
+      return 1000
+    }
+  }
+
+  static sizeCap(channel: YtChannel): number {
+    if (channel.statistics.subscriberCount < 5000) {
+      return 10_000_000_000 // 10 GB
+    } else if (channel.statistics.subscriberCount < 50000) {
+      return 100_000_000_000 // 100 GB
+    } else {
+      return 1_000_000_000_000 // 1 TB
+    }
+  }
+
+  static hasSizeLimitReached(channel: YtChannel) {
+    return channel.historicalVideoSyncedSize >= this.sizeCap(channel)
   }
 }
 
@@ -175,10 +212,10 @@ export enum ChannelYppStatusVerified {
 }
 
 export enum ChannelYppStatusSuspended {
-  SubparQuality = 'SubparQuality',
-  DuplicateContent = 'DuplicateContent',
-  UnsupportedTopic = 'UnsupportedTopic',
+  CopyrightBreach = 'CopyrightBreach',
+  MisleadingContent = 'MisleadingContent',
   ProgramTermsExploit = 'ProgramTermsExploit',
+  UnsupportedTopic = 'UnsupportedTopic',
 }
 
 export const verifiedVariants = Object.values(ChannelYppStatusVerified).map((status) => `Verified::${status}` as const)
