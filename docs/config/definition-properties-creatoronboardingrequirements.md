@@ -7,13 +7,15 @@
 | Property                                            | Type     | Required | Nullable       | Defined by                                                                                                                                                                                                                                                     |
 | :-------------------------------------------------- | :------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [minimumSubscribersCount](#minimumsubscriberscount) | `number` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements-properties-minimumsubscriberscount.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements/properties/minimumSubscribersCount") |
-| [minimumVideoCount](#minimumvideocount)             | `number` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements-properties-minimumvideocount.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements/properties/minimumVideoCount")             |
+| [minimumVideosCount](#minimumvideoscount)           | `number` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements-properties-minimumvideoscount.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements/properties/minimumVideosCount")           |
 | [minimumVideoAgeHours](#minimumvideoagehours)       | `number` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements-properties-minimumvideoagehours.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements/properties/minimumVideoAgeHours")       |
 | [minimumChannelAgeHours](#minimumchannelagehours)   | `number` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements-properties-minimumchannelagehours.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements/properties/minimumChannelAgeHours")   |
+| [minimumVideosPerMonth](#minimumvideospermonth)     | `number` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements-properties-minimumvideospermonth.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements/properties/minimumVideosPerMonth")     |
+| [monthsToConsider](#monthstoconsider)               | `number` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements-properties-monthstoconsider.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements/properties/monthsToConsider")               |
 
 ## minimumSubscribersCount
 
-Minimum number of subscribers required to onboard a creator
+Minimum number of subscribers required for signup
 
 `minimumSubscribersCount`
 
@@ -29,11 +31,11 @@ Minimum number of subscribers required to onboard a creator
 
 `number`
 
-## minimumVideoCount
+## minimumVideosCount
 
-Minimum number of videos required to onboard a creator
+Minimum total number of videos required for signup
 
-`minimumVideoCount`
+`minimumVideosCount`
 
 *   is required
 
@@ -41,15 +43,15 @@ Minimum number of videos required to onboard a creator
 
 *   cannot be null
 
-*   defined in: [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements-properties-minimumvideocount.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements/properties/minimumVideoCount")
+*   defined in: [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements-properties-minimumvideoscount.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements/properties/minimumVideosCount")
 
-### minimumVideoCount Type
+### minimumVideosCount Type
 
 `number`
 
 ## minimumVideoAgeHours
 
-All videos must be at least this old to onboard a creator
+Minimum age of videos in hours for signup
 
 `minimumVideoAgeHours`
 
@@ -67,7 +69,7 @@ All videos must be at least this old to onboard a creator
 
 ## minimumChannelAgeHours
 
-The channel must be at least this old to onboard a creator
+Minimum age of the channel in hours for signup
 
 `minimumChannelAgeHours`
 
@@ -80,5 +82,41 @@ The channel must be at least this old to onboard a creator
 *   defined in: [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements-properties-minimumchannelagehours.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements/properties/minimumChannelAgeHours")
 
 ### minimumChannelAgeHours Type
+
+`number`
+
+## minimumVideosPerMonth
+
+Minimum number of videos posted per month
+
+`minimumVideosPerMonth`
+
+*   is required
+
+*   Type: `number`
+
+*   cannot be null
+
+*   defined in: [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements-properties-minimumvideospermonth.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements/properties/minimumVideosPerMonth")
+
+### minimumVideosPerMonth Type
+
+`number`
+
+## monthsToConsider
+
+Number of latest months to consider for the monthly video posting requirement
+
+`monthsToConsider`
+
+*   is required
+
+*   Type: `number`
+
+*   cannot be null
+
+*   defined in: [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements-properties-monthstoconsider.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements/properties/monthsToConsider")
+
+### monthsToConsider Type
 
 `number`

@@ -8,6 +8,7 @@
 | :------------------------------------------------ | :------- | :------- | :------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [dailyApiQuota](#dailyapiquota)                   | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-specifies-daily-youtube-api-quota-rationing-scheme-for-youtube-partner-program.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/dailyApiQuota") |
 | [maxConcurrentDownloads](#maxconcurrentdownloads) | `number` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-maxconcurrentdownloads.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/maxConcurrentDownloads")                                                |
+| [createVideoTxBatchSize](#createvideotxbatchsize) | `number` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-createvideotxbatchsize.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/createVideoTxBatchSize")                                                |
 | [maxConcurrentUploads](#maxconcurrentuploads)     | `number` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-maxconcurrentuploads.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/maxConcurrentUploads")                                                    |
 | [storage](#storage)                               | `string` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-storage.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/storage")                                                                              |
 
@@ -53,6 +54,32 @@ The default value is:
 
 ```json
 50
+```
+
+## createVideoTxBatchSize
+
+No. of videos that should be created in a batched 'create_video' tx
+
+`createVideoTxBatchSize`
+
+*   is required
+
+*   Type: `number`
+
+*   cannot be null
+
+*   defined in: [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-createvideotxbatchsize.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/createVideoTxBatchSize")
+
+### createVideoTxBatchSize Type
+
+`number`
+
+### createVideoTxBatchSize Default Value
+
+The default value is:
+
+```json
+10
 ```
 
 ## maxConcurrentUploads

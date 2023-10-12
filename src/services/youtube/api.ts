@@ -30,11 +30,11 @@ export class YtDlpClient {
     this.ytdlpPath = `${pkgDir.sync(__dirname)}/node_modules/youtube-dl-exec/bin/yt-dlp`
   }
 
-  async getVideosIds(
+  async getVideos(
     channel: YtChannel,
     limit?: number,
     order?: 'first' | 'last',
-    videoType: ('videos' | 'shorts' | 'streams')[] = ['videos', 'shorts'] // Excluding the livestreams from syncing
+    videoType: ('videos' | 'shorts' | 'streams')[] = ['videos', 'shorts'] // Excluding the live streams from syncing
   ): Promise<YtDlpFlatPlaylistOutput> {
     if (limit === undefined && order !== undefined) {
       throw new Error('Order should only be provided if limit is provided')
@@ -69,8 +69,10 @@ export class YtDlpClient {
 
           return videos
         } catch (err) {
-          console.log(`YtDlpClient error: ${err}`)
-          return []
+          if (err instanceof Error && err.message.includes(`This channel does not have a ${type} tab`)) {
+            return []
+          }
+          throw err
         }
       })
     )
@@ -89,6 +91,7 @@ export class YtDlpClient {
 }
 
 export interface IYoutubeApi {
+  ytdlpClient: YtDlpClient
   getUserFromCode(code: string, youtubeRedirectUri: string): Promise<YtUser>
   getChannel(user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>): Promise<YtChannel>
   getVerifiedChannel(
@@ -106,7 +109,7 @@ export interface IQuotaMonitoringClient {
 
 class YoutubeClient implements IYoutubeApi {
   private config: ReadonlyConfig
-  private ytdlpClient: YtDlpClient
+  readonly ytdlpClient: YtDlpClient
 
   constructor(config: ReadonlyConfig) {
     this.config = config
@@ -214,9 +217,16 @@ class YoutubeClient implements IYoutubeApi {
   async getVerifiedChannel(
     user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>
   ): Promise<{ channel: YtChannel; errors: YoutubeApiError[] }> {
+    const {
+      minimumSubscribersCount,
+      minimumVideosCount,
+      minimumChannelAgeHours,
+      minimumVideoAgeHours,
+      minimumVideosPerMonth,
+      monthsToConsider,
+    } = this.config.creatorOnboardingRequirements
+
     const channel = await this.getChannel(user)
-    const { minimumSubscribersCount, minimumVideoCount, minimumChannelAgeHours, minimumVideoAgeHours } =
-      this.config.creatorOnboardingRequirements
     const errors: YoutubeApiError[] = []
     if (channel.statistics.subscriberCount < minimumSubscribersCount) {
       errors.push(
@@ -230,47 +240,50 @@ class YoutubeClient implements IYoutubeApi {
       )
     }
 
-    // at least MINiMUM_VIDEO_COUNT videos should be MINIMUM_VIDEO_AGE_HOURS old
+    // at least 'minimumVideosCount' videos should be 'minimumVideoAgeHours' old
     const videoCreationTimeCutoff = new Date()
     videoCreationTimeCutoff.setHours(videoCreationTimeCutoff.getHours() - minimumVideoAgeHours)
 
-    // filter all videos that are older than MINIMUM_VIDEO_AGE_HOURS
-    const oldVideos = (await this.ytdlpClient.getVideosIds(channel, minimumVideoCount, 'last')).filter(
-      (v) => new Date(v.publishedAt) < videoCreationTimeCutoff
+    // filter all videos that are older than 'minimumVideoAgeHours'
+    const oldVideos = (await this.ytdlpClient.getVideos(channel, minimumVideosCount, 'last')).filter(
+      (v) => v.publishedAt < videoCreationTimeCutoff
     )
-    if (oldVideos.length < minimumVideoCount) {
+    if (oldVideos.length < minimumVideosCount) {
       errors.push(
         new YoutubeApiError(
           ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_VIDEOS,
           `Channel ${channel.id} with ${oldVideos.length} videos does not meet Youtube ` +
-            `Partner Program requirement of at least ${minimumVideoCount} videos, each ${(
+            `Partner Program requirement of at least ${minimumVideosCount} videos, each ${(
               minimumVideoAgeHours / 720
             ).toPrecision(2)} month old`,
           channel.statistics.videoCount,
-          minimumVideoCount
+          minimumVideosCount
         )
       )
     }
 
-    // filter at least one video should be newer than MINIMUM_VIDEO_AGE_HOURS
-    const newVideo = (await this.ytdlpClient.getVideosIds(channel, 1)).filter(
-      (v) => new Date(v.publishedAt) > videoCreationTimeCutoff
+    // TODO: make configurable (currently hardcoded to latest 1 month)
+    // at least 'minimumVideosPerMonth' should be there for 'monthsToConsider'
+    const nMonthsAgo = new Date()
+    nMonthsAgo.setMonth(nMonthsAgo.getMonth() - 1)
+
+    const newVideos = (await this.ytdlpClient.getVideos(channel, minimumVideosPerMonth)).filter(
+      (v) => v.publishedAt > nMonthsAgo
     )
-    if (newVideo.length ) {
+    if (newVideos.length < minimumVideosPerMonth) {
       errors.push(
         new YoutubeApiError(
-          ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_NEW_VIDEO_REQUIREMENT,
-          `Channel ${channel.id} with ${newVideo.length} videos does not meet Youtube ` +
-            `Partner Program requirement of at least 1 video, newer than ${(minimumVideoAgeHours / 720).toPrecision(
-              2
-            )} month old.`,
+          ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_NEW_VIDEOS_REQUIREMENT,
+          `Channel ${channel.id} videos does not meet Youtube Partner Program ` +
+            `requirement of at least ${minimumVideosPerMonth} video per ` +
+            `month, posted over the last ${monthsToConsider} months`,
           channel.statistics.videoCount,
-          minimumVideoCount
+          minimumVideosPerMonth
         )
       )
     }
 
-    // Channel should be at least MINIMUM_CHANNEL_AGE_HOURS old
+    // Channel should be at least 'minimumChannelAgeHours' old
     const channelCreationTimeCutoff = new Date()
     channelCreationTimeCutoff.setHours(channelCreationTimeCutoff.getHours() - minimumChannelAgeHours)
     if (new Date(channel.publishedAt) > channelCreationTimeCutoff) {
@@ -520,6 +533,14 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
     })
 
     return quotaUsage
+  }
+
+  /**
+   * Implement IYoutubeApi interface
+   **/
+
+  get ytdlpClient() {
+    return this.decorated.ytdlpClient
   }
 
   getCreatorOnboardingRequirements() {

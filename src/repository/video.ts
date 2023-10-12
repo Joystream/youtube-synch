@@ -187,6 +187,16 @@ export class VideosRepository implements IRepository<YtVideo> {
     })
   }
 
+  async batchSave(videos: YtVideo[]): Promise<void> {
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const result = await this.model.batchPut(videos)
+      if (result.unprocessedItems.length) {
+        console.log('Unprocessed items', result.unprocessedItems.length)
+        return await this.batchSave(result.unprocessedItems as YtVideo[])
+      }
+    })
+  }
+
   async delete(partition: string, id: string): Promise<void> {
     return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
       await this.model.delete({ id, channelId: partition })
@@ -226,6 +236,14 @@ export class VideosService {
    */
   async updateState(video: YtVideo, state: VideoState): Promise<YtVideo> {
     return await this.videosRepository.save({ ...video, state })
+  }
+
+  /**
+   * @param video
+   * @returns Updated video
+   */
+  async batchUpdateState(videos: YtVideo[], state: VideoState): Promise<void> {
+    return await this.videosRepository.batchSave(videos.map((v) => ({ ...v, state })))
   }
 
   async getVideosInState(state: VideoState): Promise<YtVideo[]> {

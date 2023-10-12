@@ -1,0 +1,3 @@
+## minimumVideosCount Type
+
+`number`

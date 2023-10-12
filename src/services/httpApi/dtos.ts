@@ -15,6 +15,8 @@ import {
 } from 'class-validator'
 import { Config } from '../../types'
 import {
+  ChannelSyncStatus,
+  ChannelYppStatus,
   ChannelYppStatusSuspended,
   ChannelYppStatusVerified,
   JoystreamVideo,
@@ -22,6 +24,7 @@ import {
   YtChannel,
   YtUser,
   YtVideo,
+  channelYppStatus,
 } from '../../types/youtube'
 
 // NestJS Data Transfer Objects (DTO)s
@@ -46,16 +49,44 @@ export class CollaboratorStatusDto {
 }
 
 export class ChannelInductionRequirementsDto {
-  @ApiProperty() MINIMUM_SUBSCRIBERS_COUNT: number
-  @ApiProperty() MINIMUM_VIDEO_COUNT: number
-  @ApiProperty() MINIMUM_VIDEO_AGE_HOURS: number
-  @ApiProperty() MINIMUM_CHANNEL_AGE_HOURS: number
+  @ApiProperty({ description: 'Minimum number of subscribers required for signup' })
+  MINIMUM_SUBSCRIBERS_COUNT: number
+
+  @ApiProperty({ description: 'Minimum total number of videos required for signup' })
+  MINIMUM_TOTAL_VIDEOS_COUNT: number
+
+  @ApiProperty({ description: 'Minimum age of videos in hours for signup' })
+  MINIMUM_VIDEO_AGE_HOURS: number
+
+  @ApiProperty({ description: 'Minimum age of the channel in hours for signup' })
+  MINIMUM_CHANNEL_AGE_HOURS: number
+
+  @ApiProperty({ description: 'Minimum number of videos posted per month' })
+  MINIMUM_VIDEOS_PER_MONTH: number
+
+  @ApiProperty({ description: 'Number of latest months to consider for the monthly video posting requirement' })
+  MONTHS_TO_CONSIDER: number
 
   constructor(requirements: Config['creatorOnboardingRequirements']) {
     this.MINIMUM_SUBSCRIBERS_COUNT = requirements.minimumSubscribersCount
-    this.MINIMUM_VIDEO_COUNT = requirements.minimumVideoCount
+    this.MINIMUM_TOTAL_VIDEOS_COUNT = requirements.minimumVideosCount
     this.MINIMUM_VIDEO_AGE_HOURS = requirements.minimumVideoAgeHours
     this.MINIMUM_CHANNEL_AGE_HOURS = requirements.minimumChannelAgeHours
+    this.MINIMUM_VIDEOS_PER_MONTH = requirements.minimumVideosPerMonth
+    this.MONTHS_TO_CONSIDER = requirements.monthsToConsider
+  }
+}
+
+class ChannelSyncStatusDto {
+  @ApiProperty({ description: 'No. of videos in sync backlog for the channel' }) backlogCount: number
+  @ApiProperty({ description: 'ETA (seconds) to fully sync all planned videos of the channel' }) fullSyncEta: number
+  @ApiProperty({ description: 'Place in the sync queue of the earliest video for the channel,' })
+  placeInSyncQueue: number
+
+  constructor(syncStatus?: ChannelSyncStatus) {
+    this.backlogCount = syncStatus?.backlogCount || 0
+    this.fullSyncEta = syncStatus?.fullSyncEta || 0
+    this.placeInSyncQueue = syncStatus?.placeInSyncQueue || 0
   }
 }
 
@@ -64,17 +95,17 @@ export class ChannelDto {
   @ApiProperty() title: string
   @ApiProperty() description: string
   @ApiProperty() shouldBeIngested: boolean
-  @ApiProperty() yppStatus: string
+  @ApiProperty({ enum: channelYppStatus }) yppStatus: ChannelYppStatus
   @ApiProperty() joystreamChannelId: number
   @ApiProperty() referrerChannelId?: number
-  @ApiProperty() referredChannels: ReferredChannelDto[]
   @ApiProperty() videoCategoryId: string
   @ApiProperty() language: string
   @ApiProperty() thumbnails: ThumbnailsDto
   @ApiProperty() subscribersCount: number
   @ApiProperty() createdAt: Date
+  @ApiProperty() syncStatus?: ChannelSyncStatus
 
-  constructor(channel: YtChannel, referredChannels?: YtChannel[]) {
+  constructor(channel: YtChannel, syncStatus?: ChannelSyncStatus) {
     this.youtubeChannelId = channel.id
     this.title = channel.title
     this.description = channel.description
@@ -87,11 +118,11 @@ export class ChannelDto {
     this.yppStatus = channel.yppStatus
     this.thumbnails = channel.thumbnails
     this.createdAt = new Date(channel.createdAt)
-    this.referredChannels = referredChannels?.map((c) => new ReferredChannelDto(c)) || []
+    this.syncStatus = new ChannelSyncStatusDto(syncStatus)
   }
 }
 
-class ReferredChannelDto {
+export class ReferredChannelDto {
   @ApiProperty() joystreamChannelId: number
   @ApiProperty() title: string
   @ApiProperty() subscribersCount: number

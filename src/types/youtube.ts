@@ -1,3 +1,5 @@
+import { VideoMetadataAndHash } from '../services/syncProcessing/ContentMetadataService'
+
 type DeploymentEnv = 'dev' | 'local' | 'testing' | 'prod'
 const deploymentEnv = process.env.DEPLOYMENT_ENV as DeploymentEnv | undefined
 
@@ -99,9 +101,9 @@ export class YtChannel {
 
   static isSuspended({ yppStatus }: YtChannel) {
     return (
-      yppStatus === 'Suspended::DuplicateContent' ||
+      yppStatus === 'Suspended::CopyrightBreach' ||
       yppStatus === 'Suspended::ProgramTermsExploit' ||
-      yppStatus === 'Suspended::SubparQuality' ||
+      yppStatus === 'Suspended::MisleadingContent' ||
       yppStatus === 'Suspended::UnsupportedTopic'
     )
   }
@@ -113,6 +115,43 @@ export class YtChannel {
       yppStatus === 'Verified::Gold' ||
       yppStatus === 'Verified::Diamond'
     )
+  }
+
+  static isSyncEnabled(channel: YtChannel) {
+    return channel.shouldBeIngested && channel.allowOperatorIngestion
+  }
+
+  static totalVideos(channel: YtChannel) {
+    return Math.min(channel.statistics.videoCount, YtChannel.videoCap(channel))
+  }
+
+  /**
+   * Utility methods to check sync limits for channels. There are 2 limits:
+   * video count and total size based on the subscribers count.
+   * */
+
+  static videoCap(channel: YtChannel): number {
+    if (channel.statistics.subscriberCount < 5000) {
+      return 100
+    } else if (channel.statistics.subscriberCount < 50000) {
+      return 250
+    } else {
+      return 1000
+    }
+  }
+
+  static sizeCap(channel: YtChannel): number {
+    if (channel.statistics.subscriberCount < 5000) {
+      return 10_000_000_000 // 10 GB
+    } else if (channel.statistics.subscriberCount < 50000) {
+      return 100_000_000_000 // 100 GB
+    } else {
+      return 1_000_000_000_000 // 1 TB
+    }
+  }
+
+  static hasSizeLimitReached(channel: YtChannel) {
+    return channel.historicalVideoSyncedSize >= this.sizeCap(channel)
   }
 }
 
@@ -160,7 +199,8 @@ export enum VideoStates {
   UploadStarted = 6,
   // Video upload to Joystream succeeded
   UploadSucceeded = 7,
-  // Video was deleted from Youtube or set to private after being tracked by  YT-synch service
+  // Video was deleted from Youtube or set to private after being tracked by
+  // YT-synch service or skipped from syncing by the YT-synch service itself.
   VideoUnavailable = 8,
 }
 
@@ -172,10 +212,10 @@ export enum ChannelYppStatusVerified {
 }
 
 export enum ChannelYppStatusSuspended {
-  SubparQuality = 'SubparQuality',
-  DuplicateContent = 'DuplicateContent',
-  UnsupportedTopic = 'UnsupportedTopic',
+  CopyrightBreach = 'CopyrightBreach',
+  MisleadingContent = 'MisleadingContent',
   ProgramTermsExploit = 'ProgramTermsExploit',
+  UnsupportedTopic = 'UnsupportedTopic',
 }
 
 export const verifiedVariants = Object.values(ChannelYppStatusVerified).map((status) => `Verified::${status}` as const)
@@ -289,13 +329,26 @@ export const getImages = (channel: YtChannel) => {
 
 const urlAsArray = (url: string) => (url ? [url] : [])
 
-export type VideoDownloadTask = YtVideo & {
-  priorityScore: number
+export type DownloadJobData = YtVideo & {
+  priority: number
 }
 
-export type VideoCreationTask = YtVideo & {
-  priorityScore: number
+export type DownloadJobOutput = {
   filePath: string
+}
+
+export type CreateVideoJobData = YtVideo & {
+  priority: number
+}
+
+export type MetadataJobData = YtVideo & {
+  priority: number
+}
+
+export type MetadataJobOutput = VideoMetadataAndHash
+
+export type UploadJobData = YtVideo & {
+  priority: number
 }
 
 export type YtDlpFlatPlaylistOutput = {
@@ -313,4 +366,10 @@ export type FaucetRegisterMembershipParams = {
 
 export type FaucetRegisterMembershipResponse = {
   memberId: number
+}
+
+export type ChannelSyncStatus = {
+  backlogCount: number
+  placeInSyncQueue: number
+  fullSyncEta: number
 }

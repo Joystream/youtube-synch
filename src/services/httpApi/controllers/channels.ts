@@ -18,14 +18,18 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { signatureVerify } from '@polkadot/util-crypto'
 import { randomBytes } from 'crypto'
 import { DynamodbService } from '../../../repository'
+import { ReadonlyConfig } from '../../../types'
 import { YtChannel, YtUser } from '../../../types/youtube'
 import { QueryNodeApi } from '../../query-node/api'
+import { ContentProcessingService } from '../../syncProcessing'
+import { YoutubePollingService } from '../../syncProcessing/YoutubePollingService'
 import { IYoutubeApi } from '../../youtube/api'
 import {
   ChannelDto,
   ChannelInductionRequirementsDto,
   IngestChannelDto,
   OptoutChannelDto,
+  ReferredChannelDto,
   SaveChannelRequest,
   SaveChannelResponse,
   SetChannelCategoryByOperatorDto,
@@ -41,9 +45,12 @@ import {
 @ApiTags('channels')
 export class ChannelsController {
   constructor(
+    @Inject('config') private config: ReadonlyConfig,
     @Inject('youtube') private youtubeApi: IYoutubeApi,
     private qnApi: QueryNodeApi,
-    private dynamodbService: DynamodbService
+    private dynamodbService: DynamodbService,
+    private youtubePollingService: YoutubePollingService,
+    private contentProcessingService: ContentProcessingService
   ) {}
 
   @Post()
@@ -125,9 +132,25 @@ export class ChannelsController {
   @ApiOperation({ description: 'Retrieves channel by joystreamChannelId' })
   async get(@Param('joystreamChannelId', ParseIntPipe) id: number) {
     try {
-      const channel = await this.dynamodbService.channels.getByJoystreamId(id)
+      const [channel, syncStatus] = await Promise.all([
+        this.dynamodbService.channels.getByJoystreamId(id),
+        this.contentProcessingService.getJobsStatForChannel(id),
+      ])
+
+      return new ChannelDto(channel, syncStatus)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
+  }
+
+  @Get(':joystreamChannelId/referrals')
+  @ApiResponse({ type: ChannelDto })
+  @ApiOperation({ description: 'Retrieves channel referrals by joystreamChannelId' })
+  async getReferredChannels(@Param('joystreamChannelId', ParseIntPipe) id: number) {
+    try {
       const referredChannels = await this.dynamodbService.channels.getReferredChannels(id)
-      return new ChannelDto(channel, referredChannels)
+      return referredChannels.map((c) => new ReferredChannelDto(c))
     } catch (error) {
       const message = error instanceof Error ? error.message : error
       throw new NotFoundException(message)
@@ -346,7 +369,10 @@ export class ChannelsController {
 
     try {
       for (const { channelHandle } of channels) {
-        await this.dynamodbService.repo.whitelistChannels.save({ channelHandle, createdAt: new Date() })
+        await this.dynamodbService.repo.whitelistChannels.save({
+          channelHandle: channelHandle.toLowerCase(),
+          createdAt: new Date(),
+        })
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : error
@@ -365,7 +391,7 @@ export class ChannelsController {
     await this.ensureOperatorAuthorization(authorizationHeader)
 
     try {
-      const whitelistChannel = await this.dynamodbService.repo.whitelistChannels.get(channelHandle)
+      const whitelistChannel = await this.dynamodbService.repo.whitelistChannels.get(channelHandle.toLowerCase())
 
       if (!whitelistChannel) {
         throw new NotFoundException(`Channel with handle ${channelHandle} is not whitelisted`)
@@ -392,7 +418,15 @@ export class ChannelsController {
     await this.dynamodbService.users.save(user)
 
     // save channel
-    return await this.dynamodbService.channels.save(channel)
+    await this.dynamodbService.channels.save(channel)
+
+    // fetch and save channel's videos
+    if (this.config.sync.enable) {
+      // The videos ingestion action is done as a background job rather than blocking
+      // the request (as it may take a considerable time depending on the number of
+      // videos). Even if the ingestion fails it will be retried in next polling cycle.
+      setImmediate(() => this.youtubePollingService.performVideosIngestion(channel))
+    }
   }
 
   private async ensureOperatorAuthorization(authorizationHeader: string): Promise<void> {

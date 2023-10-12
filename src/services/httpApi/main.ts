@@ -1,3 +1,6 @@
+import { createBullBoard } from '@bull-board/api'
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter'
+import { ExpressAdapter } from '@bull-board/express'
 import { DynamicModule, INestApplication, ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
@@ -10,8 +13,8 @@ import { ReadonlyConfig, formattedJSON } from '../../types'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
 import { RuntimeApi } from '../runtime/api'
-import { ContentCreationService } from '../syncProcessing/ContentCreationService'
-import { ContentDownloadService } from '../syncProcessing/ContentDownloadService'
+import { ContentProcessingService } from '../syncProcessing'
+import { YoutubePollingService } from '../syncProcessing/YoutubePollingService'
 import { IYoutubeApi } from '../youtube/api'
 import {
   ChannelsController,
@@ -24,6 +27,9 @@ import { MembershipController } from './controllers/membership'
 
 class ApiModule {}
 
+const SWAGGER_DOCS_URL = '/docs'
+const QUEUE_UI_URL = '/ui/queues'
+
 // Create Swagger API documentation
 function setupSwagger(app: INestApplication) {
   const documentConfig = new DocumentBuilder()
@@ -34,10 +40,20 @@ function setupSwagger(app: INestApplication) {
   const document = SwaggerModule.createDocument(app, documentConfig)
 
   // Swagger API documentation will be available at http://localhost:3000/docs
-  SwaggerModule.setup('docs', app, document)
+  SwaggerModule.setup(SWAGGER_DOCS_URL, app, document)
 
   // Also write api spec to JSON file
   fs.writeFileSync(path.join(__dirname, './api-spec.json'), formattedJSON(document))
+}
+
+// Create UI dashboard for BullMQ queues
+async function setupQueuesDashboard(app: INestApplication, contentProcessingService: ContentProcessingService) {
+  // Setup UI dashboard for BullMQ queues
+  const serverAdapter = new ExpressAdapter()
+  serverAdapter.setBasePath(QUEUE_UI_URL)
+  const queues = (await contentProcessingService.getQueues()).map((q) => new BullMQAdapter(q, { readOnlyMode: true }))
+  createBullBoard({ queues, serverAdapter })
+  app.use(QUEUE_UI_URL, serverAdapter.getRouter())
 }
 
 export async function bootstrapHttpApi(
@@ -47,8 +63,8 @@ export async function bootstrapHttpApi(
   runtimeApi: RuntimeApi,
   queryNodeApi: QueryNodeApi,
   youtubeApi: IYoutubeApi,
-  contentCreationService: ContentCreationService,
-  contentDownloadService: ContentDownloadService
+  youtubePollingService: YoutubePollingService,
+  contentProcessingService: ContentProcessingService
 ) {
   // make sure WASM crypto module is ready
   await cryptoWaitReady()
@@ -79,12 +95,12 @@ export async function bootstrapHttpApi(
         useValue: runtimeApi,
       },
       {
-        provide: ContentCreationService,
-        useValue: contentCreationService,
+        provide: YoutubePollingService,
+        useValue: youtubePollingService,
       },
       {
-        provide: ContentDownloadService,
-        useValue: contentDownloadService,
+        provide: ContentProcessingService,
+        useValue: contentProcessingService,
       },
       {
         provide: 'youtube',
@@ -134,6 +150,9 @@ export async function bootstrapHttpApi(
     response.on('finish', () => {
       const { statusCode, statusMessage, req, locals } = response
 
+      // don't log swagger API docs or Queues dashboard page requests
+      if (originalUrl.includes(SWAGGER_DOCS_URL) || originalUrl.includes(QUEUE_UI_URL)) return
+
       logger.http(statusMessage, {
         method,
         url: originalUrl,
@@ -146,6 +165,10 @@ export async function bootstrapHttpApi(
     next()
   })
 
+  // Setup UI dashboard for BullMQ queues
+  await setupQueuesDashboard(app, contentProcessingService)
+
+  // Setup Swagger API documentation
   setupSwagger(app)
   await app.init()
 

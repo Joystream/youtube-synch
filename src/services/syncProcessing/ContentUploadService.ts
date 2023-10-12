@@ -1,45 +1,63 @@
-import sleep from 'sleep-promise'
+import { Job } from 'bullmq'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
-import { ReadonlyConfig } from '../../types'
+import { UploadJobData } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
 import { StorageNodeApi } from '../storage-node/api'
-import { ContentDownloadService } from './ContentDownloadService'
+import { SyncUtils } from './utils'
 
 // Video content upload service
 export class ContentUploadService {
-  private syncConfig: Required<ReadonlyConfig['sync']>
-  private logger: Logger
-  private logging: LoggingService
-  private dynamodbService: IDynamodbService
+  readonly logger: Logger
   private storageNodeApi: StorageNodeApi
-  private contentDownloadService: ContentDownloadService
-  private queryNodeApi: QueryNodeApi
 
   public constructor(
-    syncConfig: Required<ReadonlyConfig['sync']>,
     logging: LoggingService,
-    dynamodbService: IDynamodbService,
-    contentDownloadService: ContentDownloadService,
-    queryNodeApi: QueryNodeApi
+    private dynamodbService: IDynamodbService,
+    private queryNodeApi: QueryNodeApi
   ) {
-    this.syncConfig = syncConfig
     this.logger = logging.createLogger('ContentUploadService')
-    this.logging = logging
-    this.dynamodbService = dynamodbService
-    this.queryNodeApi = queryNodeApi
-    this.contentDownloadService = contentDownloadService
-    this.storageNodeApi = new StorageNodeApi(this.logging, this.queryNodeApi)
+    this.storageNodeApi = new StorageNodeApi(logging, this.queryNodeApi)
   }
 
-  async start(interval: number) {
-    this.logger.info(`Starting service to upload video assets to storage-node.`)
-
+  async start() {
     await this.ensureUploadStateConsistency()
+  }
 
-    // start assets upload service
-    setTimeout(async () => this.uploadAssetsWithInterval(interval), 0)
+  async process(job: Job<UploadJobData>): Promise<void> {
+    let video = job.data
+    try {
+      // get created data object IDs
+      if (!video.joystreamVideo) {
+        const uploadJobData = Object.values(await job.getChildrenValues<UploadJobData>())[0]
+        if (!uploadJobData) {
+          throw new Error(`Failed to get created data object IDs from 'completed' child job: ${job.id}`)
+        }
+
+        video = uploadJobData
+      }
+
+      // Update video state and save to DB
+      await this.dynamodbService.videos.updateState(video, 'UploadStarted')
+
+      // Get video file path
+      const filePath = SyncUtils.expectedVideoFilePath(video.id)
+
+      // Upload the video assets
+      await this.storageNodeApi.uploadVideo(video, filePath)
+
+      // Update video state and save to DB
+      await this.dynamodbService.videos.updateState(video, 'UploadSucceeded')
+
+      // After upload is successful, remove the video file from local storage
+      await SyncUtils.removeVideoFile(video.id)
+    } catch (error) {
+      // Update video state and save to DB
+      await this.dynamodbService.videos.updateState(job.data, 'UploadFailed')
+
+      throw error
+    }
   }
 
   /**
@@ -60,70 +78,5 @@ export class ContentUploadService {
         await this.dynamodbService.videos.updateState(v, 'UploadFailed')
       }
     }
-  }
-
-  /**
-   * Processes new content after specified interval state.
-   * @param processingIntervalMinutes - defines an interval between new uploads to storage nodes
-   * @returns void promise.
-   */
-  private async uploadAssetsWithInterval(processingIntervalMinutes: number) {
-    const sleepInterval = processingIntervalMinutes * 60 * 1000
-    while (true) {
-      this.logger.info(`Content Upload service paused for ${processingIntervalMinutes} minute(s).`)
-      await sleep(sleepInterval)
-      try {
-        this.logger.info(`Resume service....`)
-        await this.uploadPendingAssets(this.syncConfig.limits.maxConcurrentUploads)
-      } catch (err) {
-        this.logger.error(`Critical Upload error`, { err })
-      }
-    }
-  }
-
-  private async uploadPendingAssets(limit: number) {
-    // Get all videos which are in either `VideoCreated` or `UploadFailed` state, and their assets exist in local download directory
-    const videosWithPendingAssets = (await this.dynamodbService.videos.getVideosPendingUpload(limit)).filter(
-      (v) => this.contentDownloadService.getVideoFilePath(v.id) !== undefined
-    )
-
-    this.logger.verbose(`Found ${videosWithPendingAssets.length} videos with upload still pending to storage-node.`, {
-      videos: videosWithPendingAssets.map((v) => v.id),
-    })
-
-    await Promise.allSettled(
-      videosWithPendingAssets.map(async (video) => {
-        try {
-          this.logger.info(`Uploading assets for video`, {
-            videoId: video.id,
-            channelId: video.joystreamChannelId,
-          })
-
-          // Update video state and save to DB
-          await this.dynamodbService.videos.updateState(video, 'UploadStarted')
-
-          const videoFilePath = this.contentDownloadService.expectedVideoFilePath(video.id)
-
-          // Upload the video assets
-          await this.storageNodeApi.uploadVideo(video, videoFilePath)
-
-          // Update video state and save to DB
-          await this.dynamodbService.videos.updateState(video, 'UploadSucceeded')
-
-          // After upload is successful, remove the video file from local storage
-          await this.contentDownloadService.removeVideoFile(video.id)
-
-          this.logger.info(`Successfully uploaded assets for video`, {
-            videoId: video.id,
-            channelId: video.joystreamChannelId,
-          })
-        } catch (error) {
-          const err = (error as Error).message
-          this.logger.error(`Got error uploading assets for video`, { videoId: video.id, err })
-          // Update video state and save to DB
-          await this.dynamodbService.videos.updateState(video, 'UploadFailed')
-        }
-      })
-    )
   }
 }
