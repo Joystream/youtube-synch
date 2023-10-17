@@ -121,14 +121,14 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
       // Should this channel be ingested for automated Youtube/Joystream syncing?
       shouldBeIngested: {
         type: Boolean,
-        default: false,
+        default: true,
       },
 
       // Should this channel be ingested for automated Youtube/Joystream syncing? (operator managed flag)
       // Both `shouldBeIngested` and `allowOperatorIngestion` should be set for sync to work.
       allowOperatorIngestion: {
         type: Boolean,
-        default: false,
+        default: true,
       },
 
       // Should this channel be ingested for automated Youtube/Joystream syncing without explicit authorization granted to app?
@@ -226,6 +226,16 @@ export class ChannelsRepository implements IRepository<YtChannel> {
       const update = omit(['id', 'userId', 'updatedAt'], channel)
       const result = await this.model.update({ id: channel.id, userId: channel.userId }, update)
       return mapTo<YtChannel>(result)
+    })
+  }
+
+  async batchSave(videos: YtChannel[]): Promise<void> {
+    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+      const result = await this.model.batchPut(videos)
+      if (result.unprocessedItems.length) {
+        console.log('Unprocessed items', result.unprocessedItems.length)
+        return await this.batchSave(result.unprocessedItems as YtChannel[])
+      }
     })
   }
 
@@ -348,5 +358,14 @@ export class ChannelsService {
    */
   async save(channel: YtChannel): Promise<YtChannel> {
     return await this.channelsRepository.save(channel)
+  }
+
+  /**
+   *
+   * @param channels
+   * @returns Updated channels
+   */
+  async batchSave(channels: YtChannel[]): Promise<void> {
+    return await this.channelsRepository.batchSave(channels)
   }
 }

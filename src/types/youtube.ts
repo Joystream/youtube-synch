@@ -1,3 +1,5 @@
+import { VideoMetadataAndHash } from '../services/syncProcessing/ContentMetadataService'
+
 type DeploymentEnv = 'dev' | 'local' | 'testing' | 'prod'
 const deploymentEnv = process.env.DEPLOYMENT_ENV as DeploymentEnv | undefined
 
@@ -96,6 +98,61 @@ export class YtChannel {
 
   // Needs a dummy partition key on GSI to be able to query by createdAt fields
   phantomKey: 'phantomData'
+
+  static isSuspended({ yppStatus }: YtChannel) {
+    return (
+      yppStatus === 'Suspended::CopyrightBreach' ||
+      yppStatus === 'Suspended::ProgramTermsExploit' ||
+      yppStatus === 'Suspended::MisleadingContent' ||
+      yppStatus === 'Suspended::UnsupportedTopic'
+    )
+  }
+
+  static isVerified({ yppStatus }: YtChannel) {
+    return (
+      yppStatus === 'Verified::Bronze' ||
+      yppStatus === 'Verified::Silver' ||
+      yppStatus === 'Verified::Gold' ||
+      yppStatus === 'Verified::Diamond'
+    )
+  }
+
+  static isSyncEnabled(channel: YtChannel) {
+    return channel.shouldBeIngested && channel.allowOperatorIngestion
+  }
+
+  static totalVideos(channel: YtChannel) {
+    return Math.min(channel.statistics.videoCount, YtChannel.videoCap(channel))
+  }
+
+  /**
+   * Utility methods to check sync limits for channels. There are 2 limits:
+   * video count and total size based on the subscribers count.
+   * */
+
+  static videoCap(channel: YtChannel): number {
+    if (channel.statistics.subscriberCount < 5000) {
+      return 100
+    } else if (channel.statistics.subscriberCount < 50000) {
+      return 250
+    } else {
+      return 1000
+    }
+  }
+
+  static sizeCap(channel: YtChannel): number {
+    if (channel.statistics.subscriberCount < 5000) {
+      return 10_000_000_000 // 10 GB
+    } else if (channel.statistics.subscriberCount < 50000) {
+      return 100_000_000_000 // 100 GB
+    } else {
+      return 1_000_000_000_000 // 1 TB
+    }
+  }
+
+  static hasSizeLimitReached(channel: YtChannel) {
+    return channel.historicalVideoSyncedSize >= this.sizeCap(channel)
+  }
 }
 
 export class YtUser {
@@ -142,11 +199,28 @@ export enum VideoStates {
   UploadStarted = 6,
   // Video upload to Joystream succeeded
   UploadSucceeded = 7,
-  // Video was deleted from Youtube or set to private after being tracked by  YT-synch service
+  // Video was deleted from Youtube or set to private after being tracked by
+  // YT-synch service or skipped from syncing by the YT-synch service itself.
   VideoUnavailable = 8,
 }
 
-const readonlyChannelYppStatus = ['Unverified', 'Verified', 'Suspended', 'OptedOut'] as const
+export enum ChannelYppStatusVerified {
+  Bronze = 'Bronze',
+  Silver = 'Silver',
+  Gold = 'Gold',
+  Diamond = 'Diamond',
+}
+
+export enum ChannelYppStatusSuspended {
+  CopyrightBreach = 'CopyrightBreach',
+  MisleadingContent = 'MisleadingContent',
+  ProgramTermsExploit = 'ProgramTermsExploit',
+  UnsupportedTopic = 'UnsupportedTopic',
+}
+
+export const verifiedVariants = Object.values(ChannelYppStatusVerified).map((status) => `Verified::${status}` as const)
+const suspendedVariants = Object.values(ChannelYppStatusSuspended).map((status) => `Suspended::${status}` as const)
+const readonlyChannelYppStatus = ['Unverified', ...verifiedVariants, ...suspendedVariants, 'OptedOut'] as const
 
 export const videoStates = Object.keys(VideoStates).filter((v) => isNaN(Number(v)))
 
@@ -255,13 +329,26 @@ export const getImages = (channel: YtChannel) => {
 
 const urlAsArray = (url: string) => (url ? [url] : [])
 
-export type VideoDownloadTask = YtVideo & {
-  priorityScore: number
+export type DownloadJobData = YtVideo & {
+  priority: number
 }
 
-export type VideoCreationTask = YtVideo & {
-  priorityScore: number
+export type DownloadJobOutput = {
   filePath: string
+}
+
+export type CreateVideoJobData = YtVideo & {
+  priority: number
+}
+
+export type MetadataJobData = YtVideo & {
+  priority: number
+}
+
+export type MetadataJobOutput = VideoMetadataAndHash
+
+export type UploadJobData = YtVideo & {
+  priority: number
 }
 
 export type YtDlpFlatPlaylistOutput = {
@@ -279,4 +366,10 @@ export type FaucetRegisterMembershipParams = {
 
 export type FaucetRegisterMembershipResponse = {
   memberId: number
+}
+
+export type ChannelSyncStatus = {
+  backlogCount: number
+  placeInSyncQueue: number
+  fullSyncEta: number
 }

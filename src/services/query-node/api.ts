@@ -389,7 +389,7 @@ export class QueryNodeApi {
     )
   }
 
-  async getStorageBagInfoForAsset(assetId: string): Promise<string> {
+  async getStorageBagInfoForAsset(assetId: string, throwError = true): Promise<string | undefined> {
     const result = await this.uniqueEntityQuery<
       GetStorageBagInfoForAssetQuery,
       GetStorageBagInfoForAssetQueryVariables
@@ -401,11 +401,11 @@ export class QueryNodeApi {
       'storageDataObjectByUniqueInput'
     )
 
-    if (!result) {
+    if (throwError && !result) {
       throw Error('Could not fetch storage bag information for asset with id: ' + assetId)
     }
 
-    return result.storageBagId
+    return result?.storageBagId
   }
 
   public async getQueryNodeState(): Promise<QueryNodeStateFieldsFragment | null> {

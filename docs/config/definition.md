@@ -107,7 +107,7 @@ AWS configurations needed to connect with DynamoDB instance
 
 ## creatorOnboardingRequirements
 
-Specifies creator onboarding requirements for Youtube Partner Program
+Specifies creator onboarding (signup) requirements for Youtube Partner Program
 
 `creatorOnboardingRequirements`
 
