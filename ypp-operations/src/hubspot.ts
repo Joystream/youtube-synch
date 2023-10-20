@@ -37,7 +37,7 @@ export async function getYppContactByEmail(email: string): Promise<string | unde
   }
 }
 
-export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] = ['customer']): Promise<
+export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead' | 'referrer')[] = ['customer']): Promise<
   {
     contactId: string
     email: string
@@ -95,7 +95,7 @@ export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] 
           email: contact.properties.email,
           ...(contact.properties.lifecyclestage === 'customer'
             ? {
-                channelId: contact.properties.channel_url.split('/')[1],
+                channelId: contact.properties.channel_url?.split('/')[1],
                 latestDateChecked: contact.properties.latest_ypp_period_wc,
                 yppRewardStatus: contact.properties.latest_ypp_reward_status,
                 dateSignedUpToYpp: contact.properties.date_signed_up_to_ypp,
@@ -160,7 +160,7 @@ export async function getContactToPay(gleevChannelId: string): Promise<PayableCo
     const contacts = response.results.map((contact) => ({
       contactId: contact.id,
       email: contact.properties.email,
-      channel_url: contact.properties.channel_url.split('/')[1],
+      channel_url: contact.properties.channel_url?.split('/')[1],
       gleev_channel_id: contact.properties.gleev_channel_id,
       sign_up_reward_in_usd: contact.properties.sign_up_reward_in_usd,
       latest_referral_reward_in_usd: contact.properties.latest_referral_reward_in_usd,
@@ -208,7 +208,7 @@ export async function getContactsToPay(): Promise<PayableContact[]> {
         ...response.results.map((contact) => ({
           contactId: contact.id,
           email: contact.properties.email,
-          channel_url: contact.properties.channel_url.split('/')[1],
+          channel_url: contact.properties.channel_url?.split('/')[1],
           gleev_channel_id: contact.properties.gleev_channel_id,
           sign_up_reward_in_usd: contact.properties.sign_up_reward_in_usd,
           latest_referral_reward_in_usd: contact.properties.latest_referral_reward_in_usd,
@@ -312,5 +312,33 @@ export function mapDynamoItemToContactFields(item: YtChannel): Partial<HubspotYP
     lifecyclestage: 'customer',
     hs_lead_status: 'CONNECTED', // Lead Status
     date_signed_up_to_ypp: new Date(item.createdAt).setUTCHours(0, 0, 0, 0).toString(), // Date Signed up to YPP
+    yppstatus: item.yppStatus, // YPP Status
+    referredby: item.referrerChannelId ? String(item.referrerChannelId) : undefined, // Referred By
+    videocategoryid: item.videoCategoryId,
+    synccategoryname: categoryById[item.videoCategoryId],
   }
+}
+
+// Mapping of category names to IDs
+const categoryById: { [key: string]: string } = {
+  '4209396-2': 'Art',
+  '4209546-2': 'Animation and Film',
+  '4209572-2': 'Autos and Vehicles',
+  '4209583-2': 'Business and Finance',
+  '4209591-2': 'Crypto',
+  '4209595-2': 'DIY',
+  '4209603-2': 'Education',
+  '4209609-2': 'Entertainment',
+  '4209637-2': 'Lifestyle',
+  '4209643-2': 'Memes and Humor',
+  '4209650-2': 'Music and Music Videos',
+  '4209658-2': 'Nature',
+  '4209664-2': 'News and Current Affairs',
+  '4209674-2': 'People and Blogs',
+  '4209679-2': 'Pets and Animals',
+  '4209685-2': 'Sports',
+  '4209691-2': 'Technology',
+  '4209700-2': 'Travel',
+  '4209707-2': 'Unboxing',
+  '4209721-2': 'Video Games',
 }
