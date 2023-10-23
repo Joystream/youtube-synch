@@ -82,7 +82,23 @@ export class YtChannel {
   phantomKey: 'phantomData'
 }
 
-const readonlyChannelYppStatus = ['Unverified', 'Verified', 'Suspended', 'OptedOut'] as const
+export enum ChannelYppStatusVerified {
+  Bronze = 'Bronze',
+  Silver = 'Silver',
+  Gold = 'Gold',
+  Diamond = 'Diamond',
+}
+
+export enum ChannelYppStatusSuspended {
+  CopyrightBreach = 'CopyrightBreach',
+  MisleadingContent = 'MisleadingContent',
+  ProgramTermsExploit = 'ProgramTermsExploit',
+  UnsupportedTopic = 'UnsupportedTopic',
+}
+
+export const verifiedVariants = Object.values(ChannelYppStatusVerified).map((status) => `Verified::${status}` as const)
+const suspendedVariants = Object.values(ChannelYppStatusSuspended).map((status) => `Suspended::${status}` as const)
+const readonlyChannelYppStatus = ['Unverified', ...verifiedVariants, ...suspendedVariants, 'OptedOut'] as const
 export type ChannelYppStatus = typeof readonlyChannelYppStatus[number]
 
 export class YtVideo {
@@ -146,8 +162,12 @@ export type VideoState =
   | 'VideoUnavailable'
 
 export type HubspotYPPContact = {
-  // Hubspot system properties
+  //Hubspot system properties
   vid: string
+
+  /**
+   * unique Contact ID (assigned by hubspot)
+   */
   contactId: string
 
   channel_title: string
@@ -155,23 +175,94 @@ export type HubspotYPPContact = {
   email: string
   total_subscribers: string
   gleev_channel_id: string
+
+  /**
+   * Lifecycle stage of customer (Hubspot property)
+   */
   lifecyclestage: 'customer'
-  new_synced_vids: string // New Synced Vids
-  hs_lead_status: 'CONNECTED' // Lead Status
-  latest_ypp_period_wc: string // Latest Date Check
-  date_signed_up_to_ypp: string // Date Signed up to YPP
 
-  sign_up_reward_in_usd: string // Sign Up Reward in USD
-  latest_referral_reward_in_usd: string // Latest Referral Reward in USD
-  videos_sync_reward: string // Videos Sync Reward in USD
+  /**
+   * New Synced Vids
+   */
+  new_synced_vids: string
 
-  sign_up_reward: string // Sign Up Reward (in JOY)
-  referral_reward: string // Latest Referral Reward (in JOY)
-  videos_sync_reward_in_joy: string // Videos Sync Reward (in JOY)
+  /**
+   * Lead Status (CONNECTED | REFERRER)
+   */
+  hs_lead_status: 'CONNECTED' | 'REFERRER'
 
-  latest_ypp_reward: string // Latest Overall YPP Reward (in JOY)
-  total_ypp_rewards: string // Total YPP Rewards in JOY
-  latest_ypp_reward_status: 'Not calculated' | 'Paid' | 'To Pay' // Latest YPP Reward Status
+  /**
+   * Latest Date Check
+   */
+  latest_ypp_period_wc: string
+
+  /**
+   * Date Signed up to YPP
+   */
+  date_signed_up_to_ypp: string
+
+  /**
+   * Sign Up Reward in USD
+   */
+  sign_up_reward_in_usd: string
+
+  /**
+   * Latest Referral Reward in USD
+   */
+  latest_referral_reward_in_usd: string
+
+  /**
+   * Videos Sync Reward in USD
+   */
+  videos_sync_reward: string
+
+  /**
+   * Sign Up Reward (in JOY)
+   */
+  sign_up_reward: string
+
+  /**
+   * Latest Referral Reward (in JOY)
+   */
+  referral_reward: string
+
+  /**
+   * Videos Sync Reward (in JOY)
+   */
+  videos_sync_reward_in_joy: string
+
+  /**
+   * Latest Overall YPP Reward (in JOY)
+   */
+  latest_ypp_reward: string
+  /**
+   * Total YPP Rewards in JOY
+   */
+  total_ypp_rewards: string
+
+  /**
+   * Latest YPP Reward Status
+   */
+  latest_ypp_reward_status: 'Not calculated' | 'Paid' | 'To Pay'
+
+  /**
+   * YPP Status
+   */
+  yppstatus: ChannelYppStatus
+  /**
+   * Referred By
+   */
+  referredby: string
+
+  /**
+   * Synced video category code
+   */
+  videocategoryid: string
+
+  /**
+   * Synced video category name
+   */
+  synccategoryname: string
 }
 
 export const payableContactProps = [
@@ -179,11 +270,15 @@ export const payableContactProps = [
   'email',
   'channel_url',
   'gleev_channel_id',
+  'yppstatus',
+  'date_signed_up_to_ypp',
+  'latest_ypp_period_wc',
   'sign_up_reward_in_usd',
   'latest_referral_reward_in_usd',
   'videos_sync_reward',
   'latest_ypp_reward',
   'total_ypp_rewards',
+  'latest_ypp_reward_status',
 ] as const
 export type PayableContact = Pick<HubspotYPPContact, typeof payableContactProps[number]>
 

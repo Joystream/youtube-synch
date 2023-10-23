@@ -28,12 +28,12 @@ export async function countVideosSyncedAfter(channelId: string, date: string): P
   return videosEligibleForReward
 }
 
-export async function latestReferrerRewardInUsd(referrerId: number, date: string): Promise<number> {
+export async function getAllReferredChannels(referrerId: number, date: string): Promise<YtChannel[]> {
   const params = {
     TableName: 'channels',
     IndexName: 'referrerChannelId-index',
     KeyConditionExpression: '#referrerChannelId = :referrerId',
-    FilterExpression: '#yppStatus = :status AND #createdAt >= :date',
+    FilterExpression: 'begins_with(#yppStatus, :status) AND #createdAt >= :date',
     ExpressionAttributeNames: {
       '#referrerChannelId': 'referrerChannelId',
       '#yppStatus': 'yppStatus',
@@ -41,31 +41,14 @@ export async function latestReferrerRewardInUsd(referrerId: number, date: string
     },
     ExpressionAttributeValues: {
       ':referrerId': referrerId,
-      ':status': 'Verified',
+      ':status': 'Verified::',
       ':date': date,
     },
   }
 
   const referredChannels = ((await documentClient.query(params).promise()).Items || []) as unknown as YtChannel[]
 
-  let reward = 0
-  for (const ch of referredChannels) {
-    const tier =
-      ch.statistics.subscriberCount <= 1_000
-        ? 1
-        : ch.statistics.subscriberCount <= 5_000
-        ? 2
-        : ch.statistics.subscriberCount <= 25_000
-        ? 3
-        : ch.statistics.subscriberCount <= 50_000
-        ? 4
-        : ch.statistics.subscriberCount <= 100_000
-        ? 5
-        : 6
-    reward += config(`TIER_${tier}_REFERRAL_REWARD_IN_USD`)
-  }
-
-  return reward
+  return referredChannels
 }
 
 export async function getAllSuspendedChannels(): Promise<YtChannel[]> {
@@ -96,19 +79,12 @@ export async function getAllSuspendedChannels(): Promise<YtChannel[]> {
   return channels as YtChannel[]
 }
 
-export async function getAllVerifiedChannels(): Promise<YtChannel[]> {
+export async function getAllChannels(): Promise<YtChannel[]> {
   const channels: YtChannel[] = []
   let cursor = undefined
   do {
     const params: AWS.DynamoDB.DocumentClient.ScanInput = {
       TableName: 'channels',
-      FilterExpression: '#yppStatus = :yppStatusVal',
-      ExpressionAttributeNames: {
-        '#yppStatus': 'yppStatus',
-      },
-      ExpressionAttributeValues: {
-        ':yppStatusVal': 'Verified',
-      },
       ExclusiveStartKey: cursor,
     }
 

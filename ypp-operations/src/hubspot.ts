@@ -1,5 +1,6 @@
 import { Client } from '@hubspot/api-client'
 import axios, { AxiosResponse, isAxiosError } from 'axios'
+import { randomBytes } from 'crypto'
 import _ from 'lodash'
 import { loadConfig as config } from './config'
 import { HubspotYPPContact, PayableContact, YtChannel, payableContactProps } from './types'
@@ -37,20 +38,21 @@ export async function getYppContactByEmail(email: string): Promise<string | unde
   }
 }
 
-export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead' | 'referrer')[] = ['customer']): Promise<
-  {
-    contactId: string
-    email: string
-    channelId: string
-    latestDateChecked: string
-    tier: 1 | 2 | 3 | 4 | 5 | 6
-    yppRewardStatus: string
-    dateSignedUpToYpp: string
+export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] = ['customer']): Promise<
+  (Omit<
+    PayableContact,
+    | 'gleev_channel_id'
+    | 'sign_up_reward_in_usd'
+    | 'latest_referral_reward_in_usd'
+    | 'videos_sync_reward'
+    | 'latest_ypp_reward'
+    | 'total_ypp_rewards'
+  > & {
+    gleev_channel_id: number
     sign_up_reward_in_usd: number
     latest_referral_reward_in_usd: number
-    videos_sync_reward_in_usd: number
-    gleev_channel_id: number
-  }[]
+    videos_sync_reward: number
+  })[]
 > {
   const contacts = []
 
@@ -71,20 +73,7 @@ export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead' | '
           },
         ],
         sorts: [],
-        properties: [
-          'email',
-          'lifecyclestage',
-          'gleev_channel_id',
-          'channel_url',
-          'gleev_channel_id',
-          'total_subscribers',
-          'latest_ypp_period_wc',
-          'latest_ypp_reward_status',
-          'date_signed_up_to_ypp',
-          'sign_up_reward_in_usd',
-          'latest_referral_reward_in_usd',
-          'videos_sync_reward',
-        ],
+        properties: [...payableContactProps, 'lifecyclestage'],
         limit: 100,
         after: nextPage,
       })
@@ -95,26 +84,15 @@ export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead' | '
           email: contact.properties.email,
           ...(contact.properties.lifecyclestage === 'customer'
             ? {
-                channelId: contact.properties.channel_url?.split('/')[1],
-                latestDateChecked: contact.properties.latest_ypp_period_wc,
-                yppRewardStatus: contact.properties.latest_ypp_reward_status,
-                dateSignedUpToYpp: contact.properties.date_signed_up_to_ypp,
+                channel_url: contact.properties.channel_url?.split('/')[1],
+                gleev_channel_id: parseInt(contact.properties.gleev_channel_id || '0'),
+                latest_ypp_period_wc: contact.properties.latest_ypp_period_wc,
+                latest_ypp_reward_status: contact.properties.latest_ypp_reward_status,
+                date_signed_up_to_ypp: contact.properties.date_signed_up_to_ypp,
                 sign_up_reward_in_usd: parseInt(contact.properties.sign_up_reward_in_usd || '0'),
                 latest_referral_reward_in_usd: parseInt(contact.properties.latest_referral_reward_in_usd || '0'),
-                videos_sync_reward_in_usd: parseInt(contact.properties.videos_sync_reward || '0'),
-                gleev_channel_id: parseInt(contact.properties.gleev_channel_id || '0'),
-                tier:
-                  parseInt(contact.properties.total_subscribers) <= 1000
-                    ? 1
-                    : parseInt(contact.properties.total_subscribers) <= 5000
-                    ? 2
-                    : parseInt(contact.properties.total_subscribers) <= 25000
-                    ? 3
-                    : parseInt(contact.properties.total_subscribers) <= 50000
-                    ? 4
-                    : parseInt(contact.properties.total_subscribers) <= 100000
-                    ? 5
-                    : 6,
+                videos_sync_reward: parseInt(contact.properties.videos_sync_reward || '0'),
+                yppstatus: contact.properties.yppstatus,
               }
             : {}),
         }))
@@ -153,7 +131,7 @@ export async function getContactToPay(gleevChannelId: string): Promise<PayableCo
         },
       ],
       sorts: [],
-      properties: payableContactProps as unknown as string[],
+      properties: [...payableContactProps],
       limit: 50,
       after: 0,
     })
@@ -167,8 +145,12 @@ export async function getContactToPay(gleevChannelId: string): Promise<PayableCo
       videos_sync_reward: contact.properties.videos_sync_reward,
       latest_ypp_reward: contact.properties.latest_ypp_reward,
       total_ypp_rewards: contact.properties.total_ypp_rewards,
+      date_signed_up_to_ypp: contact.properties.date_signed_up_to_ypp,
+      latest_ypp_period_wc: contact.properties.latest_ypp_period_wc,
+      latest_ypp_reward_status: contact.properties.latest_ypp_reward_status,
+      yppstatus: contact.properties.yppstatus,
     }))
-    return contacts[0]
+    return contacts[0] as PayableContact
   } catch (err) {
     console.error(err)
     throw err
@@ -200,7 +182,7 @@ export async function getContactsToPay(): Promise<PayableContact[]> {
           },
         ],
         sorts: [],
-        properties: payableContactProps as unknown as string[],
+        properties: [...payableContactProps],
         limit: 50,
         after: nextPage,
       })
@@ -215,11 +197,15 @@ export async function getContactsToPay(): Promise<PayableContact[]> {
           videos_sync_reward: contact.properties.videos_sync_reward,
           latest_ypp_reward: contact.properties.latest_ypp_reward,
           total_ypp_rewards: contact.properties.total_ypp_rewards,
+          date_signed_up_to_ypp: contact.properties.date_signed_up_to_ypp,
+          latest_ypp_period_wc: contact.properties.latest_ypp_period_wc,
+          latest_ypp_reward_status: contact.properties.latest_ypp_reward_status,
+          yppstatus: contact.properties.yppstatus,
         }))
       )
       nextPage = Number(response.paging?.next?.after)
     } while (nextPage)
-    return contacts
+    return contacts as PayableContact[]
   } catch (err) {
     console.error(err)
     throw err
@@ -272,12 +258,12 @@ export async function createYppContact(properties: Partial<HubspotYPPContact>): 
 
 // Function to create multiple Hubspot YPP contacts
 export async function createYppContacts(
-  createInputs: Array<{ properties: Partial<HubspotYPPContact>; associations?: any[] }>
+  createInputs: Array<{ properties: Partial<HubspotYPPContact> }>
 ): Promise<void> {
   // Set default associations if not provided
   const enrichedInputs = createInputs.map((input) => ({
     ...input,
-    associations: input.associations || [],
+    associations: [],
   }))
 
   const batchedInputs = _.chunk(enrichedInputs, 100)
@@ -316,6 +302,15 @@ export function mapDynamoItemToContactFields(item: YtChannel): Partial<HubspotYP
     referredby: item.referrerChannelId ? String(item.referrerChannelId) : undefined, // Referred By
     videocategoryid: item.videoCategoryId,
     synccategoryname: categoryById[item.videoCategoryId],
+  }
+}
+
+export function mapReferrerToContactFields(joystreamChannelId: number): Partial<HubspotYPPContact> {
+  return {
+    email: `email.unknown.${randomBytes(8).toString('hex')}@email.com`,
+    gleev_channel_id: joystreamChannelId.toString(),
+    lifecyclestage: 'customer',
+    hs_lead_status: 'REFERRER', // Lead Status
   }
 }
 
