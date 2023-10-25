@@ -766,6 +766,17 @@
   "servers": [],
   "components": {
     "schemas": {
+      "InductionRequirement": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "copy": {
+            "type": "string"
+          }
+        }
+      },
       "YtVideo": {
         "type": "object",
         "properties": {}
@@ -1086,38 +1097,16 @@
       "ChannelInductionRequirementsDto": {
         "type": "object",
         "properties": {
-          "MINIMUM_SUBSCRIBERS_COUNT": {
-            "type": "number",
-            "description": "Minimum number of subscribers required for signup"
-          },
-          "MINIMUM_TOTAL_VIDEOS_COUNT": {
-            "type": "number",
-            "description": "Minimum total number of videos required for signup"
-          },
-          "MINIMUM_VIDEO_AGE_HOURS": {
-            "type": "number",
-            "description": "Minimum age of videos in hours for signup"
-          },
-          "MINIMUM_CHANNEL_AGE_HOURS": {
-            "type": "number",
-            "description": "Minimum age of the channel in hours for signup"
-          },
-          "MINIMUM_VIDEOS_PER_MONTH": {
-            "type": "number",
-            "description": "Minimum number of videos posted per month"
-          },
-          "MONTHS_TO_CONSIDER": {
-            "type": "number",
-            "description": "Number of latest months to consider for the monthly video posting requirement"
+          "requirements": {
+            "type": "array",
+            "description": "List of requirements user YT channel needs to fulfill",
+            "items":{
+              "$ref": "#/components/schemas/InductionRequirement"
+            }
           }
         },
         "required": [
-          "MINIMUM_SUBSCRIBERS_COUNT",
-          "MINIMUM_TOTAL_VIDEOS_COUNT",
-          "MINIMUM_VIDEO_AGE_HOURS",
-          "MINIMUM_CHANNEL_AGE_HOURS",
-          "MINIMUM_VIDEOS_PER_MONTH",
-          "MONTHS_TO_CONSIDER"
+          "requirements"
         ]
       },
       "VerifyChannelRequest": {
