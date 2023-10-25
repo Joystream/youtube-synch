@@ -373,3 +373,8 @@ export type ChannelSyncStatus = {
   placeInSyncQueue: number
   fullSyncEta: number
 }
+
+export type InductionRequirement<T> = {
+  code: T
+  copy: string
+}
