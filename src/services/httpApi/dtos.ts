@@ -28,7 +28,7 @@ import {
   YtVideo,
 } from '../../types/youtube'
 import { ExitCodes } from '../../types/errors'
-import { pluralizeNoun } from 'src/utils/misc'
+import { pluralizeNoun } from '../../utils/misc'
 
 // NestJS Data Transfer Objects (DTO)s
 
