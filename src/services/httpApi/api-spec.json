@@ -766,17 +766,6 @@
   "servers": [],
   "components": {
     "schemas": {
-      "InductionRequirement": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "copy": {
-            "type": "string"
-          }
-        }
-      },
       "YtVideo": {
         "type": "object",
         "properties": {}
@@ -1098,10 +1087,10 @@
         "type": "object",
         "properties": {
           "requirements": {
-            "type": "array",
             "description": "List of requirements user YT channel needs to fulfill",
-            "items":{
-              "$ref": "#/components/schemas/InductionRequirement"
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         },

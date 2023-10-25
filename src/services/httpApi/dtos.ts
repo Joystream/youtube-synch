@@ -20,7 +20,6 @@ import {
   channelYppStatus,
   ChannelYppStatusSuspended,
   ChannelYppStatusVerified,
-  InductionRequirement,
   JoystreamVideo,
   VideoState,
   YtChannel,
@@ -51,6 +50,17 @@ export class CollaboratorStatusDto {
   @ApiProperty() balance: string
 }
 
+export class InductionRequirement {
+  @ApiProperty({ description: 'Signup requirement text' })
+  text: string
+
+  @ApiProperty({
+    description: 'Error code to be returned when channel signup fails due to unmet requirement',
+    enum: ExitCodes.YoutubeApi,
+  })
+  errorCode: ExitCodes.YoutubeApi
+}
+
 export class ChannelInductionRequirementsDto {
   @ApiProperty({ description: 'List of requirements user YT channel needs to fulfill' })
   requirements: InductionRequirement[]
@@ -58,12 +68,12 @@ export class ChannelInductionRequirementsDto {
   constructor(requirements: Config['creatorOnboardingRequirements']) {
     this.requirements = [
       {
-        code: ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_SUBSCRIBERS,
-        copy: `YouTube channel has at least ${pluralizeNoun(requirements.minimumSubscribersCount, 'subscriber')}.`,
+        errorCode: ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_SUBSCRIBERS,
+        text: `YouTube channel has at least ${pluralizeNoun(requirements.minimumSubscribersCount, 'subscriber')}.`,
       },
       {
-        code: ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_VIDEOS,
-        copy: `YouTube channel has at least ${pluralizeNoun(requirements.minimumVideosCount, 'video')}.`,
+        errorCode: ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_VIDEOS,
+        text: `YouTube channel has at least ${pluralizeNoun(requirements.minimumVideosCount, 'video')}.`,
       },
     ]
   }
