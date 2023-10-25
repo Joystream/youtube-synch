@@ -53,7 +53,7 @@ export class CollaboratorStatusDto {
 
 export class ChannelInductionRequirementsDto {
   @ApiProperty({ description: 'List of requirements user YT channel needs to fulfill' })
-  requirements: InductionRequirement<ExitCodes.YoutubeApi>[]
+  requirements: InductionRequirement[]
 
   constructor(requirements: Config['creatorOnboardingRequirements']) {
     this.requirements = [

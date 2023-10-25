@@ -1,4 +1,5 @@
 import { VideoMetadataAndHash } from '../services/syncProcessing/ContentMetadataService'
+import { ExitCodes } from './errors'
 
 type DeploymentEnv = 'dev' | 'local' | 'testing' | 'prod'
 const deploymentEnv = process.env.DEPLOYMENT_ENV as DeploymentEnv | undefined
@@ -374,7 +375,7 @@ export type ChannelSyncStatus = {
   fullSyncEta: number
 }
 
-export type InductionRequirement<T> = {
-  code: T
+export type InductionRequirement = {
+  code: ExitCodes.YoutubeApi
   copy: string
 }
