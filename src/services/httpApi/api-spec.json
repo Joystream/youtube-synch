@@ -1083,6 +1083,35 @@
           "channelHandle"
         ]
       },
+      "InductionRequirement": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Signup requirement text"
+          },
+          "errorCode": {
+            "type": "string",
+            "description": "Error code to be returned when channel signup fails due to unmet requirement",
+            "enum": [
+              "CHANNEL_NOT_FOUND",
+              "VIDEO_NOT_FOUND",
+              "CHANNEL_ALREADY_REGISTERED",
+              "CHANNEL_STATUS_SUSPENDED",
+              "CHANNEL_CRITERIA_UNMET_SUBSCRIBERS",
+              "CHANNEL_CRITERIA_UNMET_VIDEOS",
+              "CHANNEL_CRITERIA_UNMET_NEW_VIDEOS_REQUIREMENT",
+              "CHANNEL_CRITERIA_UNMET_CREATION_DATE",
+              "YOUTUBE_QUOTA_LIMIT_EXCEEDED",
+              "YOUTUBE_API_NOT_CONNECTED"
+            ]
+          }
+        },
+        "required": [
+          "text",
+          "errorCode"
+        ]
+      },
       "ChannelInductionRequirementsDto": {
         "type": "object",
         "properties": {
@@ -1090,7 +1119,7 @@
             "description": "List of requirements user YT channel needs to fulfill",
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/InductionRequirement"
             }
           }
         },

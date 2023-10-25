@@ -62,7 +62,7 @@ export class InductionRequirement {
 }
 
 export class ChannelInductionRequirementsDto {
-  @ApiProperty({ description: 'List of requirements user YT channel needs to fulfill' })
+  @ApiProperty({ description: 'List of requirements user YT channel needs to fulfill',type: InductionRequirement,  isArray: true })
   requirements: InductionRequirement[]
 
   constructor(requirements: Config['creatorOnboardingRequirements']) {
