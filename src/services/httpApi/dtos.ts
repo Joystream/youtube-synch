@@ -51,8 +51,11 @@ export class CollaboratorStatusDto {
 }
 
 export class InductionRequirement {
-  @ApiProperty({ description: 'Signup requirement text' })
-  text: string
+  @ApiProperty({ description: 'Template for the signup requirement text' })
+  template: string
+
+  @ApiProperty({ description: 'Variables for requirement template' })
+  variables: string[]
 
   @ApiProperty({
     description: 'Error code to be returned when channel signup fails due to unmet requirement',
@@ -69,11 +72,13 @@ export class ChannelInductionRequirementsDto {
     this.requirements = [
       {
         errorCode: ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_SUBSCRIBERS,
-        text: `YouTube channel has at least ${pluralizeNoun(requirements.minimumSubscribersCount, 'subscriber')}.`,
+        template: 'YouTube channel has at least {}.',
+        variables: [pluralizeNoun(requirements.minimumSubscribersCount, 'subscriber')],
       },
       {
         errorCode: ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_VIDEOS,
-        text: `YouTube channel has at least ${pluralizeNoun(requirements.minimumVideosCount, 'video')}.`,
+        template: 'YouTube channel has at least {}.',
+        variables: [pluralizeNoun(requirements.minimumVideosCount, 'video')],
       },
     ]
   }

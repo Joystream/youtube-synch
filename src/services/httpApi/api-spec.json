@@ -1086,9 +1086,16 @@
       "InductionRequirement": {
         "type": "object",
         "properties": {
-          "text": {
+          "template": {
             "type": "string",
-            "description": "Signup requirement text"
+            "description": "Template for the signup requirement text"
+          },
+          "variables": {
+            "description": "Variables for requirement template",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "errorCode": {
             "type": "string",
@@ -1108,7 +1115,8 @@
           }
         },
         "required": [
-          "text",
+          "template",
+          "variables",
           "errorCode"
         ]
       },
