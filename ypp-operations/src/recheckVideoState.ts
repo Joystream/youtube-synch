@@ -120,6 +120,25 @@ export async function updateContactsInHubspot() {
   const channels = await getAllChannels() // All the channels that ever signed up (This does not include not signed up referrer channels)
   const existingContacts = await getAllYppContacts(['customer', 'lead'])
 
+  //Count the occurrences of each gleev_channel_id
+  const idCountMap: { [key: number]: number } = {}
+  for (const contact of existingContacts) {
+    const channelId = contact.gleev_channel_id
+    if (channelId !== undefined) {
+      idCountMap[channelId] = (idCountMap[channelId] || 0) + 1
+    }
+  }
+
+  const duplicateChannels = Object.entries(idCountMap).reduce((accumulator: number[], [channelId, count]) => {
+    if (count > 1) {
+      accumulator.push(Number(channelId))
+    }
+    return accumulator
+  }, [])
+
+  // Print any duplicate gleev channels
+  console.log(`duplicateChannels: ${duplicateChannels}`)
+
   const updateContactInputs: Parameters<typeof updateYppContacts>['0'] = []
   const createContactInputs: Parameters<typeof createYppContacts>['0'] = []
 
@@ -144,14 +163,17 @@ export async function updateContactsInHubspot() {
 
   referrers.forEach((referrer) => {
     const existingContact = existingContacts.find((contact) => contact.gleev_channel_id === referrer)
+    const createContactInput = createContactInputs.find(
+      (contact) => parseInt(contact.properties.gleev_channel_id || '') === referrer
+    )
 
-    if (!existingContact) {
+    if (!existingContact && !createContactInput) {
       createContactInputs.push({ properties: mapReferrerToContactFields(referrer) })
     }
   })
 
-  await updateYppContacts(updateContactInputs)
   await createYppContacts(createContactInputs)
+  await updateYppContacts(updateContactInputs)
 
   console.log(
     `Pushed channel contacts to the Hubspot - ` +
@@ -160,3 +182,5 @@ export async function updateContactsInHubspot() {
 }
 
 // TODO: Note: Status change from one tier to another tier, or from referrer (lead status) to customer does not result in signup rewards, so this case needs to be handled manually
+
+// TODO: check: if user sign-ups up again and again using same YT channel but different email, will they get signup reward each time? TODO: fix this by using Dynamo create for calculating the signup rewards?

@@ -1,4 +1,5 @@
 import { Client } from '@hubspot/api-client'
+import { Filter } from '@hubspot/api-client/lib/codegen/crm/contacts'
 import axios, { AxiosResponse, isAxiosError } from 'axios'
 import { randomBytes } from 'crypto'
 import _ from 'lodash'
@@ -55,25 +56,30 @@ export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] 
   })[]
 > {
   const contacts = []
-
   let nextPage: number | undefined = 0
+  let lastContactId: string | undefined = undefined
+  let shouldContinue = true
+
+  const baseFilters: Filter[] = [
+    {
+      propertyName: 'lifecyclestage',
+      operator: 'IN',
+      values: lifecyclestage,
+    },
+  ]
 
   try {
-    do {
+    while (shouldContinue) {
+      // If we have a lastContactId, add an additional filter
+      if (lastContactId) {
+        baseFilters.push({ propertyName: 'vid', operator: 'GT', value: lastContactId })
+        lastContactId = undefined
+      }
+
       const response = await hubspotClient.crm.contacts.searchApi.doSearch({
-        filterGroups: [
-          {
-            filters: [
-              {
-                propertyName: 'lifecyclestage',
-                operator: 'IN',
-                values: lifecyclestage,
-              },
-            ],
-          },
-        ],
-        sorts: [],
-        properties: [...payableContactProps, 'lifecyclestage'],
+        filterGroups: [{ filters: baseFilters }],
+        sorts: ['vid'],
+        properties: [...payableContactProps, 'lifecyclestage', 'vid'],
         limit: 100,
         after: nextPage,
       })
@@ -97,8 +103,19 @@ export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] 
             : {}),
         }))
       )
-      nextPage = Number(response.paging?.next?.after)
-    } while (nextPage)
+
+      if (nextPage === 9900) {
+        lastContactId = contacts[contacts.length - 1].contactId
+        nextPage = 0 // Reset nextPage to start fresh with the new filter
+      } else {
+        nextPage = Number(response.paging?.next?.after)
+      }
+
+      if (!nextPage && !lastContactId) {
+        shouldContinue = false
+      }
+    }
+
     return contacts as any
   } catch (err) {
     console.error(err)
@@ -294,6 +311,7 @@ export function mapDynamoItemToContactFields(item: YtChannel): Partial<HubspotYP
     channel_url: `channel/${item.id}`,
     email: item.email,
     total_subscribers: item.statistics.subscriberCount.toString(),
+    videoscount: item.statistics.videoCount.toString(),
     gleev_channel_id: item.joystreamChannelId.toString(),
     lifecyclestage: 'customer',
     hs_lead_status: 'CONNECTED', // Lead Status

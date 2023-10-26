@@ -170,11 +170,25 @@ export type HubspotYPPContact = {
    */
   contactId: string
 
+  /**
+   * Contact creation date in hubspot
+   */
+  createdate: string
+
   channel_title: string
   channel_url: string
   email: string
-  total_subscribers: string
   gleev_channel_id: string
+
+  /**
+   * Exists as `statistics.subscriberCount` in DynamoDB table
+   */
+  total_subscribers: string
+
+  /**
+   * Exists as `statistics.videoCount` in DynamoDB table
+   */
+  videoscount: string
 
   /**
    * Lifecycle stage of customer (Hubspot property)
