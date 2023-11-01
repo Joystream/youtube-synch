@@ -16,9 +16,9 @@ interface IDynamodbClient {
 }
 
 const DynamodbClient = {
-  create(tablePrefix: ResourcePrefix): IDynamodbClient {
+  create(tablePrefix: ResourcePrefix, useLock?: boolean): IDynamodbClient {
     return {
-      channels: new ChannelsRepository(tablePrefix),
+      channels: new ChannelsRepository(tablePrefix, useLock),
       users: new UsersRepository(tablePrefix),
       videos: new VideosRepository(tablePrefix),
       stats: new StatsRepository(tablePrefix),
@@ -40,15 +40,15 @@ export class DynamodbService implements IDynamodbService {
   readonly users: UsersService
   readonly videos: VideosService
 
-  constructor(aws?: ReadonlyConfig['aws']) {
-    const { repo, channels, users, videos } = this.init(aws)
+  constructor(aws?: ReadonlyConfig['aws'], useLock?: boolean) {
+    const { repo, channels, users, videos } = this.init(aws, useLock)
     this.repo = repo
     this.channels = channels
     this.users = users
     this.videos = videos
   }
 
-  private init(aws?: ReadonlyConfig['aws']): IDynamodbService {
+  private init(aws?: ReadonlyConfig['aws'], useLock?: boolean): IDynamodbService {
     // configure Dynamoose to use DynamoDB Local.
     if (aws?.endpoint) {
       console.log(`Using local DynamoDB at ${aws.endpoint || `http://localhost:4566`}`)
@@ -75,7 +75,7 @@ export class DynamodbService implements IDynamodbService {
       dynamoose.aws.ddb.set(ddb)
     }
 
-    const repo = DynamodbClient.create(aws?.endpoint ? 'local_' : resourcePrefix)
+    const repo = DynamodbClient.create(aws?.endpoint ? 'local_' : resourcePrefix, useLock)
     const channels = new ChannelsService(repo.channels)
     const users = new UsersService(repo.users)
     const videos = new VideosService(repo.videos)

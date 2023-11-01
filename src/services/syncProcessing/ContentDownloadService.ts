@@ -33,14 +33,6 @@ export class ContentDownloadService {
     this.resolveDownloadedVideos()
   }
 
-  private expectedVideoFilePath(videoId: string): string {
-    const filePath = SyncUtils.downloadedVideoFilePaths.get(videoId)
-    if (filePath && fs.existsSync(filePath)) {
-      return filePath
-    }
-    throw new Error(`Failed to get video file path: ${videoId}. File not found.`)
-  }
-
   private async removeVideoFile(videoId: string) {
     try {
       const dir = this.syncConfig.downloadsDir
@@ -60,9 +52,8 @@ export class ContentDownloadService {
     }
   }
 
-  private fileSize(videoId: string): number {
-    const videoFilePath = this.expectedVideoFilePath(videoId)
-    return fs.statSync(videoFilePath).size
+  private fileSize(filePath: string): number {
+    return fs.statSync(filePath).size
   }
 
   private resolveDownloadedVideos() {
@@ -74,7 +65,7 @@ export class ContentDownloadService {
       .map(([videoId, ext]) => {
         const filePath = path.join(this.syncConfig.downloadsDir, `${videoId}.${ext}`)
         SyncUtils.setVideoFilePath(videoId, filePath)
-        SyncUtils.updateUsedStorageSize(this.fileSize(videoId))
+        SyncUtils.updateUsedStorageSize(this.fileSize(filePath))
         return videoId
       })
     this.logger.verbose(`Resolved already downloaded video assets in local storage`, {
@@ -90,9 +81,12 @@ export class ContentDownloadService {
       // download the video from youtube
       const { ext: fileExt } = await this.youtubeApi.downloadVideo(video.url, this.syncConfig.downloadsDir)
       const filePath = path.join(this.syncConfig.downloadsDir, `${video.id}.${fileExt}`)
-      SyncUtils.setVideoFilePath(video.id, filePath)
-      const size = this.fileSize(video.id)
-      SyncUtils.updateUsedStorageSize(size)
+      const size = this.fileSize(filePath)
+      if (!SyncUtils.downloadedVideoFilePaths.has(video.id)) {
+        SyncUtils.setVideoFilePath(video.id, filePath)
+        SyncUtils.updateUsedStorageSize(size)
+      }
+
       // TODO: fix this as size can be duplicated added if video is already downloaded
       // TODO: once during resolveDownloadedVideos calls and once during re-downloading
 

@@ -24,7 +24,7 @@ import { Readable } from 'stream'
 import { Logger } from 'winston'
 import { ReadonlyConfig } from '../../types'
 import { ExitCodes, RuntimeApiError } from '../../types/errors'
-import { Thumbnails, YtVideo } from '../../types/youtube'
+import { Thumbnails, YtVideo, YtVideoWithJsChannelId } from '../../types/youtube'
 import { AppActionSignatureInput, signAppActionCommitmentForVideo } from '../../utils/hasher'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
@@ -66,7 +66,7 @@ export class JoystreamClient {
     return this.runtimeApi.query.content.channelById(id)
   }
 
-  async hasQueryNodeProcessedBlock(blockNumber: BN) {
+  async hasQueryNodeProcessedBlock(blockNumber: number) {
     const qnState = await this.qnApi.getQueryNodeState()
 
     if (!qnState) {
@@ -74,7 +74,7 @@ export class JoystreamClient {
       return false
     }
 
-    if (blockNumber.gtn(qnState.lastCompleteBlock)) {
+    if (blockNumber > qnState.lastCompleteBlock) {
       return false
     }
 
@@ -132,7 +132,7 @@ export class JoystreamClient {
 
     const events = this.runtimeApi.getEvents(result, 'content', 'VideoCreated')
     return {
-      blockNumber: (await this.runtimeApi.rpc.chain.getHeader(blockHash)).number.toBn(),
+      blockNumber: (await this.runtimeApi.rpc.chain.getHeader(blockHash)).number.toNumber(),
       result: events.map(({ data }) => ({
         joystreamVideo: {
           id: data[2].toString(),
@@ -147,7 +147,7 @@ export class JoystreamClient {
     nonce: number,
     collaborator: Membership,
     extrinsicDefaults: CreateVideoExtrinsicDefaults,
-    video: YtVideo & { videoMetadata: VideoMetadataAndHash }
+    video: YtVideoWithJsChannelId & { videoMetadata: VideoMetadataAndHash }
   ): Promise<SubmittableExtrinsic<'promise', ISubmittableResult>> {
     // Video metadata & assets
     const { meta: rawAction, assets } = this.prepareVideoInput(extrinsicDefaults, video, video.videoMetadata)

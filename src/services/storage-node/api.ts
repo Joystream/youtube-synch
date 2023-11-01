@@ -45,7 +45,9 @@ export class StorageNodeApi {
   private async upload(assets: AssetUploadInput[]) {
     // Since both assets belong to the same bag, we can use any asset ID to get bag info
     const assetId = assets[0].dataObjectId.toString()
-    await pWaitFor(async () => !!(await this.queryNodeApi.getStorageBagInfoForAsset(assetId, false)))
+    await pWaitFor(async () => !!(await this.queryNodeApi.getStorageBagInfoForAsset(assetId, false)), {
+      timeout: 30000,
+    })
     const bagId = (await this.queryNodeApi.getStorageBagInfoForAsset(assetId)) || ''
 
     // Get a random active storage node for given bag
@@ -88,6 +90,8 @@ export class StorageNodeApi {
           }
 
           this.logger.error(`${storageNodeUrl} - errorCode: ${status}, msg: ${data?.message}`)
+
+          throw new Error(data?.message)
         }
 
         throw error

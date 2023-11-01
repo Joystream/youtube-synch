@@ -41,7 +41,10 @@ export class PriorityJobQueue<
   R = P extends 'concurrent' ? any : Job<T>[],
   I extends ProcessorInstance<P, T, R> = ProcessorInstance<P, T, R>
 > {
-  private readonly BATCH_LOCK_ID = 'batch'
+  private readonly BATCH_LOCK_KEY = 'batch'
+  private readonly RECALCULATE_PRIORITY_LOCK_KEY: string
+  private processingCount: number = 0
+
   private asyncLock: AsyncLock = new AsyncLock({ maxPending: Number.MAX_SAFE_INTEGER })
 
   private logger: Logger
@@ -57,6 +60,7 @@ export class PriorityJobQueue<
 
     // Reuse the ioredis instance
     this.queue = new Queue(options.name, { connection: this.connection })
+    this.RECALCULATE_PRIORITY_LOCK_KEY = this.queue.name
     // Check processor type
     options.processorType === 'concurrent'
       ? this.setupConcurrentProcessing(
@@ -68,11 +72,20 @@ export class PriorityJobQueue<
   }
 
   private setupConcurrentProcessing(processor: ConcurrentProcessor<T, R>) {
-    this.worker = new Worker(this.queue.name, processor, {
+    const wrappedProcessor = async (job: Job<T, R>) => {
+      await this.asyncLock.acquire(this.RECALCULATE_PRIORITY_LOCK_KEY, () => this.processingCount++)
+
+      try {
+        return await processor(job)
+      } finally {
+        this.processingCount--
+      }
+    }
+
+    this.worker = new Worker(this.queue.name, wrappedProcessor, {
       connection: this.connection,
       concurrency: this.concurrencyOrBatchSize,
-      removeOnComplete: { count: 0, age: 0 },
-      removeOnFail: { count: 0, age: 0 },
+      skipStalledCheck: true,
     })
 
     this.worker.on('active', (job) => {
@@ -97,12 +110,15 @@ export class PriorityJobQueue<
    * A custom batch processor as BullMQ doesn't natively provide any construct to do batch processing of jobs
    */
   private setupBatchProcessing(processor: BatchProcessor<T>) {
+    const jobsLockDuration = 60000 // 60 seconds
+    let jobsLockTimeout!: NodeJS.Timeout
+
     this.worker = new Worker(this.queue.name, undefined, {
       connection: this.connection,
-      removeOnComplete: { count: 0 },
-      removeOnFail: { count: 0 },
+      lockDuration: jobsLockDuration,
     })
 
+    // get `N` next jobs that need to be processed
     const getNJobs = async (n: number): Promise<Job[]> => {
       let jobs: Job[] = []
       while (jobs.length < n) {
@@ -114,11 +130,20 @@ export class PriorityJobQueue<
       return jobs
     }
 
+    // Helper to renew job locks in case the jobs batch didn't finish in given lock time
+    const renewJobsLock = async (jobs: Job[]) => {
+      await Promise.all(jobs.map((job) => job.extendLock(job.token || '', jobsLockDuration)))
+      jobsLockTimeout = setTimeout(() => renewJobsLock(jobs), jobsLockDuration / 2) // Half of jobsLockDuration
+    }
+
     const doBatchProcessing = () =>
-      this.asyncLock.acquire(this.BATCH_LOCK_ID, async () => {
+      this.asyncLock.acquire([this.RECALCULATE_PRIORITY_LOCK_KEY, this.BATCH_LOCK_KEY], async () => {
         const jobs = await getNJobs(this.concurrencyOrBatchSize)
         try {
           if (jobs.length) {
+            // Extend lock after half the lock duration has passed
+            jobsLockTimeout = setTimeout(async () => await renewJobsLock(jobs), jobsLockDuration / 2)
+
             // Move all the successfully completed batch jobs to 'completed' state
             const completed = await processor(jobs)
             await Promise.all(completed.map((job) => job.moveToCompleted(job.data, job.token || '', false)))
@@ -128,9 +153,12 @@ export class PriorityJobQueue<
             await Promise.all(unprocessed.map((job) => job.moveToDelayed(Date.now(), job.token || '')))
           }
         } catch (err) {
+          this.logger.error(err)
+
           // Move all the failed batch jobs to 'failed' state
           await Promise.all(jobs.map((job) => job.moveToFailed(err as Error, job.token || '', false)))
-          this.logger.error(err)
+        } finally {
+          clearTimeout(jobsLockTimeout)
         }
       })
 
@@ -147,37 +175,44 @@ export class PriorityJobQueue<
   }
 
   async recalculateJobsPriority({ channels }: DynamodbService) {
-    const jobs = await this.queue.getJobs('prioritized')
+    await this.asyncLock.acquire(this.RECALCULATE_PRIORITY_LOCK_KEY, async () => {
+      // Wait until all processing tasks have completed
+      while (this.processingCount > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
 
-    const jobsByChannelId = _(jobs)
-      .groupBy((v) => v.data.channelId)
-      .map((jobs, channelId) => ({ channelId, unprocessedJobs: [...jobs] }))
-      .value()
+      const jobs = await this.queue.getJobs(['prioritized'])
 
-    await Promise.all(
-      jobsByChannelId.map(async ({ channelId, unprocessedJobs }) => {
-        // Get total videos of channel
-        const channel = await channels.getById(channelId)
+      const jobsByChannelId = _(jobs)
+        .groupBy((v) => v.data.channelId)
+        .map((jobs, channelId) => ({ channelId, unprocessedJobs: [...jobs] }))
+        .value()
 
-        const totalVideos = YtChannel.totalVideos(channel)
-        const percentageOfCreatorBacklogNotSynched = (unprocessedJobs.length * 100) / totalVideos
+      await Promise.all(
+        jobsByChannelId.map(async ({ channelId, unprocessedJobs }) => {
+          // Get total videos of channel
+          const channel = await channels.getById(channelId)
 
-        for (const job of unprocessedJobs) {
-          let sudoPriority = SyncUtils.DEFAULT_SUDO_PRIORITY
-          if (new Date(job.data.publishedAt) > channel.createdAt && job.data.duration > 300) {
-            sudoPriority += 50
+          const totalVideos = YtChannel.totalVideos(channel)
+          const percentageOfCreatorBacklogNotSynched = (unprocessedJobs.length * 100) / totalVideos
+
+          for (const job of unprocessedJobs) {
+            let sudoPriority = SyncUtils.DEFAULT_SUDO_PRIORITY
+            if (new Date(job.data.publishedAt) > channel.createdAt && job.data.duration > 300) {
+              sudoPriority += 50
+            }
+
+            const priority = SyncUtils.calculateJobPriority(
+              sudoPriority,
+              percentageOfCreatorBacklogNotSynched,
+              Date.parse(job.data.publishedAt)
+            )
+
+            await job.changePriority({ priority })
           }
-
-          const priority = SyncUtils.calculateJobPriority(
-            sudoPriority,
-            percentageOfCreatorBacklogNotSynched,
-            Date.parse(job.data.publishedAt)
-          )
-
-          await job.changePriority({ priority })
-        }
-      })
-    )
+        })
+      )
+    })
   }
 }
 

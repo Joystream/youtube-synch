@@ -1435,29 +1435,29 @@
     call-me-maybe "^1.0.1"
     js-yaml "^4.1.0"
 
-"@bull-board/api@5.8.4":
-  version "5.8.4"
-  resolved "https://registry.yarnpkg.com/@bull-board/api/-/api-5.8.4.tgz#602380bdf031f4c2ba8180c346e42bcecd2df419"
-  integrity sha512-uuB2ziEpMc6FrkqqRAqyqSh+yKx1ukTvxlgDenOimuLAiHlcPfhNLgYuYv3qzqWVaZdvUCLhiNqAvOdURoKT5A==
+"@bull-board/api@5.9.1":
+  version "5.9.1"
+  resolved "https://registry.yarnpkg.com/@bull-board/api/-/api-5.9.1.tgz#c75768b50d08f6e6b16b935e12af7f774398db30"
+  integrity sha512-xZzPYNw9Dp46It4vvZv3tmFScmUu/UT/jWQxYK9cvbkJRXh15rsZrbbR+/phUqou0NxRQGiHoFSZ1y5D107dIA==
   dependencies:
     redis-info "^3.0.8"
 
-"@bull-board/express@^5.8.4":
-  version "5.8.4"
-  resolved "https://registry.yarnpkg.com/@bull-board/express/-/express-5.8.4.tgz#933cfb7c7476ee3103cdaca180bddbde84ffeb47"
-  integrity sha512-eYmgC/u/zYs8Uhr3MFRsxWLH7f89ext5c6J/73GIQaEo+/j3j3cFngvXn+SR+7yB1/j+waOt/4mjlnLUWg9uZQ==
+"@bull-board/express@^5.9.1":
+  version "5.9.1"
+  resolved "https://registry.yarnpkg.com/@bull-board/express/-/express-5.9.1.tgz#1fb55f707dd192a6164ced89a1336537f2547bb0"
+  integrity sha512-LxBmstUY0dzjgxeDlgMhZiaD3EDKk4SG/PG3Mx6nsgYu205Brp0a54QKxJ61W1SeTYBsAJxGIg8PxYBkQa75+w==
   dependencies:
-    "@bull-board/api" "5.8.4"
-    "@bull-board/ui" "5.8.4"
+    "@bull-board/api" "5.9.1"
+    "@bull-board/ui" "5.9.1"
     ejs "3.1.7"
     express "4.17.3"
 
-"@bull-board/ui@5.8.4":
-  version "5.8.4"
-  resolved "https://registry.yarnpkg.com/@bull-board/ui/-/ui-5.8.4.tgz#2a8b56783bd9f7fcab8540ae2d861a46e1c0686a"
-  integrity sha512-OBCwelyO5aptZUanZOSiHCK46Y3dNsCXMj4XXF8rNKx0sg/BMZMZzINjlpsCkgNNM5Lxl51OM1eYLjzZREvaAQ==
+"@bull-board/ui@5.9.1":
+  version "5.9.1"
+  resolved "https://registry.yarnpkg.com/@bull-board/ui/-/ui-5.9.1.tgz#46b00abc551f6f04e611b698d209bfbc6ed0bad2"
+  integrity sha512-lL93KVRTpLSl73KUFBw7sXOcCrqddGBbpiMKWEbViXxObIq68yFuhRrcfR7JeTSocLF5GsnqSVdSiNCZHmdNpw==
   dependencies:
-    "@bull-board/api" "5.8.4"
+    "@bull-board/api" "5.9.1"
 
 "@colors/colors@1.5.0":
   version "1.5.0"

@@ -162,7 +162,7 @@ export class YoutubePollingService {
               this.logger.warn(`Opting out '${ch.id}' from YPP program as Channel is not found on Youtube.`)
               return {
                 ...ch,
-                yppStatus: ' OptedOut',
+                yppStatus: 'OptedOut',
                 shouldBeIngested: false,
                 lastActedAt: new Date(),
               }
