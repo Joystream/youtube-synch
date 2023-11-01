@@ -1,0 +1,3 @@
+## minimumVideosPerMonth Type
+
+`number`

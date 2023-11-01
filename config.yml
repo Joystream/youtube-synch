@@ -1,6 +1,9 @@
 endpoints:
   queryNode: http://localhost:8080/graphql
   joystreamNodeWs: ws://localhost:9944
+  redis:
+    host: localhost
+    port: 6379
 sync:
   enable: true
   downloadsDir: ./local/data
@@ -13,6 +16,7 @@ sync:
       signup: 500
     maxConcurrentDownloads: 50
     maxConcurrentUploads: 50
+    createVideoTxBatchSize: 10
     storage: 100G
 logs:
   file:
@@ -57,11 +61,15 @@ joystream:
 creatorOnboardingRequirements:
   # ! Production values
   minimumSubscribersCount: 50
-  minimumVideoCount: 10
+  minimumVideosCount: 10
   minimumVideoAgeHours: 720 # (24 hours x 30 days) 1 month
   minimumChannelAgeHours: 2160 # (3 x 24 hours x 30 days) 3 months
+  minimumVideosPerMonth: 1
+  monthsToConsider: 1
   # ! Development values
   # minimumSubscribersCount: 1
-  # minimumVideoCount: 2
+  # minimumVideosCount: 1
   # minimumVideoAgeHours: 1
   # minimumChannelAgeHours: 1
+  # minimumVideosPerMonth: 1
+  # monthsToConsider: 1

@@ -8,6 +8,7 @@
 | :---------------------------------- | :------- | :------- | :------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [queryNode](#querynode)             | `string` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-endpoints-properties-querynode.md "https://joystream.org/schemas/youtube-synch/config#/properties/endpoints/properties/queryNode")             |
 | [joystreamNodeWs](#joystreamnodews) | `string` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-endpoints-properties-joystreamnodews.md "https://joystream.org/schemas/youtube-synch/config#/properties/endpoints/properties/joystreamNodeWs") |
+| [redis](#redis)                     | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-endpoints-properties-redis.md "https://joystream.org/schemas/youtube-synch/config#/properties/endpoints/properties/redis")                     |
 
 ## queryNode
 
@@ -44,3 +45,21 @@ Joystream node websocket api uri (for example: ws\://localhost:9944)
 ### joystreamNodeWs Type
 
 `string`
+
+## redis
+
+Redis server host and port, required by BullMQ
+
+`redis`
+
+*   is required
+
+*   Type: `object` ([Details](definition-properties-endpoints-properties-redis.md))
+
+*   cannot be null
+
+*   defined in: [Youtube Sync node configuration](definition-properties-endpoints-properties-redis.md "https://joystream.org/schemas/youtube-synch/config#/properties/endpoints/properties/redis")
+
+### redis Type
+
+`object` ([Details](definition-properties-endpoints-properties-redis.md))

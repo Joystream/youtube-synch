@@ -8,9 +8,9 @@ import { createHash } from 'blake3'
 import { encode as encodeHash, toB58String } from 'multihashes'
 import { Readable } from 'stream'
 
-type FileMetadata = { size: number; hash: string }
+export type FileHash = { hash: string; size: number }
 
-export async function computeFileHashAndSize(file: Readable): Promise<FileMetadata> {
+export async function computeFileHashAndSize(file: Readable): Promise<FileHash> {
   const hash = createHash()
 
   let finalSize = 0

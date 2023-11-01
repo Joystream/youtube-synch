@@ -53,6 +53,13 @@ export interface YoutubeSyncNodeConfiguration {
      * Joystream node websocket api uri (for example: ws://localhost:9944)
      */
     joystreamNodeWs: string
+    /**
+     * Redis server host and port, required by BullMQ
+     */
+    redis: {
+      host: string
+      port: number
+    }
   }
   /**
    * Specifies the logging configuration
@@ -65,25 +72,33 @@ export interface YoutubeSyncNodeConfiguration {
   youtube: YoutubeOauth2ClientConfiguration
   aws?: AWSConfigurationsNeededToConnectWithDynamoDBInstance
   /**
-   * Specifies creator onboarding requirements for Youtube Partner Program
+   * Specifies creator onboarding (signup) requirements for Youtube Partner Program
    */
   creatorOnboardingRequirements: {
     /**
-     * Minimum number of subscribers required to onboard a creator
+     * Minimum number of subscribers required for signup
      */
     minimumSubscribersCount: number
     /**
-     * Minimum number of videos required to onboard a creator
+     * Minimum total number of videos required for signup
      */
-    minimumVideoCount: number
+    minimumVideosCount: number
     /**
-     * All videos must be at least this old to onboard a creator
+     * Minimum age of videos in hours for signup
      */
     minimumVideoAgeHours: number
     /**
-     * The channel must be at least this old to onboard a creator
+     * Minimum age of the channel in hours for signup
      */
     minimumChannelAgeHours: number
+    /**
+     * Minimum number of videos posted per month
+     */
+    minimumVideosPerMonth: number
+    /**
+     * Number of latest months to consider for the monthly video posting requirement
+     */
+    monthsToConsider: number
   }
   httpApi: PublicApiConfiguration
   sync: YTSynchSyncronizationRelatedSettings
@@ -250,6 +265,10 @@ export interface YTSynchSyncronizationRelatedSettings {
      * Max no. of videos that should be concurrently downloaded from Youtube to be prepared for upload to Joystream
      */
     maxConcurrentDownloads: number
+    /**
+     * No. of videos that should be created in a batched 'create_video' tx
+     */
+    createVideoTxBatchSize: number
     /**
      * Max no. of videos that should be concurrently uploaded to Joystream's storage node
      */

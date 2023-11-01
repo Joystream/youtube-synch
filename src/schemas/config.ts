@@ -1,7 +1,6 @@
 import { JSONSchema7 } from 'json-schema'
 import * as winston from 'winston'
 import { objectSchema } from './utils'
-import { boolean } from '@oclif/command/lib/flags'
 
 export const byteSizeUnits = ['B', 'K', 'M', 'G', 'T']
 export const byteSizeRegex = new RegExp(`^[0-9]+(${byteSizeUnits.join('|')})$`)
@@ -92,8 +91,16 @@ export const configSchema: JSONSchema7 = objectSchema({
           description: 'Joystream node websocket api uri (for example: ws://localhost:9944)',
           type: 'string',
         },
+        redis: objectSchema({
+          description: 'Redis server host and port, required by BullMQ',
+          properties: {
+            host: { type: 'string' },
+            port: { type: 'number' },
+          },
+          required: ['host', 'port'],
+        }),
       },
-      required: ['queryNode', 'joystreamNodeWs'],
+      required: ['queryNode', 'joystreamNodeWs', 'redis'],
     }),
     logs: objectSchema({
       description: 'Specifies the logging configuration',
@@ -218,26 +225,41 @@ export const configSchema: JSONSchema7 = objectSchema({
       required: [],
     }),
     creatorOnboardingRequirements: objectSchema({
-      description: 'Specifies creator onboarding requirements for Youtube Partner Program',
+      description: 'Specifies creator onboarding (signup) requirements for Youtube Partner Program',
       properties: {
         minimumSubscribersCount: {
-          description: 'Minimum number of subscribers required to onboard a creator',
+          description: 'Minimum number of subscribers required for signup',
           type: 'number',
         },
-        minimumVideoCount: {
-          description: 'Minimum number of videos required to onboard a creator',
+        minimumVideosCount: {
+          description: 'Minimum total number of videos required for signup',
           type: 'number',
         },
         minimumVideoAgeHours: {
-          description: 'All videos must be at least this old to onboard a creator',
+          description: 'Minimum age of videos in hours for signup',
           type: 'number',
         },
         minimumChannelAgeHours: {
-          description: 'The channel must be at least this old to onboard a creator',
+          description: 'Minimum age of the channel in hours for signup',
+          type: 'number',
+        },
+        minimumVideosPerMonth: {
+          description: 'Minimum number of videos posted per month',
+          type: 'number',
+        },
+        monthsToConsider: {
+          description: 'Number of latest months to consider for the monthly video posting requirement',
           type: 'number',
         },
       },
-      required: ['minimumSubscribersCount', 'minimumVideoCount', 'minimumVideoAgeHours', 'minimumChannelAgeHours'],
+      required: [
+        'minimumSubscribersCount',
+        'minimumVideosCount',
+        'minimumVideoAgeHours',
+        'minimumChannelAgeHours',
+        'minimumVideosPerMonth',
+        'monthsToConsider',
+      ],
     }),
     httpApi: objectSchema({
       title: 'Public api configuration',
@@ -297,6 +319,11 @@ export const configSchema: JSONSchema7 = objectSchema({
               type: 'number',
               default: 50,
             },
+            createVideoTxBatchSize: {
+              description: `No. of videos that should be created in a batched 'create_video' tx`,
+              type: 'number',
+              default: 10,
+            },
             maxConcurrentUploads: {
               description: `Max no. of videos that should be concurrently uploaded to Joystream's storage node`,
               type: 'number',
@@ -308,7 +335,13 @@ export const configSchema: JSONSchema7 = objectSchema({
               pattern: byteSizeRegex.source,
             },
           },
-          required: ['dailyApiQuota', 'maxConcurrentDownloads', 'maxConcurrentUploads', 'storage'],
+          required: [
+            'dailyApiQuota',
+            'maxConcurrentDownloads',
+            'createVideoTxBatchSize',
+            'maxConcurrentUploads',
+            'storage',
+          ],
         }),
       },
       if: {
