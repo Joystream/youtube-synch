@@ -420,7 +420,6 @@ class YoutubeClient implements IYoutubeApi {
               createdAt: new Date(),
               category: channel.videoCategoryId,
               languageIso: channel.joystreamChannelLanguageIso,
-              joystreamChannelId: channel.joystreamChannelId,
               privacyStatus: video.status?.privacyStatus,
               ytRating: video.contentDetails?.contentRating?.ytRating,
               liveBroadcastContent: video.snippet?.liveBroadcastContent,
@@ -584,7 +583,7 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
     if (!(await this.canCallYoutube())) {
       throw new YoutubeApiError(
         ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED,
-        'No more quota left for signup. Please try again later.'
+        'No more quota left. Please try again later.'
       )
     }
 

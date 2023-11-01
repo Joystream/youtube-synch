@@ -59,7 +59,6 @@ async function setupQueuesDashboard(app: INestApplication, contentProcessingServ
 export async function bootstrapHttpApi(
   config: ReadonlyConfig,
   logging: LoggingService,
-  dynamodbService: DynamodbService,
   runtimeApi: RuntimeApi,
   queryNodeApi: QueryNodeApi,
   youtubeApi: IYoutubeApi,
@@ -68,6 +67,8 @@ export async function bootstrapHttpApi(
 ) {
   // make sure WASM crypto module is ready
   await cryptoWaitReady()
+
+  const dynamodbService = new DynamodbService(config.aws, false)
 
   const objectAppModule: DynamicModule = {
     module: ApiModule,
