@@ -71,8 +71,7 @@ export class PriorityJobQueue<
     this.worker = new Worker(this.queue.name, processor, {
       connection: this.connection,
       concurrency: this.concurrencyOrBatchSize,
-      removeOnComplete: { count: 0, age: 0 },
-      removeOnFail: { count: 0, age: 0 },
+      skipStalledCheck: true,
     })
 
     this.worker.on('active', (job) => {
@@ -97,12 +96,15 @@ export class PriorityJobQueue<
    * A custom batch processor as BullMQ doesn't natively provide any construct to do batch processing of jobs
    */
   private setupBatchProcessing(processor: BatchProcessor<T>) {
+    const jobsLockDuration = 60000 // 60 seconds
+    let jobsLockTimeout!: NodeJS.Timeout
+
     this.worker = new Worker(this.queue.name, undefined, {
       connection: this.connection,
-      removeOnComplete: { count: 0 },
-      removeOnFail: { count: 0 },
+      lockDuration: jobsLockDuration,
     })
 
+    // get `N` next jobs that need to be processed
     const getNJobs = async (n: number): Promise<Job[]> => {
       let jobs: Job[] = []
       while (jobs.length < n) {
@@ -114,11 +116,20 @@ export class PriorityJobQueue<
       return jobs
     }
 
+    // Helper to renew job locks in case the jobs batch didn't finish in given lock time
+    const renewJobsLock = async (jobs: Job[]) => {
+      await Promise.all(jobs.map((job) => job.extendLock(job.token || '', jobsLockDuration)))
+      jobsLockTimeout = setTimeout(() => renewJobsLock(jobs), jobsLockDuration / 2) // Half of jobsLockDuration
+    }
+
     const doBatchProcessing = () =>
       this.asyncLock.acquire(this.BATCH_LOCK_ID, async () => {
         const jobs = await getNJobs(this.concurrencyOrBatchSize)
         try {
           if (jobs.length) {
+            // Extend lock after half the lock duration has passed
+            jobsLockTimeout = setTimeout(async () => await renewJobsLock(jobs), jobsLockDuration / 2)
+
             // Move all the successfully completed batch jobs to 'completed' state
             const completed = await processor(jobs)
             await Promise.all(completed.map((job) => job.moveToCompleted(job.data, job.token || '', false)))
@@ -131,6 +142,8 @@ export class PriorityJobQueue<
           // Move all the failed batch jobs to 'failed' state
           await Promise.all(jobs.map((job) => job.moveToFailed(err as Error, job.token || '', false)))
           this.logger.error(err)
+        } finally {
+          clearTimeout(jobsLockTimeout)
         }
       })
 
