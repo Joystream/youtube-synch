@@ -14,19 +14,20 @@ import {
   ValidateNested,
 } from 'class-validator'
 import { Config } from '../../types'
+import { ExitCodes } from '../../types/errors'
 import {
   ChannelSyncStatus,
   ChannelYppStatus,
-  channelYppStatus,
   ChannelYppStatusSuspended,
   ChannelYppStatusVerified,
   JoystreamVideo,
+  TopReferrer,
   VideoState,
   YtChannel,
   YtUser,
   YtVideo,
+  channelYppStatus,
 } from '../../types/youtube'
-import { ExitCodes } from '../../types/errors'
 import { pluralizeNoun } from '../../utils/misc'
 
 // NestJS Data Transfer Objects (DTO)s
@@ -65,7 +66,11 @@ export class InductionRequirement {
 }
 
 export class ChannelInductionRequirementsDto {
-  @ApiProperty({ description: 'List of requirements user YT channel needs to fulfill',type: InductionRequirement,  isArray: true })
+  @ApiProperty({
+    description: 'List of requirements user YT channel needs to fulfill',
+    type: InductionRequirement,
+    isArray: true,
+  })
   requirements: InductionRequirement[]
 
   constructor(requirements: Config['creatorOnboardingRequirements']) {
@@ -142,6 +147,20 @@ export class ReferredChannelDto {
     this.subscribersCount = referrerChannel.statistics.subscriberCount
     this.yppStatus = referrerChannel.yppStatus
     this.createdAt = new Date(referrerChannel.createdAt)
+  }
+}
+
+export class TopReferrerDto {
+  @ApiProperty() referrerChannelId: number
+  @ApiProperty() referredByTier: { [K in ChannelYppStatusVerified]: number }
+  @ApiProperty() totalEarnings: number
+  @ApiProperty() totalReferredChannels: number
+
+  constructor(topReferrer: TopReferrer) {
+    this.referrerChannelId = topReferrer.referrerChannelId
+    this.referredByTier = topReferrer.referredByTier
+    this.totalEarnings = topReferrer.totalEarnings
+    this.totalReferredChannels = topReferrer.totalReferredChannels
   }
 }
 

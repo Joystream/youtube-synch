@@ -117,6 +117,15 @@ export class YtChannel {
     )
   }
 
+  static getTier({ yppStatus }: YtChannel): ChannelYppStatusVerified | undefined {
+    if (verifiedVariants.includes(yppStatus as any)) {
+      // Extract the tier from the yppStatus. It will be the part after "Verified::"
+      const tier = yppStatus.split('::')[1] as ChannelYppStatusVerified
+      return tier
+    }
+    return undefined
+  }
+
   static isSyncEnabled(channel: YtChannel) {
     return channel.shouldBeIngested && channel.allowOperatorIngestion
   }
@@ -371,4 +380,18 @@ export type ChannelSyncStatus = {
   backlogCount: number
   placeInSyncQueue: number
   fullSyncEta: number
+}
+
+export type TopReferrer = {
+  referrerChannelId: number
+  referredByTier: { [K in ChannelYppStatusVerified]: number }
+  totalEarnings: number
+  totalReferredChannels: number
+}
+
+export const REFERRAL_REWARD_BY_TIER: { [K in ChannelYppStatusVerified]: number } = {
+  'Bronze': 1,
+  'Silver': 12.5,
+  'Gold': 25,
+  'Diamond': 50,
 }

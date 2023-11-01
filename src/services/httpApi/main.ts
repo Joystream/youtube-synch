@@ -24,6 +24,7 @@ import {
   YoutubeController,
 } from './controllers'
 import { MembershipController } from './controllers/membership'
+import { ReferrersController } from './controllers/referrers'
 
 class ApiModule {}
 
@@ -77,6 +78,7 @@ export async function bootstrapHttpApi(
     controllers: [
       VideosController,
       ChannelsController,
+      ReferrersController,
       UsersController,
       YoutubeController,
       StatusController,

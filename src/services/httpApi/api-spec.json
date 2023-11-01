@@ -543,6 +543,32 @@
         ]
       }
     },
+    "/referrers/top-referrers": {
+      "get": {
+        "operationId": "ReferrersController_getTopReferrers",
+        "summary": "",
+        "description": "Get top YPP referrers by cumulative rewards.",
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopReferrerDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
     "/users": {
       "post": {
         "operationId": "UsersController_verifyUserAndChannel",
@@ -1133,6 +1159,29 @@
         },
         "required": [
           "requirements"
+        ]
+      },
+      "TopReferrerDto": {
+        "type": "object",
+        "properties": {
+          "referrerChannelId": {
+            "type": "number"
+          },
+          "referredByTier": {
+            "type": "object"
+          },
+          "totalEarnings": {
+            "type": "number"
+          },
+          "totalReferredChannels": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "referrerChannelId",
+          "referredByTier",
+          "totalEarnings",
+          "totalReferredChannels"
         ]
       },
       "VerifyChannelRequest": {
