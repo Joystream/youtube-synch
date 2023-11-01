@@ -132,10 +132,8 @@ export class ChannelsController {
   @ApiOperation({ description: 'Retrieves channel by joystreamChannelId' })
   async get(@Param('joystreamChannelId', ParseIntPipe) id: number) {
     try {
-      const [channel, syncStatus] = await Promise.all([
-        this.dynamodbService.channels.getByJoystreamId(id),
-        this.contentProcessingService.getJobsStatForChannel(id),
-      ])
+      const channel = await this.dynamodbService.channels.getByJoystreamId(id)
+      const syncStatus = await this.contentProcessingService.getJobsStatForChannel(channel.id)
 
       return new ChannelDto(channel, syncStatus)
     } catch (error) {
@@ -448,12 +446,12 @@ export class ChannelsController {
     if (action instanceof IngestChannelDto || action instanceof UpdateChannelCategoryDto) {
       // Ensure channel is not suspended
       if (YtChannel.isSuspended(channel)) {
-        throw new Error(`Can't perfrom "${actionType}" action on a "${channel.yppStatus}" channel. Permission denied.`)
+        throw new Error(`Can't perform "${actionType}" action on a "${channel.yppStatus}" channel. Permission denied.`)
       }
     }
     // Ensure channel is not opted out
     if (channel.yppStatus === 'OptedOut') {
-      throw new Error(`Can't perfrom "${actionType}" action on a "${channel.yppStatus}" channel. Permission denied.`)
+      throw new Error(`Can't perform "${actionType}" action on a "${channel.yppStatus}" channel. Permission denied.`)
     }
 
     const jsChannel = await this.qnApi.getChannelById(channel.joystreamChannelId.toString())

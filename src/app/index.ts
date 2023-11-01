@@ -120,7 +120,6 @@ export class Service {
       await bootstrapHttpApi(
         this.config,
         this.logging,
-        this.dynamodbService,
         this.runtimeApi,
         this.queryNodeApi,
         this.youtubeApi,

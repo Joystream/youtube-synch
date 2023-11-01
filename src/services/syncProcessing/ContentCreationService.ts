@@ -1,6 +1,5 @@
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import type { ISubmittableResult } from '@polkadot/types/types'
-import BN from 'bn.js'
 import { Job } from 'bullmq'
 import _ from 'lodash'
 import { Logger } from 'winston'
@@ -13,7 +12,7 @@ import { SyncUtils } from './utils'
 // Video content creation/processing service
 export class ContentCreationService {
   readonly logger: Logger
-  private lastVideoCreationBlockByChannelId: Map<number, BN> // JsChannelId -> Last video creation block number
+  private lastVideoCreationBlockByChannelId: Map<number, number> // JsChannelId -> Last video creation block number
 
   constructor(
     logging: LoggingService,
@@ -49,23 +48,22 @@ export class ContentCreationService {
         this.joystreamClient.getCollaboratorMember(),
       ])
 
-      const jobsByJoystreamChannelId = _(jobs)
-        .groupBy((j) => j.data.joystreamChannelId)
-        .map((jobs, joystreamChannelId) => ({ joystreamChannelId, jobs: [...jobs] }))
+      const jobsByChannelId = _(jobs)
+        .groupBy((j) => j.data.channelId)
+        .map((jobs, channelId) => ({ channelId, jobs: [...jobs] }))
         .value()
 
       await Promise.all(
-        jobsByJoystreamChannelId.map(async ({ joystreamChannelId, jobs }) => {
-          const channelId = Number(joystreamChannelId)
-          const blockNumber = this.lastVideoCreationBlockByChannelId.get(channelId) || new BN(0)
+        jobsByChannelId.map(async ({ channelId, jobs }) => {
+          const channel = await this.dynamodbService.channels.getById(channelId)
+          const blockNumber = this.lastVideoCreationBlockByChannelId.get(channel.joystreamChannelId) || 0
           if (!(await this.joystreamClient.hasQueryNodeProcessedBlock(blockNumber))) {
             return []
           }
 
-          const [channel, appActionNonce, extrinsicDefaults] = await Promise.all([
-            this.dynamodbService.channels.getByJoystreamId(channelId),
-            this.joystreamClient.totalVideosCreatedByChannel(channelId),
-            this.joystreamClient.createVideoExtrinsicDefaults(channelId),
+          const [appActionNonce, extrinsicDefaults] = await Promise.all([
+            this.joystreamClient.totalVideosCreatedByChannel(channel.joystreamChannelId),
+            this.joystreamClient.createVideoExtrinsicDefaults(channel.joystreamChannelId),
           ])
 
           // Important: Don't use Promise.all(jobs.map(...)) here, as we need to sequentially construct the
@@ -83,7 +81,7 @@ export class ContentCreationService {
             if (qnVideo) {
               this.logger.error(
                 `Inconsistent state. Youtube video ${job.data.id} was already created on Joystream but the service tried to recreate it.`,
-                { videoId: job.data.id, channelId: job.data.joystreamChannelId }
+                { videoId: job.data.id, channelId: channel.joystreamChannelId }
               )
               await this.dynamodbService.videos.updateState(job.data, 'CreatingVideo')
               process.exit(1)
@@ -95,7 +93,7 @@ export class ContentCreationService {
               appActionNonce + i,
               collaborator,
               extrinsicDefaults,
-              { ...job.data, videoMetadata }
+              { ...job.data, joystreamChannelId: channel.joystreamChannelId, videoMetadata }
             )
 
             // set submittable tx for each job
@@ -141,7 +139,7 @@ export class ContentCreationService {
       })
 
       // return completed jobs
-      return jobsToComplete().jobs
+      return [...jobsToComplete().jobs]
     } catch (err) {
       err = new Error(
         `Got error creating ${txByJob.size} videos: \n ${JSON.stringify({

@@ -296,15 +296,14 @@ export class YtVideo {
   // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
   joystreamVideo: JoystreamVideo
 
-  // ID of the corresponding Joystream Channel (De-normalized from YtChannel table)
-  joystreamChannelId: number
-
   // Youtube video creation date
   publishedAt: string
 
   // record creation time
   createdAt: Date
 }
+
+export type YtVideoWithJsChannelId = YtVideo & { joystreamChannelId: number }
 
 export class Stats {
   syncQuotaUsed: number
