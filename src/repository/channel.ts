@@ -3,9 +3,17 @@ import * as dynamoose from 'dynamoose'
 import { ConditionInitializer } from 'dynamoose/dist/Condition'
 import { AnyItem } from 'dynamoose/dist/Item'
 import { Query, QueryResponse, Scan, ScanResponse } from 'dynamoose/dist/ItemRetriever'
+import _ from 'lodash'
 import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
-import { ResourcePrefix, YtChannel, channelYppStatus } from '../types/youtube'
+import {
+  ChannelYppStatusVerified,
+  REFERRAL_REWARD_BY_TIER,
+  ResourcePrefix,
+  TopReferrer,
+  YtChannel,
+  channelYppStatus,
+} from '../types/youtube'
 
 function createChannelModel(tablePrefix: ResourcePrefix) {
   const channelSchema = new dynamoose.Schema(
@@ -383,5 +391,45 @@ export class ChannelsService {
    */
   async batchSave(channels: YtChannel[]): Promise<void> {
     return await this.channelsRepository.batchSave(channels)
+  }
+
+  async getTopReferrers(limit: number = 10): Promise<TopReferrer[]> {
+    const topReferrers: TopReferrer[] = []
+    const allReferredChannels = await this.channelsRepository.scan({}, (q) => q.using('referrerChannelId-index'))
+
+    const referredChannelsByReferrer = _(allReferredChannels)
+      .groupBy((ch) => ch.referrerChannelId)
+      .map((referredChannels, referrerChannelId) => ({ referrerChannelId, referredChannels: [...referredChannels] }))
+      .value()
+
+    referredChannelsByReferrer.forEach(({ referrerChannelId, referredChannels }) => {
+      let totalEarnings = 0
+      let totalReferredChannels = referredChannels.length
+
+      const referredByTier: { [K in ChannelYppStatusVerified]: number } = {
+        'Bronze': 0,
+        'Silver': 0,
+        'Gold': 0,
+        'Diamond': 0,
+      }
+
+      for (const channel of referredChannels) {
+        const tier = YtChannel.getTier(channel)
+        if (tier) {
+          referredByTier[tier]++
+          totalEarnings += REFERRAL_REWARD_BY_TIER[tier]
+        }
+      }
+
+      topReferrers.push({
+        referrerChannelId: parseInt(referrerChannelId),
+        referredByTier,
+        totalEarnings,
+        totalReferredChannels,
+      })
+    })
+
+    // Sort referrers by totalEarnings and take the top 'limit'
+    return topReferrers.sort((a, b) => b.totalEarnings - a.totalEarnings).slice(0, limit)
   }
 }
