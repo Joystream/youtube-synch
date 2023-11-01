@@ -188,12 +188,16 @@ export class VideosRepository implements IRepository<YtVideo> {
   }
 
   async batchSave(videos: YtVideo[]): Promise<void> {
+    if (!videos.length) {
+      return
+    }
+
     return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
-      const result = await this.model.batchPut(videos)
-      if (result.unprocessedItems.length) {
-        console.log('Unprocessed items', result.unprocessedItems.length)
-        return await this.batchSave(result.unprocessedItems as YtVideo[])
-      }
+      const updateTransactions = videos.map((video) => {
+        const upd = omit(['id', 'channelId', 'updatedAt'], video)
+        return this.model.transaction.update({ channelId: video.channelId, id: video.id }, upd)
+      })
+      return dynamoose.transaction(updateTransactions)
     })
   }
 

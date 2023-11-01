@@ -3,9 +3,17 @@ import * as dynamoose from 'dynamoose'
 import { ConditionInitializer } from 'dynamoose/dist/Condition'
 import { AnyItem } from 'dynamoose/dist/Item'
 import { Query, QueryResponse, Scan, ScanResponse } from 'dynamoose/dist/ItemRetriever'
+import _ from 'lodash'
 import { omit } from 'ramda'
 import { DYNAMO_MODEL_OPTIONS, IRepository, mapTo } from '.'
-import { ResourcePrefix, YtChannel, channelYppStatus } from '../types/youtube'
+import {
+  ChannelYppStatusVerified,
+  REFERRAL_REWARD_BY_TIER,
+  ResourcePrefix,
+  TopReferrer,
+  YtChannel,
+  channelYppStatus,
+} from '../types/youtube'
 
 function createChannelModel(tablePrefix: ResourcePrefix) {
   const channelSchema = new dynamoose.Schema(
@@ -188,18 +196,30 @@ export class ChannelsRepository implements IRepository<YtChannel> {
   // lock any updates on video table
   private readonly ASYNC_LOCK_ID = 'channel'
   private asyncLock: AsyncLock = new AsyncLock({ maxPending: Number.MAX_SAFE_INTEGER })
+  private useLock: boolean // Flag to determine if locking should be used
 
-  constructor(tablePrefix: ResourcePrefix) {
+  constructor(tablePrefix: ResourcePrefix, useLock: boolean = true) {
     this.model = createChannelModel(tablePrefix)
+    this.useLock = useLock // Initialize the locking flag
+  }
+
+  private async withLock<T>(func: () => Promise<T>): Promise<T> {
+    if (this.useLock) {
+      return this.asyncLock.acquire(this.ASYNC_LOCK_ID, func)
+    } else {
+      return func()
+    }
   }
 
   async upsertAll(channels: YtChannel[]): Promise<YtChannel[]> {
-    const results = await Promise.all(channels.map(async (channel) => await this.save(channel)))
-    return results
+    return this.withLock(async () => {
+      const results = await Promise.all(channels.map(async (channel) => await this.save(channel)))
+      return results
+    })
   }
 
   async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<YtChannel[]> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       let lastKey = undefined
       const results = []
       do {
@@ -215,39 +235,43 @@ export class ChannelsRepository implements IRepository<YtChannel> {
   }
 
   async get(id: string): Promise<YtChannel | undefined> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       const [result] = await this.model.query({ id }).using('id-index').exec()
       return result ? mapTo<YtChannel>(result) : undefined
     })
   }
 
   async save(channel: YtChannel): Promise<YtChannel> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       const update = omit(['id', 'userId', 'updatedAt'], channel)
       const result = await this.model.update({ id: channel.id, userId: channel.userId }, update)
       return mapTo<YtChannel>(result)
     })
   }
 
-  async batchSave(videos: YtChannel[]): Promise<void> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
-      const result = await this.model.batchPut(videos)
-      if (result.unprocessedItems.length) {
-        console.log('Unprocessed items', result.unprocessedItems.length)
-        return await this.batchSave(result.unprocessedItems as YtChannel[])
-      }
+  async batchSave(channels: YtChannel[]): Promise<void> {
+    if (!channels.length) {
+      return
+    }
+
+    return this.withLock(async () => {
+      const updateTransactions = channels.map((channel) => {
+        const update = omit(['id', 'userId', 'updatedAt'], channel)
+        return this.model.transaction.update({ id: channel.id, userId: channel.userId }, update)
+      })
+      return dynamoose.transaction(updateTransactions)
     })
   }
 
   async delete(id: string, userId: string): Promise<void> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       await this.model.delete({ id, userId })
       return
     })
   }
 
   async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>) {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       let lastKey = undefined
       const results = []
       do {
@@ -367,5 +391,45 @@ export class ChannelsService {
    */
   async batchSave(channels: YtChannel[]): Promise<void> {
     return await this.channelsRepository.batchSave(channels)
+  }
+
+  async getTopReferrers(limit: number = 10): Promise<TopReferrer[]> {
+    const topReferrers: TopReferrer[] = []
+    const allReferredChannels = await this.channelsRepository.scan({}, (q) => q.using('referrerChannelId-index'))
+
+    const referredChannelsByReferrer = _(allReferredChannels)
+      .groupBy((ch) => ch.referrerChannelId)
+      .map((referredChannels, referrerChannelId) => ({ referrerChannelId, referredChannels: [...referredChannels] }))
+      .value()
+
+    referredChannelsByReferrer.forEach(({ referrerChannelId, referredChannels }) => {
+      let totalEarnings = 0
+      let totalReferredChannels = referredChannels.length
+
+      const referredByTier: { [K in ChannelYppStatusVerified]: number } = {
+        'Bronze': 0,
+        'Silver': 0,
+        'Gold': 0,
+        'Diamond': 0,
+      }
+
+      for (const channel of referredChannels) {
+        const tier = YtChannel.getTier(channel)
+        if (tier) {
+          referredByTier[tier]++
+          totalEarnings += REFERRAL_REWARD_BY_TIER[tier]
+        }
+      }
+
+      topReferrers.push({
+        referrerChannelId: parseInt(referrerChannelId),
+        referredByTier,
+        totalEarnings,
+        totalReferredChannels,
+      })
+    })
+
+    // Sort referrers by totalEarnings and take the top 'limit'
+    return topReferrers.sort((a, b) => b.totalEarnings - a.totalEarnings).slice(0, limit)
   }
 }

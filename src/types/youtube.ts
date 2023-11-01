@@ -117,6 +117,15 @@ export class YtChannel {
     )
   }
 
+  static getTier({ yppStatus }: YtChannel): ChannelYppStatusVerified | undefined {
+    if (verifiedVariants.includes(yppStatus as any)) {
+      // Extract the tier from the yppStatus. It will be the part after "Verified::"
+      const tier = yppStatus.split('::')[1] as ChannelYppStatusVerified
+      return tier
+    }
+    return undefined
+  }
+
   static isSyncEnabled(channel: YtChannel) {
     return channel.shouldBeIngested && channel.allowOperatorIngestion
   }
@@ -296,15 +305,14 @@ export class YtVideo {
   // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
   joystreamVideo: JoystreamVideo
 
-  // ID of the corresponding Joystream Channel (De-normalized from YtChannel table)
-  joystreamChannelId: number
-
   // Youtube video creation date
   publishedAt: string
 
   // record creation time
   createdAt: Date
 }
+
+export type YtVideoWithJsChannelId = YtVideo & { joystreamChannelId: number }
 
 export class Stats {
   syncQuotaUsed: number
@@ -372,4 +380,18 @@ export type ChannelSyncStatus = {
   backlogCount: number
   placeInSyncQueue: number
   fullSyncEta: number
+}
+
+export type TopReferrer = {
+  referrerChannelId: number
+  referredByTier: { [K in ChannelYppStatusVerified]: number }
+  totalEarnings: number
+  totalReferredChannels: number
+}
+
+export const REFERRAL_REWARD_BY_TIER: { [K in ChannelYppStatusVerified]: number } = {
+  'Bronze': 1,
+  'Silver': 12.5,
+  'Gold': 25,
+  'Diamond': 50,
 }

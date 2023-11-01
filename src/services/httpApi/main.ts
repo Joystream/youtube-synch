@@ -24,6 +24,7 @@ import {
   YoutubeController,
 } from './controllers'
 import { MembershipController } from './controllers/membership'
+import { ReferrersController } from './controllers/referrers'
 
 class ApiModule {}
 
@@ -59,7 +60,6 @@ async function setupQueuesDashboard(app: INestApplication, contentProcessingServ
 export async function bootstrapHttpApi(
   config: ReadonlyConfig,
   logging: LoggingService,
-  dynamodbService: DynamodbService,
   runtimeApi: RuntimeApi,
   queryNodeApi: QueryNodeApi,
   youtubeApi: IYoutubeApi,
@@ -69,6 +69,8 @@ export async function bootstrapHttpApi(
   // make sure WASM crypto module is ready
   await cryptoWaitReady()
 
+  const dynamodbService = new DynamodbService(config.aws, false)
+
   const objectAppModule: DynamicModule = {
     module: ApiModule,
     imports: [],
@@ -76,6 +78,7 @@ export async function bootstrapHttpApi(
     controllers: [
       VideosController,
       ChannelsController,
+      ReferrersController,
       UsersController,
       YoutubeController,
       StatusController,

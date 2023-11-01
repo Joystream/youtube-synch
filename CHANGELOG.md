@@ -1,3 +1,23 @@
+### 3.1.0
+
+- bump `@bull-board` npm dependency
+- Add new `referrers/top-referrers` endpoint to return top referrers by cumulative reward
+- Updates `channels/induction/requirements` endpoint to return both the requirements as well as error messages if the signup fails
+- **FIX**: lock bullmq jobs processing when recalculating the priorities
+- **FIX**: skip stall check & add auto-renewal of locks for batch jobs
+- **FIX**: remove `joystreamChannelId` field from video type + add optional locking feature for Dynamodb tables
+- **FIX**: add timeout for 'pWaitFor' in storage-node/api.ts
+
+### 3.0.0
+
+- Introduce new YPP 2.0 program with with four different tiers (`Bronze`, `Silver`, `Gold` & `Diamond`) and different rewards for each tier. Previously the tiers were based on the subscribers count
+- Migrate from `better-queue` npm package to `BullMQ` for queue management.
+- Adds `channels/:id/referrals` endpoint to get the referrals of a channel
+- update `/channels/:id` endpoint for returning the sync eta, backlog etc
+- remove unused channels/ & users/ endpoints
+- reenable syncing for 'Unverified channels'
+- Add feature for batch creation of videos on chain
+
 ### 2.1.0
 
 - return syncBacklog field in `GET /status` endpoint
