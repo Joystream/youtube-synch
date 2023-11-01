@@ -17,6 +17,7 @@ import { Config } from '../../types'
 import {
   ChannelSyncStatus,
   ChannelYppStatus,
+  channelYppStatus,
   ChannelYppStatusSuspended,
   ChannelYppStatusVerified,
   JoystreamVideo,
@@ -24,8 +25,9 @@ import {
   YtChannel,
   YtUser,
   YtVideo,
-  channelYppStatus,
 } from '../../types/youtube'
+import { ExitCodes } from '../../types/errors'
+import { pluralizeNoun } from '../../utils/misc'
 
 // NestJS Data Transfer Objects (DTO)s
 
@@ -48,32 +50,37 @@ export class CollaboratorStatusDto {
   @ApiProperty() balance: string
 }
 
+export class InductionRequirement {
+  @ApiProperty({ description: 'Template for the signup requirement text' })
+  template: string
+
+  @ApiProperty({ description: 'Variables for requirement template' })
+  variables: string[]
+
+  @ApiProperty({
+    description: 'Error code to be returned when channel signup fails due to unmet requirement',
+    enum: ExitCodes.YoutubeApi,
+  })
+  errorCode: ExitCodes.YoutubeApi
+}
+
 export class ChannelInductionRequirementsDto {
-  @ApiProperty({ description: 'Minimum number of subscribers required for signup' })
-  MINIMUM_SUBSCRIBERS_COUNT: number
-
-  @ApiProperty({ description: 'Minimum total number of videos required for signup' })
-  MINIMUM_TOTAL_VIDEOS_COUNT: number
-
-  @ApiProperty({ description: 'Minimum age of videos in hours for signup' })
-  MINIMUM_VIDEO_AGE_HOURS: number
-
-  @ApiProperty({ description: 'Minimum age of the channel in hours for signup' })
-  MINIMUM_CHANNEL_AGE_HOURS: number
-
-  @ApiProperty({ description: 'Minimum number of videos posted per month' })
-  MINIMUM_VIDEOS_PER_MONTH: number
-
-  @ApiProperty({ description: 'Number of latest months to consider for the monthly video posting requirement' })
-  MONTHS_TO_CONSIDER: number
+  @ApiProperty({ description: 'List of requirements user YT channel needs to fulfill',type: InductionRequirement,  isArray: true })
+  requirements: InductionRequirement[]
 
   constructor(requirements: Config['creatorOnboardingRequirements']) {
-    this.MINIMUM_SUBSCRIBERS_COUNT = requirements.minimumSubscribersCount
-    this.MINIMUM_TOTAL_VIDEOS_COUNT = requirements.minimumVideosCount
-    this.MINIMUM_VIDEO_AGE_HOURS = requirements.minimumVideoAgeHours
-    this.MINIMUM_CHANNEL_AGE_HOURS = requirements.minimumChannelAgeHours
-    this.MINIMUM_VIDEOS_PER_MONTH = requirements.minimumVideosPerMonth
-    this.MONTHS_TO_CONSIDER = requirements.monthsToConsider
+    this.requirements = [
+      {
+        errorCode: ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_SUBSCRIBERS,
+        template: 'YouTube channel has at least {}.',
+        variables: [pluralizeNoun(requirements.minimumSubscribersCount, 'subscriber')],
+      },
+      {
+        errorCode: ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_VIDEOS,
+        template: 'YouTube channel has at least {}.',
+        variables: [pluralizeNoun(requirements.minimumVideosCount, 'video')],
+      },
+    ]
   }
 }
 
