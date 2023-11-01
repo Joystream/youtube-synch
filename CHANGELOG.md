@@ -1,3 +1,13 @@
+### 3.0.0
+
+- Introduce new YPP 2.0 program with with four different tiers (`Bronze`, `Silver`, `Gold` & `Diamond`) and different rewards for each tier. Previously the tiers were based on the subscribers count
+- Migrate from `better-queue` npm package to `BullMQ` for queue management.
+- Adds `channels/:id/referrals` endpoint to get the referrals of a channel
+- update `/channels/:id` endpoint for returning the sync eta, backlog etc
+- remove unused channels/ & users/ endpoints
+- reenable syncing for 'Unverified channels'
+- Add feature for batch creation of videos on chain
+
 ### 2.1.0
 
 - return syncBacklog field in `GET /status` endpoint
