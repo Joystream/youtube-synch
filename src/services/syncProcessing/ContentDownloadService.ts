@@ -111,20 +111,20 @@ export class ContentDownloadService {
       return { filePath }
     } catch (err) {
       const errorMsg = (err as Error).message
-      const errors = [
-        { message: 'Video unavailable' },
-        { message: 'Private video' },
-        { message: 'Postprocessing:' },
-        { message: 'The downloaded file is empty' },
-        { message: 'This video is private' },
-        { message: 'removed by the uploader' },
-        { message: 'size cap for historical videos' },
+      const errors: { message: string; code: VideoUnavailableReasons }[] = [
+        { message: 'Video unavailable', code: VideoUnavailableReasons.Unavailable },
+        { message: 'Private video', code: VideoUnavailableReasons.Private },
+        { message: 'Postprocessing:', code: VideoUnavailableReasons.PostprocessingError },
+        { message: 'The downloaded file is empty', code: VideoUnavailableReasons.EmptyDownload },
+        { message: 'This video is private', code: VideoUnavailableReasons.Private },
+        { message: 'removed by the uploader', code: VideoUnavailableReasons.Private },
+        { message: 'size cap for historical videos', code: VideoUnavailableReasons.Skipped },
       ]
 
       let matchedError = errors.find((e) => errorMsg.includes(e.message))
       if (matchedError) {
-        await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
-        this.logger.error(`${errorMsg}. Skipping from syncing...`, { videoId: video.id })
+        await this.dynamodbService.videos.updateState(video, `VideoUnavailable::${matchedError.code}`)
+        this.logger.error(`${errorMsg}. Skipping from syncing...`, { videoId: video.id, reason: matchedError.code })
       }
 
       await this.removeVideoFile(video.id)
