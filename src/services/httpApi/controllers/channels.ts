@@ -100,7 +100,7 @@ export class ChannelsController {
       }
 
       // get channel from user
-      const { channel } = await this.youtubeApi.getVerifiedChannel(user)
+      const channel = await this.youtubeApi.getChannel(user)
 
       // reset authorization code to prevent repeated save channel requests by authorization code re-use
       const updatedUser: YtUser = { ...user, email, authorizationCode: randomBytes(10).toString('hex') }

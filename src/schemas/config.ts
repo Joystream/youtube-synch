@@ -329,6 +329,11 @@ export const configSchema: JSONSchema7 = objectSchema({
               type: 'number',
               default: 50,
             },
+            pendingDownloadTimeoutSec: {
+              description: 'Timeout for pending youtube video downloads in seconds',
+              type: 'integer',
+              minimum: 60,
+            },
             storage: {
               description: 'Maximum total size of all downloaded assets stored in `downloadsDir`',
               type: 'string',
@@ -340,6 +345,7 @@ export const configSchema: JSONSchema7 = objectSchema({
             'maxConcurrentDownloads',
             'createVideoTxBatchSize',
             'maxConcurrentUploads',
+            'pendingDownloadTimeoutSec',
             'storage',
           ],
         }),

@@ -8,6 +8,7 @@ import { ReadonlyConfig } from '../../types'
 import { ChannelSyncStatus, YtChannel, YtVideo } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
+import { RuntimeApi } from '../runtime/api'
 import { JoystreamClient } from '../runtime/client'
 import { IYoutubeApi } from '../youtube/api'
 import { ContentCreationService } from './ContentCreationService'
@@ -32,16 +33,17 @@ export class ContentProcessingService {
     logging: LoggingService,
     private dynamodbService: DynamodbService,
     youtubeApi: IYoutubeApi,
+    runtimeApi: RuntimeApi,
     private joystreamClient: JoystreamClient,
     queryNodeApi: QueryNodeApi
   ) {
     this.logger = logging.createLogger('ContentProcessingService')
     this.jobsManager = new JobsFlowManager(this.config.redis)
 
-    this.contentDownloadService = new ContentDownloadService(config, logging, this.dynamodbService, youtubeApi)
+    this.contentDownloadService = new ContentDownloadService(config, logging, dynamodbService, youtubeApi)
     this.contentMetadataService = new ContentMetadataService(logging)
-    this.contentCreationService = new ContentCreationService(logging, this.dynamodbService, this.joystreamClient)
-    this.contentUploadService = new ContentUploadService(logging, this.dynamodbService, queryNodeApi)
+    this.contentCreationService = new ContentCreationService(logging, dynamodbService, joystreamClient)
+    this.contentUploadService = new ContentUploadService(logging, dynamodbService, runtimeApi, queryNodeApi)
 
     // create job queues
 
@@ -133,21 +135,21 @@ export class ContentProcessingService {
       allUnsyncedVideosByChannelId.map(async ({ channelId, unsyncedVideos }) => {
         const channel = await this.dynamodbService.channels.getById(channelId)
         const totalVideos = YtChannel.totalVideos(channel)
-        const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / totalVideos
+        const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / (totalVideos || 1)
 
         for (const video of unsyncedVideos) {
-          let sudoPriority = SyncUtils.DEFAULT_SUDO_PRIORITY
-          if (new Date(video.publishedAt) > channel.createdAt && video.duration > 300) {
-            sudoPriority += 50
-          }
-
-          const priority = SyncUtils.calculateJobPriority(
-            sudoPriority,
-            percentageOfCreatorBacklogNotSynched,
-            Date.parse(video.publishedAt)
-          )
-
           if ((await this.ensureVideoCanBeProcessed(video, channel)) && !(await this.isActiveJobFlow(video.id))) {
+            let sudoPriority = SyncUtils.DEFAULT_SUDO_PRIORITY
+            if (new Date(video.publishedAt) > channel.createdAt && video.duration > 300) {
+              sudoPriority += 50
+            }
+
+            const priority = SyncUtils.calculateJobPriority(
+              sudoPriority,
+              percentageOfCreatorBacklogNotSynched,
+              Date.parse(video.publishedAt)
+            )
+
             // create new job flow
             const flowJob = this.createFlow(video, priority)
 

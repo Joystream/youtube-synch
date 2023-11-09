@@ -95,9 +95,6 @@ function videoRepository(tablePrefix: ResourcePrefix) {
         },
       },
 
-      // ID of the corresponding Joystream Channel (De-normalized from Channel table)
-      joystreamChannelId: Number,
-
       // Video creation date on youtube
       publishedAt: String,
     },

@@ -17,6 +17,7 @@ sync:
     maxConcurrentDownloads: 50
     maxConcurrentUploads: 50
     createVideoTxBatchSize: 10
+    pendingDownloadTimeoutSec: 600 # 10 mins
     storage: 100G
 logs:
   file:

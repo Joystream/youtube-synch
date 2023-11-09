@@ -16,7 +16,7 @@ import ytdl from 'youtube-dl-exec'
 import { StatsRepository } from '../../repository'
 import { ReadonlyConfig, WithRequired, formattedJSON } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
-import { YtChannel, YtDlpFlatPlaylistOutput, YtUser, YtVideo } from '../../types/youtube'
+import { YtChannel, YtDlpFlatPlaylistOutput, YtDlpVideoOutput, YtUser, YtVideo } from '../../types/youtube'
 
 import Schema$Video = youtube_v3.Schema$Video
 import Schema$Channel = youtube_v3.Schema$Channel
@@ -30,7 +30,58 @@ export class YtDlpClient {
     this.ytdlpPath = `${pkgDir.sync(__dirname)}/node_modules/youtube-dl-exec/bin/yt-dlp`
   }
 
-  async getVideos(
+  async getVideos(channel: YtChannel, ids: string[]): Promise<YtVideo[]> {
+    const videosMetadata: YtDlpVideoOutput[] = []
+    const idsChunks = _.chunk(ids, 50)
+
+    for (const idsChunk of idsChunks) {
+      const videosMetadataChunk = await Promise.all(
+        idsChunk.map(async (id) => {
+          const { stdout } = await this.exec(`${this.ytdlpPath} -J https://www.youtube.com/watch?v=${id}`)
+          return JSON.parse(stdout) as YtDlpVideoOutput
+        })
+      )
+      videosMetadata.push(...videosMetadataChunk)
+    }
+
+    return this.mapVideos(videosMetadata, channel)
+  }
+
+  private mapVideos(videosMetadata: YtDlpVideoOutput[], channel: YtChannel): YtVideo[] {
+    return videosMetadata
+      .map(
+        (video) =>
+          <YtVideo>{
+            id: video?.id,
+            description: video?.description,
+            title: video?.title,
+            channelId: video?.channel_id,
+            thumbnails: {
+              high: `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`,
+              medium: `https://i.ytimg.com/vi/${video.id}/mqdefault.jpg`,
+              standard: `https://i.ytimg.com/vi/${video.id}/sddefault.jpg`,
+              default: `https://i.ytimg.com/vi/${video.id}/default.jpg`,
+            },
+            url: `https://youtube.com/watch?v=${video.id}`,
+            publishedAt: moment(video?.upload_date, 'YYYYMMDD').toDate().toISOString(),
+            createdAt: new Date(),
+            category: channel.videoCategoryId,
+            languageIso: channel.joystreamChannelLanguageIso,
+            privacyStatus: video?.availability || 'public',
+            liveBroadcastContent:
+              video?.live_status === 'is_upcoming' ? 'upcoming' : video?.live_status === 'is_live' ? 'live' : 'none',
+            license:
+              video?.license === 'Creative Commons Attribution license (reuse allowed)' ? 'creativeCommon' : 'youtube',
+            duration: video?.duration,
+            container: video?.ext,
+            viewCount: video?.view_count || 0,
+            state: 'New',
+          }
+      )
+      .filter((v) => v.privacyStatus === 'public' && v.liveBroadcastContent === 'none')
+  }
+
+  async getVideosIDs(
     channel: YtChannel,
     limit?: number,
     order?: 'first' | 'last',
@@ -245,7 +296,7 @@ class YoutubeClient implements IYoutubeApi {
     videoCreationTimeCutoff.setHours(videoCreationTimeCutoff.getHours() - minimumVideoAgeHours)
 
     // filter all videos that are older than 'minimumVideoAgeHours'
-    const oldVideos = (await this.ytdlpClient.getVideos(channel, minimumVideosCount, 'last')).filter(
+    const oldVideos = (await this.ytdlpClient.getVideosIDs(channel, minimumVideosCount, 'last')).filter(
       (v) => v.publishedAt < videoCreationTimeCutoff
     )
     if (oldVideos.length < minimumVideosCount) {
@@ -267,7 +318,7 @@ class YoutubeClient implements IYoutubeApi {
     const nMonthsAgo = new Date()
     nMonthsAgo.setMonth(nMonthsAgo.getMonth() - 1)
 
-    const newVideos = (await this.ytdlpClient.getVideos(channel, minimumVideosPerMonth)).filter(
+    const newVideos = (await this.ytdlpClient.getVideosIDs(channel, minimumVideosPerMonth)).filter(
       (v) => v.publishedAt > nMonthsAgo
     )
     if (newVideos.length < minimumVideosPerMonth) {

@@ -4,6 +4,7 @@ import { IDynamodbService } from '../../repository'
 import { UploadJobData } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
+import { RuntimeApi } from '../runtime/api'
 import { StorageNodeApi } from '../storage-node/api'
 import { SyncUtils } from './utils'
 
@@ -15,6 +16,7 @@ export class ContentUploadService {
   public constructor(
     logging: LoggingService,
     private dynamodbService: IDynamodbService,
+    private runtimeApi: RuntimeApi,
     private queryNodeApi: QueryNodeApi
   ) {
     this.logger = logging.createLogger('ContentUploadService')
@@ -38,6 +40,16 @@ export class ContentUploadService {
         video = uploadJobData
       }
 
+      const { inChannel } = await this.runtimeApi.query.content.videoById(video.joystreamVideo.id)
+
+      // Before starting the upload, ensure that video still exists on
+      // Joystream. If not, mark video as Unavailable and skip uploading
+      if (!inChannel.toNumber()) {
+        await this.dynamodbService.videos.updateState(video, 'VideoUnavailable::Deleted')
+        await SyncUtils.removeVideoFile(video.id)
+        return
+      }
+
       // Update video state and save to DB
       await this.dynamodbService.videos.updateState(video, 'UploadStarted')
 
@@ -45,7 +57,7 @@ export class ContentUploadService {
       const filePath = SyncUtils.expectedVideoFilePath(video.id)
 
       // Upload the video assets
-      await this.storageNodeApi.uploadVideo(video, filePath)
+      await this.storageNodeApi.uploadVideo(`dynamic:channel:${inChannel}`, video, filePath)
 
       // Update video state and save to DB
       await this.dynamodbService.videos.updateState(video, 'UploadSucceeded')

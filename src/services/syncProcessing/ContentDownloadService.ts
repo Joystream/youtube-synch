@@ -1,11 +1,12 @@
 import { Job } from 'bullmq'
 import fs from 'fs'
 import fsPromises from 'fs/promises'
+import pTimeout from 'p-timeout'
 import path from 'path'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
-import { DownloadJobData, DownloadJobOutput, YtChannel } from '../../types/youtube'
+import { DownloadJobData, DownloadJobOutput, VideoUnavailableReasons, YtChannel } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { IYoutubeApi } from '../youtube/api'
 import { SyncUtils } from './utils'
@@ -79,7 +80,13 @@ export class ContentDownloadService {
     const video = job.data
     try {
       // download the video from youtube
-      const { ext: fileExt } = await this.youtubeApi.downloadVideo(video.url, this.syncConfig.downloadsDir)
+
+      const { ext: fileExt } = await pTimeout(
+        this.youtubeApi.downloadVideo(video.url, this.syncConfig.downloadsDir),
+        this.syncConfig.limits.pendingDownloadTimeoutSec * 1000,
+        `Download timed-out`
+      )
+
       const filePath = path.join(this.syncConfig.downloadsDir, `${video.id}.${fileExt}`)
       const size = this.fileSize(filePath)
       if (!SyncUtils.downloadedVideoFilePaths.has(video.id)) {
@@ -111,20 +118,20 @@ export class ContentDownloadService {
       return { filePath }
     } catch (err) {
       const errorMsg = (err as Error).message
-      const errors = [
-        { message: 'Video unavailable' },
-        { message: 'Private video' },
-        { message: 'Postprocessing:' },
-        { message: 'The downloaded file is empty' },
-        { message: 'This video is private' },
-        { message: 'removed by the uploader' },
-        { message: 'size cap for historical videos' },
+      const errors: { message: string; code: VideoUnavailableReasons }[] = [
+        { message: 'Video unavailable', code: VideoUnavailableReasons.Unavailable },
+        { message: 'Private video', code: VideoUnavailableReasons.Private },
+        { message: 'Postprocessing:', code: VideoUnavailableReasons.PostprocessingError },
+        { message: 'The downloaded file is empty', code: VideoUnavailableReasons.EmptyDownload },
+        { message: 'This video is private', code: VideoUnavailableReasons.Private },
+        { message: 'removed by the uploader', code: VideoUnavailableReasons.Private },
+        { message: 'size cap for historical videos', code: VideoUnavailableReasons.Skipped },
       ]
 
       let matchedError = errors.find((e) => errorMsg.includes(e.message))
       if (matchedError) {
-        await this.dynamodbService.videos.updateState(video, 'VideoUnavailable')
-        this.logger.error(`${errorMsg}. Skipping from syncing...`, { videoId: video.id })
+        await this.dynamodbService.videos.updateState(video, `VideoUnavailable::${matchedError.code}`)
+        this.logger.error(`${errorMsg}. Skipping from syncing...`, { videoId: video.id, reason: matchedError.code })
       }
 
       await this.removeVideoFile(video.id)

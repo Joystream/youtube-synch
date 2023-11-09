@@ -1,3 +1,11 @@
+### 3.2.0
+
+- Optimizes Youtube API quota usage by using `yt-dlp` instead of youtubeApi to fetch the video details
+- add `pendingDownloadTimeoutSec` config option to manage timeout for youtube downloads
+- Add multiple variants to `YtVideo.state.VideoUnavailable`
+- **FIX**: add optional locking feature for Dynamodb tables
+- **FIX**: Only calculate priority for sync-able videos
+
 ### 3.1.0
 
 - bump `@bull-board` npm dependency
