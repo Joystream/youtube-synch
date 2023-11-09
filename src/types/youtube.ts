@@ -263,9 +263,6 @@ export class YtVideo {
   // Video description
   description: string
 
-  // Video's playlist ID
-  playlistId: string
-
   // video views count
   viewCount: number
 
@@ -363,6 +360,28 @@ export type YtDlpFlatPlaylistOutput = {
   id: string
   publishedAt: Date
 }[]
+
+export type YtDlpVideoOutput = {
+  id: string
+  channel_id: string
+  title: string
+  language: string
+  upload_date: string
+  filesize_approx: number
+  description: string
+  duration: number
+  view_count: number
+  like_count: number
+  comment_count: number
+  live_status: 'not_live' | 'is_live' | 'is_upcoming' | 'was_live' | 'post_live'
+  original_url: string
+  availability: 'public' | 'private' | 'unlisted'
+  license: 'Creative Commons Attribution license (reuse allowed)' | undefined
+  ext: string
+  thumbnails: {
+    url: string
+  }[]
+}
 
 export type FaucetRegisterMembershipParams = {
   account: string

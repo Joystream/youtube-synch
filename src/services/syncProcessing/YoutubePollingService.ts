@@ -190,7 +190,7 @@ export class YoutubePollingService {
       const historicalVideosCountLimit = YtChannel.videoCap(channel)
 
       // get iDs of all sync-able videos within the channel limits
-      const videosIds = await this.youtubeApi.ytdlpClient.getVideos(channel, historicalVideosCountLimit)
+      const videosIds = await this.youtubeApi.ytdlpClient.getVideosIDs(channel, historicalVideosCountLimit)
 
       // get all video Ids that are not yet being tracked
       let untrackedVideosIds = await this.getUntrackedVideosIds(channel, videosIds)
@@ -201,7 +201,7 @@ export class YoutubePollingService {
       }
 
       //  get all videos that are not yet being tracked
-      const untrackedVideos = await this.youtubeApi.getVideos(
+      const untrackedVideos = await this.youtubeApi.ytdlpClient.getVideos(
         channel,
         untrackedVideosIds.map((v) => v.id)
       )
