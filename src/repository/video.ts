@@ -31,6 +31,9 @@ function videoRepository(tablePrefix: ResourcePrefix) {
       // Video's description
       description: String,
 
+      // Video's playlist ID
+      playlistId: String,
+
       viewCount: Number,
 
       thumbnails: {
@@ -63,6 +66,9 @@ function videoRepository(tablePrefix: ResourcePrefix) {
 
       // video duration in seconds
       duration: Number,
+
+      // The status of the uploaded video on Youtube.
+      uploadStatus: String,
 
       // The privacy status of the youtube
       privacyStatus: String,

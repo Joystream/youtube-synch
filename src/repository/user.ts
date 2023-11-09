@@ -74,9 +74,19 @@ export class UsersRepository implements IRepository<YtUser> {
   // lock any updates on video table
   private readonly ASYNC_LOCK_ID = 'user'
   private asyncLock: AsyncLock = new AsyncLock({ maxPending: Number.MAX_SAFE_INTEGER })
+  private useLock: boolean // Flag to determine if locking should be used
 
-  constructor(tablePrefix: ResourcePrefix) {
+  constructor(tablePrefix: ResourcePrefix, useLock: boolean = true) {
     this.model = createUserModel(tablePrefix)
+    this.useLock = useLock
+  }
+
+  private async withLock<T>(func: () => Promise<T>): Promise<T> {
+    if (this.useLock) {
+      return this.asyncLock.acquire(this.ASYNC_LOCK_ID, func)
+    } else {
+      return func()
+    }
   }
 
   async upsertAll(users: YtUser[]): Promise<YtUser[]> {
@@ -85,7 +95,7 @@ export class UsersRepository implements IRepository<YtUser> {
   }
 
   async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<YtUser[]> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       let lastKey = undefined
       const results = []
       do {
@@ -101,14 +111,14 @@ export class UsersRepository implements IRepository<YtUser> {
   }
 
   async get(id: string): Promise<YtUser | undefined> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       const result = await this.model.get({ id })
       return result ? mapTo<YtUser>(result) : undefined
     })
   }
 
   async save(user: YtUser): Promise<YtUser> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       const update = omit(['id', 'updatedAt'], user)
       const result = await this.model.update({ id: user.id }, update)
       return mapTo<YtUser>(result)
@@ -116,14 +126,14 @@ export class UsersRepository implements IRepository<YtUser> {
   }
 
   async delete(id: string): Promise<void> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       await this.model.delete({ id })
       return
     })
   }
 
   async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>) {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       let lastKey = undefined
       const results = []
       do {
