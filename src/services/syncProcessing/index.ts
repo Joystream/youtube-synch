@@ -1,4 +1,4 @@
-import { FlowJob, Job } from 'bullmq'
+import { FlowChildJob, FlowJob, Job } from 'bullmq'
 import IORedis from 'ioredis'
 import _ from 'lodash'
 import sleep from 'sleep-promise'
@@ -175,7 +175,7 @@ export class ContentProcessingService {
 
     // Consider video for processing if it has been created on-chain, and only needs
     // to be uploaded on the storage network. Otherwise postpone the video creation.
-    const spaceCondition = freeSpace > 0 || (freeSpace === 0 && video.joystreamVideo !== undefined)
+    const spaceCondition = freeSpace > 0 || (freeSpace <= 0 && video.joystreamVideo !== undefined)
 
     return (
       isSyncEnabled &&
@@ -197,12 +197,18 @@ export class ContentProcessingService {
   }
 
   private createFlow(video: YtVideo, priority: number): FlowJob {
-    const jobUnit = (jobType: typeof this.QUEUE_NAME_PREFIXES[number]) => {
+    const jobUnit = (jobType: typeof this.QUEUE_NAME_PREFIXES[number]): FlowChildJob => {
       return {
         name: 'flowJob',
         data: video,
         queueName: `${jobType}Queue`,
-        opts: { priority, failParentOnFailure: true, jobId: video.id },
+        opts: {
+          priority,
+          failParentOnFailure: true,
+          removeOnComplete: true,
+          removeOnFail: true,
+          jobId: video.id,
+        },
       }
     }
 
@@ -253,15 +259,18 @@ export class ContentProcessingService {
     return { totalCount }
   }
 
-  public async getJobsStatForChannel(joystreamChannelId: number): Promise<ChannelSyncStatus> {
-    const jobs = await this.jobsManager
+  public async getJobsStatForChannel(channelId: string): Promise<ChannelSyncStatus> {
+    const activeJobs = await this.jobsManager.getJobQueue('UploadQueue').queue.getJobs('active')
+    const waitingJobs = await this.jobsManager
       .getJobQueue('UploadQueue')
-      .queue.getJobs(['active', 'prioritized', 'waiting-children'])
+      .queue.getJobs(['prioritized', 'waiting-children'])
 
     // TODO: check whether the jobs returned are in the correct order of priority or do we need to sort them
-    const channelJobsIndices = jobs.reduce((indices: number[], job, i) => {
-      if (job.data.joystreamChannelId === joystreamChannelId) {
-        indices.push(i + 1)
+    const waitingJobsIndices = waitingJobs.reduce((indices: number[], job, i) => {
+      if (job.data.channelId === channelId) {
+        // Since the `CreationQueue` is the limiting factor in jobs processing throughput, we will use it's configuration option to
+        const jobIndex = Math.ceil((i + activeJobs.length + 1) / this.config.limits.createVideoTxBatchSize)
+        indices.push(jobIndex)
       }
       return indices
     }, [])
@@ -271,12 +280,16 @@ export class ContentProcessingService {
     // TODO: improve ETA calculation by taking into consideration the size of each video as well as its place in the queue
 
     const CONFIGURED_ETA_PER_JOB_IN_SECS = 60 // 1 min
-    const fullSyncEta = channelJobsIndices.reduce((eta, index) => eta + CONFIGURED_ETA_PER_JOB_IN_SECS * index, 0)
+    const channelActiveJobs = activeJobs.filter((j) => j.data.channelId === channelId)
+    const activeJobsEta = channelActiveJobs.length ? CONFIGURED_ETA_PER_JOB_IN_SECS : 0
+    const waitingJobsEta = waitingJobsIndices.reduce((eta, index) => eta + CONFIGURED_ETA_PER_JOB_IN_SECS * index, 0)
+    const fullSyncEta = activeJobsEta + waitingJobsEta
 
+    // take constant ETA time consideration for all the active jobs
     return {
-      backlogCount: channelJobsIndices.length,
+      backlogCount: channelActiveJobs.length + waitingJobsIndices.length,
       // TODO: if channelJobsIndices[0] < maxUploadsCount, then placeInSyncQueue = 1
-      placeInSyncQueue: channelJobsIndices[0],
+      placeInSyncQueue: channelActiveJobs.length ? 1 : waitingJobsIndices[0],
       fullSyncEta,
     }
   }

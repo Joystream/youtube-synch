@@ -543,6 +543,32 @@
         ]
       }
     },
+    "/referrers/top-referrers": {
+      "get": {
+        "operationId": "ReferrersController_getTopReferrers",
+        "summary": "",
+        "description": "Get top YPP referrers by cumulative rewards.",
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopReferrerDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
     "/users": {
       "post": {
         "operationId": "UsersController_verifyUserAndChannel",
@@ -1083,41 +1109,79 @@
           "channelHandle"
         ]
       },
-      "ChannelInductionRequirementsDto": {
+      "InductionRequirement": {
         "type": "object",
         "properties": {
-          "MINIMUM_SUBSCRIBERS_COUNT": {
-            "type": "number",
-            "description": "Minimum number of subscribers required for signup"
+          "template": {
+            "type": "string",
+            "description": "Template for the signup requirement text"
           },
-          "MINIMUM_TOTAL_VIDEOS_COUNT": {
-            "type": "number",
-            "description": "Minimum total number of videos required for signup"
+          "variables": {
+            "description": "Variables for requirement template",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
-          "MINIMUM_VIDEO_AGE_HOURS": {
-            "type": "number",
-            "description": "Minimum age of videos in hours for signup"
-          },
-          "MINIMUM_CHANNEL_AGE_HOURS": {
-            "type": "number",
-            "description": "Minimum age of the channel in hours for signup"
-          },
-          "MINIMUM_VIDEOS_PER_MONTH": {
-            "type": "number",
-            "description": "Minimum number of videos posted per month"
-          },
-          "MONTHS_TO_CONSIDER": {
-            "type": "number",
-            "description": "Number of latest months to consider for the monthly video posting requirement"
+          "errorCode": {
+            "type": "string",
+            "description": "Error code to be returned when channel signup fails due to unmet requirement",
+            "enum": [
+              "CHANNEL_NOT_FOUND",
+              "VIDEO_NOT_FOUND",
+              "CHANNEL_ALREADY_REGISTERED",
+              "CHANNEL_STATUS_SUSPENDED",
+              "CHANNEL_CRITERIA_UNMET_SUBSCRIBERS",
+              "CHANNEL_CRITERIA_UNMET_VIDEOS",
+              "CHANNEL_CRITERIA_UNMET_NEW_VIDEOS_REQUIREMENT",
+              "CHANNEL_CRITERIA_UNMET_CREATION_DATE",
+              "YOUTUBE_QUOTA_LIMIT_EXCEEDED",
+              "YOUTUBE_API_NOT_CONNECTED"
+            ]
           }
         },
         "required": [
-          "MINIMUM_SUBSCRIBERS_COUNT",
-          "MINIMUM_TOTAL_VIDEOS_COUNT",
-          "MINIMUM_VIDEO_AGE_HOURS",
-          "MINIMUM_CHANNEL_AGE_HOURS",
-          "MINIMUM_VIDEOS_PER_MONTH",
-          "MONTHS_TO_CONSIDER"
+          "template",
+          "variables",
+          "errorCode"
+        ]
+      },
+      "ChannelInductionRequirementsDto": {
+        "type": "object",
+        "properties": {
+          "requirements": {
+            "description": "List of requirements user YT channel needs to fulfill",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InductionRequirement"
+            }
+          }
+        },
+        "required": [
+          "requirements"
+        ]
+      },
+      "TopReferrerDto": {
+        "type": "object",
+        "properties": {
+          "referrerChannelId": {
+            "type": "number"
+          },
+          "referredByTier": {
+            "type": "object"
+          },
+          "totalEarnings": {
+            "type": "number"
+          },
+          "totalReferredChannels": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "referrerChannelId",
+          "referredByTier",
+          "totalEarnings",
+          "totalReferredChannels"
         ]
       },
       "VerifyChannelRequest": {
