@@ -48,6 +48,7 @@ export class Service {
         this.logging,
         this.dynamodbService,
         this.youtubeApi,
+        this.runtimeApi,
         this.joystreamClient,
         this.queryNodeApi
       )

@@ -4,7 +4,6 @@ import BN from 'bn.js'
 import FormData from 'form-data'
 import fs from 'fs'
 import _ from 'lodash'
-import pWaitFor from 'p-wait-for'
 import { Logger } from 'winston'
 import { ExitCodes, StorageApiError } from '../../types/errors'
 import { YtVideo } from '../../types/youtube'
@@ -21,14 +20,12 @@ export type VideoUploadResponse = {
 
 export class StorageNodeApi {
   private logger: Logger
-  private queryNodeApi: QueryNodeApi
 
-  public constructor(logging: LoggingService, queryNodeApi: QueryNodeApi) {
-    this.queryNodeApi = queryNodeApi
+  public constructor(logging: LoggingService, private queryNodeApi: QueryNodeApi) {
     this.logger = logging.createLogger('StorageNodeApi')
   }
 
-  async uploadVideo(video: YtVideo, videoFilePath: string): Promise<void> {
+  async uploadVideo(bagId: string, video: YtVideo, videoFilePath: string): Promise<void> {
     const assetsInput: AssetUploadInput[] = [
       {
         dataObjectId: createType('u64', new BN(video.joystreamVideo.assetIds[0])),
@@ -39,17 +36,10 @@ export class StorageNodeApi {
         file: await getThumbnailAsset(video.thumbnails),
       },
     ]
-    return this.upload(assetsInput)
+    return this.upload(bagId, assetsInput)
   }
 
-  private async upload(assets: AssetUploadInput[]) {
-    // Since both assets belong to the same bag, we can use any asset ID to get bag info
-    const assetId = assets[0].dataObjectId.toString()
-    await pWaitFor(async () => !!(await this.queryNodeApi.getStorageBagInfoForAsset(assetId, false)), {
-      timeout: 30000,
-    })
-    const bagId = (await this.queryNodeApi.getStorageBagInfoForAsset(assetId)) || ''
-
+  private async upload(bagId: string, assets: AssetUploadInput[]) {
     // Get a random active storage node for given bag
     const operator = await this.getRandomActiveStorageNodeInfo(bagId)
     if (!operator) {
@@ -119,7 +109,7 @@ export class StorageNodeApi {
         }
       }
       if (i !== retryCount) {
-        this.logger.warn(
+        this.logger.debug(
           `No storage provider can serve the request yet, retrying in ${retryTime}s (${i + 1}/${retryCount})...`
         )
         await new Promise((resolve) => setTimeout(resolve, retryTime * 1000))

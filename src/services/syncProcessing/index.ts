@@ -8,6 +8,7 @@ import { ReadonlyConfig } from '../../types'
 import { ChannelSyncStatus, YtChannel, YtVideo } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
+import { RuntimeApi } from '../runtime/api'
 import { JoystreamClient } from '../runtime/client'
 import { IYoutubeApi } from '../youtube/api'
 import { ContentCreationService } from './ContentCreationService'
@@ -32,16 +33,17 @@ export class ContentProcessingService {
     logging: LoggingService,
     private dynamodbService: DynamodbService,
     youtubeApi: IYoutubeApi,
+    runtimeApi: RuntimeApi,
     private joystreamClient: JoystreamClient,
     queryNodeApi: QueryNodeApi
   ) {
     this.logger = logging.createLogger('ContentProcessingService')
     this.jobsManager = new JobsFlowManager(this.config.redis)
 
-    this.contentDownloadService = new ContentDownloadService(config, logging, this.dynamodbService, youtubeApi)
+    this.contentDownloadService = new ContentDownloadService(config, logging, dynamodbService, youtubeApi)
     this.contentMetadataService = new ContentMetadataService(logging)
-    this.contentCreationService = new ContentCreationService(logging, this.dynamodbService, this.joystreamClient)
-    this.contentUploadService = new ContentUploadService(logging, this.dynamodbService, queryNodeApi)
+    this.contentCreationService = new ContentCreationService(logging, dynamodbService, joystreamClient)
+    this.contentUploadService = new ContentUploadService(logging, dynamodbService, runtimeApi, queryNodeApi)
 
     // create job queues
 
