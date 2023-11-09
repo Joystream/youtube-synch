@@ -1,11 +1,12 @@
 import { Job } from 'bullmq'
 import fs from 'fs'
 import fsPromises from 'fs/promises'
+import pTimeout from 'p-timeout'
 import path from 'path'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
-import { DownloadJobData, DownloadJobOutput, YtChannel } from '../../types/youtube'
+import { DownloadJobData, DownloadJobOutput, VideoUnavailableReasons, YtChannel } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { IYoutubeApi } from '../youtube/api'
 import { SyncUtils } from './utils'
@@ -79,7 +80,13 @@ export class ContentDownloadService {
     const video = job.data
     try {
       // download the video from youtube
-      const { ext: fileExt } = await this.youtubeApi.downloadVideo(video.url, this.syncConfig.downloadsDir)
+
+      const { ext: fileExt } = await pTimeout(
+        this.youtubeApi.downloadVideo(video.url, this.syncConfig.downloadsDir),
+        this.syncConfig.limits.pendingDownloadTimeoutSec * 1000,
+        `Download timed-out`
+      )
+
       const filePath = path.join(this.syncConfig.downloadsDir, `${video.id}.${fileExt}`)
       const size = this.fileSize(filePath)
       if (!SyncUtils.downloadedVideoFilePaths.has(video.id)) {

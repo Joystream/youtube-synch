@@ -274,6 +274,10 @@ export interface YTSynchSyncronizationRelatedSettings {
      */
     maxConcurrentUploads: number
     /**
+     * Timeout for pending youtube video downloads in seconds
+     */
+    pendingDownloadTimeoutSec: number
+    /**
      * Maximum total size of all downloaded assets stored in `downloadsDir`
      */
     storage: string
