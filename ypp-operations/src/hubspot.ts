@@ -39,22 +39,23 @@ export async function getYppContactByEmail(email: string): Promise<string | unde
   }
 }
 
-export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] = ['customer']): Promise<
-  (Omit<
-    PayableContact,
-    | 'gleev_channel_id'
-    | 'sign_up_reward_in_usd'
-    | 'latest_referral_reward_in_usd'
-    | 'videos_sync_reward'
-    | 'latest_ypp_reward'
-    | 'total_ypp_rewards'
-  > & {
-    gleev_channel_id: number
-    sign_up_reward_in_usd: number
-    latest_referral_reward_in_usd: number
-    videos_sync_reward: number
-  })[]
-> {
+type YppContact = Omit<
+  PayableContact,
+  | 'gleev_channel_id'
+  | 'sign_up_reward_in_usd'
+  | 'latest_referral_reward_in_usd'
+  | 'videos_sync_reward'
+  | 'latest_ypp_reward'
+  | 'total_ypp_rewards'
+  | 'dateytchannelcreated'
+> & {
+  gleev_channel_id: number
+  sign_up_reward_in_usd: number
+  latest_referral_reward_in_usd: number
+  videos_sync_reward: number
+}
+
+export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] = ['customer']): Promise<YppContact[]> {
   const contacts = []
   let nextPage: number | undefined = 0
   let lastContactId: string | undefined = undefined
@@ -88,6 +89,7 @@ export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] 
         ...response.results.map((contact) => ({
           contactId: contact.id,
           email: contact.properties.email,
+          lifecyclestage: contact.properties.lifecyclestage,
           ...(contact.properties.lifecyclestage === 'customer'
             ? {
                 channel_url: contact.properties.channel_url?.split('/')[1],
@@ -305,11 +307,11 @@ export async function addOrUpdateYppContact(item: YtChannel, contactId?: string)
   }
 }
 
-export function mapDynamoItemToContactFields(item: YtChannel): Partial<HubspotYPPContact> {
+export function mapDynamoItemToContactFields(item: YtChannel, email?: string): Partial<HubspotYPPContact> {
   return {
     channel_title: item.title,
     channel_url: `channel/${item.id}`,
-    email: item.email,
+    email: email?.toLowerCase() || item.email.toLowerCase(),
     total_subscribers: item.statistics.subscriberCount.toString(),
     videoscount: item.statistics.videoCount.toString(),
     gleev_channel_id: item.joystreamChannelId.toString(),

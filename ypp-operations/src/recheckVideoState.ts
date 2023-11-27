@@ -1,3 +1,4 @@
+import moment from 'moment-timezone'
 import { loadConfig as config } from './config'
 import { countVideosSyncedAfter, getAllChannels, getAllReferredChannels } from './dynamodb'
 import {
@@ -33,11 +34,8 @@ function signupRewardInUsd(contact: Awaited<ReturnType<typeof getAllYppContacts>
   return 0
 }
 
-async function referralsRewardInUsd(
-  contact: Awaited<ReturnType<typeof getAllYppContacts>>[number],
-  date?: string
-): Promise<number> {
-  const referredChannels = await getAllReferredChannels(contact.gleev_channel_id, date || contact.latest_ypp_period_wc)
+async function referralsRewardInUsd(contact: Awaited<ReturnType<typeof getAllYppContacts>>[number]): Promise<number> {
+  const referredChannels = await getAllReferredChannels(contact.gleev_channel_id, contact.latest_ypp_period_wc)
 
   let reward = 0
   for (const referred of referredChannels) {
@@ -49,13 +47,14 @@ async function referralsRewardInUsd(
   return reward
 }
 
-async function latestSyncRewardInUsd(contact: Awaited<ReturnType<typeof getAllYppContacts>>[number], date?: string) {
+async function latestSyncRewardInUsd(contact: Awaited<ReturnType<typeof getAllYppContacts>>[number]) {
   const tier = getCapitalizedTierFromYppStatus(contact.yppstatus)
 
   if (tier) {
     const syncedCount = await countVideosSyncedAfter(
       contact.channel_url,
-      date || contact.latest_ypp_period_wc || contact.date_signed_up_to_ypp
+      contact.date_signed_up_to_ypp,
+      contact.latest_ypp_period_wc || contact.date_signed_up_to_ypp
     )
     const maxRewardedVideos = Math.min(syncedCount, config('MAX_REWARDED_VIDEOS_PER_WEEK'))
     const rewardPerVideo = config(`${tier}_TIER_SYNC_REWARD_IN_USD`)
@@ -68,35 +67,38 @@ async function latestSyncRewardInUsd(contact: Awaited<ReturnType<typeof getAllYp
 
 export async function updateHubspotWithCalculatedRewards() {
   const contacts = await getAllYppContacts()
-
-  const GLOBAL_LAST_DATE_CHECKED = contacts.filter((c) => c.latest_ypp_period_wc)[0].latest_ypp_period_wc
-
+  const cutoffDate = getLastMondayMiddayCET()
   const updatedContactRewardById: Map<string, Partial<HubspotYPPContact>> = new Map()
 
   for (const contact of contacts) {
-    // If the contact record is already checked & updated for this cycle, skip
-    if (contact.latest_ypp_period_wc === new Date().toISOString().split('T')[0]) {
-      console.log(`Already Checked For this Cycle`, contact.gleev_channel_id)
+    // If the previous rewards has not been paid then don't yet calculate rewards
+    // for this cycle, otherwise pervious unpaid rewards would be overwritten
+    if (contact.latest_ypp_reward_status === 'To Pay') {
+      console.log(
+        `Skipping rewards calculation for this cycle as previous rewards not paid yet`,
+        contact.gleev_channel_id
+      )
       continue
     }
 
-    let sign_up_reward_in_usd = signupRewardInUsd(contact)
-
-    let latest_referral_reward_in_usd = await referralsRewardInUsd(contact, GLOBAL_LAST_DATE_CHECKED)
-    // TODO: double the syncedCount due to non-payment in the previous week
-    let { videos_sync_reward_in_usd, syncedCount } = await latestSyncRewardInUsd(contact, GLOBAL_LAST_DATE_CHECKED)
-
-    if (contact.latest_ypp_reward_status === 'To Pay') {
-      sign_up_reward_in_usd = contact.sign_up_reward_in_usd
-      latest_referral_reward_in_usd = contact.latest_referral_reward_in_usd + latest_referral_reward_in_usd
-      videos_sync_reward_in_usd = contact.videos_sync_reward + videos_sync_reward_in_usd
+    // Compare with contact's sign-up date
+    if (new Date(contact.date_signed_up_to_ypp) > cutoffDate) {
+      // If the contact signed up before last Monday midday CET, skip from reward calculation
+      console.log(
+        `Skipping rewards calculation for this cycle as this channel signed up after cutoff date`,
+        contact.gleev_channel_id
+      )
+      continue
     }
 
+    const sign_up_reward_in_usd = signupRewardInUsd(contact)
+    const latest_referral_reward_in_usd = await referralsRewardInUsd(contact)
+    const { videos_sync_reward_in_usd, syncedCount } = await latestSyncRewardInUsd(contact)
     const anyRewardOwed = sign_up_reward_in_usd + latest_referral_reward_in_usd + videos_sync_reward_in_usd
 
     const contactRewardFields: Partial<HubspotYPPContact> = {
       new_synced_vids: syncedCount.toString(),
-      latest_ypp_period_wc: new Date().setUTCHours(0, 0, 0, 0).toString(),
+      latest_ypp_period_wc: new Date().toISOString(),
       sign_up_reward_in_usd: sign_up_reward_in_usd.toString(),
       latest_referral_reward_in_usd: latest_referral_reward_in_usd.toString(),
       videos_sync_reward: videos_sync_reward_in_usd.toString(),
@@ -144,11 +146,33 @@ export async function updateContactsInHubspot() {
 
   // Check for all the YPP participants (Lead Status === 'CONNECTED')
   channels.forEach((ch) => {
-    const existingContact = existingContacts.find((contact) => contact.email.toLowerCase() === ch.email.toLowerCase())
+    // (GleevChannelId, YTChannelId) check only returns max contact result
+    const existingContact = existingContacts.find(
+      (contact) => contact.gleev_channel_id === ch.joystreamChannelId && contact.channel_url == ch.id
+    )
+    const duplicateEmailContact = existingContacts.find(
+      (contact) => contact.email.toLowerCase() === ch.email.toLowerCase()
+    )
 
+    // SCENARIO 1:
     if (existingContact) {
-      updateContactInputs.push({ id: existingContact.contactId, properties: mapDynamoItemToContactFields(ch) })
-    } else {
+      updateContactInputs.push({
+        id: existingContact.contactId,
+        properties: mapDynamoItemToContactFields(ch, existingContact.email),
+      })
+    }
+    // SCENARIO 2:
+    else if (duplicateEmailContact && duplicateEmailContact.lifecyclestage === 'lead') {
+      updateContactInputs.push({ id: duplicateEmailContact.contactId, properties: mapDynamoItemToContactFields(ch) })
+    }
+    // SCENARIO 3:
+    else if (duplicateEmailContact && duplicateEmailContact.lifecyclestage === 'customer') {
+      createContactInputs.push({
+        properties: mapDynamoItemToContactFields(ch, `secondary-${duplicateEmailContact.email}`),
+      })
+    }
+    // SCENARIO 4:
+    else {
       createContactInputs.push({ properties: mapDynamoItemToContactFields(ch) })
     }
   })
@@ -179,6 +203,25 @@ export async function updateContactsInHubspot() {
     `Pushed channel contacts to the Hubspot - ` +
       `New Contacts: ${createContactInputs.length}, Updated Contacts: ${updateContactInputs.length}`
   )
+}
+
+export function getLastMondayMiddayCET(): Date {
+  // Start with the current time in CET
+  let nowCET = moment().tz('Europe/Berlin')
+
+  // Adjust to last Monday
+  if (nowCET.day() === 0) {
+    // Sunday
+    nowCET.subtract(6, 'days')
+  } else {
+    nowCET.subtract(nowCET.day() - 1, 'days')
+  }
+
+  // Set time to midday (12:00 PM)
+  nowCET.set({ hour: 12, minute: 0, second: 0, millisecond: 0 })
+
+  // Return timestamp
+  return new Date(parseInt(nowCET.format('X')) * 1000) // Unix Timestamp (seconds since the Unix Epoch)
 }
 
 // TODO: Note: Status change from one tier to another tier, or from referrer (lead status) to customer does not result in signup rewards, so this case needs to be handled manually

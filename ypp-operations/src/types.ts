@@ -193,7 +193,7 @@ export type HubspotYPPContact = {
   /**
    * Lifecycle stage of customer (Hubspot property)
    */
-  lifecyclestage: 'customer'
+  lifecyclestage: 'customer' | 'lead'
 
   /**
    * New Synced Vids
@@ -285,6 +285,7 @@ export type HubspotYPPContact = {
 }
 
 export const payableContactProps = [
+  'lifecyclestage',
   'contactId',
   'email',
   'channel_url',
