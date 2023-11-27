@@ -315,7 +315,8 @@ export function mapDynamoItemToContactFields(item: YtChannel): Partial<HubspotYP
     gleev_channel_id: item.joystreamChannelId.toString(),
     lifecyclestage: 'customer',
     hs_lead_status: 'CONNECTED', // Lead Status
-    date_signed_up_to_ypp: new Date(item.createdAt).setUTCHours(0, 0, 0, 0).toString(), // Date Signed up to YPP
+    date_signed_up_to_ypp: new Date(item.createdAt).toISOString(), // Date Signed up to YPP
+    dateytchannelcreated: new Date(item.publishedAt).toISOString(), // Date Yt Channel Created
     yppstatus: item.yppStatus, // YPP Status
     referredby: item.referrerChannelId ? String(item.referrerChannelId) : undefined, // Referred By
     videocategoryid: item.videoCategoryId,

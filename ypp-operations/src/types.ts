@@ -211,6 +211,11 @@ export type HubspotYPPContact = {
   latest_ypp_period_wc: string
 
   /**
+   * Date when channel was created on Youtube
+   */
+  dateytchannelcreated: string
+
+  /**
    * Date Signed up to YPP
    */
   date_signed_up_to_ypp: string
@@ -285,6 +290,7 @@ export const payableContactProps = [
   'channel_url',
   'gleev_channel_id',
   'yppstatus',
+  'dateytchannelcreated',
   'date_signed_up_to_ypp',
   'latest_ypp_period_wc',
   'sign_up_reward_in_usd',
