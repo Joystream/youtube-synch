@@ -58,15 +58,14 @@ export default abstract class DefaultCommandBase extends Command {
     return (await this.api.rpc.system.accountNextIndex(account)).toNumber()
   }
 
-  async getJoystreamMemberControllerAccount(memberId: string) {
+  async getJoystreamMemberControllerAccount(memberId: string): Promise<string> {
     const membership = (await this.api.query.members.membershipById(Number(memberId))) as any
     return membership.unwrap().controllerAccount.toString()
   }
 
   asHapi(joy: number) {
-    let joyBN = new BN(joy)
     let factor = new BN(10).pow(new BN(this.tokenDecimals))
-    return joyBN.mul(factor).toString()
+    return factor.muln(joy).toString()
   }
 
   private async createJoystreamCli(apiEndpoint: string, qnEndpoint: string): Promise<JoystreamCLI> {
