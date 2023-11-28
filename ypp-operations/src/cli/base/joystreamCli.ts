@@ -1,8 +1,6 @@
-import { KeyringPair } from '@polkadot/keyring/types'
 import { spawn } from 'child_process'
-import fs, { mkdirSync, rmdirSync } from 'fs'
+import inquirer from 'inquirer'
 import path from 'path'
-import { v4 as uuid } from 'uuid'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../node_modules/@joystream/cli')
 
@@ -26,6 +24,7 @@ export abstract class CLI {
   protected readonly rootPath: string
   protected readonly binPath: string
   protected defaultArgs: string[]
+  private cachedPassword: string
 
   constructor(rootPath: string, defaultEnv: Record<string, string> = {}, defaultArgs: string[] = []) {
     this.rootPath = rootPath
@@ -43,7 +42,20 @@ export abstract class CLI {
     return [...this.defaultArgs, ...customArgs]
   }
 
+  async promptForPassword(message = 'Enter dev account password'): Promise<string> {
+    const { password } = await inquirer.prompt([
+      {
+        name: 'password',
+        type: 'password',
+        message,
+      },
+    ])
+
+    return password
+  }
+
   async run(command: string, customArgs: string[] = []): Promise<CommandResult> {
+    const debugCli = process.env.DEBUG_CLI === 'true'
     const { env } = this
 
     const func = async (): Promise<{
@@ -53,12 +65,41 @@ export abstract class CLI {
       return new Promise((resolve, reject) => {
         const child = spawn(this.binPath, [command, ...this.getArgs(customArgs)], {
           env,
-          stdio: 'inherit', // this is the important part for handling interactive input
+          stdio: ['pipe', 'pipe', 'pipe'],
           cwd: this.rootPath,
         })
 
-        child.on('error', (error) => {
+        const cleanUp = (error: Error) => {
+          if (debugCli) console.log('error:', error)
+          child.kill() // Ensure the child process is terminated
+          child.stdout?.removeAllListeners() // Remove all listeners
+          child.stdin?.removeAllListeners()
+          child.stderr.removeAllListeners()
           reject(error)
+        }
+
+        child.once('error', cleanUp)
+
+        child.stdout?.on('data', (data) => {
+          if (debugCli) console.log('stdout:', data.toString())
+          if (data.toString().includes('account password [input is hidden]')) {
+            if (this.cachedPassword) {
+              child.stdin?.write(this.cachedPassword + '\n')
+            } else {
+              this.promptForPassword().then((password) => {
+                this.cachedPassword = password
+                child.stdin?.write(password + '\n')
+              })
+            }
+          }
+        })
+
+        child.stderr.on('data', (data) => {
+          if (debugCli) console.log('stderr:', data.toString())
+          const dataStr = data.toString()
+          if (dataStr.includes('Invalid password... Try again') || dataStr.includes('Not enough balance available')) {
+            child.emit('error', new Error(dataStr))
+          }
         })
 
         child.on('close', (code, signal) => {
@@ -80,34 +121,8 @@ export abstract class CLI {
   }
 }
 
-export class TmpFileManager {
-  tmpDataDir: string
-
-  constructor(baseDir?: string) {
-    this.tmpDataDir = path.join(
-      baseDir || process.env.DATA_PATH || path.join(__filename, '../../../../tmp'),
-      '',
-      uuid()
-    )
-    mkdirSync(this.tmpDataDir, { recursive: true })
-  }
-
-  public jsonFile(value: unknown): string {
-    const jsonIndent = 4
-    const tmpFilePath = path.join(this.tmpDataDir, `${uuid()}.json`)
-    fs.writeFileSync(tmpFilePath, JSON.stringify(value, null, jsonIndent))
-
-    return tmpFilePath
-  }
-
-  rmTempDir() {
-    rmdirSync(this.tmpDataDir, { recursive: true })
-  }
-}
-
 export class JoystreamCLI extends CLI {
   protected keys: string[] = []
-  protected tmpFileManager: TmpFileManager
 
   private apiEndpoint: string
   private qnEndpoint: string
@@ -124,23 +139,6 @@ export class JoystreamCLI extends CLI {
   async init(): Promise<void> {
     await this.run('api:setUri', [this.apiEndpoint])
     await this.run('api:setQueryNodeEndpoint', [this.qnEndpoint])
-  }
-
-  /**
-    Imports accounts key to CLI.
-  */
-  async importAccount(pair: KeyringPair): Promise<void> {
-    const password = ''
-    const jsonFile = this.tmpFileManager.jsonFile(pair.toJson())
-    await this.run('account:import', [
-      '--backupFilePath',
-      jsonFile,
-      '--name',
-      `Account${this.keys.length}`,
-      '--password',
-      password,
-    ])
-    this.keys.push(pair.address)
   }
 
   /**
