@@ -1,0 +1,14 @@
+version: '3.4'
+
+services:
+  chisel-client:
+    image: jpillora/chisel
+    container_name: chisel-client
+    command: client --fingerprint ${CHISEL_SERVER_FINGERPRINT} ${IP_ADDRESS}:8080 0.0.0.0:1080:socks
+    restart: always
+    networks:
+      - youtube-synch
+
+networks:
+  youtube-synch:
+    external: true
