@@ -179,12 +179,17 @@ export class ContentProcessingService {
     // to be uploaded on the storage network. Otherwise postpone the video creation.
     const spaceCondition = freeSpace > 0 || (freeSpace <= 0 && video.joystreamVideo !== undefined)
 
-    return (
+    const shouldBeProcessed =
       isSyncEnabled &&
       isCollaboratorSet &&
       (!isHistoricalVideo || (isHistoricalVideo && !sizeLimitReached)) &&
       spaceCondition
-    )
+
+    if (!shouldBeProcessed && SyncUtils.downloadedVideoFilePaths.has(video.id)) {
+      await SyncUtils.removeVideoFile(video.id)
+    }
+
+    return shouldBeProcessed
   }
 
   private async isActiveJobFlow(videoId: string): Promise<boolean> {
