@@ -101,66 +101,6 @@ const suspendedVariants = Object.values(ChannelYppStatusSuspended).map((status) 
 const readonlyChannelYppStatus = ['Unverified', ...verifiedVariants, ...suspendedVariants, 'OptedOut'] as const
 export type ChannelYppStatus = typeof readonlyChannelYppStatus[number]
 
-export class YtVideo {
-  // Video ID on Youtube
-  id: string
-
-  // Video's channel ID
-  channelId: string
-
-  // Video URL
-  url: string
-
-  // Video title
-  title: string
-
-  // Video description
-  description: string
-
-  // Video's playlist ID
-  playlistId: string
-
-  // current state of the video
-  state: VideoState
-
-  // Joystream video category to be assigned to synced videos
-  category: string
-
-  // language of the synced video (derived from corresponding Joystream channel)
-  languageIso?: string
-
-  // Video duration in seconds
-  duration: number
-
-  // The status of the uploaded video on Youtube.
-  uploadStatus: string
-
-  // Media container format
-  container: string
-
-  // Indicates if the video is an upcoming/active live broadcast. else it's "none"
-  liveBroadcastContent: 'upcoming' | 'live' | 'none'
-
-  // ID of the corresponding Joystream Channel (De-normalized from YtChannel table)
-  joystreamChannelId: number
-
-  // Youtube video creation date
-  publishedAt: string
-
-  // record creation time
-  createdAt: Date
-}
-
-export type VideoState =
-  | 'New'
-  | 'VideoCreationFailed'
-  | 'CreatingVideo'
-  | 'VideoCreated'
-  | 'UploadFailed'
-  | 'UploadStarted'
-  | 'UploadSucceeded'
-  | 'VideoUnavailable'
-
 export type HubspotYPPContact = {
   //Hubspot system properties
   vid: string
@@ -285,6 +225,7 @@ export type HubspotYPPContact = {
 }
 
 export const payableContactProps = [
+  'hs_lead_status',
   'lifecyclestage',
   'contactId',
   'email',
