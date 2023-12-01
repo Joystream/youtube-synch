@@ -42,7 +42,7 @@ export abstract class CLI {
     return [...this.defaultArgs, ...customArgs]
   }
 
-  async promptForPassword(message = 'Enter dev account password'): Promise<string> {
+  async promptForPassword(message = 'Enter account password'): Promise<string> {
     const { password } = await inquirer.prompt([
       {
         name: 'password',
