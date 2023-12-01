@@ -415,8 +415,8 @@ export type TopReferrer = {
 }
 
 export const REFERRAL_REWARD_BY_TIER: { [K in ChannelYppStatusVerified]: number } = {
-  'Bronze': 1,
-  'Silver': 12.5,
-  'Gold': 25,
-  'Diamond': 50,
+  'Bronze': 2,
+  'Silver': 25,
+  'Gold': 50,
+  'Diamond': 100,
 }
