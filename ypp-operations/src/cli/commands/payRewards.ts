@@ -83,8 +83,9 @@ export default class PayReward extends DefaultCommandBase {
         if (newNonce === currentNonce + 1) {
           // update contact's reward status in Hubspot to paid before making the payment
           await updateYppContacts(updateContactsRewardsInput)
-
-          this.log(chalk.greenBright(`Done paying rewards to ${(i + 1) * channelsBatch.length} channels!`))
+          this.log(
+            chalk.greenBright(`Done paying rewards to ${chalk.yellow(i * batchSize + channelsBatch.length)} channels!`)
+          )
         }
       }
     }
