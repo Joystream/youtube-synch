@@ -70,7 +70,7 @@ export class ContentDownloadService {
         return videoId
       })
     this.logger.verbose(`Resolved already downloaded video assets in local storage`, {
-      resolvedDownloads,
+      resolvedDownloads: resolvedDownloads.length,
       usedSpace: SyncUtils.usedSpace,
     })
   }

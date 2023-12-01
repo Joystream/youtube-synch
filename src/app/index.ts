@@ -91,7 +91,6 @@ export class Service {
         intervals: { youtubePolling, contentProcessing },
       } = this.config.sync
       this.logger.verbose('Starting the Youtube-Synch service', { config: this.hideSecrets(this.config) })
-      // Null-assertion is safe here since intervals won't be not null due to Ajv schema validation
       await this.youtubePollingService.start(youtubePolling)
       await this.contentProcessingService.start(contentProcessing)
     }
