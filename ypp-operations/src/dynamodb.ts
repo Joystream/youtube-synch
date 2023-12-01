@@ -4,25 +4,22 @@ import { YtChannel } from './types'
 
 const documentClient = new AWS.DynamoDB.DocumentClient()
 
-export async function countVideosSyncedAfter(channelId: string, yppSignupDate: string, date: string): Promise<number> {
+export async function countVideosSyncedAfter(channelId: string, date: string): Promise<number> {
+  // IMPORTANT: Here we are paying rewards for videos that haven't been synced yet
   const params = {
     TableName: 'videos',
-    IndexName: 'channelId-createdAt-index',
-    KeyConditionExpression: '#channelId = :channelIdVal and #createdAt > :createdAtAtVal',
-    FilterExpression: '#state = :stateVal and #publishedAt > :publishedAtAtVal and #duration > :durationVal',
+    IndexName: 'channelId-publishedAt-index',
+    KeyConditionExpression: '#channelId = :channelIdVal and #publishedAt > :publishedAtAtVal',
+    FilterExpression: '#duration > :durationVal',
     ExpressionAttributeNames: {
       '#channelId': 'channelId',
-      '#createdAt': 'createdAt',
       '#publishedAt': 'publishedAt',
       '#duration': 'duration',
-      '#state': 'state',
     },
     ExpressionAttributeValues: {
       ':channelIdVal': channelId,
-      ':createdAtAtVal': date,
-      ':publishedAtAtVal': yppSignupDate,
+      ':publishedAtAtVal': date,
       ':durationVal': config('MIN_VIDEO_DURATION_IN_MINS') * 60,
-      ':stateVal': 'UploadSucceeded',
     },
   }
 

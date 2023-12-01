@@ -53,7 +53,6 @@ async function latestSyncRewardInUsd(contact: Awaited<ReturnType<typeof getAllYp
   if (tier) {
     const syncedCount = await countVideosSyncedAfter(
       contact.channel_url,
-      contact.date_signed_up_to_ypp,
       contact.latest_ypp_period_wc || contact.date_signed_up_to_ypp
     )
     const maxRewardedVideos = Math.min(syncedCount, config('MAX_REWARDED_VIDEOS_PER_WEEK'))
