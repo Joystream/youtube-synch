@@ -29,7 +29,7 @@ export class ContentProcessingService {
   private contentUploadService: ContentUploadService
 
   constructor(
-    private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['endpoints'],
+    private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['endpoints'] & ReadonlyConfig['proxy'],
     logging: LoggingService,
     private dynamodbService: DynamodbService,
     youtubeApi: IYoutubeApi,

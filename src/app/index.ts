@@ -44,7 +44,7 @@ export class Service {
         this.joystreamClient
       )
       this.contentProcessingService = new ContentProcessingService(
-        { ...config.sync, ...config.endpoints },
+        { ...config.sync, ...config.endpoints, ...config.proxy },
         this.logging,
         this.dynamodbService,
         this.youtubeApi,

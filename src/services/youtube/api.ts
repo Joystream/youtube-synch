@@ -370,6 +370,7 @@ class YoutubeClient implements IYoutubeApi {
       format: 'bv[height<=1080][ext=mp4]+ba[ext=m4a]/bv[height<=1080][ext=webm]+ba[ext=webm]/best[height<=1080]',
       output: `${outPath}/%(id)s.%(ext)s`,
       ffmpegLocation: ffmpegInstaller.path,
+      proxy: this.config.proxy?.url,
     })
     return response
   }

@@ -12,9 +12,11 @@ This setup is designed to automate the restarting of an Amazon EC2 instance and 
 
 3. **Docker and Docker Compose**: Used to manage the Chisel client container.
 
-4. **Bash Script (`restart-ec2-proxy-instance.sh`)**: A script to automate the stopping and starting of the EC2 instance and updating the Docker Compose configuration with the new IP address.
+4. **Bash Script (`start-proxy-client.sh`)**: A script to start to Chisel proxy client on the client machine.
 
-5. **Docker Compose File (`docker-compose.chisel.yml`)**: Configuration file for Docker Compose to set up the Chisel client.
+5. **Bash Script (`restart-ec2-proxy-instance.sh`)**: A script to automate the stopping and starting of the EC2 instance where Chisel server is running and updating the Docker Compose configuration with the new IP address.
+
+6. **Docker Compose File (`docker-compose.chisel.yml`)**: Configuration file for Docker Compose to set up the Chisel client.
 
 ## System Requirements
 
@@ -31,7 +33,7 @@ This setup is designed to automate the restarting of an Amazon EC2 instance and 
 
 ### Bash Script Configuration
 
-1. Create a `.env` file in the same directory as the `restart-ec2-proxy-instance.sh` script with your EC2 instance ID and the Chisel server's fingerprint. For example:
+1. Create a `.env` file in the same directory as the `restart-ec2-proxy-instance.sh` & `start-proxy-client.sh` script with your EC2 instance ID and the Chisel server's fingerprint. For example:
 
    ```
    INSTANCE_ID="EC2_INSTANCE_ID"
@@ -39,9 +41,10 @@ This setup is designed to automate the restarting of an Amazon EC2 instance and 
 
    ```
 
-2. Make the script executable:
+2. Make the scripts executable:
    ```bash
    chmod +x restart-ec2-proxy-instance.sh
+   chmod +x start-proxy-client.sh
    ```
 
 ### Starting Chisel Server on EC2 Instance
@@ -61,3 +64,11 @@ docker logs chisel-server
 ```
 
 Copy the fingerprint and add it to the `.env` file for `CHISEL_SERVER_FINGERPRINT` env var.
+
+### Starting Chisel Client on Client Machine
+
+To start the Chisel client on the client machine, execute the following command:
+
+```bash
+./start-proxy-client.sh
+```

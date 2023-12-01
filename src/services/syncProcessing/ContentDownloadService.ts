@@ -1,27 +1,32 @@
 import { Job } from 'bullmq'
+import { exec as execCallback } from 'child_process'
 import fs from 'fs'
 import fsPromises from 'fs/promises'
 import pTimeout from 'p-timeout'
 import path from 'path'
+import { promisify } from 'util'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
 import { DownloadJobData, DownloadJobOutput, VideoUnavailableReasons, YtChannel } from '../../types/youtube'
+import { restartEC2Instance } from '../../utils/restartEC2Instance'
 import { LoggingService } from '../logging'
 import { IYoutubeApi } from '../youtube/api'
 import { SyncUtils } from './utils'
+
+const exec = promisify(execCallback)
 
 // Youtube videos download service
 export class ContentDownloadService {
   readonly logger: Logger
 
   public constructor(
-    private syncConfig: Required<ReadonlyConfig['sync']>,
+    private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['proxy'],
     logging: LoggingService,
     private dynamodbService: IDynamodbService,
     private youtubeApi: IYoutubeApi
   ) {
-    this.syncConfig = syncConfig
+    this.config = config
     this.logger = logging.createLogger('ContentDownloadService')
     this.dynamodbService = dynamodbService
     this.youtubeApi = youtubeApi
@@ -36,7 +41,7 @@ export class ContentDownloadService {
 
   private async removeVideoFile(videoId: string) {
     try {
-      const dir = this.syncConfig.downloadsDir
+      const dir = this.config.downloadsDir
       const files = await fsPromises.readdir(dir)
       for (const file of files) {
         if (file.startsWith(videoId)) {
@@ -58,13 +63,13 @@ export class ContentDownloadService {
   }
 
   private resolveDownloadedVideos() {
-    const videoDownloadsDir = this.syncConfig.downloadsDir
+    const videoDownloadsDir = this.config.downloadsDir
     const resolvedDownloads = fs
       .readdirSync(videoDownloadsDir)
       .map((filePath) => filePath.split('.'))
       .filter((filePath) => filePath.length === 2)
       .map(([videoId, ext]) => {
-        const filePath = path.join(this.syncConfig.downloadsDir, `${videoId}.${ext}`)
+        const filePath = path.join(this.config.downloadsDir, `${videoId}.${ext}`)
         SyncUtils.setVideoFilePath(videoId, filePath)
         SyncUtils.updateUsedStorageSize(this.fileSize(filePath))
         return videoId
@@ -82,20 +87,17 @@ export class ContentDownloadService {
       // download the video from youtube
 
       const { ext: fileExt } = await pTimeout(
-        this.youtubeApi.downloadVideo(video.url, this.syncConfig.downloadsDir),
-        this.syncConfig.limits.pendingDownloadTimeoutSec * 1000,
+        this.youtubeApi.downloadVideo(video.url, this.config.downloadsDir),
+        this.config.limits.pendingDownloadTimeoutSec * 1000,
         `Download timed-out`
       )
 
-      const filePath = path.join(this.syncConfig.downloadsDir, `${video.id}.${fileExt}`)
+      const filePath = path.join(this.config.downloadsDir, `${video.id}.${fileExt}`)
       const size = this.fileSize(filePath)
       if (!SyncUtils.downloadedVideoFilePaths.has(video.id)) {
         SyncUtils.setVideoFilePath(video.id, filePath)
         SyncUtils.updateUsedStorageSize(size)
       }
-
-      // TODO: fix this as size can be duplicated added if video is already downloaded
-      // TODO: once during resolveDownloadedVideos calls and once during re-downloading
 
       if (video.joystreamVideo) {
         return { filePath }
@@ -132,6 +134,12 @@ export class ContentDownloadService {
       if (matchedError) {
         await this.dynamodbService.videos.updateState(video, `VideoUnavailable::${matchedError.code}`)
         this.logger.error(`${errorMsg}. Skipping from syncing...`, { videoId: video.id, reason: matchedError.code })
+      }
+
+      // If the error is 403 Forbidden means the IP address was blocked,
+      // restart the proxy server EC2 instance if enabled (i.e setup exists)
+      if (errorMsg.includes('HTTP Error 403: Forbidden') && this.config.chiselProxy?.ec2AutoRotateIp) {
+        await restartEC2Instance(this.logger)
       }
 
       await this.removeVideoFile(video.id)
