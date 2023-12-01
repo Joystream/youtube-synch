@@ -70,6 +70,19 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
       // Youtube channel creation date
       publishedAt: String,
 
+      // Timestamp when the channel verification was processed, either to Verified or Suspended
+      processedAt: {
+        type: {
+          value: Date,
+          settings: {
+            storage: 'iso',
+          },
+        },
+        get: (value: any) => {
+          return new Date(value)
+        },
+      },
+
       // Timestamp of the last action performed by channel owner (using its owner controller keys)
       lastActedAt: {
         type: {
@@ -212,10 +225,9 @@ export class ChannelsRepository implements IRepository<YtChannel> {
   }
 
   async upsertAll(channels: YtChannel[]): Promise<YtChannel[]> {
-    return this.withLock(async () => {
-      const results = await Promise.all(channels.map(async (channel) => await this.save(channel)))
-      return results
-    })
+    // Intentionally not locking this method because save already locks each element
+    const results = await Promise.all(channels.map(async (channel) => await this.save(channel)))
+    return results
   }
 
   async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<YtChannel[]> {

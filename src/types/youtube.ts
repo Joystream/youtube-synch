@@ -96,6 +96,9 @@ export class YtChannel {
   // This field serves the purpose of nonce to avoid playback attacks
   lastActedAt: Date
 
+  // Timestamp when the channel verification was processed, either to Verified or Suspended
+  processedAt: Date
+
   // Needs a dummy partition key on GSI to be able to query by createdAt fields
   phantomKey: 'phantomData'
 

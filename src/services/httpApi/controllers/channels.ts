@@ -258,6 +258,7 @@ export class ChannelsController {
         await this.dynamodbService.channels.save({
           ...channel,
           yppStatus: `Suspended::${reason}`,
+          processedAt: new Date(),
           allowOperatorIngestion: false,
         })
       }
@@ -285,6 +286,7 @@ export class ChannelsController {
         await this.dynamodbService.channels.save({
           ...channel,
           yppStatus: `Verified::${tier}`,
+          processedAt: new Date(),
           allowOperatorIngestion: true,
         })
       }
@@ -443,14 +445,8 @@ export class ChannelsController {
     const actionType: string = (action as any).constructor.name.replace('Dto', '')
     const channel = await this.dynamodbService.channels.getByJoystreamId(joystreamChannelId)
 
-    if (action instanceof IngestChannelDto || action instanceof UpdateChannelCategoryDto) {
-      // Ensure channel is not suspended
-      if (YtChannel.isSuspended(channel)) {
-        throw new Error(`Can't perform "${actionType}" action on a "${channel.yppStatus}" channel. Permission denied.`)
-      }
-    }
-    // Ensure channel is not opted out
-    if (channel.yppStatus === 'OptedOut') {
+    // Ensure channel is not suspended or opted out
+    if (YtChannel.isSuspended(channel) || channel.yppStatus === 'OptedOut') {
       throw new Error(`Can't perform "${actionType}" action on a "${channel.yppStatus}" channel. Permission denied.`)
     }
 
