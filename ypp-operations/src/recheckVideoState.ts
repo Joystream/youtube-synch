@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import moment from 'moment-timezone'
 import { loadConfig as config } from './config'
 import { countVideosSyncedAfter, getAllChannels, getAllReferredChannels } from './dynamodb'
@@ -121,62 +122,75 @@ export async function updateContactsInHubspot() {
   const channels = await getAllChannels() // All the channels that ever signed up (This does not include not signed up referrer channels)
   const existingContacts = await getAllYppContacts(['customer', 'lead'])
 
-  //Count the occurrences of each gleev_channel_id
-  const idCountMap: { [key: number]: number } = {}
-  for (const contact of existingContacts) {
-    const channelId = contact.gleev_channel_id
-    if (channelId !== undefined) {
-      idCountMap[channelId] = (idCountMap[channelId] || 0) + 1
-    }
-  }
-
-  const duplicateChannels = Object.entries(idCountMap).reduce((accumulator: number[], [channelId, count]) => {
-    if (count > 1) {
-      accumulator.push(Number(channelId))
-    }
-    return accumulator
-  }, [])
+  const duplicateJsChannels = _(existingContacts)
+    .countBy('gleev_channel_id') // Count occurrences of each
+    .pickBy((count) => count > 1) // Keep only those with count > 1
+    .keys() // Get the key
+    .value()
+  const duplicateYtChannels = _(existingContacts)
+    .countBy('channel_url') // Count occurrences of each
+    .pickBy((count) => count > 1) // Keep only those with count > 1
+    .keys() // Get the key
+    .value()
+  const duplicateEmails = _(channels.map((c) => ({ email: c.email.toLowerCase() })))
+    .countBy('email') // Count occurrences of each
+    .pickBy((count) => count > 1) // Keep only those with count > 1
+    .keys() // Get the key
+    .value()
 
   // Print any duplicate gleev channels
-  console.log(`duplicateChannels: ${duplicateChannels}`)
+  console.log(`duplicateJoystreamChannels: ${duplicateJsChannels}\n`)
+  console.log(`duplicateYoutubeChannels: ${duplicateYtChannels}\n`)
+  console.log(`duplicateEmails: ${duplicateEmails}\n`)
 
   const updateContactInputs: Parameters<typeof updateYppContacts>['0'] = []
   const createContactInputs: Parameters<typeof createYppContacts>['0'] = []
 
   // Check for all the YPP participants (Lead Status === 'CONNECTED')
   channels.forEach((ch) => {
-    // (GleevChannelId, YTChannelId) check only returns max contact result
-    const existingContact = existingContacts.find(
-      (contact) => contact.gleev_channel_id === ch.joystreamChannelId && contact.channel_url == ch.id
+    // (Email, YTChannelId) should be a unique combination since YT-synch backend
+    // does not allow change email once channel signs up. Beware that any new
+    // channel signup can use the existing email (i.e. duplicate emails are allowed)
+    const sameContact = existingContacts.find(
+      (contact) => contact.email.toLowerCase() === ch.email.toLowerCase() && contact.channel_url == ch.id
     )
-    const duplicateEmailContact = existingContacts.find(
-      (contact) => contact.email.toLowerCase() === ch.email.toLowerCase()
+    const existingEmailContact = existingContacts.find(({ email }) => email.toLowerCase() === ch.email.toLowerCase())
+    const existingGleevIdContact = existingContacts.find(
+      ({ gleev_channel_id }) => gleev_channel_id === ch.joystreamChannelId
     )
 
     // SCENARIO 1:
-    if (existingContact) {
+    if (sameContact) {
       updateContactInputs.push({
-        id: existingContact.contactId,
-        properties: mapDynamoItemToContactFields(ch, existingContact.email),
+        id: sameContact.contactId,
+        properties: mapDynamoItemToContactFields(ch, sameContact.email),
       })
     }
     // SCENARIO 2:
-    else if (duplicateEmailContact && duplicateEmailContact.lifecyclestage === 'lead') {
-      updateContactInputs.push({ id: duplicateEmailContact.contactId, properties: mapDynamoItemToContactFields(ch) })
+    else if (existingEmailContact && existingEmailContact.lifecyclestage === 'lead') {
+      updateContactInputs.push({ id: existingEmailContact.contactId, properties: mapDynamoItemToContactFields(ch) })
     }
     // SCENARIO 3:
-    else if (duplicateEmailContact && duplicateEmailContact.lifecyclestage === 'customer') {
-      createContactInputs.push({
-        properties: mapDynamoItemToContactFields(ch, `secondary-${duplicateEmailContact.email}`),
-      })
+    else if (existingEmailContact && existingEmailContact.lifecyclestage === 'customer') {
+      const modifiedEmail = `secondary-${existingEmailContact.email}`
+      const modifiedEmailContact = existingContacts.find((contact) => contact.email === modifiedEmail)
+
+      const properties = mapDynamoItemToContactFields(ch, modifiedEmail)
+      modifiedEmailContact
+        ? updateContactInputs.push({ id: modifiedEmailContact.contactId, properties })
+        : createContactInputs.push({ properties })
     }
     // SCENARIO 4:
+    else if (existingGleevIdContact && existingGleevIdContact.hs_lead_status === 'REFERRER') {
+      updateContactInputs.push({ id: existingGleevIdContact.contactId, properties: mapDynamoItemToContactFields(ch) })
+    }
+    // SCENARIO 5:
     else {
       createContactInputs.push({ properties: mapDynamoItemToContactFields(ch) })
     }
   })
 
-  // Check for all the referrers (Lead Status === 'REFERRER')
+  // Check for all the new referrers that are not participant yet (Lead Status === 'REFERRER')
   const referrers = channels.reduce((result, channel) => {
     if (channel.referrerChannelId) {
       result.add(channel.referrerChannelId)
@@ -223,6 +237,6 @@ export function getLastMondayMiddayCET(): Date {
   return new Date(parseInt(nowCET.format('X')) * 1000) // Unix Timestamp (seconds since the Unix Epoch)
 }
 
-// TODO: Note: Status change from one tier to another tier, or from referrer (lead status) to customer does not result in signup rewards, so this case needs to be handled manually
+// TODO: Note: Status change from one tier to another tier, or from referrer (lead status) to customer does not result in signup rewards, so this case needs to be handled manually -> This will not happen after we use processedAt.
 
-// TODO: check: if user sign-ups up again and again using same YT channel but different email, will they get signup reward each time? TODO: fix this by using Dynamo create for calculating the signup rewards?
+// TODO: check: if user sign-ups up again and again using same YT channel but different email, will they get signup reward each time? TODO: fix this by using Dynamo create for calculating the signup rewards? -> This will not happen as now dynamo does not allow changing emails during re-signup
