@@ -48,3 +48,5 @@ Thumbs.db
 .serverless
 .webpack
 .env
+
+transactionLogDB.json

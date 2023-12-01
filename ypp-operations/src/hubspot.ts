@@ -224,7 +224,9 @@ export async function getContactsToPay(): Promise<PayableContact[]> {
       )
       nextPage = Number(response.paging?.next?.after)
     } while (nextPage)
-    return contacts as PayableContact[]
+    return contacts.filter(
+      (c) => c.sign_up_reward_in_usd !== '0' || c.latest_referral_reward_in_usd !== '0' || c.videos_sync_reward !== '0'
+    ) as PayableContact[]
   } catch (err) {
     console.error(err)
     throw err
