@@ -85,6 +85,11 @@ export class ChannelInductionRequirementsDto {
         template: 'YouTube channel has at least {}.',
         variables: [pluralizeNoun(requirements.minimumVideosCount, 'video')],
       },
+      {
+        errorCode: ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_CREATION_DATE,
+        template: 'YouTube channel needs to be older than {}.',
+        variables: [pluralizeNoun(Math.round(requirements.minimumChannelAgeHours * 0.001), 'month')],
+      },
     ]
   }
 }

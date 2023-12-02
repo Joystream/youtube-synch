@@ -4,16 +4,17 @@
 
 # Youtube Sync node configuration Properties
 
-| Property                                                        | Type     | Required | Nullable       | Defined by                                                                                                                                                                                   |
-| :-------------------------------------------------------------- | :------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [joystream](#joystream)                                         | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-joystream.md "https://joystream.org/schemas/youtube-synch/config#/properties/joystream")                                             |
-| [endpoints](#endpoints)                                         | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-endpoints.md "https://joystream.org/schemas/youtube-synch/config#/properties/endpoints")                                             |
-| [logs](#logs)                                                   | `object` | Optional | cannot be null | [Youtube Sync node configuration](definition-properties-logs.md "https://joystream.org/schemas/youtube-synch/config#/properties/logs")                                                       |
-| [youtube](#youtube)                                             | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-youtube-oauth2-client-configuration.md "https://joystream.org/schemas/youtube-synch/config#/properties/youtube")                     |
-| [aws](#aws)                                                     | `object` | Optional | cannot be null | [Youtube Sync node configuration](definition-properties-aws-configurations-needed-to-connect-with-dynamodb-instance.md "https://joystream.org/schemas/youtube-synch/config#/properties/aws") |
-| [creatorOnboardingRequirements](#creatoronboardingrequirements) | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements")     |
-| [httpApi](#httpapi)                                             | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-public-api-configuration.md "https://joystream.org/schemas/youtube-synch/config#/properties/httpApi")                                |
-| [sync](#sync)                                                   | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync")                   |
+| Property                                                        | Type     | Required | Nullable       | Defined by                                                                                                                                                                                                           |
+| :-------------------------------------------------------------- | :------- | :------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [joystream](#joystream)                                         | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-joystream.md "https://joystream.org/schemas/youtube-synch/config#/properties/joystream")                                                                     |
+| [endpoints](#endpoints)                                         | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-endpoints.md "https://joystream.org/schemas/youtube-synch/config#/properties/endpoints")                                                                     |
+| [logs](#logs)                                                   | `object` | Optional | cannot be null | [Youtube Sync node configuration](definition-properties-logs.md "https://joystream.org/schemas/youtube-synch/config#/properties/logs")                                                                               |
+| [youtube](#youtube)                                             | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-youtube-oauth2-client-configuration.md "https://joystream.org/schemas/youtube-synch/config#/properties/youtube")                                             |
+| [aws](#aws)                                                     | `object` | Optional | cannot be null | [Youtube Sync node configuration](definition-properties-aws-configurations-needed-to-connect-with-dynamodb-instance.md "https://joystream.org/schemas/youtube-synch/config#/properties/aws")                         |
+| [proxy](#proxy)                                                 | `object` | Optional | cannot be null | [Youtube Sync node configuration](definition-properties-socks5-proxy-client-configuration-used-by-yt-dlp-to-bypass-ip-blockage-by-youtube.md "https://joystream.org/schemas/youtube-synch/config#/properties/proxy") |
+| [creatorOnboardingRequirements](#creatoronboardingrequirements) | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-creatoronboardingrequirements.md "https://joystream.org/schemas/youtube-synch/config#/properties/creatorOnboardingRequirements")                             |
+| [httpApi](#httpapi)                                             | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-public-api-configuration.md "https://joystream.org/schemas/youtube-synch/config#/properties/httpApi")                                                        |
+| [sync](#sync)                                                   | `object` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync")                                           |
 
 ## joystream
 
@@ -104,6 +105,24 @@ AWS configurations needed to connect with DynamoDB instance
 ### aws Type
 
 `object` ([AWS configurations needed to connect with DynamoDB instance](definition-properties-aws-configurations-needed-to-connect-with-dynamodb-instance.md))
+
+## proxy
+
+Socks5 proxy client configuration used by yt-dlp to bypass IP blockage by Youtube
+
+`proxy`
+
+*   is optional
+
+*   Type: `object` ([Socks5 proxy client configuration used by yt-dlp to bypass IP blockage by Youtube](definition-properties-socks5-proxy-client-configuration-used-by-yt-dlp-to-bypass-ip-blockage-by-youtube.md))
+
+*   cannot be null
+
+*   defined in: [Youtube Sync node configuration](definition-properties-socks5-proxy-client-configuration-used-by-yt-dlp-to-bypass-ip-blockage-by-youtube.md "https://joystream.org/schemas/youtube-synch/config#/properties/proxy")
+
+### proxy Type
+
+`object` ([Socks5 proxy client configuration used by yt-dlp to bypass IP blockage by Youtube](definition-properties-socks5-proxy-client-configuration-used-by-yt-dlp-to-bypass-ip-blockage-by-youtube.md))
 
 ## creatorOnboardingRequirements
 

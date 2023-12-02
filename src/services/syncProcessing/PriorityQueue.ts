@@ -198,8 +198,19 @@ export class PriorityJobQueue<
 
           for (const job of unprocessedJobs) {
             let sudoPriority = SyncUtils.DEFAULT_SUDO_PRIORITY
+
+            // Prioritize syncing new videos over old ones
             if (new Date(job.data.publishedAt) > channel.createdAt && job.data.duration > 300) {
-              sudoPriority += 50
+              sudoPriority += 20
+            }
+
+            // Prioritize syncing videos of the non-Bronze channels
+            if (
+              channel.yppStatus === 'Verified::Diamond' ||
+              channel.yppStatus === 'Verified::Gold' ||
+              channel.yppStatus === 'Verified::Silver'
+            ) {
+              sudoPriority += 20
             }
 
             const priority = SyncUtils.calculateJobPriority(

@@ -21,13 +21,24 @@ import { YtChannel, YtDlpFlatPlaylistOutput, YtDlpVideoOutput, YtUser, YtVideo }
 import Schema$Video = youtube_v3.Schema$Video
 import Schema$Channel = youtube_v3.Schema$Channel
 
-export class YtDlpClient {
+export interface IOpenYTApi {
+  ensureChannelExists(channelId: string): Promise<string>
+  getVideos(channel: YtChannel, ids: string[]): Promise<YtVideo[]>
+}
+
+export class YtDlpClient implements IOpenYTApi {
   private ytdlpPath: string
   private exec
 
   constructor() {
     this.exec = promisify(exec)
     this.ytdlpPath = `${pkgDir.sync(__dirname)}/node_modules/youtube-dl-exec/bin/yt-dlp`
+  }
+
+  async ensureChannelExists(channelId: string): Promise<string> {
+    // "-I :1" is used to only fetch at most one video of the channel if it exists.
+    return (await this.exec(`${this.ytdlpPath} --print channel_id https://www.youtube.com/channel/${channelId} -I :1`))
+      .stdout
   }
 
   async getVideos(channel: YtChannel, ids: string[]): Promise<YtVideo[]> {
@@ -53,7 +64,7 @@ export class YtDlpClient {
         (video) =>
           <YtVideo>{
             id: video?.id,
-            description: video?.description,
+            description: video?.description || '',
             title: video?.title,
             channelId: video?.channel_id,
             thumbnails: {
@@ -370,6 +381,7 @@ class YoutubeClient implements IYoutubeApi {
       format: 'bv[height<=1080][ext=mp4]+ba[ext=m4a]/bv[height<=1080][ext=webm]+ba[ext=webm]/best[height<=1080]',
       output: `${outPath}/%(id)s.%(ext)s`,
       ffmpegLocation: ffmpegInstaller.path,
+      proxy: this.config.proxy?.url,
     })
     return response
   }

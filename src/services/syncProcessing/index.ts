@@ -29,7 +29,7 @@ export class ContentProcessingService {
   private contentUploadService: ContentUploadService
 
   constructor(
-    private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['endpoints'],
+    private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['endpoints'] & ReadonlyConfig['proxy'],
     logging: LoggingService,
     private dynamodbService: DynamodbService,
     youtubeApi: IYoutubeApi,
@@ -140,8 +140,19 @@ export class ContentProcessingService {
         for (const video of unsyncedVideos) {
           if ((await this.ensureVideoCanBeProcessed(video, channel)) && !(await this.isActiveJobFlow(video.id))) {
             let sudoPriority = SyncUtils.DEFAULT_SUDO_PRIORITY
+
+            // Prioritize syncing new videos over old ones
             if (new Date(video.publishedAt) > channel.createdAt && video.duration > 300) {
-              sudoPriority += 50
+              sudoPriority += 20
+            }
+
+            // Prioritize syncing videos of the non-Bronze channels
+            if (
+              channel.yppStatus === 'Verified::Diamond' ||
+              channel.yppStatus === 'Verified::Gold' ||
+              channel.yppStatus === 'Verified::Silver'
+            ) {
+              sudoPriority += 20
             }
 
             const priority = SyncUtils.calculateJobPriority(
@@ -179,12 +190,17 @@ export class ContentProcessingService {
     // to be uploaded on the storage network. Otherwise postpone the video creation.
     const spaceCondition = freeSpace > 0 || (freeSpace <= 0 && video.joystreamVideo !== undefined)
 
-    return (
+    const shouldBeProcessed =
       isSyncEnabled &&
       isCollaboratorSet &&
       (!isHistoricalVideo || (isHistoricalVideo && !sizeLimitReached)) &&
       spaceCondition
-    )
+
+    if (!shouldBeProcessed && SyncUtils.downloadedVideoFilePaths.has(video.id)) {
+      await SyncUtils.removeVideoFile(video.id)
+    }
+
+    return shouldBeProcessed
   }
 
   private async isActiveJobFlow(videoId: string): Promise<boolean> {
