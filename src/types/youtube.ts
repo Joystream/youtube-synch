@@ -96,6 +96,9 @@ export class YtChannel {
   // This field serves the purpose of nonce to avoid playback attacks
   lastActedAt: Date
 
+  // Timestamp when the channel verification was processed, either to Verified or Suspended
+  processedAt: Date
+
   // Needs a dummy partition key on GSI to be able to query by createdAt fields
   phantomKey: 'phantomData'
 
@@ -194,23 +197,25 @@ export type Thumbnails = {
   standard: string
 }
 
-export enum VideoStates {
-  New = 1,
-  // `create_video` extrinsic errored
-  VideoCreationFailed = 2,
-  // Video is being creating on Joystream network (by calling extrinsics, but not yet uploaded)
-  CreatingVideo = 3,
-  // Video has been created on Joystream network (by calling extrinsics, but not yet uploaded)
-  VideoCreated = 4,
-  // Video upload to Joystream failed
-  UploadFailed = 5,
-  // Video is being uploaded to Joystream
-  UploadStarted = 6,
-  // Video upload to Joystream succeeded
-  UploadSucceeded = 7,
-  // Video was deleted from Youtube or set to private after being tracked by
-  // YT-synch service or skipped from syncing by the YT-synch service itself.
-  VideoUnavailable = 8,
+export enum VideoUnavailableReasons {
+  Deleted = 'Deleted',
+  Private = 'Private',
+  Skipped = 'Skipped',
+  Other = 'Other',
+  Unavailable = 'Unavailable',
+  PostprocessingError = 'PostprocessingError',
+  EmptyDownload = 'EmptyDownload',
+}
+
+// Modify the VideoStates enum to include a template literal type for the VideoUnavailable variant
+enum VideoStates {
+  New = 'New',
+  VideoCreationFailed = 'VideoCreationFailed',
+  CreatingVideo = 'CreatingVideo',
+  VideoCreated = 'VideoCreated',
+  UploadFailed = 'UploadFailed',
+  UploadStarted = 'UploadStarted',
+  UploadSucceeded = 'UploadSucceeded',
 }
 
 export enum ChannelYppStatusVerified {
@@ -231,11 +236,15 @@ export const verifiedVariants = Object.values(ChannelYppStatusVerified).map((sta
 const suspendedVariants = Object.values(ChannelYppStatusSuspended).map((status) => `Suspended::${status}` as const)
 const readonlyChannelYppStatus = ['Unverified', ...verifiedVariants, ...suspendedVariants, 'OptedOut'] as const
 
-export const videoStates = Object.keys(VideoStates).filter((v) => isNaN(Number(v)))
+export const videoUnavailableVariants = Object.values(VideoUnavailableReasons).map(
+  (reason) => `VideoUnavailable::${reason}` as const
+)
+
+export const videoStates = [...(Object.keys(VideoStates) as (keyof typeof VideoStates)[]), ...videoUnavailableVariants]
 
 export const channelYppStatus = readonlyChannelYppStatus as unknown as string[]
 
-export type VideoState = keyof typeof VideoStates
+export type VideoState = typeof videoStates[number]
 
 export type ChannelYppStatus = typeof readonlyChannelYppStatus[number]
 
@@ -262,9 +271,6 @@ export class YtVideo {
 
   // Video description
   description: string
-
-  // Video's playlist ID
-  playlistId: string
 
   // video views count
   viewCount: number
@@ -364,6 +370,28 @@ export type YtDlpFlatPlaylistOutput = {
   publishedAt: Date
 }[]
 
+export type YtDlpVideoOutput = {
+  id: string
+  channel_id: string
+  title: string
+  language: string
+  upload_date: string
+  filesize_approx: number
+  description: string
+  duration: number
+  view_count: number
+  like_count: number
+  comment_count: number
+  live_status: 'not_live' | 'is_live' | 'is_upcoming' | 'was_live' | 'post_live'
+  original_url: string
+  availability: 'public' | 'private' | 'unlisted'
+  license: 'Creative Commons Attribution license (reuse allowed)' | undefined
+  ext: string
+  thumbnails: {
+    url: string
+  }[]
+}
+
 export type FaucetRegisterMembershipParams = {
   account: string
   handle: string
@@ -390,8 +418,8 @@ export type TopReferrer = {
 }
 
 export const REFERRAL_REWARD_BY_TIER: { [K in ChannelYppStatusVerified]: number } = {
-  'Bronze': 1,
-  'Silver': 12.5,
-  'Gold': 25,
-  'Diamond': 50,
+  'Bronze': 2,
+  'Silver': 25,
+  'Gold': 50,
+  'Diamond': 100,
 }

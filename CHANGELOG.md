@@ -1,3 +1,24 @@
+### 3.3.0
+
+- Added `chisel` proxy setup with automated IP rotation mechanism to circumvent youtube IP blockage, also integrated proxy setup with yt-synch server. See [docs](socks5-proxy/SETUP.md) for more details
+- Optimizes Youtube API quota usage by using `yt-dlp` instead of youtubeApi to fetch the channel details
+- Added `processedAt` in channels schema to track the timestamp when channel was processed (`Verified`/`Suspended`)
+- Removed unused method from video repository
+- Added YPP InductionRequirement of `CHANNEL_CRITERIA_UNMET_CREATION_DATE`
+- Update video processing priority calculation to prioritize Silver+ tier channels
+- **FIX**: Update referral reward values
+- **FIX**: Added error handling for winston logger
+- **FIX**: Remove stale downloaded videos
+- **FIX**: Avoid updating some channel properties e.g. `createdAt`, `email`, `userId` on re-signup
+
+### 3.2.0
+
+- Optimizes Youtube API quota usage by using `yt-dlp` instead of youtubeApi to fetch the video details
+- add `pendingDownloadTimeoutSec` config option to manage timeout for youtube downloads
+- Add multiple variants to `YtVideo.state.VideoUnavailable`
+- **FIX**: add optional locking feature for Dynamodb tables
+- **FIX**: Only calculate priority for sync-able videos
+
 ### 3.1.0
 
 - bump `@bull-board` npm dependency

@@ -29,9 +29,19 @@ export class StatsRepository implements IRepository<Stats> {
   // lock any updates on video table
   private readonly ASYNC_LOCK_ID = 'stat'
   private asyncLock: AsyncLock = new AsyncLock({ maxPending: Number.MAX_SAFE_INTEGER })
+  private useLock: boolean // Flag to determine if locking should be used
 
-  constructor(tablePrefix: ResourcePrefix) {
+  constructor(tablePrefix: ResourcePrefix, useLock: boolean = true) {
     this.model = statsRepository(tablePrefix)
+    this.useLock = useLock
+  }
+
+  private async withLock<T>(func: () => Promise<T>): Promise<T> {
+    if (this.useLock) {
+      return this.asyncLock.acquire(this.ASYNC_LOCK_ID, func)
+    } else {
+      return func()
+    }
   }
 
   async getModel() {
@@ -66,7 +76,7 @@ export class StatsRepository implements IRepository<Stats> {
   }
 
   async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<Stats[]> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       let lastKey = undefined
       const results = []
       do {
@@ -82,14 +92,14 @@ export class StatsRepository implements IRepository<Stats> {
   }
 
   async get(date: string): Promise<Stats | undefined> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       const result = await this.model.get({ partition: 'stats', date })
       return result ? mapTo<Stats>(result) : undefined
     })
   }
 
   async save(model: Stats): Promise<Stats> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       const update = omit(['id', 'updatedAt'], model)
       const result = await this.model.update({ partition: 'stats', date: model.date }, update)
       return mapTo<Stats>(result)
@@ -101,7 +111,7 @@ export class StatsRepository implements IRepository<Stats> {
   }
 
   async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>) {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       let lastKey = undefined
       const results = []
       do {

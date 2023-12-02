@@ -200,7 +200,6 @@ export const configSchema: JSONSchema7 = objectSchema({
     aws: objectSchema({
       title: 'AWS configurations needed to connect with DynamoDB instance',
       description: 'AWS configurations needed to connect with DynamoDB instance',
-
       properties: {
         endpoint: {
           type: 'string',
@@ -224,6 +223,33 @@ export const configSchema: JSONSchema7 = objectSchema({
       },
       required: [],
     }),
+    proxy: objectSchema({
+      title: 'Socks5 proxy client configuration used by yt-dlp to bypass IP blockage by Youtube',
+      description: 'Socks5 proxy client configuration used by yt-dlp to bypass IP blockage by Youtube',
+      properties: {
+        url: {
+          description: 'Proxy Client URL e.g. socks://localhost:1080, socks://user:password@localhost:1080',
+          type: 'string',
+        },
+        chiselProxy: objectSchema({
+          description:
+            'Configuration option to manage Chisel Client & Server. Before enabling this option please refer to setup guide in `socks5-proxy/SETUP.md`',
+          properties: {
+            ec2AutoRotateIp: {
+              description:
+                'Boolean option to enable auto rotation of ec2 instance IP where chisel server is running by restating it',
+              type: 'boolean',
+            },
+          },
+          required: [],
+        }),
+      },
+      dependencies: {
+        chiselProxy: ['url'],
+      },
+      required: [],
+    }),
+
     creatorOnboardingRequirements: objectSchema({
       description: 'Specifies creator onboarding (signup) requirements for Youtube Partner Program',
       properties: {
@@ -329,6 +355,11 @@ export const configSchema: JSONSchema7 = objectSchema({
               type: 'number',
               default: 50,
             },
+            pendingDownloadTimeoutSec: {
+              description: 'Timeout for pending youtube video downloads in seconds',
+              type: 'integer',
+              minimum: 60,
+            },
             storage: {
               description: 'Maximum total size of all downloaded assets stored in `downloadsDir`',
               type: 'string',
@@ -340,6 +371,7 @@ export const configSchema: JSONSchema7 = objectSchema({
             'maxConcurrentDownloads',
             'createVideoTxBatchSize',
             'maxConcurrentUploads',
+            'pendingDownloadTimeoutSec',
             'storage',
           ],
         }),

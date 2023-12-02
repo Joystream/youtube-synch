@@ -39,9 +39,19 @@ export class WhitelistChannelsRepository implements IRepository<WhitelistChannel
   // lock any updates on whitelistChannels table
   private readonly ASYNC_LOCK_ID = 'whitelistChannels'
   private asyncLock: AsyncLock = new AsyncLock({ maxPending: Number.MAX_SAFE_INTEGER })
+  private useLock: boolean // Flag to determine if locking should be used
 
-  constructor(tablePrefix: ResourcePrefix) {
+  constructor(tablePrefix: ResourcePrefix, useLock: boolean = true) {
     this.model = whitelistChannelsModel(tablePrefix)
+    this.useLock = useLock
+  }
+
+  private async withLock<T>(func: () => Promise<T>): Promise<T> {
+    if (this.useLock) {
+      return this.asyncLock.acquire(this.ASYNC_LOCK_ID, func)
+    } else {
+      return func()
+    }
   }
 
   async upsertAll(): Promise<WhitelistChannel[]> {
@@ -49,7 +59,7 @@ export class WhitelistChannelsRepository implements IRepository<WhitelistChannel
   }
 
   async scan(init: ConditionInitializer, f: (q: Scan<AnyItem>) => Scan<AnyItem>): Promise<WhitelistChannel[]> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       let lastKey = undefined
       const results = []
       do {
@@ -65,28 +75,28 @@ export class WhitelistChannelsRepository implements IRepository<WhitelistChannel
   }
 
   async get(channelId: string): Promise<WhitelistChannel | undefined> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       const result = await this.model.get(channelId)
       return result ? mapTo<WhitelistChannel>(result) : undefined
     })
   }
 
   async save(model: WhitelistChannel): Promise<WhitelistChannel> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       const result = await this.model.update(model)
       return mapTo<WhitelistChannel>(result)
     })
   }
 
   async delete(channelId: string): Promise<void> {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       await this.model.delete(channelId)
       return
     })
   }
 
   async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>) {
-    return this.asyncLock.acquire(this.ASYNC_LOCK_ID, async () => {
+    return this.withLock(async () => {
       let lastKey = undefined
       const results = []
       do {

@@ -100,15 +100,27 @@ export class ChannelsController {
       }
 
       // get channel from user
-      const { channel } = await this.youtubeApi.getVerifiedChannel(user)
+      let channel = await this.youtubeApi.getChannel(user)
+      const existingChannel = await this.dynamodbService.repo.channels.get(channel.id)
 
       // reset authorization code to prevent repeated save channel requests by authorization code re-use
       const updatedUser: YtUser = { ...user, email, authorizationCode: randomBytes(10).toString('hex') }
 
       const joystreamChannelLanguageIso = jsChannel.language?.iso
+
+      // If channel already exists in the DB (in `OptedOut` state), then we
+      // associate most properties of existing channel record with the new
+      // channel, i.e. createdAt, email. userId etc. and only override the
+      // configuration properties provided in the request
       const updatedChannel: YtChannel = {
-        ...channel,
-        email,
+        ...(existingChannel
+          ? {
+              ...existingChannel,
+              yppStatus: 'Unverified',
+              userAccessToken: channel.userAccessToken,
+              userRefreshToken: channel.userRefreshToken,
+            }
+          : { ...channel, email }),
         joystreamChannelId,
         shouldBeIngested,
         videoCategoryId,
@@ -258,6 +270,7 @@ export class ChannelsController {
         await this.dynamodbService.channels.save({
           ...channel,
           yppStatus: `Suspended::${reason}`,
+          processedAt: new Date(),
           allowOperatorIngestion: false,
         })
       }
@@ -285,6 +298,7 @@ export class ChannelsController {
         await this.dynamodbService.channels.save({
           ...channel,
           yppStatus: `Verified::${tier}`,
+          processedAt: new Date(),
           allowOperatorIngestion: true,
         })
       }
@@ -443,14 +457,8 @@ export class ChannelsController {
     const actionType: string = (action as any).constructor.name.replace('Dto', '')
     const channel = await this.dynamodbService.channels.getByJoystreamId(joystreamChannelId)
 
-    if (action instanceof IngestChannelDto || action instanceof UpdateChannelCategoryDto) {
-      // Ensure channel is not suspended
-      if (YtChannel.isSuspended(channel)) {
-        throw new Error(`Can't perform "${actionType}" action on a "${channel.yppStatus}" channel. Permission denied.`)
-      }
-    }
-    // Ensure channel is not opted out
-    if (channel.yppStatus === 'OptedOut') {
+    // Ensure channel is not suspended or opted out
+    if (YtChannel.isSuspended(channel) || channel.yppStatus === 'OptedOut') {
       throw new Error(`Can't perform "${actionType}" action on a "${channel.yppStatus}" channel. Permission denied.`)
     }
 

@@ -71,6 +71,7 @@ export interface YoutubeSyncNodeConfiguration {
   }
   youtube: YoutubeOauth2ClientConfiguration
   aws?: AWSConfigurationsNeededToConnectWithDynamoDBInstance
+  proxy?: Socks5ProxyClientConfigurationUsedByYtDlpToBypassIPBlockageByYoutube
   /**
    * Specifies creator onboarding (signup) requirements for Youtube Partner Program
    */
@@ -225,6 +226,24 @@ export interface AWSCredentials {
   secretAccessKey: string
 }
 /**
+ * Socks5 proxy client configuration used by yt-dlp to bypass IP blockage by Youtube
+ */
+export interface Socks5ProxyClientConfigurationUsedByYtDlpToBypassIPBlockageByYoutube {
+  /**
+   * Proxy Client URL e.g. socks://localhost:1080, socks://user:password@localhost:1080
+   */
+  url?: string
+  /**
+   * Configuration option to manage Chisel Client & Server. Before enabling this option please refer to setup guide in `socks5-proxy/SETUP.md`
+   */
+  chiselProxy?: {
+    /**
+     * Boolean option to enable auto rotation of ec2 instance IP where chisel server is running by restating it
+     */
+    ec2AutoRotateIp?: boolean
+  }
+}
+/**
  * Public api configuration
  */
 export interface PublicApiConfiguration {
@@ -273,6 +292,10 @@ export interface YTSynchSyncronizationRelatedSettings {
      * Max no. of videos that should be concurrently uploaded to Joystream's storage node
      */
     maxConcurrentUploads: number
+    /**
+     * Timeout for pending youtube video downloads in seconds
+     */
+    pendingDownloadTimeoutSec: number
     /**
      * Maximum total size of all downloaded assets stored in `downloadsDir`
      */
