@@ -45,8 +45,8 @@ export async function getAllReferredChannels(referrerId: number, date?: string):
 
   // Add date filter if date is provided
   if (date) {
-    params.FilterExpression = 'begins_with(#yppStatus, :status) AND #createdAt >= :date'
-    params.ExpressionAttributeNames = { ...params.ExpressionAttributeNames, ...{ '#createdAt': 'createdAt' } }
+    params.FilterExpression = 'begins_with(#yppStatus, :status) AND #processedAt >= :date'
+    params.ExpressionAttributeNames = { ...params.ExpressionAttributeNames, ...{ '#processedAt': 'processedAt' } }
     params.ExpressionAttributeValues = { ...params.ExpressionAttributeValues, ...{ ':date': date } }
   } else {
     params.FilterExpression = 'begins_with(#yppStatus, :status)'
