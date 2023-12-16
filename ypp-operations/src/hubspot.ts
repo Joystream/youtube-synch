@@ -101,6 +101,7 @@ export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] 
                 latest_referral_reward_in_usd: parseInt(contact.properties.latest_referral_reward_in_usd || '0'),
                 videos_sync_reward: parseInt(contact.properties.videos_sync_reward || '0'),
                 yppstatus: contact.properties.yppstatus,
+                processed_at: contact.properties.processed_at,
               }
             : {}),
         }))
@@ -321,6 +322,7 @@ export function mapDynamoItemToContactFields(item: YtChannel, email?: string): P
     hs_lead_status: 'CONNECTED', // Lead Status
     date_signed_up_to_ypp: new Date(item.createdAt).toISOString(), // Date Signed up to YPP
     dateytchannelcreated: new Date(item.publishedAt).toISOString(), // Date Yt Channel Created
+    processed_at: item.processedAt ? new Date(item.processedAt).toISOString() : undefined, //Processed At
     yppstatus: item.yppStatus, // YPP Status
     referredby: item.referrerChannelId ? String(item.referrerChannelId) : undefined, // Referred By
     videocategoryid: item.videoCategoryId,

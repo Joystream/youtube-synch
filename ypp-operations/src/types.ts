@@ -78,6 +78,9 @@ export class YtChannel {
   // This field serves the purpose of nonce to avoid playback attacks
   lastActedAt: Date
 
+  // Timestamp when the channel verification was processed, either to Verified or Suspended
+  processedAt: Date
+
   // Needs a dummy partition key on GSI to be able to query by createdAt fields
   phantomKey: 'phantomData'
 }
@@ -124,6 +127,11 @@ export type HubspotYPPContact = {
    * Exists as `statistics.subscriberCount` in DynamoDB table
    */
   total_subscribers: string
+
+  /**
+   * Timestamp when the YT channel processed (either Verified or Suspended) -> Dynamofield: ProcessedAt
+   */
+  processed_at: string
 
   /**
    * Exists as `statistics.videoCount` in DynamoDB table
@@ -241,6 +249,7 @@ export const payableContactProps = [
   'latest_ypp_reward',
   'total_ypp_rewards',
   'latest_ypp_reward_status',
+  'processed_at',
 ] as const
 export type PayableContact = Pick<HubspotYPPContact, typeof payableContactProps[number]>
 
