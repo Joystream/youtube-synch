@@ -74,13 +74,9 @@ export async function updateHubspotWithCalculatedRewards() {
   const updatedContactRewardById: Map<string, Partial<HubspotYPPContact>> = new Map()
 
   for (const contact of contacts) {
-    // If the previous rewards has not been paid then don't yet calculate rewards
-    // for this cycle, otherwise pervious unpaid rewards would be overwritten
-    if (contact.latest_ypp_reward_status === 'To Pay') {
-      console.log(
-        `Skipping rewards calculation for this cycle as previous rewards not paid yet`,
-        contact.gleev_channel_id
-      )
+    // If the reward was already calculated today for this channel,then skip from re-calculation
+    if (contact.latest_ypp_period_wc?.split('T')[0] === new Date().toISOString().split('T')[0]) {
+      console.log(`Already Checked For this Cycle`, contact.gleev_channel_id)
       continue
     }
 
@@ -94,9 +90,16 @@ export async function updateHubspotWithCalculatedRewards() {
       continue
     }
 
-    const sign_up_reward_in_usd = signupRewardInUsd(contact)
-    const latest_referral_reward_in_usd = await referralsRewardInUsd(contact)
-    const { videos_sync_reward_in_usd, syncedCount } = await latestSyncRewardInUsd(contact)
+    let sign_up_reward_in_usd = signupRewardInUsd(contact)
+    let latest_referral_reward_in_usd = await referralsRewardInUsd(contact)
+    let { videos_sync_reward_in_usd, syncedCount } = await latestSyncRewardInUsd(contact)
+
+    if (contact.latest_ypp_reward_status === 'To Pay') {
+      sign_up_reward_in_usd = contact.sign_up_reward_in_usd
+      latest_referral_reward_in_usd = contact.latest_referral_reward_in_usd + latest_referral_reward_in_usd
+      videos_sync_reward_in_usd = contact.videos_sync_reward + videos_sync_reward_in_usd
+    }
+
     const anyRewardOwed = sign_up_reward_in_usd + latest_referral_reward_in_usd + videos_sync_reward_in_usd
 
     const contactRewardFields: Partial<HubspotYPPContact> = {
