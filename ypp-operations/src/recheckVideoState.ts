@@ -23,6 +23,7 @@ function getCapitalizedTierFromYppStatus(yppStatus: ChannelYppStatus) {
   }
 }
 
+// TODO: pay signup reward based on the `channel.processedAt` field? But before that need to check all the channels signed up this week has processedAt set.
 function signupRewardInUsd(contact: Awaited<ReturnType<typeof getAllYppContacts>>[number]): number {
   if (contact.latest_ypp_period_wc !== null && contact.latest_ypp_period_wc !== '') {
     return 0
@@ -51,6 +52,7 @@ async function referralsRewardInUsd(contact: Awaited<ReturnType<typeof getAllYpp
 async function latestSyncRewardInUsd(contact: Awaited<ReturnType<typeof getAllYppContacts>>[number]) {
   const tier = getCapitalizedTierFromYppStatus(contact.yppstatus)
 
+  // todo check shouldbeingested be true? & allowoperatoringestion
   if (tier) {
     const syncedCount = await countVideosSyncedAfter(
       contact.channel_url,
