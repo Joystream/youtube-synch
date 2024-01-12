@@ -15,7 +15,7 @@ import { QueryNodeApi } from '../query-node/api'
 import { RuntimeApi } from '../runtime/api'
 import { ContentProcessingService } from '../syncProcessing'
 import { YoutubePollingService } from '../syncProcessing/YoutubePollingService'
-import { IYoutubeApi } from '../youtube/api'
+import { YoutubeApi } from '../youtube'
 import {
   ChannelsController,
   StatusController,
@@ -62,7 +62,7 @@ export async function bootstrapHttpApi(
   logging: LoggingService,
   runtimeApi: RuntimeApi,
   queryNodeApi: QueryNodeApi,
-  youtubeApi: IYoutubeApi,
+  youtubeApi: YoutubeApi,
   youtubePollingService: YoutubePollingService,
   contentProcessingService: ContentProcessingService
 ) {
@@ -106,7 +106,7 @@ export async function bootstrapHttpApi(
         useValue: contentProcessingService,
       },
       {
-        provide: 'youtube',
+        provide: YoutubeApi,
         useValue: youtubeApi,
       },
       {

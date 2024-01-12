@@ -13,25 +13,27 @@ export class MembershipController {
   constructor(@Inject('config') private config: ReadonlyConfig, private dynamodbService: DynamodbService) {}
 
   @ApiOperation({
-    description: `Create Joystream's on-chain Membership for a verfifed YPP user. It will forward request
-       to Joystream faucet with an Authorization header to circumvent captcha verfication by the faucet`,
+    description: `Create Joystream's on-chain Membership for a verified YPP user. It will forward request
+       to Joystream faucet with an Authorization header to circumvent captcha verification by the faucet`,
   })
   @ApiBody({ type: CreateMembershipRequest })
   @ApiResponse({ type: CreateMembershipResponse })
   @Post()
-  async createMembership(@Body() membershipParams: CreateMembershipRequest): Promise<CreateMembershipResponse> {
+  async createMembership(@Body() createMembershipParams: CreateMembershipRequest): Promise<CreateMembershipResponse> {
     try {
-      const { userId, authorizationCode, account, handle, avatar, about, name } = membershipParams
+      const { id, authorizationCode, youtubeVideoUrl, account, handle, avatar, about, name } = createMembershipParams
 
       // get user from userId
-      const user = await this.dynamodbService.users.get(userId)
+      const user = await this.dynamodbService.users.get(id)
 
       // ensure request's authorization code matches the user's authorization code
-      if (user.authorizationCode !== authorizationCode) {
-        throw new Error('Invalid request author. Permission denied.')
+      if (user.authorizationCode !== authorizationCode || user.youtubeVideoUrl !== youtubeVideoUrl) {
+        throw new Error('Authorization error. Either authorization code or video url is invalid.')
       }
+
+      // Ensure that user has not already created a Joystream membership
       if (user.joystreamMemberId) {
-        throw new Error(`Already created Joysteam member ${user.joystreamMemberId} for user ${user.id}`)
+        throw new Error(`Already created Joystream member ${user.joystreamMemberId} for user ${user.id}`)
       }
 
       // send create membership request to faucet

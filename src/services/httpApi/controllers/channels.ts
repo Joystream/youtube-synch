@@ -16,14 +16,13 @@ import {
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { signatureVerify } from '@polkadot/util-crypto'
-import { randomBytes } from 'crypto'
 import { DynamodbService } from '../../../repository'
 import { ReadonlyConfig } from '../../../types'
-import { YtChannel, YtUser } from '../../../types/youtube'
+import { YtChannel } from '../../../types/youtube'
 import { QueryNodeApi } from '../../query-node/api'
 import { ContentProcessingService } from '../../syncProcessing'
 import { YoutubePollingService } from '../../syncProcessing/YoutubePollingService'
-import { IYoutubeApi } from '../../youtube/api'
+import { YoutubeApi } from '../../youtube'
 import {
   ChannelDto,
   ChannelInductionRequirementsDto,
@@ -36,7 +35,6 @@ import {
   SetOperatorIngestionStatusDto,
   SuspendChannelDto,
   UpdateChannelCategoryDto,
-  UserDto,
   VerifyChannelDto,
   WhitelistChannelDto,
 } from '../dtos'
@@ -46,7 +44,7 @@ import {
 export class ChannelsController {
   constructor(
     @Inject('config') private config: ReadonlyConfig,
-    @Inject('youtube') private youtubeApi: IYoutubeApi,
+    private youtubeApi: YoutubeApi,
     private qnApi: QueryNodeApi,
     private dynamodbService: DynamodbService,
     private youtubePollingService: YoutubePollingService,
@@ -57,17 +55,23 @@ export class ChannelsController {
   @ApiBody({ type: SaveChannelRequest })
   @ApiResponse({ type: SaveChannelResponse })
   @ApiOperation({ description: `Saves channel record of a YPP verified user` })
+  // TODO: if channel exists dont allow to save again,
   async saveChannel(@Body() channelInfo: SaveChannelRequest): Promise<SaveChannelResponse> {
     try {
       const {
-        userId,
+        id,
         authorizationCode,
-        email,
+        youtubeVideoUrl,
         joystreamChannelId,
         shouldBeIngested,
         videoCategoryId,
         referrerChannelId,
       } = channelInfo
+
+      // Ensure that channel is not already registered for YPP program
+      if (await this.dynamodbService.repo.channels.get(id)) {
+        throw new Error('Channel already exists, cannot re-save the channel')
+      }
 
       /**
        *  Input Validation
@@ -77,16 +81,16 @@ export class ChannelsController {
         throw new Error('Referrer channel cannot be the same as the channel being verified.')
       }
 
-      // get user from userId
-      const user = await this.dynamodbService.users.get(userId)
+      // get user by channel Id
+      const user = await this.dynamodbService.users.get(id)
 
-      // ensure request's authorization code matches the user's authorization code
-      if (user.authorizationCode !== authorizationCode) {
-        throw new Error('Invalid request author. Permission denied.')
+      // ensure request is sent by the authorized actor
+      if (user.authorizationCode !== authorizationCode || user.youtubeVideoUrl !== youtubeVideoUrl) {
+        throw new Error('Authorization error. Either authorization code or video url is invalid.')
       }
 
       // ensure that Joystream channel exists
-      const jsChannel = await this.qnApi.getChannelById(joystreamChannelId.toString())
+      const jsChannel = await this.qnApi.getChannelById(joystreamChannelId.toString()) // TODO: check if QN is lagging then what will happen
       if (!jsChannel) {
         throw new Error(`Joystream Channel ${joystreamChannelId} does not exist.`)
       }
@@ -100,17 +104,14 @@ export class ChannelsController {
       }
 
       // get channel from user
-      let channel = await this.youtubeApi.getChannel(user)
+      let channel = await this.youtubeApi.operationalApi.getChannel(id)
       const existingChannel = await this.dynamodbService.repo.channels.get(channel.id)
-
-      // reset authorization code to prevent repeated save channel requests by authorization code re-use
-      const updatedUser: YtUser = { ...user, email, authorizationCode: randomBytes(10).toString('hex') }
 
       const joystreamChannelLanguageIso = jsChannel.language?.iso
 
       // If channel already exists in the DB (in `OptedOut` state), then we
       // associate most properties of existing channel record with the new
-      // channel, i.e. createdAt, email. userId etc. and only override the
+      // channel, i.e. createdAt, email etc. and only override the
       // configuration properties provided in the request
       const updatedChannel: YtChannel = {
         ...(existingChannel
@@ -120,7 +121,7 @@ export class ChannelsController {
               userAccessToken: channel.userAccessToken,
               userRefreshToken: channel.userRefreshToken,
             }
-          : { ...channel, email }),
+          : { ...channel }),
         joystreamChannelId,
         shouldBeIngested,
         videoCategoryId,
@@ -129,10 +130,10 @@ export class ChannelsController {
       }
 
       // save user and channel
-      await this.saveUserAndChannel(updatedUser, updatedChannel)
+      await this.saveChannelAndVideos(updatedChannel)
 
       // return user and channel
-      return new SaveChannelResponse(new UserDto(updatedUser), new ChannelDto(updatedChannel))
+      return new SaveChannelResponse(new ChannelDto(updatedChannel))
     } catch (error) {
       const message = error instanceof Error ? error.message : error
       throw new BadRequestException(message)
@@ -202,6 +203,7 @@ export class ChannelsController {
     }
   }
 
+  // TODO:  on optout/suspend/disable ingestion remove all the polled not yet created videos, stop ingestion of channel's videos
   @Put(':joystreamChannelId/optout')
   @ApiBody({ type: OptoutChannelDto })
   @ApiResponse({ type: ChannelDto })
@@ -232,7 +234,7 @@ export class ChannelsController {
   @ApiOperation({
     description: `Updates given channel's videos category. Note: only channel owner can update the status`,
   })
-  async updateCategoryChannel(
+  async updateChannelCategory(
     @Param('joystreamChannelId', ParseIntPipe) id: number,
     @Body() action: UpdateChannelCategoryDto
   ) {
@@ -425,10 +427,7 @@ export class ChannelsController {
     })
   }
 
-  private async saveUserAndChannel(user: YtUser, channel: YtChannel) {
-    // save user
-    await this.dynamodbService.users.save(user)
-
+  private async saveChannelAndVideos(channel: YtChannel) {
     // save channel
     await this.dynamodbService.channels.save(channel)
 
@@ -458,7 +457,7 @@ export class ChannelsController {
     const channel = await this.dynamodbService.channels.getByJoystreamId(joystreamChannelId)
 
     // Ensure channel is not suspended or opted out
-    if (YtChannel.isSuspended(channel) || channel.yppStatus === 'OptedOut') {
+    if (YtChannel.isSuspended(channel)) {
       throw new Error(`Can't perform "${actionType}" action on a "${channel.yppStatus}" channel. Permission denied.`)
     }
 

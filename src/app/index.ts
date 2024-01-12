@@ -10,14 +10,14 @@ import { RuntimeApi } from '../services/runtime/api'
 import { JoystreamClient } from '../services/runtime/client'
 import { ContentProcessingService } from '../services/syncProcessing'
 import { YoutubePollingService } from '../services/syncProcessing/YoutubePollingService'
-import { IYoutubeApi, YoutubeApi } from '../services/youtube/api'
+import { YoutubeApi } from '../services/youtube'
 import { Config, DisplaySafeConfig } from '../types'
 
 export class Service {
   private config: Config
   private logging: LoggingService
   private logger: Logger
-  private youtubeApi: IYoutubeApi
+  private youtubeApi: YoutubeApi
   private queryNodeApi: QueryNodeApi
   private dynamodbService: DynamodbService
   private runtimeApi: RuntimeApi
@@ -32,7 +32,7 @@ export class Service {
     this.logger = this.logging.createLogger('Server')
     this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
     this.dynamodbService = new DynamodbService(this.config.aws)
-    this.youtubeApi = YoutubeApi.create(this.config, this.dynamodbService.repo.stats)
+    this.youtubeApi = new YoutubeApi(this.config, this.dynamodbService.repo.stats)
     this.runtimeApi = new RuntimeApi(config.endpoints.joystreamNodeWs, this.logging)
     this.joystreamClient = new JoystreamClient(config, this.runtimeApi, this.queryNodeApi, this.logging)
 

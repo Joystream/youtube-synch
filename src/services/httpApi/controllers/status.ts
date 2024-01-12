@@ -30,7 +30,7 @@ export class StatusController {
       } = this.config
 
       const { totalCount: syncBacklog } = await this.contentProcessingService.getJobsCount()
-      return { version, syncStatus: enable ? 'enabled' : 'disabled', syncBacklog }
+      return { version, syncStatus: enable ? 'enabled' : 'disabled', syncBacklog, apiMode: this.config.youtube.apiMode }
     } catch (error) {
       const message = error instanceof Error ? error.message : error
       throw new NotFoundException(message)

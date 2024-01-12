@@ -13,7 +13,7 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator'
-import { Config } from '../../types'
+import { Config, ReadonlyConfig } from '../../types'
 import { ExitCodes } from '../../types/errors'
 import {
   ChannelSyncStatus,
@@ -24,11 +24,11 @@ import {
   TopReferrer,
   VideoState,
   YtChannel,
-  YtUser,
   YtVideo,
   channelYppStatus,
 } from '../../types/youtube'
 import { pluralizeNoun } from '../../utils/misc'
+import { IsMutuallyExclusiveWith } from './utils'
 
 // NestJS Data Transfer Objects (DTO)s
 
@@ -36,12 +36,12 @@ export class ThumbnailsDto {
   @ApiProperty() default: string
   @ApiProperty() medium: string
   @ApiProperty() high: string
-  @ApiProperty() standard: string
 }
 
 export class StatusDto {
   @ApiProperty() version: string
   @ApiProperty() syncStatus: 'enabled' | 'disabled'
+  @ApiProperty() apiMode: ReadonlyConfig['youtube']['apiMode']
   @ApiProperty() syncBacklog: number
 }
 
@@ -169,31 +169,32 @@ export class TopReferrerDto {
   }
 }
 
-export class UserDto {
-  @ApiProperty() id: string
-  @ApiProperty() email: string
-
-  constructor(user: YtUser) {
-    this.id = user.id
-    this.email = user.email
-  }
-}
-
 // Dto for verifying Youtube channel given the authorization code
 export class VerifyChannelRequest {
-  // Authorization code send to the backend after user o-auth verification
-  @IsString() @ApiProperty({ required: true }) authorizationCode: string
+  // Authorization code return from user o-auth response
+  @ValidateIf((v: VerifyChannelRequest) => v.youtubeRedirectUri !== undefined && v.youtubeVideoUrl === undefined)
+  @IsString()
+  @ApiProperty()
+  authorizationCode: string
 
-  @IsUrl({ require_tld: false }) @ApiProperty({ required: true }) youtubeRedirectUri: string
+  @ValidateIf((v: VerifyChannelRequest) => v.authorizationCode !== undefined && v.youtubeVideoUrl === undefined)
+  @IsUrl({ require_tld: false })
+  @ApiProperty()
+  youtubeRedirectUri: string
+
+  @ValidateIf((v: VerifyChannelRequest) => v.authorizationCode === undefined && v.youtubeRedirectUri === undefined)
+  @IsUrl({ require_tld: false })
+  @ApiProperty()
+  youtubeVideoUrl: string
 }
 
 // Dto for verified Youtube channel response
 export class VerifyChannelResponse {
   // Email of the verified user
-  @IsEmail() @ApiProperty({ required: true }) email: string
+  @IsEmail() @ApiProperty() email: string
 
-  // ID of the verified user
-  @IsString() @ApiProperty({ required: true }) userId: string
+  // ID of the verified Youtube channel
+  @IsString() @ApiProperty({ required: true }) id: string
 
   // Youtube Channel/User handle
   @IsString() @ApiProperty() channelHandle: string
@@ -216,14 +217,23 @@ export class VerifyChannelResponse {
 
 // Dto for saving the verified Youtube channel
 export class SaveChannelRequest {
-  // Authorization code send to the backend after user o-auth verification
-  @IsString() @ApiProperty({ required: true }) authorizationCode: string
+  // Authorization code return from user o-auth response
+  @ValidateIf((c: SaveChannelRequest) => c.youtubeVideoUrl === undefined)
+  @IsString()
+  @IsMutuallyExclusiveWith('youtubeVideoUrl')
+  @ApiProperty()
+  authorizationCode: string
 
-  // UserId of the Youtube creator return from Google Oauth API
-  @IsString() @ApiProperty({ required: true }) userId: string
+  @ValidateIf((c: SaveChannelRequest) => c.authorizationCode === undefined)
+  @IsString()
+  @IsMutuallyExclusiveWith('authorizationCode')
+  @ApiProperty()
+  youtubeVideoUrl: string
 
-  // Email of the user
-  @IsEmail() @ApiProperty({ required: true }) email: string
+  // ID of the verified Youtube channel
+  @IsString() @ApiProperty({ required: true }) id: string
+
+  // TODO: do we need to ask for email? get from Orion
 
   // Joystream Channel ID of the user verifying his Youtube Channel for YPP
   @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
@@ -242,22 +252,28 @@ export class SaveChannelRequest {
 
 // Dto for save channel response
 export class SaveChannelResponse {
-  @ApiProperty() user: UserDto
   @ApiProperty({ type: ChannelDto }) channel: ChannelDto
 
-  constructor(user: UserDto, channel: ChannelDto) {
-    this.user = user
+  constructor(channel: ChannelDto) {
     this.channel = channel
   }
 }
 
 // Dto for creating membership request
 export class CreateMembershipRequest {
-  // UserId of the Youtube creator return from Google Oauth API
-  @IsString() @ApiProperty({ required: true }) userId: string
+  // ID of the verified Youtube channel
+  @IsString() @ApiProperty({ required: true }) id: string
 
-  // Authorization code send to the backend after user o-auth verification
-  @IsString() @ApiProperty({ required: true }) authorizationCode: string
+  // Authorization code return from user o-auth response
+  @ValidateIf((v: SaveChannelRequest) => v.authorizationCode === undefined)
+  @IsString()
+  @ApiProperty()
+  authorizationCode: string
+
+  @ValidateIf((v: SaveChannelRequest) => v.authorizationCode === undefined)
+  @IsString()
+  @ApiProperty()
+  youtubeVideoUrl: string
 
   // Membership Account address
   @IsString() @ApiProperty({ required: true }) account: string

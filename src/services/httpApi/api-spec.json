@@ -1,14 +1,14 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/users/{userId}/videos": {
+    "/channels/{channelId}/videos": {
       "get": {
         "operationId": "VideosController_get",
         "summary": "",
         "description": "Get videos across all channels owned by the user",
         "parameters": [
           {
-            "name": "userId",
+            "name": "channelId",
             "required": true,
             "in": "path",
             "schema": {
@@ -752,7 +752,7 @@
       "post": {
         "operationId": "MembershipController_createMembership",
         "summary": "",
-        "description": "Create Joystream's on-chain Membership for a verfifed YPP user. It will forward request\n       to Joystream faucet with an Authorization header to circumvent captcha verfication by the faucet",
+        "description": "Create Joystream's on-chain Membership for a verified YPP user. It will forward request\n       to Joystream faucet with an Authorization header to circumvent captcha verification by the faucet",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -802,10 +802,10 @@
           "authorizationCode": {
             "type": "string"
           },
-          "userId": {
+          "youtubeVideoUrl": {
             "type": "string"
           },
-          "email": {
+          "id": {
             "type": "string"
           },
           "joystreamChannelId": {
@@ -823,26 +823,11 @@
         },
         "required": [
           "authorizationCode",
-          "userId",
-          "email",
+          "youtubeVideoUrl",
+          "id",
           "joystreamChannelId",
           "shouldBeIngested",
           "videoCategoryId"
-        ]
-      },
-      "UserDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "email"
         ]
       },
       "ThumbnailsDto": {
@@ -856,16 +841,12 @@
           },
           "high": {
             "type": "string"
-          },
-          "standard": {
-            "type": "string"
           }
         },
         "required": [
           "default",
           "medium",
-          "high",
-          "standard"
+          "high"
         ]
       },
       "ChannelDto": {
@@ -943,15 +924,11 @@
       "SaveChannelResponse": {
         "type": "object",
         "properties": {
-          "user": {
-            "$ref": "#/components/schemas/UserDto"
-          },
           "channel": {
             "$ref": "#/components/schemas/ChannelDto"
           }
         },
         "required": [
-          "user",
           "channel"
         ]
       },
@@ -1129,6 +1106,8 @@
             "enum": [
               "CHANNEL_NOT_FOUND",
               "VIDEO_NOT_FOUND",
+              "VIDEO_PRIVACY_STATUS_NOT_UNLISTED",
+              "VIDEO_TITLE_NOT_MATCHING",
               "CHANNEL_ALREADY_REGISTERED",
               "CHANNEL_STATUS_SUSPENDED",
               "CHANNEL_CRITERIA_UNMET_SUBSCRIBERS",
@@ -1192,11 +1171,15 @@
           },
           "youtubeRedirectUri": {
             "type": "string"
+          },
+          "youtubeVideoUrl": {
+            "type": "string"
           }
         },
         "required": [
           "authorizationCode",
-          "youtubeRedirectUri"
+          "youtubeRedirectUri",
+          "youtubeVideoUrl"
         ]
       },
       "VerifyChannelResponse": {
@@ -1205,7 +1188,7 @@
           "email": {
             "type": "string"
           },
-          "userId": {
+          "id": {
             "type": "string"
           },
           "channelHandle": {
@@ -1229,7 +1212,7 @@
         },
         "required": [
           "email",
-          "userId",
+          "id",
           "channelHandle",
           "channelTitle",
           "channelDescription",
@@ -1251,6 +1234,9 @@
           "syncStatus": {
             "type": "string"
           },
+          "apiMode": {
+            "type": "object"
+          },
           "syncBacklog": {
             "type": "number"
           }
@@ -1258,16 +1244,20 @@
         "required": [
           "version",
           "syncStatus",
+          "apiMode",
           "syncBacklog"
         ]
       },
       "CreateMembershipRequest": {
         "type": "object",
         "properties": {
-          "userId": {
+          "id": {
             "type": "string"
           },
           "authorizationCode": {
+            "type": "string"
+          },
+          "youtubeVideoUrl": {
             "type": "string"
           },
           "account": {
@@ -1287,8 +1277,9 @@
           }
         },
         "required": [
-          "userId",
+          "id",
           "authorizationCode",
+          "youtubeVideoUrl",
           "account",
           "handle",
           "avatar",

@@ -172,7 +172,6 @@ export default class AddUnauthorizedChannelForSyncing extends RuntimeApiCommandB
     const c = await dynamo.channels.save({
       id: ytChannel.author.channelID,
       title: ytChannel.author.name,
-      userId: `UnauthorizedUser-${ytChannel.author.channelID}`,
       joystreamChannelId,
       createdAt: new Date(),
       lastActedAt: new Date(),

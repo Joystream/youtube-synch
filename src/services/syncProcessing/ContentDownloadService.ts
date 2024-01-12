@@ -11,7 +11,7 @@ import { ReadonlyConfig } from '../../types'
 import { DownloadJobData, DownloadJobOutput, VideoUnavailableReasons, YtChannel } from '../../types/youtube'
 import { restartEC2Instance } from '../../utils/restartEC2Instance'
 import { LoggingService } from '../logging'
-import { IYoutubeApi } from '../youtube/api'
+import { YoutubeApi } from '../youtube/'
 import { SyncUtils } from './utils'
 
 const exec = promisify(execCallback)
@@ -24,7 +24,7 @@ export class ContentDownloadService {
     private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['proxy'],
     logging: LoggingService,
     private dynamodbService: IDynamodbService,
-    private youtubeApi: IYoutubeApi
+    private youtubeApi: YoutubeApi
   ) {
     this.config = config
     this.logger = logging.createLogger('ContentDownloadService')
@@ -87,7 +87,7 @@ export class ContentDownloadService {
       // download the video from youtube
 
       const { ext: fileExt } = await pTimeout(
-        this.youtubeApi.downloadVideo(video.url, this.config.downloadsDir),
+        this.youtubeApi.ytdlp.downloadVideo(video.url, this.config.downloadsDir),
         this.config.limits.pendingDownloadTimeoutSec * 1000,
         `Download timed-out`
       )
