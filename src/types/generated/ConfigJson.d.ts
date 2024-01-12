@@ -69,7 +69,7 @@ export interface YoutubeSyncNodeConfiguration {
     console?: ConsoleLoggingOptions
     elastic?: ElasticsearchLoggingOptions
   }
-  youtube: YoutubeOauth2ClientConfiguration
+  youtube: YoutubeRelatedConfiguration
   aws?: AWSConfigurationsNeededToConnectWithDynamoDBInstance
   proxy?: Socks5ProxyClientConfigurationUsedByYtDlpToBypassIPBlockageByYoutube
   /**
@@ -184,9 +184,17 @@ export interface ElasticsearchAuthenticationOptions {
   password: string
 }
 /**
- * Youtube Oauth2 Client configuration
+ * Youtube related configuration
  */
-export interface YoutubeOauth2ClientConfiguration {
+export interface YoutubeRelatedConfiguration {
+  apiMode: 'api-free' | 'api' | 'both'
+  api?: YoutubeAPIConfiguration
+  operationalApi: YoutubeOperationalAPIHttpsGithubComBenjaminLoisonYouTubeOperationalAPIConfiguration
+}
+/**
+ * Youtube API configuration
+ */
+export interface YoutubeAPIConfiguration {
   /**
    * Youtube Oauth2 Client Id
    */
@@ -203,6 +211,15 @@ export interface YoutubeOauth2ClientConfiguration {
    * Path to the Google Cloud's Application Default Credentials (ADC) key file. It is required to periodically monitor the Youtube API quota usage.
    */
   adcKeyFilePath?: string
+}
+/**
+ * Youtube Operational API (https://github.com/Benjamin-Loison/YouTube-operational-API) configuration
+ */
+export interface YoutubeOperationalAPIHttpsGithubComBenjaminLoisonYouTubeOperationalAPIConfiguration {
+  /**
+   * URL of the Youtube Operational API server (for example: http://localhost:8080)
+   */
+  url: string
 }
 /**
  * AWS configurations needed to connect with DynamoDB instance

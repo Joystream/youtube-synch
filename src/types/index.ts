@@ -14,9 +14,19 @@ type SyncDisabled = Omit<NonNullable<YoutubeSyncNodeConfiguration['sync']>, 'lim
   limits?: Omit<NonNullable<YoutubeSyncNodeConfiguration['sync']['limits']>, 'storage'> & { storage: number }
 }
 
-export type Config = Omit<YoutubeSyncNodeConfiguration, 'sync'> & {
+type YoutubeApiEnabled = Omit<YoutubeSyncNodeConfiguration['youtube'], 'api'> & {
+  apiMode: 'api' | 'both'
+  api: NonNullable<YoutubeSyncNodeConfiguration['youtube']['api']>
+}
+
+type YoutubeApiDisabled = Omit<YoutubeSyncNodeConfiguration['youtube'], 'api'> & {
+  apiMode: 'api-free'
+}
+
+export type Config = Omit<YoutubeSyncNodeConfiguration, 'sync' | 'youtube'> & {
   version: string
   sync: SyncEnabled | SyncDisabled
+  youtube: YoutubeApiEnabled | YoutubeApiDisabled
 }
 
 export type ReadonlyConfig = DeepReadonly<Config>
@@ -28,7 +38,7 @@ export type DisplaySafeConfig = Omit<Config, 'youtube' | 'aws' | 'httpApi' | 'jo
   httpApi: Secret<Config['httpApi']>
   youtube: Secret<Config['youtube']>
   joystream: Secret<Config['joystream']>
-  logs?:  { elastic:  Secret<NonNullable<Config['logs']>['elastic']> }
+  logs?: { elastic: Secret<NonNullable<Config['logs']>['elastic']> }
   aws?: { credentials: Secret<NonNullable<Config['aws']>['credentials']> }
 }
 

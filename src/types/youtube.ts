@@ -3,15 +3,13 @@ import { VideoMetadataAndHash } from '../services/syncProcessing/ContentMetadata
 type DeploymentEnv = 'dev' | 'local' | 'testing' | 'prod'
 const deploymentEnv = process.env.DEPLOYMENT_ENV as DeploymentEnv | undefined
 
+// TODO: only allow sharing unlisted videos (because if we allow sharing public videos, then anyone can share video before the creator)
 export type ResourcePrefix = `${Exclude<DeploymentEnv, 'prod'>}_` | ''
 export const resourcePrefix = (deploymentEnv && deploymentEnv !== 'prod' ? `${deploymentEnv}_` : '') as ResourcePrefix
 
 export class YtChannel {
   // Channel ID
   id: string
-
-  // ID of the user that owns the channel
-  userId: string
 
   // Youtube channel custom URL. Also known as youtube channel handle
   customUrl: string
@@ -167,21 +165,29 @@ export class YtChannel {
   }
 }
 
+/**
+ * We use the same DynamoDB table for storing users/channels verified through
+ * Oauth api vs non-api (i.e. through shared a URL for a required video).
+ */
 export class YtUser {
-  // Youtube user ID
+  // Youtube channel ID
   id: string
 
-  // Youtube User email
-  email: string
+  // Youtube User/Channel email (will only be available for users signed up through api workflow)
+  email: string | undefined
 
-  // User access token
-  accessToken: string
+  // User access token (will only be available for users signed up through api workflow)
+  accessToken: string | undefined
 
-  // User refresh token
-  refreshToken: string
+  // User refresh token (will only be available for users signed up through api workflow)
+  refreshToken: string | undefined
 
-  // User authorization code
-  authorizationCode: string
+  // User authorization code (will only be available for users signed up through api workflow)
+  authorizationCode: string | undefined
+
+  // The URL for a specific video of Youtube channel with which the user is trying to register
+  // for YPP program (will only be available for users signed up through api-free workflow)
+  youtubeVideoUrl: string | undefined
 
   // Corresponding Joystream member ID for Youtube user
   joystreamMemberId: number | undefined
@@ -194,7 +200,6 @@ export type Thumbnails = {
   default: string
   medium: string
   high: string
-  standard: string
 }
 
 export enum VideoUnavailableReasons {
@@ -337,7 +342,6 @@ export const getImages = (channel: YtChannel) => {
     ...urlAsArray(channel.thumbnails.default),
     ...urlAsArray(channel.thumbnails.high),
     ...urlAsArray(channel.thumbnails.medium),
-    ...urlAsArray(channel.thumbnails.standard),
   ]
 }
 
