@@ -21,12 +21,6 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
       // ID of the Youtube channel
       id: {
         type: String,
-        rangeKey: true,
-      },
-
-      // ID of the user that owns the channel
-      userId: {
-        type: String,
         hashKey: true,
       },
 
@@ -255,8 +249,8 @@ export class ChannelsRepository implements IRepository<YtChannel> {
 
   async save(channel: YtChannel): Promise<YtChannel> {
     return this.withLock(async () => {
-      const update = omit(['id', 'userId', 'updatedAt'], channel)
-      const result = await this.model.update({ id: channel.id, userId: channel.userId }, update)
+      const update = omit(['id', 'updatedAt'], channel)
+      const result = await this.model.update({ id: channel.id }, update)
       return mapTo<YtChannel>(result)
     })
   }
@@ -268,16 +262,16 @@ export class ChannelsRepository implements IRepository<YtChannel> {
 
     return this.withLock(async () => {
       const updateTransactions = channels.map((channel) => {
-        const update = omit(['id', 'userId', 'updatedAt'], channel)
-        return this.model.transaction.update({ id: channel.id, userId: channel.userId }, update)
+        const update = omit(['id', 'updatedAt'], channel)
+        return this.model.transaction.update({ id: channel.id }, update)
       })
       return dynamoose.transaction(updateTransactions)
     })
   }
 
-  async delete(id: string, userId: string): Promise<void> {
+  async delete(id: string): Promise<void> {
     return this.withLock(async () => {
-      await this.model.delete({ id, userId })
+      await this.model.delete({ id })
       return
     })
   }
@@ -325,7 +319,7 @@ export class ChannelsService {
       q
         .sort('descending')
         .filter('yppStatus')
-        .eq('Verified')
+        .beginsWith('Verified::')
         .or()
         .filter('yppStatus')
         .eq('Unverified')
@@ -350,31 +344,11 @@ export class ChannelsService {
    * @returns Returns channel by youtube channelId
    */
   async getById(channelId: string): Promise<YtChannel> {
-    const result = await this.channelsRepository.get(channelId.toString())
+    const result = await this.channelsRepository.get(channelId)
     if (!result) {
       throw new Error(`Could not find channel with id ${channelId}`)
     }
     return result
-  }
-
-  /**
-   * @param userId
-   * @returns Returns channel by userId
-   */
-  async getByUserId(userId: string): Promise<YtChannel> {
-    const [result] = await this.channelsRepository.query('userId', (q) => q.eq(userId))
-    if (!result) {
-      throw new Error(`Could not find user with id ${userId}`)
-    }
-    return result
-  }
-
-  /**
-   * @param userId
-   * @returns List of Channels for given user
-   */
-  async getAll(userId: string): Promise<YtChannel[]> {
-    return await this.channelsRepository.query({ userId }, (q) => q)
   }
 
   /**

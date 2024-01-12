@@ -27,6 +27,9 @@ function createUserModel(tablePrefix: ResourcePrefix) {
       // user authorization code
       authorizationCode: String,
 
+      // The URL for a specific video of Youtube channel with which the user is trying to register for YPP program
+      youtubeVideoUrl: String,
+
       // user access token obtained from authorization code after successful authentication
       accessToken: String,
 
