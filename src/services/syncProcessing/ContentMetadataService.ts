@@ -46,7 +46,7 @@ export class ContentMetadataService {
         computeFileHashAndSize(videoHashStream),
         getVideoFileMetadata(downloadJobOutput.filePath),
       ]),
-      5 * 60 * 1000, // 5mins
+      30 * 60 * 1000, // 30 mins
       'Video metadata & hash calculation operation timed=out'
     )
 

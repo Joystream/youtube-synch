@@ -6,14 +6,9 @@ import { Logger } from 'winston'
 const exec = promisify(execCallback)
 
 class EC2InstanceRestarter {
-  private static instance: EC2InstanceRestarter = new EC2InstanceRestarter()
   private isRunning: boolean = false
 
-  private constructor() {}
-
-  public static getInstance(): EC2InstanceRestarter {
-    return this.instance
-  }
+  constructor() {}
 
   async restartInstance(logger: Logger) {
     if (this.isRunning) {
@@ -22,7 +17,6 @@ class EC2InstanceRestarter {
     }
 
     this.isRunning = true
-    logger.error(`Encountered a 403 Forbidden error, restarting EC2 proxy server instance...`)
 
     try {
       const scriptPath = `${pkgDir.sync(__dirname)}/socks5-proxy/restart-ec2-proxy-instance.sh`
@@ -36,6 +30,6 @@ class EC2InstanceRestarter {
   }
 }
 
-const instance = EC2InstanceRestarter.getInstance()
+const instance = new EC2InstanceRestarter()
 
 export default instance

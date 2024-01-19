@@ -10,6 +10,8 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
+      # Docker socket mounting is required to restart the socks5 proxy container from inside this container
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./local/logs:/youtube-synch/local/logs
       - ./local/data:/youtube-synch/local/data
       # mount Google Cloud's Application Default Credentials file. A default bind mount is created
@@ -23,6 +25,7 @@ services:
       - .env
     environment:
       DEPLOYMENT_ENV: ${DEPLOYMENT_ENV}
+      YT_SYNCH__AWS__ENDPOINT: http://host.docker.internal:4566
       # YT_SYNCH__LOGS__ELASTIC: "{\"level\":\"debug\",\"endpoint\":\"http://elasticsearch:9200\"}"
       # YT_SYNCH__ENDPOINTS__QUERY_NODE: ${YT_SYNCH__ENDPOINTS__QUERY_NODE}
       # YT_SYNCH__ENDPOINTS__JOYSTREAM_NODE_WS: ${YT_SYNCH__ENDPOINTS__JOYSTREAM_NODE_WS}
@@ -45,6 +48,7 @@ services:
       - 127.0.0.1:${YT_SYNCH__HTTP_API__PORT}:${YT_SYNCH__HTTP_API__PORT}
     networks:
       - youtube-synch
+    command: ['./bin/run', 'start']
   redis:
     image: redis:7.2.1
     container_name: redis
