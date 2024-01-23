@@ -5,7 +5,7 @@ import { DynamodbService } from '../../../repository'
 import { ReadonlyConfig } from '../../../types'
 import { Stats } from '../../../types/youtube'
 import { RuntimeApi } from '../../runtime/api'
-import { ContentProcessingService } from '../../syncProcessing'
+import { ContentProcessingClient } from '../../syncProcessing'
 import { CollaboratorStatusDto, StatusDto } from '../dtos'
 
 @Controller('status')
@@ -14,7 +14,7 @@ export class StatusController {
   constructor(
     private dynamodbService: DynamodbService,
     private runtimeApi: RuntimeApi,
-    private contentProcessingService: ContentProcessingService,
+    private contentProcessingClient: ContentProcessingClient,
     @Inject('config') private config: ReadonlyConfig
   ) {}
 
@@ -23,13 +23,13 @@ export class StatusController {
   @ApiOperation({ description: `Get status info of YT-Synch service` })
   async getStatus(): Promise<StatusDto> {
     try {
-      // Get complete quota usage statss
+      // Get complete quota usage stats
       const {
         version,
         sync: { enable },
       } = this.config
 
-      const { totalCount: syncBacklog } = await this.contentProcessingService.getJobsCount()
+      const { totalCount: syncBacklog } = await this.contentProcessingClient.getJobsCount()
       return { version, syncStatus: enable ? 'enabled' : 'disabled', syncBacklog }
     } catch (error) {
       const message = error instanceof Error ? error.message : error
