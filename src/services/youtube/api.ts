@@ -46,12 +46,21 @@ export class YtDlpClient implements IOpenYTApi {
     const idsChunks = _.chunk(ids, 50)
 
     for (const idsChunk of idsChunks) {
-      const videosMetadataChunk = await Promise.all(
-        idsChunk.map(async (id) => {
-          const { stdout } = await this.exec(`${this.ytdlpPath} -J https://www.youtube.com/watch?v=${id}`)
-          return JSON.parse(stdout) as YtDlpVideoOutput
-        })
-      )
+      const videosMetadataChunk = (
+        await Promise.all(
+          idsChunk.map(async (id) => {
+            try {
+              const { stdout } = await this.exec(`${this.ytdlpPath} -J https://www.youtube.com/watch?v=${id}`)
+              return JSON.parse(stdout) as YtDlpVideoOutput
+            } catch (err) {
+              if (err instanceof Error && err.message.includes(`This video is age-restricted`)) {
+                return
+              }
+              throw err
+            }
+          })
+        )
+      ).filter((v) => v) as YtDlpVideoOutput[]
       videosMetadata.push(...videosMetadataChunk)
     }
 
