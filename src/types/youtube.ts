@@ -68,15 +68,6 @@ export class YtChannel {
   // total size of historical videos synced (videos that were published on Youtube before YPP signup)
   historicalVideoSyncedSize: number
 
-  // Channel owner's access token
-  userAccessToken: string
-
-  // Channel owner's refresh token
-  userRefreshToken: string
-
-  // Channel's playlist ID
-  uploadsPlaylistId: string
-
   // Should this channel be ingested for automated Youtube/Joystream syncing?
   shouldBeIngested: boolean
 
@@ -165,29 +156,12 @@ export class YtChannel {
   }
 }
 
-/**
- * We use the same DynamoDB table for storing users/channels verified through
- * Oauth api vs non-api (i.e. through shared a URL for a required video).
- */
 export class YtUser {
   // Youtube channel ID
   id: string
 
-  // Youtube User/Channel email (will only be available for users signed up through api workflow)
-  email: string | undefined
-
-  // User access token (will only be available for users signed up through api workflow)
-  accessToken: string | undefined
-
-  // User refresh token (will only be available for users signed up through api workflow)
-  refreshToken: string | undefined
-
-  // User authorization code (will only be available for users signed up through api workflow)
-  authorizationCode: string | undefined
-
-  // The URL for a specific video of Youtube channel with which the user is trying to register
-  // for YPP program (will only be available for users signed up through api-free workflow)
-  youtubeVideoUrl: string | undefined
+  // The URL for a specific video of Youtube channel with which the user verified for YPP
+  youtubeVideoUrl: string
 
   // Corresponding Joystream member ID for Youtube user
   joystreamMemberId: number | undefined

@@ -240,7 +240,7 @@
     },
     "/channels/{joystreamChannelId}/category": {
       "put": {
-        "operationId": "ChannelsController_updateCategoryChannel",
+        "operationId": "ChannelsController_updateChannelCategory",
         "summary": "",
         "description": "Updates given channel's videos category. Note: only channel owner can update the status",
         "parameters": [
@@ -573,7 +573,7 @@
       "post": {
         "operationId": "UsersController_verifyUserAndChannel",
         "summary": "",
-        "description": "fetches user's channel from the supplied google authorization code, and verifies if it satisfies YPP induction criteria",
+        "description": "fetches YT creator's channel from the provided Youtube video URL, and verifies if it satisfies YPP induction criteria",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -602,57 +602,6 @@
         ]
       }
     },
-    "/youtube/quota-usage": {
-      "get": {
-        "operationId": "YoutubeController_getAll",
-        "summary": "",
-        "description": "Get youtube quota usage information",
-        "deprecated": true,
-        "parameters": [],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Stats"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "youtube"
-        ]
-      }
-    },
-    "/youtube/quota-usage/today": {
-      "get": {
-        "operationId": "YoutubeController_get",
-        "summary": "",
-        "description": "Get youtube quota usage information for today",
-        "deprecated": true,
-        "parameters": [],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Stats"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "youtube"
-        ]
-      }
-    },
     "/status": {
       "get": {
         "operationId": "StatusController_getStatus",
@@ -666,55 +615,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StatusDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "status"
-        ]
-      }
-    },
-    "/status/quota-usage": {
-      "get": {
-        "operationId": "StatusController_getQuotaStats",
-        "summary": "",
-        "description": "Get youtube quota usage information",
-        "parameters": [],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Stats"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "status"
-        ]
-      }
-    },
-    "/status/quota-usage/today": {
-      "get": {
-        "operationId": "StatusController_getQuotaStatsForToday",
-        "summary": "",
-        "description": "Get youtube quota usage information for today",
-        "parameters": [],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Stats"
                 }
               }
             }
@@ -799,13 +699,13 @@
       "SaveChannelRequest": {
         "type": "object",
         "properties": {
-          "authorizationCode": {
-            "type": "string"
-          },
           "youtubeVideoUrl": {
             "type": "string"
           },
           "id": {
+            "type": "string"
+          },
+          "email": {
             "type": "string"
           },
           "joystreamChannelId": {
@@ -822,9 +722,9 @@
           }
         },
         "required": [
-          "authorizationCode",
           "youtubeVideoUrl",
           "id",
+          "email",
           "joystreamChannelId",
           "shouldBeIngested",
           "videoCategoryId"
@@ -1107,7 +1007,7 @@
               "CHANNEL_NOT_FOUND",
               "VIDEO_NOT_FOUND",
               "VIDEO_PRIVACY_STATUS_NOT_UNLISTED",
-              "VIDEO_TITLE_NOT_MATCHING",
+              "VIDEO_TITLE_MISMATCH",
               "CHANNEL_ALREADY_REGISTERED",
               "CHANNEL_STATUS_SUSPENDED",
               "CHANNEL_CRITERIA_UNMET_SUBSCRIBERS",
@@ -1166,28 +1066,17 @@
       "VerifyChannelRequest": {
         "type": "object",
         "properties": {
-          "authorizationCode": {
-            "type": "string"
-          },
-          "youtubeRedirectUri": {
-            "type": "string"
-          },
           "youtubeVideoUrl": {
             "type": "string"
           }
         },
         "required": [
-          "authorizationCode",
-          "youtubeRedirectUri",
           "youtubeVideoUrl"
         ]
       },
       "VerifyChannelResponse": {
         "type": "object",
         "properties": {
-          "email": {
-            "type": "string"
-          },
           "id": {
             "type": "string"
           },
@@ -1211,7 +1100,6 @@
           }
         },
         "required": [
-          "email",
           "id",
           "channelHandle",
           "channelTitle",
@@ -1220,10 +1108,6 @@
           "avatarUrl",
           "bannerUrl"
         ]
-      },
-      "Stats": {
-        "type": "object",
-        "properties": {}
       },
       "StatusDto": {
         "type": "object",
@@ -1234,9 +1118,6 @@
           "syncStatus": {
             "type": "string"
           },
-          "apiMode": {
-            "type": "object"
-          },
           "syncBacklog": {
             "type": "number"
           }
@@ -1244,17 +1125,17 @@
         "required": [
           "version",
           "syncStatus",
-          "apiMode",
           "syncBacklog"
         ]
+      },
+      "Stats": {
+        "type": "object",
+        "properties": {}
       },
       "CreateMembershipRequest": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
-          },
-          "authorizationCode": {
             "type": "string"
           },
           "youtubeVideoUrl": {
@@ -1278,7 +1159,6 @@
         },
         "required": [
           "id",
-          "authorizationCode",
           "youtubeVideoUrl",
           "account",
           "handle",

@@ -1,7 +1,8 @@
 import axios from 'axios'
+import { YT_VIDEO_TITLE_REQUIRED_FOR_SIGNUP } from '.'
 import { ReadonlyConfig } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
-import { YtChannel, YtUser } from '../../types/youtube'
+import { YtChannel, YtVideo } from '../../types/youtube'
 import { YtDlpClient } from './openApi'
 
 type OperationalApiChannelListResponse = {
@@ -39,8 +40,6 @@ type Image = {
   url: string
 }
 
-const YT_VIDEO_TITLE_REQUIRED_FOR_SIGNUP = `I want to be in YPP`
-
 export class YoutubeOperationalApi {
   private baseUrl: string
   readonly ytdlpClient: YtDlpClient
@@ -66,7 +65,7 @@ export class YoutubeOperationalApi {
     }
   }
 
-  async getVerifiedChannel(user: YtUser): Promise<{ channel: YtChannel; errors: YoutubeApiError[] }> {
+  async getVerifiedChannel(video: YtVideo): Promise<{ channel: YtChannel; errors: YoutubeApiError[] }> {
     const {
       minimumSubscribersCount,
       minimumVideosCount,
@@ -77,8 +76,6 @@ export class YoutubeOperationalApi {
     } = this.config.creatorOnboardingRequirements
 
     const errors: YoutubeApiError[] = []
-
-    const video = await this.ytdlpClient.getVideoFromUrl(user.youtubeVideoUrl!)
 
     if (video.privacyStatus !== 'unlisted') {
       errors.push(
@@ -94,7 +91,7 @@ export class YoutubeOperationalApi {
     if (video.title !== YT_VIDEO_TITLE_REQUIRED_FOR_SIGNUP) {
       errors.push(
         new YoutubeApiError(
-          ExitCodes.YoutubeApi.VIDEO_TITLE_NOT_MATCHING,
+          ExitCodes.YoutubeApi.VIDEO_TITLE_MISMATCH,
           `Video ${video.id} title is not matching`,
           video.title,
           YT_VIDEO_TITLE_REQUIRED_FOR_SIGNUP

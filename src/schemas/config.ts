@@ -175,33 +175,6 @@ export const configSchema: JSONSchema7 = objectSchema({
       title: 'Youtube related configuration',
       description: 'Youtube related configuration',
       properties: {
-        apiMode: { type: 'string', enum: ['api-free', 'api', 'both'], default: 'both' },
-        api: objectSchema({
-          title: 'Youtube API configuration',
-          description: 'Youtube API configuration',
-          properties: {
-            clientId: { type: 'string', description: 'Youtube Oauth2 Client Id' },
-            clientSecret: { type: 'string', description: 'Youtube Oauth2 Client Secret' },
-            maxAllowedQuotaUsageInPercentage: {
-              description:
-                `Maximum percentage of daily Youtube API quota that can be used by the Periodic polling service. ` +
-                `Once this limit is reached the service will stop polling for new videos until the next day(when Quota resets). ` +
-                `All the remaining quota (100 - maxAllowedQuotaUsageInPercentage) will be used for potential channel's signups.`,
-              type: 'number',
-              default: 95,
-            },
-            adcKeyFilePath: {
-              type: 'string',
-              description:
-                `Path to the Google Cloud's Application Default Credentials (ADC) key file. ` +
-                `It is required to periodically monitor the Youtube API quota usage.`,
-            },
-          },
-          required: ['clientId', 'clientSecret'],
-          dependencies: {
-            maxAllowedQuotaUsageInPercentage: ['adcKeyFilePath'],
-          },
-        }),
         operationalApi: objectSchema({
           title: 'Youtube Operational API (https://github.com/Benjamin-Loison/YouTube-operational-API) configuration',
           description:
@@ -216,13 +189,7 @@ export const configSchema: JSONSchema7 = objectSchema({
         }),
       },
 
-      if: {
-        properties: { apiMode: { enum: ['api', 'both'] } },
-      },
-      then: {
-        required: ['api'],
-      },
-      required: ['apiMode', 'operationalApi'],
+      required: ['operationalApi'],
     }),
     aws: objectSchema({
       title: 'AWS configurations needed to connect with DynamoDB instance',

@@ -34,12 +34,6 @@ logs:
   #     username: elastic-username
   #     password: elastic-password
 youtube:
-  apiMode: api
-  api:
-    clientId: google-client-id
-    clientSecret: google-client-secret
-    # adcKeyFilePath: path/to/adc-key-file.json
-    # maxAllowedQuotaUsageInPercentage: 95
   operationalApi:
     url: http://127.0.0.1:8889
 proxy:

@@ -21,14 +21,26 @@ export class MembershipController {
   @Post()
   async createMembership(@Body() createMembershipParams: CreateMembershipRequest): Promise<CreateMembershipResponse> {
     try {
-      const { id, authorizationCode, youtubeVideoUrl, account, handle, avatar, about, name } = createMembershipParams
+      const { id, youtubeVideoUrl, account, handle, avatar, about, name } = createMembershipParams
+
+      // TODO: check if needed. maybe add new flag `isSaved` to user record and check that instead
+      // const registeredChannel = await this.dynamodbService.repo.channels.get(user.id)
+      // if (registeredChannel) {
+      //   if (YtChannel.isVerified(registeredChannel) || registeredChannel.yppStatus === 'Unverified') {
+      //     throw new YoutubeApiError(
+      //       ExitCodes.YoutubeApi.CHANNEL_ALREADY_REGISTERED,
+      //       `Cannot create membership for a channel already registered in YPP`,
+      //       registeredChannel.joystreamChannelId
+      //     )
+      //   }
+      // }
 
       // get user from userId
       const user = await this.dynamodbService.users.get(id)
 
       // ensure request's authorization code matches the user's authorization code
-      if (user.authorizationCode !== authorizationCode || user.youtubeVideoUrl !== youtubeVideoUrl) {
-        throw new Error('Authorization error. Either authorization code or video url is invalid.')
+      if (user.youtubeVideoUrl !== youtubeVideoUrl) {
+        throw new Error('Authorization error. Youtube video url is invalid.')
       }
 
       // Ensure that user has not already created a Joystream membership

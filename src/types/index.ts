@@ -14,19 +14,9 @@ type SyncDisabled = Omit<NonNullable<YoutubeSyncNodeConfiguration['sync']>, 'lim
   limits?: Omit<NonNullable<YoutubeSyncNodeConfiguration['sync']['limits']>, 'storage'> & { storage: number }
 }
 
-type YoutubeApiEnabled = Omit<YoutubeSyncNodeConfiguration['youtube'], 'api'> & {
-  apiMode: 'api' | 'both'
-  api: NonNullable<YoutubeSyncNodeConfiguration['youtube']['api']>
-}
-
-type YoutubeApiDisabled = Omit<YoutubeSyncNodeConfiguration['youtube'], 'api'> & {
-  apiMode: 'api-free'
-}
-
-export type Config = Omit<YoutubeSyncNodeConfiguration, 'sync' | 'youtube'> & {
+export type Config = Omit<YoutubeSyncNodeConfiguration, 'sync'> & {
   version: string
   sync: SyncEnabled | SyncDisabled
-  youtube: YoutubeApiEnabled | YoutubeApiDisabled
 }
 
 export type ReadonlyConfig = DeepReadonly<Config>

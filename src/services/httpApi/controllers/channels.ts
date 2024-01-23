@@ -55,23 +55,16 @@ export class ChannelsController {
   @ApiBody({ type: SaveChannelRequest })
   @ApiResponse({ type: SaveChannelResponse })
   @ApiOperation({ description: `Saves channel record of a YPP verified user` })
-  // TODO: if channel exists dont allow to save again,
   async saveChannel(@Body() channelInfo: SaveChannelRequest): Promise<SaveChannelResponse> {
     try {
-      const {
-        id,
-        authorizationCode,
-        youtubeVideoUrl,
-        joystreamChannelId,
-        shouldBeIngested,
-        videoCategoryId,
-        referrerChannelId,
-      } = channelInfo
+      const { id, youtubeVideoUrl, joystreamChannelId, shouldBeIngested, videoCategoryId, referrerChannelId } =
+        channelInfo
 
-      // Ensure that channel is not already registered for YPP program
-      if (await this.dynamodbService.repo.channels.get(id)) {
-        throw new Error('Channel already exists, cannot re-save the channel')
-      }
+      // TODO: check if needed. maybe add new flag `isSaved` to user record and check that instead
+      // // Ensure that channel is not already registered for YPP program
+      // if (await this.dynamodbService.repo.channels.get(id)) {
+      //   throw new Error('Channel already exists, cannot re-save the channel')
+      // }
 
       /**
        *  Input Validation
@@ -85,8 +78,8 @@ export class ChannelsController {
       const user = await this.dynamodbService.users.get(id)
 
       // ensure request is sent by the authorized actor
-      if (user.authorizationCode !== authorizationCode || user.youtubeVideoUrl !== youtubeVideoUrl) {
-        throw new Error('Authorization error. Either authorization code or video url is invalid.')
+      if (user.youtubeVideoUrl !== youtubeVideoUrl) {
+        throw new Error('Authorization error. Youtube video url is invalid.')
       }
 
       // ensure that Joystream channel exists
@@ -118,8 +111,6 @@ export class ChannelsController {
           ? {
               ...existingChannel,
               yppStatus: 'Unverified',
-              userAccessToken: channel.userAccessToken,
-              userRefreshToken: channel.userRefreshToken,
             }
           : { ...channel }),
         joystreamChannelId,

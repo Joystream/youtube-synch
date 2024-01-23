@@ -15,29 +15,8 @@ function createUserModel(tablePrefix: ResourcePrefix) {
         hashKey: true,
       },
 
-      // User email
-      email: String,
-
-      // User youtube username
-      youtubeUsername: String,
-
-      // User Google ID
-      googleId: String,
-
-      // user authorization code
-      authorizationCode: String,
-
-      // The URL for a specific video of Youtube channel with which the user is trying to register for YPP program
+      // The URL for a specific video of the Youtube channel with which the user verified for YPP
       youtubeVideoUrl: String,
-
-      // user access token obtained from authorization code after successful authentication
-      accessToken: String,
-
-      // user refresh token that will be used to get new access token after expiration
-      refreshToken: String,
-
-      // User avatar url
-      avatarUrl: String,
 
       // joystream member ID for given creator.
       joystreamMemberId: Number,

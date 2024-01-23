@@ -1,7 +1,6 @@
-import { BadRequestException, Body, Controller, Inject, Post } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Post } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { DynamodbService } from '../../../repository'
-import { ReadonlyConfig } from '../../../types'
 import { ExitCodes, YoutubeApiError } from '../../../types/errors'
 import { YtChannel } from '../../../types/youtube'
 import { YoutubeApi } from '../../youtube'
@@ -10,26 +9,17 @@ import { VerifyChannelRequest, VerifyChannelResponse } from '../dtos'
 @Controller('users')
 @ApiTags('channels')
 export class UsersController {
-  constructor(
-    private youtubeApi: YoutubeApi,
-    private dynamodbService: DynamodbService,
-    @Inject('config') private config: ReadonlyConfig
-  ) {}
+  constructor(private youtubeApi: YoutubeApi, private dynamodbService: DynamodbService) {}
 
   @ApiOperation({
-    description: `fetches user's channel from the supplied google authorization code, and verifies if it satisfies YPP induction criteria`,
+    description: `fetches YT creator's channel from the provided Youtube video URL, and verifies if it satisfies YPP induction criteria`,
   })
   @ApiBody({ type: VerifyChannelRequest })
   @ApiResponse({ type: VerifyChannelResponse })
   @Post()
-  async verifyUserAndChannel(
-    @Body() { authorizationCode, youtubeRedirectUri, youtubeVideoUrl }: VerifyChannelRequest
-  ): Promise<VerifyChannelResponse> {
+  async verifyUserAndChannel(@Body() { youtubeVideoUrl }: VerifyChannelRequest): Promise<VerifyChannelResponse> {
     try {
-      const user = authorizationCode // && this.config.youtube.apiMode !== 'api-free'
-        ? await this.youtubeApi.dataApiV3.getUserFromCode(authorizationCode, youtubeRedirectUri)
-        : await this.youtubeApi.ytdlp.getUserFromVideoUrl(youtubeVideoUrl!)
-
+      const { user, video } = await this.youtubeApi.ytdlp.getUserAndVideoFromVideoUrl(youtubeVideoUrl)
       const registeredChannel = await this.dynamodbService.repo.channels.get(user.id)
 
       // Ensure 1. selected YT channel is not already registered for YPP program
@@ -50,9 +40,7 @@ export class UsersController {
         }
       }
 
-      const { channel, errors } = authorizationCode
-        ? await this.youtubeApi.dataApiV3.getVerifiedChannel(user)
-        : await this.youtubeApi.operationalApi.getVerifiedChannel(user)
+      const { channel, errors } = await this.youtubeApi.operationalApi.getVerifiedChannel(video)
       const whitelistedChannel = await this.dynamodbService.repo.whitelistChannels.get(channel.customUrl)
 
       // check if the channel is whitelisted
@@ -69,7 +57,6 @@ export class UsersController {
       // return verified user
       return {
         id: user.id,
-        email: user.email || '',
         channelTitle: channel.title,
         channelDescription: channel.description,
         avatarUrl: channel.thumbnails.high,

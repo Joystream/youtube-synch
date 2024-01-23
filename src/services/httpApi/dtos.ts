@@ -13,7 +13,7 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator'
-import { Config, ReadonlyConfig } from '../../types'
+import { Config } from '../../types'
 import { ExitCodes } from '../../types/errors'
 import {
   ChannelSyncStatus,
@@ -28,7 +28,7 @@ import {
   channelYppStatus,
 } from '../../types/youtube'
 import { pluralizeNoun } from '../../utils/misc'
-import { IsMutuallyExclusiveWith } from './utils'
+import { YT_VIDEO_TITLE_REQUIRED_FOR_SIGNUP } from '../youtube'
 
 // NestJS Data Transfer Objects (DTO)s
 
@@ -41,7 +41,6 @@ export class ThumbnailsDto {
 export class StatusDto {
   @ApiProperty() version: string
   @ApiProperty() syncStatus: 'enabled' | 'disabled'
-  @ApiProperty() apiMode: ReadonlyConfig['youtube']['apiMode']
   @ApiProperty() syncBacklog: number
 }
 
@@ -75,6 +74,16 @@ export class ChannelInductionRequirementsDto {
 
   constructor(requirements: Config['creatorOnboardingRequirements']) {
     this.requirements = [
+      {
+        errorCode: ExitCodes.YoutubeApi.VIDEO_PRIVACY_STATUS_NOT_UNLISTED,
+        template: 'YouTube video should be {}.',
+        variables: ['Unlisted'],
+      },
+      {
+        errorCode: ExitCodes.YoutubeApi.VIDEO_TITLE_MISMATCH,
+        template: 'YouTube video title should be {}.',
+        variables: [YT_VIDEO_TITLE_REQUIRED_FOR_SIGNUP],
+      },
       {
         errorCode: ExitCodes.YoutubeApi.CHANNEL_CRITERIA_UNMET_SUBSCRIBERS,
         template: 'YouTube channel has at least {}.',
@@ -169,30 +178,16 @@ export class TopReferrerDto {
   }
 }
 
-// Dto for verifying Youtube channel given the authorization code
+// Dto for verifying Youtube channel given the Youtube video URL
 export class VerifyChannelRequest {
-  // Authorization code return from user o-auth response
-  @ValidateIf((v: VerifyChannelRequest) => v.youtubeRedirectUri !== undefined && v.youtubeVideoUrl === undefined)
-  @IsString()
-  @ApiProperty()
-  authorizationCode: string
-
-  @ValidateIf((v: VerifyChannelRequest) => v.authorizationCode !== undefined && v.youtubeVideoUrl === undefined)
+  // Youtube video URL required for the verification
   @IsUrl({ require_tld: false })
-  @ApiProperty()
-  youtubeRedirectUri: string
-
-  @ValidateIf((v: VerifyChannelRequest) => v.authorizationCode === undefined && v.youtubeRedirectUri === undefined)
-  @IsUrl({ require_tld: false })
-  @ApiProperty()
+  @ApiProperty({ required: true })
   youtubeVideoUrl: string
 }
 
 // Dto for verified Youtube channel response
 export class VerifyChannelResponse {
-  // Email of the verified user
-  @IsEmail() @ApiProperty() email: string
-
   // ID of the verified Youtube channel
   @IsString() @ApiProperty({ required: true }) id: string
 
@@ -217,23 +212,16 @@ export class VerifyChannelResponse {
 
 // Dto for saving the verified Youtube channel
 export class SaveChannelRequest {
-  // Authorization code return from user o-auth response
-  @ValidateIf((c: SaveChannelRequest) => c.youtubeVideoUrl === undefined)
-  @IsString()
-  @IsMutuallyExclusiveWith('youtubeVideoUrl')
-  @ApiProperty()
-  authorizationCode: string
-
-  @ValidateIf((c: SaveChannelRequest) => c.authorizationCode === undefined)
-  @IsString()
-  @IsMutuallyExclusiveWith('authorizationCode')
-  @ApiProperty()
+  // Youtube video URL required for the verification
+  @IsUrl({ require_tld: false })
+  @ApiProperty({ required: true })
   youtubeVideoUrl: string
 
   // ID of the verified Youtube channel
   @IsString() @ApiProperty({ required: true }) id: string
 
-  // TODO: do we need to ask for email? get from Orion
+  // Email of the YT user/channel
+  @IsEmail() @ApiProperty({ required: true }) email: string
 
   // Joystream Channel ID of the user verifying his Youtube Channel for YPP
   @IsNumber() @ApiProperty({ required: true }) joystreamChannelId: number
@@ -264,15 +252,9 @@ export class CreateMembershipRequest {
   // ID of the verified Youtube channel
   @IsString() @ApiProperty({ required: true }) id: string
 
-  // Authorization code return from user o-auth response
-  @ValidateIf((v: SaveChannelRequest) => v.authorizationCode === undefined)
-  @IsString()
-  @ApiProperty()
-  authorizationCode: string
-
-  @ValidateIf((v: SaveChannelRequest) => v.authorizationCode === undefined)
-  @IsString()
-  @ApiProperty()
+  // Youtube video URL required for the verification
+  @IsUrl({ require_tld: false })
+  @ApiProperty({ required: true })
   youtubeVideoUrl: string
 
   // Membership Account address

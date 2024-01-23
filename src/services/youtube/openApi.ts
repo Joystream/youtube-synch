@@ -13,7 +13,7 @@ export interface IOpenYTApi {
   getVideoFromUrl(videoUrl: string): Promise<YtVideo>
   getVideos(channel: YtChannel, ids: string[]): Promise<YtVideo[]>
   downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl>
-  getUserFromVideoUrl(videoUrl: string): Promise<YtUser>
+  getUserAndVideoFromVideoUrl(videoUrl: string): Promise<{ user: YtUser; video: YtVideo }>
 }
 
 export class YtDlpClient implements IOpenYTApi {
@@ -40,20 +40,16 @@ export class YtDlpClient implements IOpenYTApi {
     return this.mapVideo(output)
   }
 
-  async getUserFromVideoUrl(videoUrl: string): Promise<YtUser> {
-    const { stdout } = await this.exec(`${this.ytdlpPath} --print channel_id ${videoUrl}`)
+  async getUserAndVideoFromVideoUrl(videoUrl: string): Promise<{ user: YtUser; video: YtVideo }> {
+    const video = await this.getVideoFromUrl(videoUrl)
 
     const user: YtUser = {
-      id: stdout.replace(/(\r\n|\n|\r)/gm, ''),
-      email: undefined,
-      accessToken: undefined,
-      refreshToken: undefined,
-      authorizationCode: undefined,
+      id: video.channelId,
       joystreamMemberId: undefined,
       youtubeVideoUrl: videoUrl,
       createdAt: new Date(),
     }
-    return user
+    return { user, video }
   }
 
   async downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {

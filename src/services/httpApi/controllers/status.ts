@@ -1,7 +1,6 @@
 import { Controller, Get, Inject, NotFoundException } from '@nestjs/common'
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import BN from 'bn.js'
-import { DynamodbService } from '../../../repository'
 import { ReadonlyConfig } from '../../../types'
 import { Stats } from '../../../types/youtube'
 import { RuntimeApi } from '../../runtime/api'
@@ -12,7 +11,6 @@ import { CollaboratorStatusDto, StatusDto } from '../dtos'
 @ApiTags('status')
 export class StatusController {
   constructor(
-    private dynamodbService: DynamodbService,
     private runtimeApi: RuntimeApi,
     private contentProcessingService: ContentProcessingService,
     @Inject('config') private config: ReadonlyConfig
@@ -23,41 +21,14 @@ export class StatusController {
   @ApiOperation({ description: `Get status info of YT-Synch service` })
   async getStatus(): Promise<StatusDto> {
     try {
-      // Get complete quota usage statss
+      // Get complete quota usage stats
       const {
         version,
         sync: { enable },
       } = this.config
 
       const { totalCount: syncBacklog } = await this.contentProcessingService.getJobsCount()
-      return { version, syncStatus: enable ? 'enabled' : 'disabled', syncBacklog, apiMode: this.config.youtube.apiMode }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : error
-      throw new NotFoundException(message)
-    }
-  }
-
-  @Get('quota-usage')
-  @ApiResponse({ type: Stats, isArray: true })
-  @ApiOperation({ description: `Get youtube quota usage information` })
-  async getQuotaStats(): Promise<Stats[]> {
-    try {
-      // Get complete quota usage statss
-      const stats = await this.dynamodbService.repo.stats.scan('partition', (s) => s)
-      return stats
-    } catch (error) {
-      const message = error instanceof Error ? error.message : error
-      throw new NotFoundException(message)
-    }
-  }
-
-  @Get('quota-usage/today')
-  @ApiResponse({ type: Stats })
-  @ApiOperation({ description: `Get youtube quota usage information for today` })
-  async getQuotaStatsForToday(): Promise<Stats> {
-    try {
-      const stats = this.dynamodbService.repo.stats.getOrSetTodaysStats()
-      return stats
+      return { version, syncStatus: enable ? 'enabled' : 'disabled', syncBacklog }
     } catch (error) {
       const message = error instanceof Error ? error.message : error
       throw new NotFoundException(message)

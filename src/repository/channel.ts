@@ -125,14 +125,6 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
       // Banner or Background image URL
       bannerImageUrl: String,
 
-      // user access token obtained from authorization code after successful authentication
-      userAccessToken: String,
-
-      // user refresh token that will be used to get new access token after expiration
-      userRefreshToken: String,
-
-      uploadsPlaylistId: String,
-
       // Should this channel be ingested for automated Youtube/Joystream syncing?
       shouldBeIngested: {
         type: Boolean,

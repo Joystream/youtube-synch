@@ -16,13 +16,7 @@ import { RuntimeApi } from '../runtime/api'
 import { ContentProcessingService } from '../syncProcessing'
 import { YoutubePollingService } from '../syncProcessing/YoutubePollingService'
 import { YoutubeApi } from '../youtube'
-import {
-  ChannelsController,
-  StatusController,
-  UsersController,
-  VideosController,
-  YoutubeController,
-} from './controllers'
+import { ChannelsController, StatusController, UsersController, VideosController } from './controllers'
 import { MembershipController } from './controllers/membership'
 import { ReferrersController } from './controllers/referrers'
 
@@ -80,7 +74,6 @@ export async function bootstrapHttpApi(
       ChannelsController,
       ReferrersController,
       UsersController,
-      YoutubeController,
       StatusController,
       MembershipController,
     ],
