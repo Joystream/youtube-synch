@@ -3,15 +3,13 @@ import { VideoMetadataAndHash } from '../services/syncProcessing/ContentMetadata
 type DeploymentEnv = 'dev' | 'local' | 'testing' | 'prod'
 const deploymentEnv = process.env.DEPLOYMENT_ENV as DeploymentEnv | undefined
 
+// TODO: only allow sharing unlisted videos (because if we allow sharing public videos, then anyone can share video before the creator)
 export type ResourcePrefix = `${Exclude<DeploymentEnv, 'prod'>}_` | ''
 export const resourcePrefix = (deploymentEnv && deploymentEnv !== 'prod' ? `${deploymentEnv}_` : '') as ResourcePrefix
 
 export class YtChannel {
   // Channel ID
   id: string
-
-  // ID of the user that owns the channel
-  userId: string
 
   // Youtube channel custom URL. Also known as youtube channel handle
   customUrl: string
@@ -69,15 +67,6 @@ export class YtChannel {
 
   // total size of historical videos synced (videos that were published on Youtube before YPP signup)
   historicalVideoSyncedSize: number
-
-  // Channel owner's access token
-  userAccessToken: string
-
-  // Channel owner's refresh token
-  userRefreshToken: string
-
-  // Channel's playlist ID
-  uploadsPlaylistId: string
 
   // Should this channel be ingested for automated Youtube/Joystream syncing?
   shouldBeIngested: boolean
@@ -168,20 +157,11 @@ export class YtChannel {
 }
 
 export class YtUser {
-  // Youtube user ID
+  // Youtube channel ID
   id: string
 
-  // Youtube User email
-  email: string
-
-  // User access token
-  accessToken: string
-
-  // User refresh token
-  refreshToken: string
-
-  // User authorization code
-  authorizationCode: string
+  // The URL for a specific video of Youtube channel with which the user verified for YPP
+  youtubeVideoUrl: string
 
   // Corresponding Joystream member ID for Youtube user
   joystreamMemberId: number | undefined
@@ -194,7 +174,6 @@ export type Thumbnails = {
   default: string
   medium: string
   high: string
-  standard: string
 }
 
 export enum VideoUnavailableReasons {
@@ -337,7 +316,6 @@ export const getImages = (channel: YtChannel) => {
     ...urlAsArray(channel.thumbnails.default),
     ...urlAsArray(channel.thumbnails.high),
     ...urlAsArray(channel.thumbnails.medium),
-    ...urlAsArray(channel.thumbnails.standard),
   ]
 }
 

@@ -13,7 +13,7 @@ services:
       - ./local/logs:/youtube-synch/local/logs
       - ./local/data:/youtube-synch/local/data
       # mount Google Cloud's Application Default Credentials file. A default bind mount is created
-      # as workaround for scenario when `YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH` will be undefined, 
+      # as workaround for scenario when `YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH` will be undefined,
       # since docker-compose does not support creating bind-mount volume with empty path.
       - ${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-./package.json}:${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-/package.json}:ro
       # mount the AWS credentials file to docker container home directory
@@ -30,8 +30,9 @@ services:
       YT_SYNCH__ENDPOINTS__REDIS__PORT: ${YT_SYNCH__ENDPOINTS__REDIS__PORT}
       # YT_SYNCH__HTTP_API__PORT: ${YT_SYNCH__HTTP_API__PORT}
       # YT_SYNCH__HTTP_API__OWNER_KEY: ${YT_SYNCH__HTTP_API__OWNER_KEY}
-      # YT_SYNCH__YOUTUBE__CLIENT_ID: ${YT_SYNCH__YOUTUBE__CLIENT_ID}
-      # YT_SYNCH__YOUTUBE__CLIENT_SECRET: ${YT_SYNCH__YOUTUBE__CLIENT_SECRET}
+      YT_SYNCH__YOUTUBE__OPERATIONAL_API__URL: http://youtube-operational-api:8889
+      # YT_SYNCH__YOUTUBE__API__CLIENT_ID: ${YT_SYNCH__YOUTUBE__API__CLIENT_ID}
+      # YT_SYNCH__YOUTUBE__API__CLIENT_SECRET: ${YT_SYNCH__YOUTUBE__API__CLIENT_SECRET}
       # YT_SYNCH__AWS__ENDPOINT: ${YT_SYNCH__AWS__ENDPOINT}
       # YT_SYNCH__AWS__CREDENTIALS__ACCESS_KEY_ID: ${YT_SYNCH__AWS__CREDENTIALS__ACCESS_KEY_ID}
       # YT_SYNCH__AWS__CREDENTIALS__SECRET_ACCESS_KEY: ${YT_SYNCH__AWS__CREDENTIALS__SECRET_ACCESS_KEY}
@@ -48,13 +49,20 @@ services:
   redis:
     image: redis:7.2.1
     container_name: redis
-    command: [ "redis-server", "--maxmemory-policy", "noeviction" ]
+    command: ['redis-server', '--maxmemory-policy', 'noeviction']
     ports:
       - 127.0.0.1:${YT_SYNCH__ENDPOINTS__REDIS__PORT}:${YT_SYNCH__ENDPOINTS__REDIS__PORT}
     networks:
       - youtube-synch
     volumes:
       - redis-data:/data
+  youtube-operational-api:
+    image: benjaminloison/youtube-operational-api
+    container_name: youtube-operational-api
+    ports:
+      - 127.0.0.1:8889:80
+    networks:
+      - youtube-synch
 
 volumes:
   logs:

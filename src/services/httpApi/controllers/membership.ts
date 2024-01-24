@@ -13,25 +13,39 @@ export class MembershipController {
   constructor(@Inject('config') private config: ReadonlyConfig, private dynamodbService: DynamodbService) {}
 
   @ApiOperation({
-    description: `Create Joystream's on-chain Membership for a verfifed YPP user. It will forward request
-       to Joystream faucet with an Authorization header to circumvent captcha verfication by the faucet`,
+    description: `Create Joystream's on-chain Membership for a verified YPP user. It will forward request
+       to Joystream faucet with an Authorization header to circumvent captcha verification by the faucet`,
   })
   @ApiBody({ type: CreateMembershipRequest })
   @ApiResponse({ type: CreateMembershipResponse })
   @Post()
-  async createMembership(@Body() membershipParams: CreateMembershipRequest): Promise<CreateMembershipResponse> {
+  async createMembership(@Body() createMembershipParams: CreateMembershipRequest): Promise<CreateMembershipResponse> {
     try {
-      const { userId, authorizationCode, account, handle, avatar, about, name } = membershipParams
+      const { id, youtubeVideoUrl, account, handle, avatar, about, name } = createMembershipParams
+
+      // TODO: check if needed. maybe add new flag `isSaved` to user record and check that instead
+      // const registeredChannel = await this.dynamodbService.repo.channels.get(user.id)
+      // if (registeredChannel) {
+      //   if (YtChannel.isVerified(registeredChannel) || registeredChannel.yppStatus === 'Unverified') {
+      //     throw new YoutubeApiError(
+      //       ExitCodes.YoutubeApi.CHANNEL_ALREADY_REGISTERED,
+      //       `Cannot create membership for a channel already registered in YPP`,
+      //       registeredChannel.joystreamChannelId
+      //     )
+      //   }
+      // }
 
       // get user from userId
-      const user = await this.dynamodbService.users.get(userId)
+      const user = await this.dynamodbService.users.get(id)
 
       // ensure request's authorization code matches the user's authorization code
-      if (user.authorizationCode !== authorizationCode) {
-        throw new Error('Invalid request author. Permission denied.')
+      if (user.youtubeVideoUrl !== youtubeVideoUrl) {
+        throw new Error('Authorization error. Youtube video url is invalid.')
       }
+
+      // Ensure that user has not already created a Joystream membership
       if (user.joystreamMemberId) {
-        throw new Error(`Already created Joysteam member ${user.joystreamMemberId} for user ${user.id}`)
+        throw new Error(`Already created Joystream member ${user.joystreamMemberId} for user ${user.id}`)
       }
 
       // send create membership request to faucet
