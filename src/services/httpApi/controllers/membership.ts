@@ -30,15 +30,19 @@ export class MembershipController {
       if (user.authorizationCode !== authorizationCode) {
         throw new Error('Invalid request author. Permission denied.')
       }
-      if (user.joystreamMemberId) {
-        throw new Error(`Already created Joysteam member ${user.joystreamMemberId} for user ${user.id}`)
+
+      // Only allow maximum of 5 captcha-free memberships to be created by YT-synch
+      // as avoiding this check leads sybil attack where any YPP verified user/channel
+      // can created infinitely many memberships causing faucet funds to exhaust.
+      if (user.joystreamMemberIds.length >= 5) {
+        throw new Error(`Already created Joysteam memberships ${user.joystreamMemberIds} for user ${user.id}`)
       }
 
       // send create membership request to faucet
       const { memberId } = await this.createMemberWithFaucet({ account, handle, avatar, about, name })
 
       // save updated user entity
-      await this.dynamodbService.users.save({ ...user, joystreamMemberId: memberId })
+      await this.dynamodbService.users.save({ ...user, joystreamMemberIds: [...user.joystreamMemberIds, memberId] })
 
       return new CreateMembershipResponse(memberId, handle)
     } catch (error) {

@@ -56,7 +56,7 @@ export class UsersController {
       const existingUser = await this.dynamodbService.repo.users.get(user.id)
 
       // save user & set joystreamMemberId if user already existed
-      await this.dynamodbService.users.save({ ...user, joystreamMemberId: existingUser?.joystreamMemberId })
+      await this.dynamodbService.users.save({ ...user, joystreamMemberIds: existingUser?.joystreamMemberIds || [] })
 
       // return verified user
       return {
