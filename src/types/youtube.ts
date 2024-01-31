@@ -183,8 +183,8 @@ export class YtUser {
   // User authorization code
   authorizationCode: string
 
-  // Corresponding Joystream member ID for Youtube user
-  joystreamMemberId: number | undefined
+  // Corresponding Joystream member ID/s for Youtube user created through `POST /membership` (if any)
+  joystreamMemberIds: number[]
 
   // Record created At timestamp
   createdAt: Date
