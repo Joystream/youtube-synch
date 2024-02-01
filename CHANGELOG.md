@@ -1,3 +1,12 @@
+### 3.4.0
+
+- Enable opentelemetry integration for tracing
+- Support running httpApi and sync as separate services
+- **FIX**: Added timeout in `ContentMetadataService` to avoid infinite waiting for the video to be processed
+- **FIX**: Restarting chisel client container from inside yt-synch container
+- **FIX**: Skip uploading object to storage node if it already exists
+- **FIX**: `ytdlpClient.getVideos` method
+
 ### 3.3.0
 
 - Added `chisel` proxy setup with automated IP rotation mechanism to circumvent youtube IP blockage, also integrated proxy setup with yt-synch server. See [docs](socks5-proxy/SETUP.md) for more details
