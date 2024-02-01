@@ -44,5 +44,5 @@ Thumbs.db
 **/node_modules/
 
 # Env files
-/.env
-/socks5-proxy/.env
+.env
+!opentelemetry/.env

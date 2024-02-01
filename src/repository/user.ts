@@ -37,7 +37,10 @@ function createUserModel(tablePrefix: ResourcePrefix) {
       avatarUrl: String,
 
       // Corresponding Joystream member ID/s for Youtube user created through `POST /membership` (if any)
-      joystreamMemberIds: [Number],
+      joystreamMemberIds: {
+        type: Array,
+        schema: [Number],
+      },
     },
     {
       saveUnknown: false,
