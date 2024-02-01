@@ -18,7 +18,6 @@ services:
       # mount the AWS credentials file to docker container home directory
       - ~/.aws/:/root/.aws:ro
     env_file:
-      # relative to working directory where docker-compose was run from
       - .env
     environment:
       DEPLOYMENT_ENV: ${DEPLOYMENT_ENV}
@@ -40,11 +39,12 @@ services:
       # YT_SYNCH__JOYSTREAM__APP__ACCOUNT_SEED: ${YT_SYNCH__JOYSTREAM__APP__ACCOUNT_SEED}
       # YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT: ${YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT}
       # YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY: ${YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${TELEMETRY_ENDPOINT}
     ports:
       - 127.0.0.1:${YT_SYNCH__HTTP_API__PORT}:${YT_SYNCH__HTTP_API__PORT}
     networks:
       - youtube-synch
-    command: ['./bin/run', 'start', '--service', 'httpApi']
+    command: ['./scripts/start-youtube-synch-httpApi.sh', '--service', 'httpApi']
 
   youtube-synch_sync:
     image: youtube-synch:${IMAGE_TAG}

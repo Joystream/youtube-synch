@@ -30,4 +30,4 @@ COPY . .
 RUN yarn build
 
 # Set the command to run when a container based on the image is started
-CMD ["./bin/run", "start"]
+CMD ["./scripts/start-youtube-synch-httpApi.sh"]

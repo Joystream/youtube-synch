@@ -46,4 +46,4 @@ Thumbs.db
 # Serverless
 .serverless
 .webpack
-.env
+/.env
