@@ -1,8 +1,8 @@
 version: '3.4'
 services:
-  youtube-synch:
+  youtube-synch_httpApi:
     image: youtube-synch:${IMAGE_TAG}
-    container_name: youtube-synch
+    container_name: youtube-synch_httpApi
     restart: on-failure
     depends_on:
       - redis
@@ -11,9 +11,57 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./local/logs:/youtube-synch/local/logs
+      # mount Google Cloud's Application Default Credentials file. A default bind mount is created
+      # as workaround for scenario when `YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH` will be undefined,
+      # since docker-compose does not support creating bind-mount volume with empty path.
+      - ${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-./package.json}:${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-/package.json}:ro
+      # mount the AWS credentials file to docker container home directory
+      - ~/.aws/:/root/.aws:ro
+    env_file:
+      - .env
+    environment:
+      DEPLOYMENT_ENV: ${DEPLOYMENT_ENV}
+      # YT_SYNCH__LOGS__ELASTIC: "{\"level\":\"debug\",\"endpoint\":\"http://elasticsearch:9200\"}"
+      # YT_SYNCH__ENDPOINTS__QUERY_NODE: ${YT_SYNCH__ENDPOINTS__QUERY_NODE}
+      # YT_SYNCH__ENDPOINTS__JOYSTREAM_NODE_WS: ${YT_SYNCH__ENDPOINTS__JOYSTREAM_NODE_WS}
+      YT_SYNCH__ENDPOINTS__REDIS__HOST: redis
+      YT_SYNCH__ENDPOINTS__REDIS__PORT: ${YT_SYNCH__ENDPOINTS__REDIS__PORT}
+      # YT_SYNCH__HTTP_API__PORT: ${YT_SYNCH__HTTP_API__PORT}
+      # YT_SYNCH__HTTP_API__OWNER_KEY: ${YT_SYNCH__HTTP_API__OWNER_KEY}
+      # YT_SYNCH__YOUTUBE__CLIENT_ID: ${YT_SYNCH__YOUTUBE__CLIENT_ID}
+      # YT_SYNCH__YOUTUBE__CLIENT_SECRET: ${YT_SYNCH__YOUTUBE__CLIENT_SECRET}
+      # YT_SYNCH__AWS__ENDPOINT: http://host.docker.internal:4566
+      # YT_SYNCH__AWS__CREDENTIALS__ACCESS_KEY_ID: ${YT_SYNCH__AWS__CREDENTIALS__ACCESS_KEY_ID}
+      # YT_SYNCH__AWS__CREDENTIALS__SECRET_ACCESS_KEY: ${YT_SYNCH__AWS__CREDENTIALS__SECRET_ACCESS_KEY}
+      # YT_SYNCH__JOYSTREAM__CHANNEL_COLLABORATOR__ACCOUNT: ${YT_SYNCH__JOYSTREAM__CHANNEL_COLLABORATOR__ACCOUNT}
+      # YT_SYNCH__JOYSTREAM__CHANNEL_COLLABORATOR__MEMBER_ID: ${YT_SYNCH__JOYSTREAM__CHANNEL_COLLABORATOR__MEMBER_ID}
+      # YT_SYNCH__JOYSTREAM__APP__NAME: ${YT_SYNCH__JOYSTREAM__APP__NAME}
+      # YT_SYNCH__JOYSTREAM__APP__ACCOUNT_SEED: ${YT_SYNCH__JOYSTREAM__APP__ACCOUNT_SEED}
+      # YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT: ${YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT}
+      # YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY: ${YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${TELEMETRY_ENDPOINT}
+    ports:
+      - 127.0.0.1:${YT_SYNCH__HTTP_API__PORT}:${YT_SYNCH__HTTP_API__PORT}
+    networks:
+      - youtube-synch
+    command: ['./scripts/start-youtube-synch-httpApi.sh', '--service', 'httpApi']
+
+  youtube-synch_sync:
+    image: youtube-synch:${IMAGE_TAG}
+    container_name: youtube-synch_sync
+    restart: on-failure
+    depends_on:
+      - redis
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # Docker socket mounting is required to restart the socks5 proxy container from inside this container
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./local/logs:/youtube-synch/local/logs
       - ./local/data:/youtube-synch/local/data
       # mount Google Cloud's Application Default Credentials file. A default bind mount is created
-      # as workaround for scenario when `YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH` will be undefined, 
+      # as workaround for scenario when `YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH` will be undefined,
       # since docker-compose does not support creating bind-mount volume with empty path.
       - ${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-./package.json}:${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-/package.json}:ro
       # mount the AWS credentials file to docker container home directory
@@ -32,7 +80,7 @@ services:
       # YT_SYNCH__HTTP_API__OWNER_KEY: ${YT_SYNCH__HTTP_API__OWNER_KEY}
       # YT_SYNCH__YOUTUBE__CLIENT_ID: ${YT_SYNCH__YOUTUBE__CLIENT_ID}
       # YT_SYNCH__YOUTUBE__CLIENT_SECRET: ${YT_SYNCH__YOUTUBE__CLIENT_SECRET}
-      # YT_SYNCH__AWS__ENDPOINT: ${YT_SYNCH__AWS__ENDPOINT}
+      # YT_SYNCH__AWS__ENDPOINT: http://host.docker.internal:4566
       # YT_SYNCH__AWS__CREDENTIALS__ACCESS_KEY_ID: ${YT_SYNCH__AWS__CREDENTIALS__ACCESS_KEY_ID}
       # YT_SYNCH__AWS__CREDENTIALS__SECRET_ACCESS_KEY: ${YT_SYNCH__AWS__CREDENTIALS__SECRET_ACCESS_KEY}
       # YT_SYNCH__JOYSTREAM__CHANNEL_COLLABORATOR__ACCOUNT: ${YT_SYNCH__JOYSTREAM__CHANNEL_COLLABORATOR__ACCOUNT}
@@ -41,14 +89,14 @@ services:
       # YT_SYNCH__JOYSTREAM__APP__ACCOUNT_SEED: ${YT_SYNCH__JOYSTREAM__APP__ACCOUNT_SEED}
       # YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT: ${YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT}
       # YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY: ${YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY}
-    ports:
-      - 127.0.0.1:${YT_SYNCH__HTTP_API__PORT}:${YT_SYNCH__HTTP_API__PORT}
     networks:
       - youtube-synch
+    command: ['./bin/run', 'start', '--service', 'sync']
+
   redis:
     image: redis:7.2.1
     container_name: redis
-    command: [ "redis-server", "--maxmemory-policy", "noeviction" ]
+    command: ['redis-server', '--maxmemory-policy', 'noeviction']
     ports:
       - 127.0.0.1:${YT_SYNCH__ENDPOINTS__REDIS__PORT}:${YT_SYNCH__ENDPOINTS__REDIS__PORT}
     networks:

@@ -9,6 +9,12 @@ import { ReadonlyConfig } from '../../types'
 import { YtChannel, YtVideo } from '../../types/youtube'
 import { SyncUtils } from './utils'
 
+export const QUEUE_NAME_PREFIXES = ['Upload', 'Creation', 'Metadata', 'Download'] as const
+
+export type QueueNamePrefix = typeof QUEUE_NAME_PREFIXES[number]
+
+export type QueueName = `${QueueNamePrefix}Queue`
+
 export type TaskType<T = YtVideo> = { id: string; priority: number } & T
 
 export type ProcessorType = 'batch' | 'concurrent'
@@ -24,18 +30,20 @@ export interface ProcessorInstance<P, T, R> {
 }
 
 type PriorityQueueOptions<
-  P extends ProcessorType,
-  T extends TaskType,
+  N extends QueueName = QueueName,
+  P extends ProcessorType = ProcessorType,
+  T extends TaskType = TaskType,
   R = P extends 'concurrent' ? any : Job<T>[],
   I extends ProcessorInstance<P, T, R> = ProcessorInstance<P, T, R>
 > = {
-  name: string
+  name: N
   processorType: P
   concurrencyOrBatchSize: number
   processorInstance: I
 }
 
-export class PriorityJobQueue<
+class PriorityJobQueue<
+  N extends QueueName = QueueName,
   P extends ProcessorType = ProcessorType,
   T extends TaskType = TaskType,
   R = P extends 'concurrent' ? any : Job<T>[],
@@ -53,12 +61,11 @@ export class PriorityJobQueue<
   private worker: Worker
   private connection: IORedis
 
-  constructor(redis: ReadonlyConfig['endpoints']['redis'], options: PriorityQueueOptions<P, T, R, I>) {
+  constructor(redis: ReadonlyConfig['endpoints']['redis'], options: PriorityQueueOptions<N, P, T, R, I>) {
     this.logger = options.processorInstance.logger
     this.concurrencyOrBatchSize = options.concurrencyOrBatchSize
     this.connection = new IORedis(redis.port, redis.host, { maxRetriesPerRequest: null })
 
-    // Reuse the ioredis instance
     this.queue = new Queue(options.name, { connection: this.connection })
     this.RECALCULATE_PRIORITY_LOCK_KEY = this.queue.name
     // Check processor type
@@ -82,6 +89,7 @@ export class PriorityJobQueue<
       }
     }
 
+    // Reuse the ioredis instance
     this.worker = new Worker(this.queue.name, wrappedProcessor, {
       connection: this.connection,
       concurrency: this.concurrencyOrBatchSize,
@@ -227,10 +235,11 @@ export class PriorityJobQueue<
   }
 }
 
-export class JobsFlowManager {
+export class FlowJobManager {
   private flowProducer: FlowProducer
-  private jobQueuesByName: Map<string, PriorityJobQueue> = new Map()
-  private queueEventsByName: Map<string, QueueEvents> = new Map()
+  private pJobQueueByName: Map<QueueName, PriorityJobQueue> = new Map()
+  private queueByName: Map<QueueName, Queue> = new Map()
+  private queueEventsByName: Map<QueueName, QueueEvents> = new Map()
   private connection: IORedis
 
   constructor(private redis: ReadonlyConfig['endpoints']['redis']) {
@@ -241,36 +250,40 @@ export class JobsFlowManager {
   /**
    * @param options queue options
    */
-  createJobQueue<P extends ProcessorType, T extends TaskType>(options: PriorityQueueOptions<P, T>) {
-    if (this.jobQueuesByName.has(options.name)) {
+  createJobQueue(options: PriorityQueueOptions) {
+    if (this.pJobQueueByName.has(options.name)) {
       throw new Error(`Job queue with name ${options.name} already exists`)
     }
 
-    const jobQueue = new PriorityJobQueue(this.redis, options)
+    const pJobQueue = new PriorityJobQueue(this.redis, options)
 
-    this.jobQueuesByName.set(options.name, jobQueue)
+    this.pJobQueueByName.set(options.name, pJobQueue)
+    this.queueByName.set(options.name, pJobQueue.queue)
   }
 
   /**
    * @param name queue name
-   * @returns Job queue instance
+   * @returns Queue instance
    */
-  getJobQueue(name: string): PriorityJobQueue {
-    const jobQueue = this.jobQueuesByName.get(name)
+  getJobQueue(name: QueueName): Queue {
+    const queue = this.queueByName.get(name)
 
-    if (!jobQueue) {
-      throw new Error(`Job queue with name ${name} does not exist`)
+    if (!queue) {
+      const connection = new IORedis(this.redis.port, this.redis.host, { maxRetriesPerRequest: null })
+      const newQueue = new Queue(name, { connection })
+      this.queueByName.set(name, newQueue)
+      return newQueue
     }
 
-    return jobQueue
+    return queue
   }
 
   /**
    * @param name queue name
    * @returns Queue events listener
    */
-  getQueueEvents(name: string): QueueEvents {
-    const jobQueue = this.jobQueuesByName.get(name)
+  getQueueEvents(name: QueueName): QueueEvents {
+    const jobQueue = this.pJobQueueByName.get(name)
 
     if (!jobQueue) {
       throw new Error(`Can't get queue events listener for non-existent queue ${name}`)
@@ -279,11 +292,29 @@ export class JobsFlowManager {
     return this.queueEventsByName.get(name) || new QueueEvents(name, { connection: this.connection })
   }
 
-  getJobQueues(): PriorityJobQueue[] {
-    return [...this.jobQueuesByName.values()]
+  get getQueues(): Queue[] {
+    const queues = [...this.queueByName.values()]
+
+    if (queues.length !== QUEUE_NAME_PREFIXES.length) {
+      return QUEUE_NAME_PREFIXES.map((prefix) => {
+        const queueName: QueueName = `${prefix}Queue`
+        const connection = new IORedis(this.redis.port, this.redis.host, { maxRetriesPerRequest: null })
+        const newQueue = new Queue(queueName, { connection })
+        this.queueByName.set(queueName, newQueue)
+        return newQueue
+      })
+    }
+
+    return queues
   }
 
   async addFlowJob(flowJob: FlowJob) {
     return this.flowProducer.add(flowJob)
+  }
+
+  async recalculateJobsPriority(dynamodbService: DynamodbService) {
+    await Promise.all(
+      [...this.pJobQueueByName.values()].map((jobQueue) => jobQueue.recalculateJobsPriority(dynamodbService))
+    )
   }
 }

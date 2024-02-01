@@ -1,20 +1,16 @@
 import { Job } from 'bullmq'
-import { exec as execCallback } from 'child_process'
 import fs from 'fs'
 import fsPromises from 'fs/promises'
 import pTimeout from 'p-timeout'
 import path from 'path'
-import { promisify } from 'util'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
 import { DownloadJobData, DownloadJobOutput, VideoUnavailableReasons, YtChannel } from '../../types/youtube'
-import { restartEC2Instance } from '../../utils/restartEC2Instance'
+import EC2InstanceRestarter from '../../utils/restartEC2Instance'
 import { LoggingService } from '../logging'
 import { IYoutubeApi } from '../youtube/api'
 import { SyncUtils } from './utils'
-
-const exec = promisify(execCallback)
 
 // Youtube videos download service
 export class ContentDownloadService {
@@ -139,7 +135,7 @@ export class ContentDownloadService {
       // If the error is 403 Forbidden means the IP address was blocked,
       // restart the proxy server EC2 instance if enabled (i.e setup exists)
       if (errorMsg.includes('HTTP Error 403: Forbidden') && this.config.chiselProxy?.ec2AutoRotateIp) {
-        await restartEC2Instance(this.logger)
+        await EC2InstanceRestarter.restartInstance(this.logger)
       }
 
       await this.removeVideoFile(video.id)

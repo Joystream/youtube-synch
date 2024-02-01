@@ -43,7 +43,6 @@ error.log
 Thumbs.db
 **/node_modules/
 
-# Serverless
-.serverless
-.webpack
-.env
+# Env files
+/.env
+/socks5-proxy/.env

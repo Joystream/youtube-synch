@@ -6,10 +6,11 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
     container_name: elasticsearch
     environment:
+      # Ref: https://www.elastic.co/guide/en/elasticsearch/reference/7.17/security-minimal-setup.html#_enable_elasticsearch_security_features
+      - xpack.security.enabled=true
       - discovery.type=single-node
       - bootstrap.memory_lock=true
       - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
-      - xpack.security.enabled=true
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-password}
     ulimits:
       memlock:
@@ -19,12 +20,13 @@ services:
       - es-data:/usr/share/elasticsearch/data
     ports:
       - 127.0.0.1:9200:9200
+    networks:
+      - youtube-synch
+
   # Ref: https://www.elastic.co/guide/en/kibana/8.7/docker.html
   kibana:
     image: docker.elastic.co/kibana/kibana:8.7.0
     container_name: kibana
-    ports:
-      - 127.0.0.1:5601:5601
     depends_on:
       - elasticsearch
     environment:
@@ -32,16 +34,31 @@ services:
       ELASTICSEARCH_SERVICEACCOUNTTOKEN: ${ELASTICSEARCH_SERVICEACCOUNTTOKEN}
       # Ref: https://www.elastic.co/guide/en/kibana/current/xpack-security-secure-saved-objects.html#xpack-security-secure-saved-objects
       XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: ${XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY}
+    ports:
+      - 127.0.0.1:5601:5601
+    networks:
+      - youtube-synch
+
+  # Ref: https://www.elastic.co/guide/en/apm/guide/8.7/running-on-docker.html
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:8.7.0
+    depends_on:
+      - elasticsearch
+    command: |
+      --strict.perms=false -e 
+      -E output.elasticsearch.hosts=["elasticsearch:9200"] 
+      -E output.elasticsearch.username=${ELASTIC_USERNAME:-elastic} 
+      -E output.elasticsearch.password=${ELASTIC_PASSWORD:-password}
+    ports:
+      - 8200:8200
+    networks:
+      - youtube-synch
 
 volumes:
   es-data:
     driver: local
-  cache:
-    driver: local
-  data:
-    driver: local
 
+# Join youtube-synch network (from root docker-compose)
 networks:
-  joystream:
+  youtube-synch:
     external: true
-    name: youtube-synch_default
