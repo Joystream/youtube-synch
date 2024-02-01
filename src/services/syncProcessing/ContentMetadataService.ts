@@ -1,5 +1,6 @@
 import { Job } from 'bullmq'
 import fs from 'fs'
+import pTimeout from 'p-timeout'
 import { Logger } from 'winston'
 import { DownloadJobOutput, MetadataJobData, MetadataJobOutput } from '../../types/youtube'
 import { FileHash, computeFileHashAndSize } from '../../utils/hasher'
@@ -39,11 +40,15 @@ export class ContentMetadataService {
     const videoHashStream = fs.createReadStream(downloadJobOutput.filePath)
     const thumbnailPhotoStream = await getThumbnailAsset(video.thumbnails)
 
-    const [thumbnailHash, mediaHash, mediaMetadata] = await Promise.all([
-      computeFileHashAndSize(thumbnailPhotoStream),
-      computeFileHashAndSize(videoHashStream),
-      getVideoFileMetadata(downloadJobOutput.filePath),
-    ])
+    const [thumbnailHash, mediaHash, mediaMetadata] = await pTimeout(
+      Promise.all([
+        computeFileHashAndSize(thumbnailPhotoStream),
+        computeFileHashAndSize(videoHashStream),
+        getVideoFileMetadata(downloadJobOutput.filePath),
+      ]),
+      30 * 60 * 1000, // 30 mins
+      'Video metadata & hash calculation operation timed=out'
+    )
 
     return { thumbnailHash, mediaHash, mediaMetadata }
   }

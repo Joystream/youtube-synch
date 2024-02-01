@@ -74,7 +74,7 @@ export class StorageNodeApi {
           const storageNodeUrl = error.config?.url
           const { status, data } = error.response
 
-          if (data?.message?.includes(`Data object ${dataObjectId} has already been accepted by storage node`)) {
+          if (data?.message?.includes(`Data object ${dataObjectId} already exist`)) {
             // No need to throw an error, we can continue with the next asset
             continue
           }

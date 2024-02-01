@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -e
 
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
@@ -24,7 +26,7 @@ export IP_ADDRESS=$IP_ADDRESS
 
 # Restart the docker-compose chisel client service
 echo -e "Restarting Chisel Client... \n"
-docker rm -f chisel-client >/dev/null 2>&1
+docker rm -f chisel-client || true
 
 export COMPOSE_HTTP_TIMEOUT=120 # Increase to 120 seconds
-docker-compose -f ./docker-compose.chisel.yml up -d chisel-client
+docker compose -f ./docker-compose.chisel.yml up -d chisel-client
