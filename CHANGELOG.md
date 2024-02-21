@@ -1,3 +1,8 @@
+### 3.4.1
+
+- Support connecting to chisel server proxy ec2 instance using Private IP address.
+- **FIX**: Properly handle error when failing to download the members-only content from Youtube.
+
 ### 3.4.0
 
 - Enable opentelemetry integration for tracing
