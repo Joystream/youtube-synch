@@ -53,7 +53,11 @@ export class YtDlpClient implements IOpenYTApi {
               const { stdout } = await this.exec(`${this.ytdlpPath} -J https://www.youtube.com/watch?v=${id}`)
               return JSON.parse(stdout) as YtDlpVideoOutput
             } catch (err) {
-              if (err instanceof Error && err.message.includes(`This video is age-restricted`)) {
+              if (
+                err instanceof Error &&
+                (err.message.includes(`This video is age-restricted`) ||
+                  err.message.includes(`Join this channel to get access to members-only content`))
+              ) {
                 return
               }
               throw err

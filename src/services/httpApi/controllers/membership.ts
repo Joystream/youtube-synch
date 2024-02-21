@@ -34,7 +34,7 @@ export class MembershipController {
       // Only allow maximum of 5 captcha-free memberships to be created by YT-synch
       // as avoiding this check leads sybil attack where any YPP verified user/channel
       // can created infinitely many memberships causing faucet funds to exhaust.
-      if (user.joystreamMemberIds.length >= 5) {
+      if (user.joystreamMemberIds.length >= 2) {
         throw new Error(`Already created Joysteam memberships ${user.joystreamMemberIds} for user ${user.id}`)
       }
 
