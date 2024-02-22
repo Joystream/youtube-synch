@@ -23,7 +23,7 @@ import Schema$Channel = youtube_v3.Schema$Channel
 
 export interface IOpenYTApi {
   ensureChannelExists(channelId: string): Promise<string>
-  getVideos(channel: YtChannel, ids: string[]): Promise<YtVideo[]>
+  getVideos(channel: YtChannel, ids: YtDlpFlatPlaylistOutput): Promise<YtVideo[]>
 }
 
 export class YtDlpClient implements IOpenYTApi {
@@ -41,17 +41,17 @@ export class YtDlpClient implements IOpenYTApi {
       .stdout
   }
 
-  async getVideos(channel: YtChannel, ids: string[]): Promise<YtVideo[]> {
+  async getVideos(channel: YtChannel, ids: YtDlpFlatPlaylistOutput): Promise<YtVideo[]> {
     const videosMetadata: YtDlpVideoOutput[] = []
     const idsChunks = _.chunk(ids, 50)
 
     for (const idsChunk of idsChunks) {
       const videosMetadataChunk = (
         await Promise.all(
-          idsChunk.map(async (id) => {
+          idsChunk.map(async ({ id, isShort }) => {
             try {
               const { stdout } = await this.exec(`${this.ytdlpPath} -J https://www.youtube.com/watch?v=${id}`)
-              return JSON.parse(stdout) as YtDlpVideoOutput
+              return { ...JSON.parse(stdout), isShort } as YtDlpVideoOutput
             } catch (err) {
               if (
                 err instanceof Error &&
@@ -98,6 +98,7 @@ export class YtDlpClient implements IOpenYTApi {
               video?.license === 'Creative Commons Attribution license (reuse allowed)' ? 'creativeCommon' : 'youtube',
             duration: video?.duration,
             container: video?.ext,
+            isShort: video.isShort,
             viewCount: video?.view_count || 0,
             state: 'New',
           }
@@ -132,12 +133,17 @@ export class YtDlpClient implements IOpenYTApi {
           JSON.parse(stdout).entries.forEach((category: any) => {
             if (category.entries) {
               category.entries.forEach((video: any) => {
-                videos.push({ id: video.id, publishedAt: new Date(video.timestamp * 1000) /** Convert UNIX to date */ })
+                videos.push({
+                  id: video.id,
+                  publishedAt: new Date(video.timestamp * 1000) /** Convert UNIX to date */,
+                  isShort: type === 'shorts',
+                })
               })
             } else {
               videos.push({
                 id: category.id,
                 publishedAt: new Date(category.timestamp * 1000) /** Convert UNIX to date */,
+                isShort: type === 'shorts',
               })
             }
           })
