@@ -123,6 +123,7 @@ export class ContentDownloadService {
         { message: 'The downloaded file is empty', code: VideoUnavailableReasons.EmptyDownload },
         { message: 'This video is private', code: VideoUnavailableReasons.Private },
         { message: 'removed by the uploader', code: VideoUnavailableReasons.Private },
+        { message: 'Join this channel to get access to members-only content', code: VideoUnavailableReasons.Private },
         { message: 'size cap for historical videos', code: VideoUnavailableReasons.Skipped },
       ]
 

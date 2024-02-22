@@ -1,4 +1,4 @@
-### 3.4.1
+### 3.5.0
 
 - Add support for setting `isShort` field in the video metadata (indicating whether video is a short format, vertical video or not) when creating the video.
 - Support connecting to chisel server proxy ec2 instance using Private IP address.
