@@ -311,6 +311,9 @@ export class YtVideo {
   // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
   joystreamVideo: JoystreamVideo
 
+  // Whether video is a short format, vertical video (e.g. Youtube Shorts, TikTok, Instagram Reels)
+  isShort: boolean
+
   // Youtube video creation date
   publishedAt: string
 
@@ -368,6 +371,7 @@ export type UploadJobData = YtVideo & {
 export type YtDlpFlatPlaylistOutput = {
   id: string
   publishedAt: Date
+  isShort: boolean
 }[]
 
 export type YtDlpVideoOutput = {
@@ -390,6 +394,10 @@ export type YtDlpVideoOutput = {
   thumbnails: {
     url: string
   }[]
+
+  // This property isn't really part of the YtDlpVideoOutput, but is separately
+  // set based on wether video was downloaded from channels 'shorts' tab or not
+  isShort: boolean
 }
 
 export type FaucetRegisterMembershipParams = {

@@ -13,7 +13,7 @@ set +a
 
 # Fetch the current public IP of the EC2 instance
 echo -e "Fetching new assigned IP address of proxy server instance... \n"
-IP_ADDRESS=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query "Reservations[*].Instances[*].PublicIpAddress" --output text)
+IP_ADDRESS=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query "Reservations[*].Instances[*].PrivateIpAddress" --output text)
 
 # Check if IP address is fetched
 if [ -z "$IP_ADDRESS" ]; then

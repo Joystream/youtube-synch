@@ -1,6 +1,6 @@
 {
   "name": "youtube-sync",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "license": "MIT",
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
@@ -84,7 +84,7 @@
     "@google-cloud/monitoring": "^3.0.4",
     "@googleapis/youtube": "^2.0.0",
     "@joystream/cli": "^0.10.0",
-    "@joystream/js": "^1.4.0",
+    "@joystream/js": "^1.8.0",
     "@joystream/prettier-config": "^1.0.0",
     "@joystream/types": "0.20.5",
     "@nestjs/common": "^8.0.0",

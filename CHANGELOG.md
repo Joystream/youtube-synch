@@ -1,3 +1,9 @@
+### 3.5.0
+
+- Add support for setting `isShort` field in the video metadata (indicating whether video is a short format, vertical video or not) when creating the video.
+- Support connecting to chisel server proxy ec2 instance using Private IP address.
+- **FIX**: Properly handle error when failing to download the members-only content from Youtube.
+
 ### 3.4.0
 
 - Enable opentelemetry integration for tracing

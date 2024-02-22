@@ -95,6 +95,9 @@ function videoRepository(tablePrefix: ResourcePrefix) {
         },
       },
 
+      // Whether video is a short format, vertical video (e.g. Youtube Shorts, TikTok, Instagram Reels)
+      isShort: Boolean,
+
       // Video creation date on youtube
       publishedAt: String,
     },
