@@ -17,7 +17,7 @@ fragment AppFields on App {
   platforms
 }
 
-query getAppById($id: ID!) {
+query getAppById($id: String!) {
   appByUniqueInput(where: { id: $id }) {
     ...AppFields
   }

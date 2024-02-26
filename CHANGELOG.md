@@ -1,3 +1,7 @@
+### 3.6.0
+
+- Replace `Query-Node` with `Orion` for graphql queries, and remove all unused graphql query definitions.
+
 ### 3.5.0
 
 - Add support for setting `isShort` field in the video metadata (indicating whether video is a short format, vertical video or not) when creating the video.
