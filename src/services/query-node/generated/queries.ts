@@ -249,7 +249,7 @@ export const GetStorageNodesInfoByBagId = gql`
     storageBuckets(
       where: {
         operatorStatus: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
-        bags_some: { id_eq: $bagId }
+        bags_some: { bag: { id_eq: $bagId } }
         operatorMetadata: { nodeEndpoint_contains: "http" }
       }
     ) {
