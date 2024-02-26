@@ -10,10 +10,11 @@ import {
   split,
 } from '@apollo/client/core'
 import { onError } from '@apollo/client/link/error'
-import { WebSocketLink } from '@apollo/client/link/ws'
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import { getMainDefinition } from '@apollo/client/utilities'
 import { MemberId, VideoId } from '@joystream/types/primitives'
 import fetch from 'cross-fetch'
+import { createClient } from 'graphql-ws'
 import { Logger } from 'winston'
 import ws from 'ws'
 import { ExitCodes, QueryNodeApiError } from '../../types/errors'
@@ -78,13 +79,12 @@ export class QueryNodeApi {
     })
 
     const queryLink = from([errorLink, new HttpLink({ uri: endpoint, fetch })])
-    const wsLink = new WebSocketLink({
-      uri: endpoint,
-      options: {
-        reconnect: true,
-      },
-      webSocketImpl: ws,
-    })
+    const wsLink = new GraphQLWsLink(
+      createClient({
+        url: endpoint,
+        webSocketImpl: ws,
+      })
+    )
     const splitLink = split(
       ({ query }) => {
         const definition = getMainDefinition(query)
