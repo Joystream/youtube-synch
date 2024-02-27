@@ -106,7 +106,7 @@ export class ChannelsController {
       // reset authorization code to prevent repeated save channel requests by authorization code re-use
       const updatedUser: YtUser = { ...user, email, authorizationCode: randomBytes(10).toString('hex') }
 
-      const joystreamChannelLanguageIso = jsChannel.language?.iso
+      const joystreamChannelLanguageIso = jsChannel.language || undefined
 
       // If channel already exists in the DB (in `OptedOut` state), then we
       // associate most properties of existing channel record with the new

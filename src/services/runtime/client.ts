@@ -74,7 +74,7 @@ export class JoystreamClient {
       return false
     }
 
-    if (blockNumber > qnState.lastCompleteBlock) {
+    if (blockNumber > qnState.lastProcessedBlock) {
       return false
     }
 
