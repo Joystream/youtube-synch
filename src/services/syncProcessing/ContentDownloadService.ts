@@ -118,6 +118,8 @@ export class ContentDownloadService {
       const errorMsg = (err as Error).message
       const errors: { message: string; code: VideoUnavailableReasons }[] = [
         { message: 'Video unavailable', code: VideoUnavailableReasons.Unavailable },
+        { message: 'This video is not available', code: VideoUnavailableReasons.Unavailable },
+        { message: 'This video has been removed', code: VideoUnavailableReasons.Unavailable },
         { message: 'Private video', code: VideoUnavailableReasons.Private },
         { message: 'Postprocessing:', code: VideoUnavailableReasons.PostprocessingError },
         { message: 'The downloaded file is empty', code: VideoUnavailableReasons.EmptyDownload },

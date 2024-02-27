@@ -1,6 +1,8 @@
 ### 3.6.0
 
 - Replace `Query-Node` with `Orion` for graphql queries, and remove all unused graphql query definitions.
+- **FIX**: use `GraphQLWsLink` instead of deprecated `WebSocketLink` for graphql subscription, as `WebSocketLink` based subscription does not work with Orion API.
+- **FIX**: Properly handle error when failing to download removed/deleted videos from Youtube.
 
 ### 3.5.0
 
