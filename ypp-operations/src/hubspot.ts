@@ -62,17 +62,15 @@ export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] 
   let shouldContinue = true
 
   const baseFilters: Filter[] = [
-    {
-      propertyName: 'lifecyclestage',
-      operator: 'IN',
-      values: lifecyclestage,
-    },
+    { propertyName: 'lifecyclestage', operator: 'IN', values: lifecyclestage },
+    { propertyName: 'vid', operator: 'GT', value: '0' },
   ]
 
   try {
     while (shouldContinue) {
       // If we have a lastContactId, add an additional filter
       if (lastContactId) {
+        baseFilters.pop() // Remove the previous 'vid' property filter and add new one
         baseFilters.push({ propertyName: 'vid', operator: 'GT', value: lastContactId })
         lastContactId = undefined
       }
