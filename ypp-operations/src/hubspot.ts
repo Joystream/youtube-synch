@@ -44,7 +44,7 @@ export async function getYppContactByEmail(email: string): Promise<string | unde
   }
 }
 
-type YppContact = Omit<
+export type YppContact = Omit<
   PayableContact,
   | 'gleev_channel_id'
   | 'sign_up_reward_in_usd'

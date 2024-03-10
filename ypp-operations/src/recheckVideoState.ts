@@ -3,8 +3,10 @@ import moment from 'moment-timezone'
 import { loadConfig as config } from './config'
 import { countVideosSyncedAfter, getAllChannels, getAllReferredChannels } from './dynamodb'
 import {
+  YppContact,
   createYppContacts,
   getAllYppContacts,
+  hubspotClient,
   mapDynamoItemToContactFields,
   mapReferrerToContactFields,
   updateYppContacts,
@@ -24,7 +26,7 @@ function getCapitalizedTierFromYppStatus(yppStatus: ChannelYppStatus) {
 }
 
 // TODO: pay signup reward based on the `channel.processedAt` field? But before that need to check all the channels signed up this week has processedAt set.
-function signupRewardInUsd(contact: Awaited<ReturnType<typeof getAllYppContacts>>[number]): number {
+function signupRewardInUsd(contact: YppContact): number {
   if (contact.latest_ypp_period_wc !== null && contact.latest_ypp_period_wc !== '') {
     return 0
   }
@@ -36,20 +38,32 @@ function signupRewardInUsd(contact: Awaited<ReturnType<typeof getAllYppContacts>
   return 0
 }
 
-async function referralsRewardInUsd(contact: Awaited<ReturnType<typeof getAllYppContacts>>[number]): Promise<number> {
+async function referralsRewardInUsd(contact: YppContact, allContacts: YppContact[]): Promise<number> {
   const referredChannels = await getAllReferredChannels(contact.gleev_channel_id, contact.latest_ypp_period_wc)
 
   let reward = 0
   for (const referred of referredChannels) {
+    /**
+      If the referred channel/contact was already processed before, and it was processed again during
+      the rewards period (i.e. tier got reassigned) then it should not be considered again for rewards 
+      to be paid to the referrer. Although there might be cases of genuine referrals owed, for example 
+      referred channel tier was upgraded from `Silver` to `Gold` and referrer channel could be owed 
+      reward due to this tier upgrade difference but we not considering such cases for referral payments.
+    */
+    const referredContactId =
+      allContacts.find((contact) => contact.gleev_channel_id === referred.joystreamChannelId)?.contactId || ''
+    const referredContact = await hubspotClient.crm.contacts.basicApi.getById(referredContactId, [], ['processed_at'])
+    const previouslyPaidReferral = (referredContact?.propertiesWithHistory?.processed_at?.length || 0) > 1
+
     const tier = getCapitalizedTierFromYppStatus(referred.yppStatus)
-    if (tier) {
+    if (tier && !previouslyPaidReferral) {
       reward += config(`${tier}_TIER_REFERRAL_REWARD_IN_USD`)
     }
   }
   return reward
 }
 
-async function latestSyncRewardInUsd(contact: Awaited<ReturnType<typeof getAllYppContacts>>[number]) {
+async function latestSyncRewardInUsd(contact: YppContact) {
   const tier = getCapitalizedTierFromYppStatus(contact.yppstatus)
 
   // todo check shouldbeingested be true? & allowoperatoringestion
@@ -91,7 +105,7 @@ export async function updateHubspotWithCalculatedRewards() {
     }
 
     let sign_up_reward_in_usd = signupRewardInUsd(contact)
-    let latest_referral_reward_in_usd = await referralsRewardInUsd(contact)
+    let latest_referral_reward_in_usd = await referralsRewardInUsd(contact, contacts)
     let { videos_sync_reward_in_usd, syncedCount } = await latestSyncRewardInUsd(contact)
 
     if (contact.latest_ypp_reward_status === 'To Pay') {
