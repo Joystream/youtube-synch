@@ -1,10 +1,15 @@
 import { Client } from '@hubspot/api-client'
-import { Filter } from '@hubspot/api-client/lib/codegen/crm/contacts'
+import {
+  BatchResponseSimplePublicObject,
+  Filter,
+  ValueWithTimestamp,
+} from '@hubspot/api-client/lib/codegen/crm/contacts'
 import axios, { AxiosResponse, isAxiosError } from 'axios'
 import { randomBytes } from 'crypto'
 import _ from 'lodash'
 import { loadConfig as config } from './config'
 import { HubspotYPPContact, PayableContact, YtChannel, payableContactProps } from './types'
+import { chunkArray } from './utils'
 
 export const hubspotClient: Client = new Client({
   accessToken: config('HUBSPOT_API_KEY'),
@@ -121,6 +126,57 @@ export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] 
   } catch (err) {
     console.error(err)
     throw err
+  }
+}
+
+// type YppContactsWithPropertyHistory
+export async function getAllYppContactsWithPropertyHistory(
+  propertiesNames: typeof payableContactProps[number][]
+): Promise<
+  (YppContact & { propertiesWithHistory: { [key in typeof payableContactProps[number]]?: ValueWithTimestamp[] } })[]
+> {
+  // First, get all contacts
+  const contacts: YppContact[] = await getAllYppContacts()
+
+  // Extract the IDs for the batch read operation and chunk them
+  const contactIds = contacts.map((contact) => ({ id: contact.contactId }))
+  const contactIdChunks = chunkArray(contactIds, 50)
+
+  let batchResponses: BatchResponseSimplePublicObject['results'] = [] // Initialize an array to hold the batch responses
+
+  try {
+    // Process each chunk of contact IDs in a loop
+    for (const chunk of contactIdChunks) {
+      const batchResponse = await hubspotClient.crm.contacts.batchApi.read({
+        inputs: chunk,
+        properties: [],
+        propertiesWithHistory: propertiesNames,
+      })
+      batchResponses = batchResponses.concat(batchResponse.results)
+    }
+
+    // Map the batch responses to include history in the original contacts array
+    const updatedContacts = contacts.map((contact, i) => {
+      // Find the corresponding batch response result for each contact
+      const batchResult = batchResponses[i]
+      const propertiesWithHistory: { [key in typeof payableContactProps[number]]?: ValueWithTimestamp[] } = {}
+
+      // If there's a match, populate propertiesWithHistory for each requested property
+      if (batchResult) {
+        propertiesNames.forEach((propertyName) => {
+          propertiesWithHistory[propertyName] = batchResult.propertiesWithHistory
+            ? batchResult.propertiesWithHistory[propertyName]
+            : undefined
+        })
+      }
+
+      return { ...contact, propertiesWithHistory }
+    })
+
+    return updatedContacts
+  } catch (error) {
+    console.error('Error fetching property history for contacts:', error)
+    throw error
   }
 }
 
