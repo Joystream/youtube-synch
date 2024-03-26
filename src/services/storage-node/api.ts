@@ -43,7 +43,10 @@ export class StorageNodeApi {
     // Get a random active storage node for given bag
     const operator = await this.getRandomActiveStorageNodeInfo(bagId)
     if (!operator) {
-      throw new StorageApiError(ExitCodes.StorageApi.NO_ACTIVE_STORAGE_PROVIDER, 'No active storage node found')
+      throw new StorageApiError(
+        ExitCodes.StorageApi.NO_ACTIVE_STORAGE_PROVIDER,
+        `No active storage node found for bagId: ${bagId}`
+      )
     }
 
     for (const { dataObjectId, file } of assets) {

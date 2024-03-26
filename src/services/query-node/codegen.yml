@@ -1,6 +1,6 @@
 overwrite: true
 
-schema: https://query.joystream.org/graphql
+schema: './src/services/query-node/schema.graphql'
 
 documents:
   - './src/services/query-node/queries/*.graphql'
