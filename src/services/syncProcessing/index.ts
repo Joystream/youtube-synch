@@ -98,7 +98,7 @@ export class ContentProcessingService extends ContentProcessingClient implements
     this.logger = logging.createLogger('ContentProcessingService')
 
     this.contentDownloadService = new ContentDownloadService(config, logging, dynamodbService, youtubeApi)
-    this.contentMetadataService = new ContentMetadataService(logging)
+    this.contentMetadataService = new ContentMetadataService(logging, dynamodbService)
     this.contentCreationService = new ContentCreationService(logging, dynamodbService, joystreamClient)
     this.contentUploadService = new ContentUploadService(logging, dynamodbService, runtimeApi, queryNodeApi)
 

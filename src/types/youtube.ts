@@ -143,23 +143,29 @@ export class YtChannel {
    * */
 
   static videoCap(channel: YtChannel): number {
-    if (channel.statistics.subscriberCount < 5000) {
+    if (channel.yppStatus === 'Verified::Silver') {
       return 100
-    } else if (channel.statistics.subscriberCount < 50000) {
+    } else if (channel.yppStatus === 'Verified::Gold') {
       return 250
-    } else {
+    } else if (channel.yppStatus === 'Verified::Diamond') {
       return 1000
     }
+
+    // yppStatus === 'Unverified' OR 'Verified::Bronze'
+    return 5
   }
 
   static sizeCap(channel: YtChannel): number {
-    if (channel.statistics.subscriberCount < 5000) {
+    if (channel.yppStatus === 'Verified::Silver') {
       return 10_000_000_000 // 10 GB
-    } else if (channel.statistics.subscriberCount < 50000) {
+    } else if (channel.yppStatus === 'Verified::Gold') {
       return 100_000_000_000 // 100 GB
-    } else {
+    } else if (channel.yppStatus === 'Verified::Diamond') {
       return 1_000_000_000_000 // 1 TB
     }
+
+    // yppStatus === 'Unverified' OR 'Verified::Bronze'
+    return 1_000_000_000 // 1 GB
   }
 
   static hasSizeLimitReached(channel: YtChannel) {
