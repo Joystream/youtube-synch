@@ -1,3 +1,7 @@
+### 3.7.0
+
+- Adjust sync limits for different YPP tiers
+
 ### 3.6.0
 
 - Replace `Query-Node` with `Orion` for graphql queries, and remove all unused graphql query definitions.
