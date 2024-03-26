@@ -22,10 +22,7 @@ export class ContentDownloadService {
     private dynamodbService: IDynamodbService,
     private youtubeApi: IYoutubeApi
   ) {
-    this.config = config
     this.logger = logging.createLogger('ContentDownloadService')
-    this.dynamodbService = dynamodbService
-    this.youtubeApi = youtubeApi
   }
 
   async start() {

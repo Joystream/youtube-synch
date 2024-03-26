@@ -20,8 +20,6 @@ export class ContentCreationService {
     private joystreamClient: JoystreamClient
   ) {
     this.logger = logging.createLogger('ContentCreationService')
-    this.dynamodbService = dynamodbService
-    this.joystreamClient = joystreamClient
     this.lastVideoCreationBlockByChannelId = new Map()
   }
 
