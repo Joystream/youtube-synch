@@ -6,10 +6,10 @@ This package is a place for YPP operation related automated scripts & cli comman
 
 ## Update contacts in Hubspot
 
-`yarn ts-node scripts/updateHubspotContacts.ts`
+`npx ts-node scripts/updateHubspotContacts.ts`
 
 ## Calculate YPP rewards
 
-`yarn ts-node scripts/calculateYppRewards.ts`
+`npx ts-node scripts/calculateYppRewards.ts`
 
 # CLI Commands
