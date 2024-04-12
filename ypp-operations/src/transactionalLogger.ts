@@ -7,6 +7,9 @@ const collectionName = 'transactions'
 interface TransactionLog {
   transactionId: number // transaction nonce
   paymentDetails: PayContactsInput
+  // the block number when this transaction log was created. Note: the block number
+  // when the transaction was submitted might be different (i.e. higher)
+  currentBlockNo: number
   timestamp: string
 }
 
@@ -68,12 +71,17 @@ export class PaymentTransactionLogger {
     return PaymentTransactionLogger.instance
   }
 
-  public async createTransactionLog(transactionId: number, paymentDetails: PayContactsInput): Promise<void> {
+  public async createTransactionLog(
+    transactionId: number,
+    paymentDetails: PayContactsInput,
+    currentBlockNo: number
+  ): Promise<void> {
     const transactions = this.db.getCollection<TransactionLog>(collectionName)
     if (transactions) {
       const newLogEntry: TransactionLog = {
         transactionId,
         paymentDetails,
+        currentBlockNo,
         timestamp: new Date().toISOString(),
       }
       transactions.insert(newLogEntry)

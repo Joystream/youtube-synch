@@ -79,11 +79,11 @@ export default class PayReward extends DefaultCommandBase {
         },
       }))
 
-      const currentNonce = await this.getAccountNonce(account)
+      const [currentNonce, blockNo] = await Promise.all([this.getAccountNonce(account), this.getBestBlockNumber()])
 
       try {
         // create transaction log
-        await this.txLogger.createTransactionLog(currentNonce, updateRewardsInput)
+        await this.txLogger.createTransactionLog(currentNonce, updateRewardsInput, blockNo)
 
         // make batch payment
         await this.joystreamCli.directChannelPayment({
@@ -93,13 +93,21 @@ export default class PayReward extends DefaultCommandBase {
         })
       } finally {
         const newNonce = await this.getAccountNonce(account)
-        // check if nonce has increased by 1 (means transaction succeeded)
+
+        // check if nonce has increased by 1  (means transaction was added in the block)
         if (newNonce === currentNonce + 1) {
-          // update contact's reward status in Hubspot to paid
-          await updateYppContacts(updateRewardsInput)
-          this.log(
-            chalk.greenBright(`Done paying rewards to ${chalk.yellow(i * batchSize + channelsBatch.length)} channels!`)
-          )
+          const txSucceeded = await this.getExtrinsicsStatusByNonceInRange(account, currentNonce, blockNo)
+
+          // if submitted transaction was successful
+          if (txSucceeded) {
+            // update contact's reward status in Hubspot to paid
+            await updateYppContacts(updateRewardsInput)
+            this.log(
+              chalk.greenBright(
+                `Done paying rewards to ${chalk.yellow(i * batchSize + channelsBatch.length)} channels!`
+              )
+            )
+          }
         }
 
         // clear tx log at the end of the successful payment
@@ -112,12 +120,26 @@ export default class PayReward extends DefaultCommandBase {
     // Get current nonce of the payer account
     const currentNonce = await this.getAccountNonce(payerAccount)
 
-    // If the transaction log for previous nonce exists in the logs file, it means that the
-    // previous payment transaction succeeded but the hubspot update may or may not have succeeded.
-    // Anyways, we will update to contacts as paid in hubspot since this action will be idempotent.
+    // If the transaction log for `previous` nonce exists in the logs file, it means that the
+    // previous payment transaction was added in the block, however it might have succeeded or
+    // failed in the runtime.
+    // So there are following possibilities and actions to take:
+    // 1. The transaction was successful, but the hubspot update may or may not have succeeded.
+    //    Nevertheless, we will update to contacts as paid in hubspot since this action will be
+    //    idempotent.
+    // 2. The transaction failed, and we wont do anything (skip updating hubspot).
     const txLog = await this.txLogger.getByTransactionId(currentNonce - 1)
     if (txLog) {
-      await updateYppContacts(txLog.paymentDetails)
+      const txSucceeded = await this.getExtrinsicsStatusByNonceInRange(
+        payerAccount,
+        txLog.transactionId, // previous nonce
+        txLog.currentBlockNo
+      )
+
+      if (txSucceeded) {
+        // Update contacts in hubspot
+        await updateYppContacts(txLog.paymentDetails)
+      }
     }
 
     // Clear the transaction log

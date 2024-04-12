@@ -58,6 +58,35 @@ export default abstract class DefaultCommandBase extends Command {
     return (await this.api.rpc.system.accountNextIndex(account)).toNumber()
   }
 
+  async getBestBlockNumber() {
+    return (await this.api.rpc.chain.getHeader()).number.toNumber()
+  }
+
+  async getExtrinsicsStatusByNonceInRange(
+    accountId: string,
+    nonce: number,
+    startBlock: number,
+    endBlock = startBlock + 600 // 10 mins. This transaction is expected to be included in the block within 10 mins
+  ): Promise<boolean> {
+    // Loop through the specified range of blocks
+    for (let i = startBlock; i <= endBlock; i++) {
+      const blockHash = await this.api.rpc.chain.getBlockHash(i)
+      const signedBlock = await this.api.rpc.chain.getBlock(blockHash)
+
+      for (const [index, ex] of signedBlock.block.extrinsics.entries()) {
+        // Check if the extrinsic is signed and matches the accountId and nonce
+        if (ex.isSigned && ex.signer.toString() === accountId && ex.nonce.eq(nonce)) {
+          const allEvents = await this.api.query.system.events.at(blockHash)
+          const events = allEvents.filter(({ phase }) => phase.isApplyExtrinsic && phase.asApplyExtrinsic.eq(index))
+
+          return events.some(({ event: { method, section } }) => section === 'system' && method === 'ExtrinsicSuccess')
+        }
+      }
+    }
+
+    return false
+  }
+
   async getJoystreamMemberControllerAccount(memberId: string): Promise<string> {
     const membership = (await this.api.query.members.membershipById(Number(memberId))) as any
     return membership.unwrap().controllerAccount.toString()
