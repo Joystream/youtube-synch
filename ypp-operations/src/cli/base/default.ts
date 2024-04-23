@@ -1,3 +1,4 @@
+import '@joystream/types'
 import Command, { flags } from '@oclif/command'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import BN from 'bn.js'
@@ -5,10 +6,6 @@ import chalk from 'chalk'
 import inquirer, { DistinctQuestion } from 'inquirer'
 import ExitCodes from './ExitCodes'
 import { JoystreamCLI } from './joystreamCli'
-
-type ChannelsPaid = {
-  channels: string[]
-}
 
 export default abstract class DefaultCommandBase extends Command {
   protected autoConfirm!: boolean

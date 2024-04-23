@@ -46,7 +46,8 @@
     "node-cron": "^3.0.2",
     "patch-package": "^6.4.7",
     "postinstall-postinstall": "^2.1.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "moment-timezone": "^0.5.43"
   },
   "oclif": {
     "repositoryPrefix": "<%- repo %>/blob/main/src/cli/<%- commandPath %>",
