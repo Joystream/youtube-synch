@@ -35,9 +35,9 @@ export default class PayReward extends DefaultCommandBase {
       this.error(chalk.red(`No payable channel found by Id: ${channelId}`))
     }
 
-    const signupReward = parseInt(channel.sign_up_reward_in_usd || '0') / parseFloat(joyPrice)
-    const referralReward = parseInt(channel.latest_referral_reward_in_usd || '0') / parseFloat(joyPrice)
-    const syncReward = parseInt(channel.videos_sync_reward || '0') / parseFloat(joyPrice)
+    const signupReward = parseFloat(channel.sign_up_reward_in_usd || '0') / parseFloat(joyPrice)
+    const referralReward = parseFloat(channel.latest_referral_reward_in_usd || '0') / parseFloat(joyPrice)
+    const syncReward = parseFloat(channel.videos_sync_reward || '0') / parseFloat(joyPrice)
     const totalJoyReward = signupReward + referralReward + syncReward
 
     displayCollapsedRow({

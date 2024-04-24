@@ -62,9 +62,9 @@ export default class PayReward extends DefaultCommandBase {
     for (const [i, channelsBatch] of channelsBatches.entries()) {
       // prepare owed payment params
       const payments = channelsBatch.map((c) => {
-        const signupReward = parseInt(c.sign_up_reward_in_usd || '0') / parseFloat(joyPrice)
-        const referralReward = parseInt(c.latest_referral_reward_in_usd || '0') / parseFloat(joyPrice)
-        const syncReward = parseInt(c.videos_sync_reward || '0') / parseFloat(joyPrice)
+        const signupReward = parseFloat(c.sign_up_reward_in_usd || '0') / parseFloat(joyPrice)
+        const referralReward = parseFloat(c.latest_referral_reward_in_usd || '0') / parseFloat(joyPrice)
+        const syncReward = parseFloat(c.videos_sync_reward || '0') / parseFloat(joyPrice)
         const totalJoyReward = signupReward + referralReward + syncReward
         return { channelId: c.gleev_channel_id, joyAmount: totalJoyReward }
       })
