@@ -18,16 +18,16 @@ RUN curl -fsSL https://get.docker.com -o get-docker.sh && \
 RUN npm install -g node-gyp
 
 # Copy the package.json and yarn.lock (or package-lock.json for npm) files
-COPY package.json yarn.lock ./
+COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN yarn install
+RUN npm install
 
 # Copy the rest of your application
 COPY . .
 
 # Build the project
-RUN yarn build
+RUN npm run build
 
 # Set the command to run when a container based on the image is started
 CMD ["./scripts/start-youtube-synch-httpApi.sh"]
