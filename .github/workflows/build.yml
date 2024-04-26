@@ -22,7 +22,7 @@ jobs:
         run: |
           PACKAGE_VERSION=$(jq -r '.version' package.json)
           npm pack
-          tar zxvf ./youtube-synch-${PACKAGE_VERSION}.tgz
+          tar zxvf ./youtube-sync-${PACKAGE_VERSION}.tgz
           cd ./package && npm link
 
   build_osx:
@@ -45,5 +45,5 @@ jobs:
         run: |
           PACKAGE_VERSION=$(jq -r '.version' package.json)
           npm pack
-          tar zxvf ./youtube-synch-${PACKAGE_VERSION}.tgz
+          tar zxvf ./youtube-sync-${PACKAGE_VERSION}.tgz
           cd ./package && npm link
