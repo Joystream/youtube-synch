@@ -9,20 +9,14 @@ import { IYoutubeApi } from '../youtube/api'
 
 export class YoutubePollingService {
   private logger: Logger
-  private youtubeApi: IYoutubeApi
-  private joystreamClient: JoystreamClient
-  private dynamodbService: IDynamodbService
 
   public constructor(
     logging: LoggingService,
-    youtubeApi: IYoutubeApi,
-    dynamodbService: IDynamodbService,
-    joystreamClient: JoystreamClient
+    private youtubeApi: IYoutubeApi,
+    private dynamodbService: IDynamodbService,
+    private joystreamClient: JoystreamClient
   ) {
     this.logger = logging.createLogger('YoutubePollingService')
-    this.youtubeApi = youtubeApi
-    this.dynamodbService = dynamodbService
-    this.joystreamClient = joystreamClient
   }
 
   async start(pollingInterval: number) {
@@ -175,10 +169,7 @@ export class YoutubePollingService {
       }
 
       //  get all videos that are not yet being tracked
-      const untrackedVideos = await this.youtubeApi.ytdlpClient.getVideos(
-        channel,
-        untrackedVideosIds.map((v) => v.id)
-      )
+      const untrackedVideos = await this.youtubeApi.ytdlpClient.getVideos(channel, untrackedVideosIds)
 
       // save all new videos to DB including
       await this.dynamodbService.repo.videos.upsertAll(untrackedVideos)

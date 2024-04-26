@@ -1,3 +1,34 @@
+### 3.8.0
+
+- Migrates from `yarn` to `npm` as dependency manager
+- Updates `@polkadot/js` dependency (included in `@joystream/js`) version to be compatible with Nara runtime
+- Updates `@graphql-codegen/cli` dependency version
+
+### 3.7.0
+
+- Adjust sync limits for different YPP tiers
+
+### 3.6.0
+
+- Replace `Query-Node` with `Orion` for graphql queries, and remove all unused graphql query definitions.
+- **FIX**: use `GraphQLWsLink` instead of deprecated `WebSocketLink` for graphql subscription, as `WebSocketLink` based subscription does not work with Orion API.
+- **FIX**: Properly handle error when failing to download removed/deleted videos from Youtube.
+
+### 3.5.0
+
+- Add support for setting `isShort` field in the video metadata (indicating whether video is a short format, vertical video or not) when creating the video.
+- Support connecting to chisel server proxy ec2 instance using Private IP address.
+- **FIX**: Properly handle error when failing to download the members-only content from Youtube.
+
+### 3.4.0
+
+- Enable opentelemetry integration for tracing
+- Support running httpApi and sync as separate services
+- **FIX**: Added timeout in `ContentMetadataService` to avoid infinite waiting for the video to be processed
+- **FIX**: Restarting chisel client container from inside yt-synch container
+- **FIX**: Skip uploading object to storage node if it already exists
+- **FIX**: `ytdlpClient.getVideos` method
+
 ### 3.3.0
 
 - Added `chisel` proxy setup with automated IP rotation mechanism to circumvent youtube IP blockage, also integrated proxy setup with yt-synch server. See [docs](socks5-proxy/SETUP.md) for more details

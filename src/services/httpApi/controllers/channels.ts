@@ -21,7 +21,7 @@ import { DynamodbService } from '../../../repository'
 import { ReadonlyConfig } from '../../../types'
 import { YtChannel, YtUser } from '../../../types/youtube'
 import { QueryNodeApi } from '../../query-node/api'
-import { ContentProcessingService } from '../../syncProcessing'
+import { ContentProcessingClient } from '../../syncProcessing'
 import { YoutubePollingService } from '../../syncProcessing/YoutubePollingService'
 import { IYoutubeApi } from '../../youtube/api'
 import {
@@ -50,7 +50,7 @@ export class ChannelsController {
     private qnApi: QueryNodeApi,
     private dynamodbService: DynamodbService,
     private youtubePollingService: YoutubePollingService,
-    private contentProcessingService: ContentProcessingService
+    private contentProcessingClient: ContentProcessingClient
   ) {}
 
   @Post()
@@ -106,7 +106,7 @@ export class ChannelsController {
       // reset authorization code to prevent repeated save channel requests by authorization code re-use
       const updatedUser: YtUser = { ...user, email, authorizationCode: randomBytes(10).toString('hex') }
 
-      const joystreamChannelLanguageIso = jsChannel.language?.iso
+      const joystreamChannelLanguageIso = jsChannel.language || undefined
 
       // If channel already exists in the DB (in `OptedOut` state), then we
       // associate most properties of existing channel record with the new
@@ -145,7 +145,7 @@ export class ChannelsController {
   async get(@Param('joystreamChannelId', ParseIntPipe) id: number) {
     try {
       const channel = await this.dynamodbService.channels.getByJoystreamId(id)
-      const syncStatus = await this.contentProcessingService.getJobsStatForChannel(channel.id)
+      const syncStatus = await this.contentProcessingClient.getJobsStatForChannel(channel.id)
 
       return new ChannelDto(channel, syncStatus)
     } catch (error) {

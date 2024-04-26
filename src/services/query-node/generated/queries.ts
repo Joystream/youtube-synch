@@ -4,88 +4,152 @@ import gql from 'graphql-tag'
 export type AppFieldsFragment = {
   id: string
   name: string
-  websiteUrl?: Types.Maybe<string>
-  useUri?: Types.Maybe<string>
-  smallIcon?: Types.Maybe<string>
-  mediumIcon?: Types.Maybe<string>
-  bigIcon?: Types.Maybe<string>
-  oneLiner?: Types.Maybe<string>
-  description?: Types.Maybe<string>
-  termsOfService?: Types.Maybe<string>
-  category?: Types.Maybe<string>
-  authKey?: Types.Maybe<string>
-  platforms?: Types.Maybe<Array<string>>
+  websiteUrl?: string | null
+  useUri?: string | null
+  smallIcon?: string | null
+  mediumIcon?: string | null
+  bigIcon?: string | null
+  oneLiner?: string | null
+  description?: string | null
+  termsOfService?: string | null
+  category?: string | null
+  authKey?: string | null
+  platforms?: Array<string | null> | null
   ownerMember: { id: string }
 }
 
 export type GetAppByIdQueryVariables = Types.Exact<{
-  id: Types.Scalars['ID']
+  id: Types.Scalars['String']['input']
 }>
 
-export type GetAppByIdQuery = { appByUniqueInput?: Types.Maybe<AppFieldsFragment> }
+export type GetAppByIdQuery = {
+  appByUniqueInput?: {
+    id: string
+    name: string
+    websiteUrl?: string | null
+    useUri?: string | null
+    smallIcon?: string | null
+    mediumIcon?: string | null
+    bigIcon?: string | null
+    oneLiner?: string | null
+    description?: string | null
+    termsOfService?: string | null
+    category?: string | null
+    authKey?: string | null
+    platforms?: Array<string | null> | null
+    ownerMember: { id: string }
+  } | null
+}
 
 export type GetAppsByNameQueryVariables = Types.Exact<{
-  name: Types.Scalars['String']
+  name: Types.Scalars['String']['input']
 }>
 
-export type GetAppsByNameQuery = { apps: Array<AppFieldsFragment> }
+export type GetAppsByNameQuery = {
+  apps: Array<{
+    id: string
+    name: string
+    websiteUrl?: string | null
+    useUri?: string | null
+    smallIcon?: string | null
+    mediumIcon?: string | null
+    bigIcon?: string | null
+    oneLiner?: string | null
+    description?: string | null
+    termsOfService?: string | null
+    category?: string | null
+    authKey?: string | null
+    platforms?: Array<string | null> | null
+    ownerMember: { id: string }
+  }>
+}
 
 export type ChannelFieldsFragment = {
   id: string
+  language?: string | null
   totalVideosCreated: number
   videos: Array<{ id: string; videoStateBloatBond: any }>
-  language?: Types.Maybe<{ id: string; iso: string }>
-  ownerMember?: Types.Maybe<{ id: string; controllerAccount: string }>
+  ownerMember?: { id: string; controllerAccount: string } | null
 }
 
 export type GetChannelByIdQueryVariables = Types.Exact<{
-  channelId: Types.Scalars['ID']
+  channelId: Types.Scalars['String']['input']
 }>
 
-export type GetChannelByIdQuery = { channelByUniqueInput?: Types.Maybe<ChannelFieldsFragment> }
+export type GetChannelByIdQuery = {
+  channelByUniqueInput?: {
+    id: string
+    language?: string | null
+    totalVideosCreated: number
+    videos: Array<{ id: string; videoStateBloatBond: any }>
+    ownerMember?: { id: string; controllerAccount: string } | null
+  } | null
+}
 
 export type VideoFieldsFragment = {
   id: string
-  ytVideoId?: Types.Maybe<string>
-  entryApp?: Types.Maybe<{ id: string; name: string }>
-  media?: Types.Maybe<{ id: string; isAccepted: boolean }>
-  thumbnailPhoto?: Types.Maybe<{ id: string; isAccepted: boolean }>
+  ytVideoId?: string | null
+  entryApp?: { id: string; name: string } | null
+  media?: { id: string; isAccepted: boolean } | null
+  thumbnailPhoto?: { id: string; isAccepted: boolean } | null
 }
 
 export type GetVideoByYtResourceIdAndEntryAppNameQueryVariables = Types.Exact<{
-  ytVideoId: Types.Scalars['String']
-  entryAppName: Types.Scalars['String']
+  ytVideoId: Types.Scalars['String']['input']
+  entryAppName: Types.Scalars['String']['input']
 }>
 
-export type GetVideoByYtResourceIdAndEntryAppNameQuery = { videos: Array<VideoFieldsFragment> }
+export type GetVideoByYtResourceIdAndEntryAppNameQuery = {
+  videos: Array<{
+    id: string
+    ytVideoId?: string | null
+    entryApp?: { id: string; name: string } | null
+    media?: { id: string; isAccepted: boolean } | null
+    thumbnailPhoto?: { id: string; isAccepted: boolean } | null
+  }>
+}
 
 export type GetVideoByIdQueryVariables = Types.Exact<{
-  id: Types.Scalars['ID']
+  id: Types.Scalars['String']['input']
 }>
 
-export type GetVideoByIdQuery = { videoByUniqueInput?: Types.Maybe<VideoFieldsFragment> }
+export type GetVideoByIdQuery = {
+  videoByUniqueInput?: {
+    id: string
+    ytVideoId?: string | null
+    entryApp?: { id: string; name: string } | null
+    media?: { id: string; isAccepted: boolean } | null
+    thumbnailPhoto?: { id: string; isAccepted: boolean } | null
+  } | null
+}
 
-export type MemberMetadataFieldsFragment = { name?: Types.Maybe<string>; about?: Types.Maybe<string> }
+export type MemberMetadataFieldsFragment = { name?: string | null; about?: string | null }
 
 export type MembershipFieldsFragment = {
   id: string
   handle: string
   controllerAccount: string
-  rootAccount: string
-  metadata: MemberMetadataFieldsFragment
+  metadata?: { name?: string | null; about?: string | null } | null
 }
 
-export type GetMembersByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
-}>
-
-export type GetMembersByIdsQuery = { memberships: Array<MembershipFieldsFragment> }
-
 export type GetMemberByIdQueryVariables = Types.Exact<{
-  id: Types.Scalars['ID']
+  id: Types.Scalars['String']['input']
 }>
 
-export type GetMemberByIdQuery = { membershipByUniqueInput?: Types.Maybe<MembershipFieldsFragment> }
+export type GetMemberByIdQuery = {
+  membershipByUniqueInput?: {
+    id: string
+    handle: string
+    controllerAccount: string
+    metadata?: { name?: string | null; about?: string | null } | null
+  } | null
+}
+
+export type QueryNodeStateFieldsFragment = { lastProcessedBlock: number }
+
+export type QueryNodeStateSubscriptionVariables = Types.Exact<{ [key: string]: never }>
+
+export type QueryNodeStateSubscription = { processorState: { lastProcessedBlock: number } }
 
 export type StorageNodeInfoFragment = {
   id: string
@@ -93,81 +157,23 @@ export type StorageNodeInfoFragment = {
   dataObjectsSizeLimit: any
   dataObjectsCount: any
   dataObjectCountLimit: any
-  operatorMetadata?: Types.Maybe<{ nodeEndpoint?: Types.Maybe<string> }>
+  operatorMetadata?: { nodeEndpoint?: string | null } | null
 }
 
 export type GetStorageNodesInfoByBagIdQueryVariables = Types.Exact<{
-  bagId?: Types.Maybe<Types.Scalars['ID']>
+  bagId: Types.Scalars['String']['input']
 }>
 
-export type GetStorageNodesInfoByBagIdQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
-
-export type GetStorageBucketsQueryVariables = Types.Exact<{
-  count?: Types.Maybe<Types.Scalars['Int']>
-}>
-
-export type GetStorageBucketsQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
-
-export type StorageBucketsCountQueryVariables = Types.Exact<{ [key: string]: never }>
-
-export type StorageBucketsCountQuery = { storageBucketsConnection: { totalCount: number } }
-
-export type DistributionBucketFamilyFieldsFragment = { id: string; buckets: Array<{ id: string; bucketIndex: number }> }
-
-export type GetDistributionFamiliesAndBucketsQueryVariables = Types.Exact<{ [key: string]: never }>
-
-export type GetDistributionFamiliesAndBucketsQuery = {
-  distributionBucketFamilies: Array<DistributionBucketFamilyFieldsFragment>
+export type GetStorageNodesInfoByBagIdQuery = {
+  storageBuckets: Array<{
+    id: string
+    dataObjectsSize: any
+    dataObjectsSizeLimit: any
+    dataObjectsCount: any
+    dataObjectCountLimit: any
+    operatorMetadata?: { nodeEndpoint?: string | null } | null
+  }>
 }
-
-export type DataObjectInfoFragment = {
-  id: string
-  size: any
-  stateBloatBond: any
-  storageBagId: string
-  type:
-    | { __typename: 'DataObjectTypeChannelAvatar'; channel?: Types.Maybe<{ id: string }> }
-    | { __typename: 'DataObjectTypeChannelCoverPhoto'; channel?: Types.Maybe<{ id: string }> }
-    | { __typename: 'DataObjectTypeVideoMedia'; video?: Types.Maybe<{ id: string }> }
-    | { __typename: 'DataObjectTypeVideoThumbnail'; video?: Types.Maybe<{ id: string }> }
-    | {
-        __typename: 'DataObjectTypeVideoSubtitle'
-        video?: Types.Maybe<{ id: string }>
-        subtitle?: Types.Maybe<{ id: string }>
-      }
-    | { __typename: 'DataObjectTypeChannelPayoutsPayload' }
-    | { __typename: 'DataObjectTypeUnknown' }
-}
-
-export type GetDataObjectsByBagIdQueryVariables = Types.Exact<{
-  bagId?: Types.Maybe<Types.Scalars['ID']>
-}>
-
-export type GetDataObjectsByBagIdQuery = { storageDataObjects: Array<DataObjectInfoFragment> }
-
-export type GetDataObjectsByChannelIdQueryVariables = Types.Exact<{
-  channelId?: Types.Maybe<Types.Scalars['ID']>
-}>
-
-export type GetDataObjectsByChannelIdQuery = { storageDataObjects: Array<DataObjectInfoFragment> }
-
-export type GetDataObjectsByVideoIdQueryVariables = Types.Exact<{
-  videoId?: Types.Maybe<Types.Scalars['ID']>
-}>
-
-export type GetDataObjectsByVideoIdQuery = { storageDataObjects: Array<DataObjectInfoFragment> }
-
-export type GetStorageBagInfoForAssetQueryVariables = Types.Exact<{
-  assetId: Types.Scalars['ID']
-}>
-
-export type GetStorageBagInfoForAssetQuery = { storageDataObjectByUniqueInput?: Types.Maybe<DataObjectInfoFragment> }
-
-export type QueryNodeStateFieldsFragment = { chainHead: number; lastCompleteBlock: number }
-
-export type QueryNodeStateSubscriptionVariables = Types.Exact<{ [key: string]: never }>
-
-export type QueryNodeStateSubscription = { stateSubscription: QueryNodeStateFieldsFragment }
 
 export const AppFields = gql`
   fragment AppFields on App {
@@ -196,10 +202,7 @@ export const ChannelFields = gql`
       id
       videoStateBloatBond
     }
-    language {
-      id
-      iso
-    }
+    language
     ownerMember {
       id
       controllerAccount
@@ -236,12 +239,16 @@ export const MembershipFields = gql`
     id
     handle
     controllerAccount
-    rootAccount
     metadata {
       ...MemberMetadataFields
     }
   }
   ${MemberMetadataFields}
+`
+export const QueryNodeStateFields = gql`
+  fragment QueryNodeStateFields on ProcessorState {
+    lastProcessedBlock
+  }
 `
 export const StorageNodeInfo = gql`
   fragment StorageNodeInfo on StorageBucket {
@@ -255,62 +262,8 @@ export const StorageNodeInfo = gql`
     }
   }
 `
-export const DistributionBucketFamilyFields = gql`
-  fragment DistributionBucketFamilyFields on DistributionBucketFamily {
-    id
-    buckets {
-      id
-      bucketIndex
-    }
-  }
-`
-export const DataObjectInfo = gql`
-  fragment DataObjectInfo on StorageDataObject {
-    id
-    size
-    stateBloatBond
-    type {
-      __typename
-      ... on DataObjectTypeVideoMedia {
-        video {
-          id
-        }
-      }
-      ... on DataObjectTypeVideoThumbnail {
-        video {
-          id
-        }
-      }
-      ... on DataObjectTypeVideoSubtitle {
-        video {
-          id
-        }
-        subtitle {
-          id
-        }
-      }
-      ... on DataObjectTypeChannelAvatar {
-        channel {
-          id
-        }
-      }
-      ... on DataObjectTypeChannelCoverPhoto {
-        channel {
-          id
-        }
-      }
-    }
-    storageBagId
-  }
-`
-export const QueryNodeStateFields = gql`
-  fragment QueryNodeStateFields on ProcessorState {
-    chainHead
-    lastCompleteBlock
-  }
-`
 export const GetAppById = gql`
-  query getAppById($id: ID!) {
+  query getAppById($id: String!) {
     appByUniqueInput(where: { id: $id }) {
       ...AppFields
     }
@@ -326,7 +279,7 @@ export const GetAppsByName = gql`
   ${AppFields}
 `
 export const GetChannelById = gql`
-  query getChannelById($channelId: ID!) {
+  query getChannelById($channelId: String!) {
     channelByUniqueInput(where: { id: $channelId }) {
       ...ChannelFields
     }
@@ -342,35 +295,35 @@ export const GetVideoByYtResourceIdAndEntryAppName = gql`
   ${VideoFields}
 `
 export const GetVideoById = gql`
-  query getVideoById($id: ID!) {
+  query getVideoById($id: String!) {
     videoByUniqueInput(where: { id: $id }) {
       ...VideoFields
     }
   }
   ${VideoFields}
 `
-export const GetMembersByIds = gql`
-  query getMembersByIds($ids: [ID!]) {
-    memberships(where: { id_in: $ids }) {
-      ...MembershipFields
-    }
-  }
-  ${MembershipFields}
-`
 export const GetMemberById = gql`
-  query getMemberById($id: ID!) {
+  query getMemberById($id: String!) {
     membershipByUniqueInput(where: { id: $id }) {
       ...MembershipFields
     }
   }
   ${MembershipFields}
 `
+export const QueryNodeState = gql`
+  subscription queryNodeState {
+    processorState {
+      ...QueryNodeStateFields
+    }
+  }
+  ${QueryNodeStateFields}
+`
 export const GetStorageNodesInfoByBagId = gql`
-  query getStorageNodesInfoByBagId($bagId: ID) {
+  query getStorageNodesInfoByBagId($bagId: String!) {
     storageBuckets(
       where: {
-        operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
-        bags_some: { id_eq: $bagId }
+        operatorStatus: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
+        bags_some: { bag: { id_eq: $bagId } }
         operatorMetadata: { nodeEndpoint_contains: "http" }
       }
     ) {
@@ -378,67 +331,4 @@ export const GetStorageNodesInfoByBagId = gql`
     }
   }
   ${StorageNodeInfo}
-`
-export const GetStorageBuckets = gql`
-  query getStorageBuckets($count: Int) {
-    storageBuckets(where: { acceptingNewBags_eq: true }, limit: $count) {
-      ...StorageNodeInfo
-    }
-  }
-  ${StorageNodeInfo}
-`
-export const StorageBucketsCount = gql`
-  query storageBucketsCount {
-    storageBucketsConnection(where: { acceptingNewBags_eq: true }) {
-      totalCount
-    }
-  }
-`
-export const GetDistributionFamiliesAndBuckets = gql`
-  query getDistributionFamiliesAndBuckets {
-    distributionBucketFamilies {
-      ...DistributionBucketFamilyFields
-    }
-  }
-  ${DistributionBucketFamilyFields}
-`
-export const GetDataObjectsByBagId = gql`
-  query getDataObjectsByBagId($bagId: ID) {
-    storageDataObjects(where: { storageBag: { id_eq: $bagId } }) {
-      ...DataObjectInfo
-    }
-  }
-  ${DataObjectInfo}
-`
-export const GetDataObjectsByChannelId = gql`
-  query getDataObjectsByChannelId($channelId: ID) {
-    storageDataObjects(where: { type_json: { channelId_eq: $channelId } }) {
-      ...DataObjectInfo
-    }
-  }
-  ${DataObjectInfo}
-`
-export const GetDataObjectsByVideoId = gql`
-  query getDataObjectsByVideoId($videoId: ID) {
-    storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
-      ...DataObjectInfo
-    }
-  }
-  ${DataObjectInfo}
-`
-export const GetStorageBagInfoForAsset = gql`
-  query getStorageBagInfoForAsset($assetId: ID!) {
-    storageDataObjectByUniqueInput(where: { id: $assetId }) {
-      ...DataObjectInfo
-    }
-  }
-  ${DataObjectInfo}
-`
-export const QueryNodeState = gql`
-  subscription queryNodeState {
-    stateSubscription {
-      ...QueryNodeStateFields
-    }
-  }
-  ${QueryNodeStateFields}
 `

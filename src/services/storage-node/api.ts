@@ -43,7 +43,10 @@ export class StorageNodeApi {
     // Get a random active storage node for given bag
     const operator = await this.getRandomActiveStorageNodeInfo(bagId)
     if (!operator) {
-      throw new StorageApiError(ExitCodes.StorageApi.NO_ACTIVE_STORAGE_PROVIDER, 'No active storage node found')
+      throw new StorageApiError(
+        ExitCodes.StorageApi.NO_ACTIVE_STORAGE_PROVIDER,
+        `No active storage node found for bagId: ${bagId}`
+      )
     }
 
     for (const { dataObjectId, file } of assets) {
@@ -74,7 +77,7 @@ export class StorageNodeApi {
           const storageNodeUrl = error.config?.url
           const { status, data } = error.response
 
-          if (data?.message?.includes(`Data object ${dataObjectId} has already been accepted by storage node`)) {
+          if (data?.message?.includes(`Data object ${dataObjectId} already exist`)) {
             // No need to throw an error, we can continue with the next asset
             continue
           }

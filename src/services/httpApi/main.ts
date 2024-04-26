@@ -13,7 +13,7 @@ import { ReadonlyConfig, formattedJSON } from '../../types'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
 import { RuntimeApi } from '../runtime/api'
-import { ContentProcessingService } from '../syncProcessing'
+import { ContentProcessingClient } from '../syncProcessing'
 import { YoutubePollingService } from '../syncProcessing/YoutubePollingService'
 import { IYoutubeApi } from '../youtube/api'
 import {
@@ -48,11 +48,11 @@ function setupSwagger(app: INestApplication) {
 }
 
 // Create UI dashboard for BullMQ queues
-async function setupQueuesDashboard(app: INestApplication, contentProcessingService: ContentProcessingService) {
+async function setupQueuesDashboard(app: INestApplication, contentProcessingClient: ContentProcessingClient) {
   // Setup UI dashboard for BullMQ queues
   const serverAdapter = new ExpressAdapter()
   serverAdapter.setBasePath(QUEUE_UI_URL)
-  const queues = (await contentProcessingService.getQueues()).map((q) => new BullMQAdapter(q, { readOnlyMode: true }))
+  const queues = contentProcessingClient.getQueues.map((q) => new BullMQAdapter(q, { readOnlyMode: true }))
   createBullBoard({ queues, serverAdapter })
   app.use(QUEUE_UI_URL, serverAdapter.getRouter())
 }
@@ -64,7 +64,7 @@ export async function bootstrapHttpApi(
   queryNodeApi: QueryNodeApi,
   youtubeApi: IYoutubeApi,
   youtubePollingService: YoutubePollingService,
-  contentProcessingService: ContentProcessingService
+  contentProcessingClient: ContentProcessingClient
 ) {
   // make sure WASM crypto module is ready
   await cryptoWaitReady()
@@ -102,8 +102,8 @@ export async function bootstrapHttpApi(
         useValue: youtubePollingService,
       },
       {
-        provide: ContentProcessingService,
-        useValue: contentProcessingService,
+        provide: ContentProcessingClient,
+        useValue: contentProcessingClient,
       },
       {
         provide: 'youtube',
@@ -169,7 +169,7 @@ export async function bootstrapHttpApi(
   })
 
   // Setup UI dashboard for BullMQ queues
-  await setupQueuesDashboard(app, contentProcessingService)
+  await setupQueuesDashboard(app, contentProcessingClient)
 
   // Setup Swagger API documentation
   setupSwagger(app)
