@@ -20,8 +20,9 @@ jobs:
           npm run build
       - name: npm pack test
         run: |
-          npm pack --filename youtube-synch-test.tgz
-          tar zxvf ./youtube-synch-test.tgz
+          PACKAGE_VERSION=$(jq -r '.version' package.json)
+          npm pack
+          tar zxvf ./youtube-synch-${PACKAGE_VERSION}.tgz
           cd ./package && npm link
 
   build_osx:
@@ -42,6 +43,7 @@ jobs:
           npm run build
       - name: npm pack test
         run: |
-          npm pack --filename youtube-synch-test.tgz
-          tar zxvf ./youtube-synch-test.tgz
+          PACKAGE_VERSION=$(jq -r '.version' package.json)
+          npm pack
+          tar zxvf ./youtube-synch-${PACKAGE_VERSION}.tgz
           cd ./package && npm link
