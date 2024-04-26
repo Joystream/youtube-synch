@@ -1,3 +1,9 @@
+### 3.8.0
+
+- Migrates from `yarn` to `npm` as dependency manager
+- Updates `@polkadot/js` dependency (included in `@joystream/js`) version to be compatible with Nara runtime
+- Updates `@graphql-codegen/cli` dependency version
+
 ### 3.7.0
 
 - Adjust sync limits for different YPP tiers
