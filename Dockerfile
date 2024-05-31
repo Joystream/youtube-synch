@@ -30,4 +30,4 @@ COPY . .
 RUN npm run build
 
 # Set the command to run when a container based on the image is started
-CMD ["./scripts/start-youtube-synch-httpApi.sh"]
+CMD ["./scripts/start-youtube-synch.sh"]
