@@ -35,10 +35,10 @@ let conf = {
   GOLD_TIER_SIGNUP_REWARD_IN_USD: 50,
   DIAMOND_TIER_SIGNUP_REWARD_IN_USD: 100,
 
-  BRONZE_TIER_REFERRAL_REWARD_IN_USD: 0.5,
-  SILVER_TIER_REFERRAL_REWARD_IN_USD: 12.5,
-  GOLD_TIER_REFERRAL_REWARD_IN_USD: 25,
-  DIAMOND_TIER_REFERRAL_REWARD_IN_USD: 50,
+  BRONZE_TIER_REFERRAL_REWARD_IN_USD: 1,
+  SILVER_TIER_REFERRAL_REWARD_IN_USD: 25,
+  GOLD_TIER_REFERRAL_REWARD_IN_USD: 50,
+  DIAMOND_TIER_REFERRAL_REWARD_IN_USD: 100,
 
   BRONZE_TIER_SYNC_REWARD_IN_USD: 0,
   SILVER_TIER_SYNC_REWARD_IN_USD: 1,
@@ -52,14 +52,14 @@ let conf = {
   MIN_VIDEO_DURATION_IN_MINS: 5,
 }
 
-export function loadConfig<K extends keyof typeof conf>(key: K): typeof conf[K] {
+export function loadConfig<K extends keyof typeof conf>(key: K): (typeof conf)[K] {
   if (conf[key]) return conf[key]
 
   if (typeof conf[key] === 'number') {
-    conf[key] = readEnvInt(key, conf[key]) as typeof conf[K]
+    conf[key] = readEnvInt(key, conf[key]) as (typeof conf)[K]
     return conf[key]
   }
 
-  conf[key] = readEnvString(key, conf[key] as string) as typeof conf[K]
+  conf[key] = readEnvString(key, conf[key] as string) as (typeof conf)[K]
   return conf[key]
 }
