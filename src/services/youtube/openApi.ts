@@ -11,7 +11,7 @@ import { YtChannel, YtDlpFlatPlaylistOutput, YtDlpVideoOutput, YtUser, YtVideo }
 export interface IOpenYTApi {
   getChannel(channelId: string): Promise<{ id: string; title: string; description: string }>
   getVideoFromUrl(videoUrl: string): Promise<YtVideo>
-  getVideos(channel: YtChannel, ids: string[]): Promise<YtVideo[]>
+  getVideos(channel: YtChannel, ids: YtDlpFlatPlaylistOutput): Promise<YtVideo[]>
   downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl>
   getUserAndVideoFromVideoUrl(videoUrl: string): Promise<{ user: YtUser; video: YtVideo }>
 }
@@ -63,17 +63,30 @@ export class YtDlpClient implements IOpenYTApi {
     return response
   }
 
-  async getVideos(channel: YtChannel, ids: string[]): Promise<YtVideo[]> {
+  async getVideos(channel: YtChannel, ids: YtDlpFlatPlaylistOutput): Promise<YtVideo[]> {
     const videosMetadata: YtDlpVideoOutput[] = []
     const idsChunks = _.chunk(ids, 50)
 
     for (const idsChunk of idsChunks) {
-      const videosMetadataChunk = await Promise.all(
-        idsChunk.map(async (id) => {
-          const { stdout } = await this.exec(`${this.ytdlpPath} -J https://www.youtube.com/watch?v=${id}`)
-          return JSON.parse(stdout) as YtDlpVideoOutput
-        })
-      )
+      const videosMetadataChunk = (
+        await Promise.all(
+          idsChunk.map(async ({ id, isShort }) => {
+            try {
+              const { stdout } = await this.exec(`${this.ytdlpPath} -J https://www.youtube.com/watch?v=${id}`)
+              return { ...JSON.parse(stdout), isShort } as YtDlpVideoOutput
+            } catch (err) {
+              if (
+                err instanceof Error &&
+                (err.message.includes(`This video is age-restricted`) ||
+                  err.message.includes(`Join this channel to get access to members-only content`))
+              ) {
+                return
+              }
+              throw err
+            }
+          })
+        )
+      ).filter((v) => v) as YtDlpVideoOutput[]
       videosMetadata.push(...videosMetadataChunk)
     }
 
@@ -102,6 +115,7 @@ export class YtDlpClient implements IOpenYTApi {
       license: video?.license === 'Creative Commons Attribution license (reuse allowed)' ? 'creativeCommon' : 'youtube',
       duration: video?.duration,
       container: video?.ext,
+      isShort: video.isShort,
       viewCount: video?.view_count || 0,
       state: 'New',
     }
@@ -140,12 +154,17 @@ export class YtDlpClient implements IOpenYTApi {
           JSON.parse(stdout).entries.forEach((category: any) => {
             if (category.entries) {
               category.entries.forEach((video: any) => {
-                videos.push({ id: video.id, publishedAt: new Date(video.timestamp * 1000) /** Convert UNIX to date */ })
+                videos.push({
+                  id: video.id,
+                  publishedAt: new Date(video.timestamp * 1000) /** Convert UNIX to date */,
+                  isShort: type === 'shorts',
+                })
               })
             } else {
               videos.push({
                 id: category.id,
                 publishedAt: new Date(category.timestamp * 1000) /** Convert UNIX to date */,
+                isShort: type === 'shorts',
               })
             }
           })

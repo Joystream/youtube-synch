@@ -169,10 +169,7 @@ export class YoutubePollingService {
       }
 
       //  get all videos that are not yet being tracked
-      const untrackedVideos = await this.youtubeApi.ytdlp.getVideos(
-        channel,
-        untrackedVideosIds.map((v) => v.id)
-      )
+      const untrackedVideos = await this.youtubeApi.ytdlp.getVideos(channel, untrackedVideosIds)
 
       // save all new videos to DB including
       await this.dynamodbService.repo.videos.upsertAll(untrackedVideos)

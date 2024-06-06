@@ -100,7 +100,7 @@ export class ChannelsController {
       let channel = await this.youtubeApi.operationalApi.getChannel(id)
       const existingChannel = await this.dynamodbService.repo.channels.get(channel.id)
 
-      const joystreamChannelLanguageIso = jsChannel.language?.iso
+      const joystreamChannelLanguageIso = jsChannel.language || undefined
 
       // If channel already exists in the DB (in `OptedOut` state), then we
       // associate most properties of existing channel record with the new
