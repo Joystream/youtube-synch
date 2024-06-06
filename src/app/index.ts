@@ -8,7 +8,7 @@ import { LoggingService } from '../services/logging'
 import { QueryNodeApi } from '../services/query-node/api'
 import { RuntimeApi } from '../services/runtime/api'
 import { JoystreamClient } from '../services/runtime/client'
-import { ContentProcessingService } from '../services/syncProcessing'
+import { ContentProcessingClient, ContentProcessingService } from '../services/syncProcessing'
 import { YoutubePollingService } from '../services/syncProcessing/YoutubePollingService'
 import { YoutubeApi } from '../services/youtube'
 import { Config, DisplaySafeConfig } from '../types'
@@ -24,6 +24,7 @@ export class Service {
   private joystreamClient: JoystreamClient
   private youtubePollingService: YoutubePollingService
   private contentProcessingService: ContentProcessingService
+  private contentProcessingClient: ContentProcessingClient
   private isStopping = false
 
   constructor(config: Config) {
@@ -35,24 +36,13 @@ export class Service {
     this.youtubeApi = new YoutubeApi(this.config)
     this.runtimeApi = new RuntimeApi(config.endpoints.joystreamNodeWs, this.logging)
     this.joystreamClient = new JoystreamClient(config, this.runtimeApi, this.queryNodeApi, this.logging)
-
-    if (config.sync.enable) {
-      this.youtubePollingService = new YoutubePollingService(
-        this.logging,
-        this.youtubeApi,
-        this.dynamodbService,
-        this.joystreamClient
-      )
-      this.contentProcessingService = new ContentProcessingService(
-        { ...config.sync, ...config.endpoints, ...config.proxy },
-        this.logging,
-        this.dynamodbService,
-        this.youtubeApi,
-        this.runtimeApi,
-        this.joystreamClient,
-        this.queryNodeApi
-      )
-    }
+    this.contentProcessingClient = new ContentProcessingClient({ ...config.sync, ...config.endpoints })
+    this.youtubePollingService = new YoutubePollingService(
+      this.logging,
+      this.youtubeApi,
+      this.dynamodbService,
+      this.joystreamClient
+    )
   }
 
   private checkConfigDir(name: string, path: string): void {
@@ -87,10 +77,19 @@ export class Service {
 
   private async startSync(): Promise<void> {
     if (this.config.sync.enable) {
+      this.contentProcessingService = new ContentProcessingService(
+        { ...this.config.sync, ...this.config.endpoints, ...this.config.proxy },
+        this.logging,
+        this.dynamodbService,
+        this.youtubeApi,
+        this.runtimeApi,
+        this.joystreamClient,
+        this.queryNodeApi
+      )
+
       const {
         intervals: { youtubePolling, contentProcessing },
       } = this.config.sync
-      this.logger.verbose('Starting the Youtube-Synch service', { config: this.hideSecrets(this.config) })
       await this.youtubePollingService.start(youtubePolling)
       await this.contentProcessingService.start(contentProcessing)
     }
@@ -115,23 +114,36 @@ export class Service {
     return displaySafeConfig
   }
 
-  public async start(): Promise<void> {
+  public async start(service: 'httpApi' | 'sync' | 'both' = 'both'): Promise<void> {
+    const serviceNames = service === 'both' ? 'both "httpApi" & "sync"' : service
+
+    this.logger.info(`Starting ${serviceNames} service${service === 'both' ? 's' : ''}`, {
+      config: this.hideSecrets(this.config),
+    })
+
     try {
-      await bootstrapHttpApi(
-        this.config,
-        this.logging,
-        this.runtimeApi,
-        this.queryNodeApi,
-        this.youtubeApi,
-        this.youtubePollingService,
-        this.contentProcessingService
-      )
+      if (service === 'httpApi' || service === 'both') {
+        await bootstrapHttpApi(
+          this.config,
+          this.logging,
+          this.runtimeApi,
+          this.queryNodeApi,
+          this.youtubeApi,
+          this.youtubePollingService,
+          this.contentProcessingClient
+        )
+      }
+
       this.checkConfigDirectories()
-      await this.startSync()
+
+      if (service === 'sync' || service === 'both') {
+        await this.startSync()
+      }
     } catch (err) {
       this.logger.error('Youtube-Synch service initialization failed!', { err })
       process.exit(-1)
     }
+
     nodeCleanup()
   }
 

@@ -17,8 +17,6 @@ set +a
 # Set your EC2 Instance ID and region
 INSTANCE_ID=$INSTANCE_ID
 
-# Fingerprint (Key) needed to connect to the Chisel Sever by Chisel Client running on the client machine
-
 # Stopping an instance
 echo -e "Stopping EC2 proxy server instance... \n"
 aws ec2 stop-instances --instance-ids $INSTANCE_ID

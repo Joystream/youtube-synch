@@ -1,20 +1,16 @@
 import { Job } from 'bullmq'
-import { exec as execCallback } from 'child_process'
 import fs from 'fs'
 import fsPromises from 'fs/promises'
 import pTimeout from 'p-timeout'
 import path from 'path'
-import { promisify } from 'util'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
 import { DownloadJobData, DownloadJobOutput, VideoUnavailableReasons, YtChannel } from '../../types/youtube'
-import { restartEC2Instance } from '../../utils/restartEC2Instance'
+import EC2InstanceRestarter from '../../utils/restartEC2Instance'
 import { LoggingService } from '../logging'
 import { YoutubeApi } from '../youtube/'
 import { SyncUtils } from './utils'
-
-const exec = promisify(execCallback)
 
 // Youtube videos download service
 export class ContentDownloadService {
@@ -26,10 +22,7 @@ export class ContentDownloadService {
     private dynamodbService: IDynamodbService,
     private youtubeApi: YoutubeApi
   ) {
-    this.config = config
     this.logger = logging.createLogger('ContentDownloadService')
-    this.dynamodbService = dynamodbService
-    this.youtubeApi = youtubeApi
   }
 
   async start() {
@@ -122,11 +115,14 @@ export class ContentDownloadService {
       const errorMsg = (err as Error).message
       const errors: { message: string; code: VideoUnavailableReasons }[] = [
         { message: 'Video unavailable', code: VideoUnavailableReasons.Unavailable },
+        { message: 'This video is not available', code: VideoUnavailableReasons.Unavailable },
+        { message: 'This video has been removed', code: VideoUnavailableReasons.Unavailable },
         { message: 'Private video', code: VideoUnavailableReasons.Private },
         { message: 'Postprocessing:', code: VideoUnavailableReasons.PostprocessingError },
         { message: 'The downloaded file is empty', code: VideoUnavailableReasons.EmptyDownload },
         { message: 'This video is private', code: VideoUnavailableReasons.Private },
         { message: 'removed by the uploader', code: VideoUnavailableReasons.Private },
+        { message: 'Join this channel to get access to members-only content', code: VideoUnavailableReasons.Private },
         { message: 'size cap for historical videos', code: VideoUnavailableReasons.Skipped },
       ]
 
@@ -139,7 +135,7 @@ export class ContentDownloadService {
       // If the error is 403 Forbidden means the IP address was blocked,
       // restart the proxy server EC2 instance if enabled (i.e setup exists)
       if (errorMsg.includes('HTTP Error 403: Forbidden') && this.config.chiselProxy?.ec2AutoRotateIp) {
-        await restartEC2Instance(this.logger)
+        await EC2InstanceRestarter.restartInstance(this.logger)
       }
 
       await this.removeVideoFile(video.id)

@@ -9,20 +9,14 @@ import { YoutubeApi } from '../youtube'
 
 export class YoutubePollingService {
   private logger: Logger
-  private youtubeApi: YoutubeApi
-  private joystreamClient: JoystreamClient
-  private dynamodbService: IDynamodbService
 
   public constructor(
     logging: LoggingService,
-    youtubeApi: YoutubeApi,
-    dynamodbService: IDynamodbService,
-    joystreamClient: JoystreamClient
+    private youtubeApi: YoutubeApi,
+    private dynamodbService: IDynamodbService,
+    private joystreamClient: JoystreamClient
   ) {
     this.logger = logging.createLogger('YoutubePollingService')
-    this.youtubeApi = youtubeApi
-    this.dynamodbService = dynamodbService
-    this.joystreamClient = joystreamClient
   }
 
   async start(pollingInterval: number) {

@@ -4,10 +4,7 @@ fragment ChannelFields on Channel {
     id
     videoStateBloatBond
   }
-  language {
-    id
-    iso
-  }
+  language
   ownerMember {
     id
     controllerAccount
@@ -15,7 +12,7 @@ fragment ChannelFields on Channel {
   totalVideosCreated
 }
 
-query getChannelById($channelId: ID!) {
+query getChannelById($channelId: String!) {
   channelByUniqueInput(where: { id: $channelId }) {
     ...ChannelFields
   }
@@ -44,7 +41,7 @@ query getVideoByYtResourceIdAndEntryAppName($ytVideoId: String!, $entryAppName: 
   }
 }
 
-query getVideoById($id: ID!) {
+query getVideoById($id: String!) {
   videoByUniqueInput(where: { id: $id }) {
     ...VideoFields
   }
