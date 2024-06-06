@@ -45,7 +45,6 @@ export class YtDlpClient implements IOpenYTApi {
 
     const user: YtUser = {
       id: video.channelId,
-      joystreamMemberId: undefined,
       youtubeVideoUrl: videoUrl,
       createdAt: new Date(),
     }

@@ -247,46 +247,6 @@ export class SaveChannelResponse {
   }
 }
 
-// Dto for creating membership request
-export class CreateMembershipRequest {
-  // ID of the verified Youtube channel
-  @IsString() @ApiProperty({ required: true }) id: string
-
-  // Youtube video URL required for the verification
-  @IsUrl({ require_tld: false })
-  @ApiProperty({ required: true })
-  youtubeVideoUrl: string
-
-  // Membership Account address
-  @IsString() @ApiProperty({ required: true }) account: string
-
-  // Membership Handle
-  @IsString() @ApiProperty({ required: true }) handle: string
-
-  // Membership avatar URL
-  @IsOptional() @IsUrl({ require_tld: false }) @ApiProperty({ required: true }) avatar: string
-
-  // `about` information to associate with new Membership
-  @ApiProperty() about: string
-
-  // Membership name
-  @ApiProperty() name: string
-}
-
-// Dto for create membership response
-export class CreateMembershipResponse {
-  // Membership Account address
-  @IsNumber() @ApiProperty({ required: true }) memberId: number
-
-  // Membership Handle
-  @IsString() @ApiProperty({ required: true }) handle: string
-
-  constructor(memberId: number, handle: string) {
-    this.memberId = memberId
-    this.handle = handle
-  }
-}
-
 export class VideoDto extends YtVideo {
   @ApiProperty() url: string
   @ApiProperty() title: string

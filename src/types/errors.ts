@@ -69,12 +69,3 @@ export class QueryNodeApiError {
     public expected?: number | string | Date
   ) {}
 }
-
-export class FaucetApiError {
-  constructor(
-    public code: string,
-    public message?: string,
-    public result?: number | string | Date,
-    public expected?: number | string | Date
-  ) {}
-}

@@ -14,19 +14,6 @@ export interface YoutubeSyncNodeConfiguration {
    */
   joystream: {
     /**
-     * Joystream's faucet configuration (needed for captcha-free membership creation)
-     */
-    faucet: {
-      /**
-       * Joystream's faucet URL
-       */
-      endpoint: string
-      /**
-       * Bearer Authentication Key needed to bypass captcha verification on Faucet
-       */
-      captchaBypassKey: string
-    }
-    /**
      * Joystream Metaprotocol App specific configuration
      */
     app: {

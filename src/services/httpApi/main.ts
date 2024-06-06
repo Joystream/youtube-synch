@@ -17,7 +17,6 @@ import { ContentProcessingService } from '../syncProcessing'
 import { YoutubePollingService } from '../syncProcessing/YoutubePollingService'
 import { YoutubeApi } from '../youtube'
 import { ChannelsController, StatusController, UsersController, VideosController } from './controllers'
-import { MembershipController } from './controllers/membership'
 import { ReferrersController } from './controllers/referrers'
 
 class ApiModule {}
@@ -69,14 +68,7 @@ export async function bootstrapHttpApi(
     module: ApiModule,
     imports: [],
     exports: [],
-    controllers: [
-      VideosController,
-      ChannelsController,
-      ReferrersController,
-      UsersController,
-      StatusController,
-      MembershipController,
-    ],
+    controllers: [VideosController, ChannelsController, ReferrersController, UsersController, StatusController],
     providers: [
       {
         provide: DynamodbService,

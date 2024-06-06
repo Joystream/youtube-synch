@@ -17,9 +17,6 @@ function createUserModel(tablePrefix: ResourcePrefix) {
 
       // The URL for a specific video of the Youtube channel with which the user verified for YPP
       youtubeVideoUrl: String,
-
-      // joystream member ID for given creator.
-      joystreamMemberId: Number,
     },
     {
       saveUnknown: false,

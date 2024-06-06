@@ -163,9 +163,6 @@ export class YtUser {
   // The URL for a specific video of Youtube channel with which the user verified for YPP
   youtubeVideoUrl: string
 
-  // Corresponding Joystream member ID for Youtube user
-  joystreamMemberId: number | undefined
-
   // Record created At timestamp
   createdAt: Date
 }
@@ -223,9 +220,9 @@ export const videoStates = [...(Object.keys(VideoStates) as (keyof typeof VideoS
 
 export const channelYppStatus = readonlyChannelYppStatus as unknown as string[]
 
-export type VideoState = typeof videoStates[number]
+export type VideoState = (typeof videoStates)[number]
 
-export type ChannelYppStatus = typeof readonlyChannelYppStatus[number]
+export type ChannelYppStatus = (typeof readonlyChannelYppStatus)[number]
 
 export type JoystreamVideo = {
   // Joystream runtime Video ID for successfully synced video
@@ -368,18 +365,6 @@ export type YtDlpVideoOutput = {
   thumbnails: {
     url: string
   }[]
-}
-
-export type FaucetRegisterMembershipParams = {
-  account: string
-  handle: string
-  avatar: string
-  about: string
-  name: string
-}
-
-export type FaucetRegisterMembershipResponse = {
-  memberId: number
 }
 
 export type ChannelSyncStatus = {
