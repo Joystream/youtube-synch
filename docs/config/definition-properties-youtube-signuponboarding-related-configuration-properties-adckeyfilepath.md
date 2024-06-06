@@ -1,3 +1,0 @@
-## adcKeyFilePath Type
-
-`string`

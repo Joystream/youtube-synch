@@ -1,3 +1,0 @@
-## captchaBypassKey Type
-
-`string`

@@ -14,7 +14,7 @@
     "dynamodb:local:start": "npm run dynamodb:local:stop && export DEPLOYMENT_ENV=local && ./src/infrastructure/deploy.sh",
     "dynamodb:local:stop": "export DEPLOYMENT_ENV=local REMOVE_PULUMI_STACK=true && ./src/infrastructure/destroy.sh",
     "generate:docs:cli": "npx oclif-dev readme --multi --dir ./docs/cli",
-    "generate:docs:config": "npx ts-node ./src/schemas/scripts/generateConfigDoc.ts",
+    "generate:docs:config": "rm -rf ./docs/config && npx ts-node ./src/schemas/scripts/generateConfigDoc.ts",
     "generate:docs:all": "npm run generate:docs:cli && npm run generate:docs:config",
     "generate:types:all": "npm run generate:types:json-schema && npm run generate:types:graphql",
     "generate:types:graphql": "npx graphql-codegen --config ./src/services/query-node/codegen.yml",
