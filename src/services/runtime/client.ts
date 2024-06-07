@@ -74,7 +74,7 @@ export class JoystreamClient {
       return false
     }
 
-    if (blockNumber > qnState.lastCompleteBlock) {
+    if (blockNumber > qnState.lastProcessedBlock) {
       return false
     }
 
@@ -199,6 +199,7 @@ export class JoystreamClient {
       category: video.category,
       language: video.languageIso,
       isPublic: true,
+      isShort: video.isShort,
       duration: video.duration,
       license: getVideoLicense(video),
       publishedBeforeJoystream: { isPublished: true, date: video.publishedAt },

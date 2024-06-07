@@ -16,8 +16,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: lint
         run: |
-          yarn install --frozen-lockfile
-          yarn lint
+          npm install --frozen-lockfile
+          npm run lint
 
   lint_osx:
     name: MacOS Checks
@@ -33,5 +33,5 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: lint
         run: |
-          yarn install --frozen-lockfile
-          yarn lint
+          npm install --frozen-lockfile
+          npm run lint

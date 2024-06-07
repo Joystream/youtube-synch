@@ -9,7 +9,7 @@ import { ReadonlyConfig } from '../../types'
 import { DownloadJobData, DownloadJobOutput, VideoUnavailableReasons, YtChannel } from '../../types/youtube'
 import EC2InstanceRestarter from '../../utils/restartEC2Instance'
 import { LoggingService } from '../logging'
-import { IYoutubeApi } from '../youtube/api'
+import { YoutubeApi } from '../youtube/'
 import { SyncUtils } from './utils'
 
 // Youtube videos download service
@@ -20,12 +20,9 @@ export class ContentDownloadService {
     private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['proxy'],
     logging: LoggingService,
     private dynamodbService: IDynamodbService,
-    private youtubeApi: IYoutubeApi
+    private youtubeApi: YoutubeApi
   ) {
-    this.config = config
     this.logger = logging.createLogger('ContentDownloadService')
-    this.dynamodbService = dynamodbService
-    this.youtubeApi = youtubeApi
   }
 
   async start() {
@@ -83,7 +80,7 @@ export class ContentDownloadService {
       // download the video from youtube
 
       const { ext: fileExt } = await pTimeout(
-        this.youtubeApi.downloadVideo(video.url, this.config.downloadsDir),
+        this.youtubeApi.ytdlp.downloadVideo(video.url, this.config.downloadsDir),
         this.config.limits.pendingDownloadTimeoutSec * 1000,
         `Download timed-out`
       )
@@ -118,11 +115,14 @@ export class ContentDownloadService {
       const errorMsg = (err as Error).message
       const errors: { message: string; code: VideoUnavailableReasons }[] = [
         { message: 'Video unavailable', code: VideoUnavailableReasons.Unavailable },
+        { message: 'This video is not available', code: VideoUnavailableReasons.Unavailable },
+        { message: 'This video has been removed', code: VideoUnavailableReasons.Unavailable },
         { message: 'Private video', code: VideoUnavailableReasons.Private },
         { message: 'Postprocessing:', code: VideoUnavailableReasons.PostprocessingError },
         { message: 'The downloaded file is empty', code: VideoUnavailableReasons.EmptyDownload },
         { message: 'This video is private', code: VideoUnavailableReasons.Private },
         { message: 'removed by the uploader', code: VideoUnavailableReasons.Private },
+        { message: 'Join this channel to get access to members-only content', code: VideoUnavailableReasons.Private },
         { message: 'size cap for historical videos', code: VideoUnavailableReasons.Skipped },
       ]
 

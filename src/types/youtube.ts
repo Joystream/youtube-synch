@@ -3,6 +3,7 @@ import { VideoMetadataAndHash } from '../services/syncProcessing/ContentMetadata
 type DeploymentEnv = 'dev' | 'local' | 'testing' | 'prod'
 const deploymentEnv = process.env.DEPLOYMENT_ENV as DeploymentEnv | undefined
 
+// TODO: only allow sharing unlisted videos (because if we allow sharing public videos, then anyone can share video before the creator)
 export type ResourcePrefix = `${Exclude<DeploymentEnv, 'prod'>}_` | ''
 export const resourcePrefix = (deploymentEnv && deploymentEnv !== 'prod' ? `${deploymentEnv}_` : '') as ResourcePrefix
 
@@ -10,14 +11,8 @@ export class YtChannel {
   // Channel ID
   id: string
 
-  // ID of the user that owns the channel
-  userId: string
-
   // Youtube channel custom URL. Also known as youtube channel handle
   customUrl: string
-
-  // user provided email
-  email: string
 
   // ID of the corresponding Joystream Channel
   joystreamChannelId: number
@@ -33,9 +28,6 @@ export class YtChannel {
 
   // Channel description
   description: string
-
-  // default language of youtube channel
-  language: string
 
   // language ISO of corresponding Joystream channel
   joystreamChannelLanguageIso?: string
@@ -69,15 +61,6 @@ export class YtChannel {
 
   // total size of historical videos synced (videos that were published on Youtube before YPP signup)
   historicalVideoSyncedSize: number
-
-  // Channel owner's access token
-  userAccessToken: string
-
-  // Channel owner's refresh token
-  userRefreshToken: string
-
-  // Channel's playlist ID
-  uploadsPlaylistId: string
 
   // Should this channel be ingested for automated Youtube/Joystream syncing?
   shouldBeIngested: boolean
@@ -143,23 +126,29 @@ export class YtChannel {
    * */
 
   static videoCap(channel: YtChannel): number {
-    if (channel.statistics.subscriberCount < 5000) {
+    if (channel.yppStatus === 'Verified::Silver') {
       return 100
-    } else if (channel.statistics.subscriberCount < 50000) {
+    } else if (channel.yppStatus === 'Verified::Gold') {
       return 250
-    } else {
+    } else if (channel.yppStatus === 'Verified::Diamond') {
       return 1000
     }
+
+    // yppStatus === 'Unverified' OR 'Verified::Bronze'
+    return 5
   }
 
   static sizeCap(channel: YtChannel): number {
-    if (channel.statistics.subscriberCount < 5000) {
+    if (channel.yppStatus === 'Verified::Silver') {
       return 10_000_000_000 // 10 GB
-    } else if (channel.statistics.subscriberCount < 50000) {
+    } else if (channel.yppStatus === 'Verified::Gold') {
       return 100_000_000_000 // 100 GB
-    } else {
+    } else if (channel.yppStatus === 'Verified::Diamond') {
       return 1_000_000_000_000 // 1 TB
     }
+
+    // yppStatus === 'Unverified' OR 'Verified::Bronze'
+    return 1_000_000_000 // 1 GB
   }
 
   static hasSizeLimitReached(channel: YtChannel) {
@@ -168,23 +157,11 @@ export class YtChannel {
 }
 
 export class YtUser {
-  // Youtube user ID
+  // Youtube channel ID
   id: string
 
-  // Youtube User email
-  email: string
-
-  // User access token
-  accessToken: string
-
-  // User refresh token
-  refreshToken: string
-
-  // User authorization code
-  authorizationCode: string
-
-  // Corresponding Joystream member ID/s for Youtube user created through `POST /membership` (if any)
-  joystreamMemberIds: number[]
+  // The URL for a specific video of Youtube channel with which the user verified for YPP
+  youtubeVideoUrl: string
 
   // Record created At timestamp
   createdAt: Date
@@ -194,7 +171,6 @@ export type Thumbnails = {
   default: string
   medium: string
   high: string
-  standard: string
 }
 
 export enum VideoUnavailableReasons {
@@ -244,9 +220,9 @@ export const videoStates = [...(Object.keys(VideoStates) as (keyof typeof VideoS
 
 export const channelYppStatus = readonlyChannelYppStatus as unknown as string[]
 
-export type VideoState = typeof videoStates[number]
+export type VideoState = (typeof videoStates)[number]
 
-export type ChannelYppStatus = typeof readonlyChannelYppStatus[number]
+export type ChannelYppStatus = (typeof readonlyChannelYppStatus)[number]
 
 export type JoystreamVideo = {
   // Joystream runtime Video ID for successfully synced video
@@ -311,6 +287,9 @@ export class YtVideo {
   // joystream video ID in `VideoCreated` event response, returned from joystream runtime after creating a video
   joystreamVideo: JoystreamVideo
 
+  // Whether video is a short format, vertical video (e.g. Youtube Shorts, TikTok, Instagram Reels)
+  isShort: boolean
+
   // Youtube video creation date
   publishedAt: string
 
@@ -337,7 +316,6 @@ export const getImages = (channel: YtChannel) => {
     ...urlAsArray(channel.thumbnails.default),
     ...urlAsArray(channel.thumbnails.high),
     ...urlAsArray(channel.thumbnails.medium),
-    ...urlAsArray(channel.thumbnails.standard),
   ]
 }
 
@@ -368,6 +346,7 @@ export type UploadJobData = YtVideo & {
 export type YtDlpFlatPlaylistOutput = {
   id: string
   publishedAt: Date
+  isShort: boolean
 }[]
 
 export type YtDlpVideoOutput = {
@@ -390,18 +369,10 @@ export type YtDlpVideoOutput = {
   thumbnails: {
     url: string
   }[]
-}
 
-export type FaucetRegisterMembershipParams = {
-  account: string
-  handle: string
-  avatar: string
-  about: string
-  name: string
-}
-
-export type FaucetRegisterMembershipResponse = {
-  memberId: number
+  // This property isn't really part of the YtDlpVideoOutput, but is separately
+  // set based on wether video was downloaded from channels 'shorts' tab or not
+  isShort: boolean
 }
 
 export type ChannelSyncStatus = {

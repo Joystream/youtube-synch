@@ -6,7 +6,7 @@ This setup is designed to automate the restarting of an Amazon EC2 instance and 
 
 ## Components
 
-1. **Amazon EC2 Instance**: A server that will be stopped and started by the script running on the client machine, resulting in a new public IP address assignment of EC2 proxy server instance.
+1. **Amazon EC2 Instance**: A server that will be stopped and started by the script running on the client machine (YT-synch instance), resulting in a new public IP address assignment of EC2 proxy server instance. _IMPORTANT:_ The EC2 proxy server instance should be created within the same VPC and Subnet as the YT-synch server instance, since YT-synch server instance connects with the proxy server instance using Private IP address.
 
 2. **Chisel**: A fast TCP tunnel over HTTP. In this setup, a Chisel client is run in a Docker container, which connects to a Chisel server running on the EC2 instance.
 

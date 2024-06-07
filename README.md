@@ -6,15 +6,15 @@ The Youtube-Synch node is used for youtube's creator onboarding and replicating 
 
 - Docker
 - aws cli
-- yarn
-- nodejs
+- npm >= 9.0.0
+- nodejs >= 18.0.0
 
 # Buildings the Youtube-Synch node
 
 - Install dependencies
-  `yarn`
+  `npm install`
 - Build the project
-  `yarn build`
+  `npm run build`
 
 # Running the Youtube-Synch node
 
@@ -58,7 +58,7 @@ For running a local instance of dynamodb, this is useful is useful for testing &
 
 ### Local DynamoDB
 
-- `yarn dynamodb:start` to start the local instance of dynamoDB.
+- `npm dynamodb:start` to start the local instance of dynamoDB.
 - Also if you want to use the local instance of dynamoDB, you need to set the following environment variable:
   - `YT_SYNCH__AWS__ENDPOINT` to `http://localhost:4566`
 
@@ -77,7 +77,7 @@ Next there are two options, either you can provide the credentials in the `~/.aw
 
 Youtube-synch service can be run as a nodejs program or as a docker container. The service depends on the above described configurations so please make sure to configure the env vars/config file before running the node.
 
-To run Youtube-synch service as nodejs program, run `yarn start`
+To run Youtube-synch service as nodejs program, run `npm start`
 
 For running Youtube-synch service as a docker container, run `docker-compose up -d` at root of the project. This will start the service in the background.
 

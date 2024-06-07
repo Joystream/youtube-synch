@@ -10,11 +10,11 @@ import {
   split,
 } from '@apollo/client/core'
 import { onError } from '@apollo/client/link/error'
-import { WebSocketLink } from '@apollo/client/link/ws'
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import { getMainDefinition } from '@apollo/client/utilities'
 import { MemberId, VideoId } from '@joystream/types/primitives'
-import BN from 'bn.js'
 import fetch from 'cross-fetch'
+import { createClient } from 'graphql-ws'
 import { Logger } from 'winston'
 import ws from 'ws'
 import { ExitCodes, QueryNodeApiError } from '../../types/errors'
@@ -23,38 +23,15 @@ import { StorageNodeInfo } from '../runtime/types'
 import {
   AppFieldsFragment,
   ChannelFieldsFragment,
-  DataObjectInfoFragment,
-  DistributionBucketFamilyFieldsFragment,
   GetAppsByName,
   GetAppsByNameQuery,
   GetAppsByNameQueryVariables,
   GetChannelById,
   GetChannelByIdQuery,
   GetChannelByIdQueryVariables,
-  GetDataObjectsByBagId,
-  GetDataObjectsByBagIdQuery,
-  GetDataObjectsByBagIdQueryVariables,
-  GetDataObjectsByChannelId,
-  GetDataObjectsByChannelIdQuery,
-  GetDataObjectsByChannelIdQueryVariables,
-  GetDataObjectsByVideoId,
-  GetDataObjectsByVideoIdQuery,
-  GetDataObjectsByVideoIdQueryVariables,
-  GetDistributionFamiliesAndBuckets,
-  GetDistributionFamiliesAndBucketsQuery,
-  GetDistributionFamiliesAndBucketsQueryVariables,
   GetMemberById,
   GetMemberByIdQuery,
   GetMemberByIdQueryVariables,
-  GetMembersByIds,
-  GetMembersByIdsQuery,
-  GetMembersByIdsQueryVariables,
-  GetStorageBagInfoForAsset,
-  GetStorageBagInfoForAssetQuery,
-  GetStorageBagInfoForAssetQueryVariables,
-  GetStorageBuckets,
-  GetStorageBucketsQuery,
-  GetStorageBucketsQueryVariables,
   GetStorageNodesInfoByBagId,
   GetStorageNodesInfoByBagIdQuery,
   GetStorageNodesInfoByBagIdQueryVariables,
@@ -70,10 +47,6 @@ import {
   QueryNodeStateFieldsFragment,
   QueryNodeStateSubscription,
   QueryNodeStateSubscriptionVariables,
-  StorageBucketsCount,
-  StorageBucketsCountQuery,
-  StorageBucketsCountQueryVariables,
-  StorageNodeInfoFragment,
   VideoFieldsFragment,
 } from './generated/queries'
 import { Maybe } from './generated/schema'
@@ -106,13 +79,12 @@ export class QueryNodeApi {
     })
 
     const queryLink = from([errorLink, new HttpLink({ uri: endpoint, fetch })])
-    const wsLink = new WebSocketLink({
-      uri: endpoint,
-      options: {
-        reconnect: true,
-      },
-      webSocketImpl: ws,
-    })
+    const wsLink = new GraphQLWsLink(
+      createClient({
+        url: endpoint,
+        webSocketImpl: ws,
+      })
+    )
     const splitLink = split(
       ({ query }) => {
         const definition = getMainDefinition(query)
@@ -237,30 +209,6 @@ export class QueryNodeApi {
     })
   }
 
-  async dataObjectsByBagId(bagId: string): Promise<DataObjectInfoFragment[]> {
-    return this.multipleEntitiesQuery<GetDataObjectsByBagIdQuery, GetDataObjectsByBagIdQueryVariables>(
-      GetDataObjectsByBagId,
-      { bagId },
-      'storageDataObjects'
-    )
-  }
-
-  async dataObjectsByVideoId(videoId: string): Promise<DataObjectInfoFragment[]> {
-    return this.multipleEntitiesQuery<GetDataObjectsByVideoIdQuery, GetDataObjectsByVideoIdQueryVariables>(
-      GetDataObjectsByVideoId,
-      { videoId },
-      'storageDataObjects'
-    )
-  }
-
-  async dataObjectsByChannelId(channelId: string): Promise<DataObjectInfoFragment[]> {
-    return this.multipleEntitiesQuery<GetDataObjectsByChannelIdQuery, GetDataObjectsByChannelIdQueryVariables>(
-      GetDataObjectsByChannelId,
-      { channelId },
-      'storageDataObjects'
-    )
-  }
-
   async getChannelById(channelId: string): Promise<ChannelFieldsFragment | null> {
     return this.uniqueEntityQuery<GetChannelByIdQuery, GetChannelByIdQueryVariables>(
       GetChannelById,
@@ -294,52 +242,6 @@ export class QueryNodeApi {
       }
     }
     return validNodesInfo
-  }
-
-  async storageBucketsForNewChannel(): Promise<StorageNodeInfoFragment[]> {
-    const countQueryResult = await this.uniqueEntityQuery<StorageBucketsCountQuery, StorageBucketsCountQueryVariables>(
-      StorageBucketsCount,
-      {},
-      'storageBucketsConnection'
-    )
-    if (!countQueryResult) {
-      throw Error('Invalid query. Could not fetch storage buckets count information')
-    }
-
-    const buckets = await this.multipleEntitiesQuery<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>(
-      GetStorageBuckets,
-      { count: countQueryResult.totalCount },
-      'storageBuckets'
-    )
-
-    // sorting buckets based on available size, if two buckets have same
-    // available size then sort the two based on available dataObjects count
-    return buckets.sort(
-      (x, y) =>
-        new BN(y.dataObjectsSizeLimit)
-          .sub(new BN(y.dataObjectsSize))
-          .cmp(new BN(x.dataObjectsSizeLimit).sub(new BN(x.dataObjectsSize))) ||
-        new BN(y.dataObjectCountLimit)
-          .sub(new BN(y.dataObjectsCount))
-          .cmp(new BN(x.dataObjectCountLimit).sub(new BN(x.dataObjectsCount)))
-    )
-  }
-
-  async distributionBucketsForNewChannel(): Promise<DistributionBucketFamilyFieldsFragment[]> {
-    return this.multipleEntitiesQuery<
-      GetDistributionFamiliesAndBucketsQuery,
-      GetDistributionFamiliesAndBucketsQueryVariables
-    >(GetDistributionFamiliesAndBuckets, {}, 'distributionBucketFamilies')
-  }
-
-  async membersByIds(ids: MemberId[] | string[]): Promise<MembershipFieldsFragment[]> {
-    return this.multipleEntitiesQuery<GetMembersByIdsQuery, GetMembersByIdsQueryVariables>(
-      GetMembersByIds,
-      {
-        ids: ids.map((id) => id.toString()),
-      },
-      'memberships'
-    )
   }
 
   async memberById(id: MemberId | string): Promise<MembershipFieldsFragment | null> {
@@ -389,29 +291,10 @@ export class QueryNodeApi {
     )
   }
 
-  async getStorageBagInfoForAsset(assetId: string, throwError = true): Promise<string | undefined> {
-    const result = await this.uniqueEntityQuery<
-      GetStorageBagInfoForAssetQuery,
-      GetStorageBagInfoForAssetQueryVariables
-    >(
-      GetStorageBagInfoForAsset,
-      {
-        assetId,
-      },
-      'storageDataObjectByUniqueInput'
-    )
-
-    if (throwError && !result) {
-      throw Error('Could not fetch storage bag information for asset with id: ' + assetId)
-    }
-
-    return result?.storageBagId
-  }
-
   public async getQueryNodeState(): Promise<QueryNodeStateFieldsFragment | null> {
     // fetch cached state
     const cachedState = this.apolloClient.readFragment<
-      QueryNodeStateSubscription['stateSubscription'],
+      QueryNodeStateSubscription['processorState'],
       QueryNodeStateSubscriptionVariables
     >({
       id: 'ProcessorState',
@@ -427,7 +310,7 @@ export class QueryNodeApi {
     return this.uniqueEntitySubscription<QueryNodeStateSubscription, QueryNodeStateSubscriptionVariables>(
       QueryNodeState,
       {},
-      'stateSubscription'
+      'processorState'
     )
   }
 }

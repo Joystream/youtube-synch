@@ -1,0 +1,9 @@
+fragment QueryNodeStateFields on ProcessorState {
+  lastProcessedBlock
+}
+
+subscription queryNodeState {
+  processorState {
+    ...QueryNodeStateFields
+  }
+}

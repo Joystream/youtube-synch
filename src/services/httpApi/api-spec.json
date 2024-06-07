@@ -1,14 +1,14 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/users/{userId}/videos": {
+    "/channels/{channelId}/videos": {
       "get": {
         "operationId": "VideosController_get",
         "summary": "",
         "description": "Get videos across all channels owned by the user",
         "parameters": [
           {
-            "name": "userId",
+            "name": "channelId",
             "required": true,
             "in": "path",
             "schema": {
@@ -240,7 +240,7 @@
     },
     "/channels/{joystreamChannelId}/category": {
       "put": {
-        "operationId": "ChannelsController_updateCategoryChannel",
+        "operationId": "ChannelsController_updateChannelCategory",
         "summary": "",
         "description": "Updates given channel's videos category. Note: only channel owner can update the status",
         "parameters": [
@@ -573,7 +573,7 @@
       "post": {
         "operationId": "UsersController_verifyUserAndChannel",
         "summary": "",
-        "description": "fetches user's channel from the supplied google authorization code, and verifies if it satisfies YPP induction criteria",
+        "description": "fetches YT creator's channel from the provided Youtube video URL, and verifies if it satisfies YPP induction criteria",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -602,57 +602,6 @@
         ]
       }
     },
-    "/youtube/quota-usage": {
-      "get": {
-        "operationId": "YoutubeController_getAll",
-        "summary": "",
-        "description": "Get youtube quota usage information",
-        "deprecated": true,
-        "parameters": [],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Stats"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "youtube"
-        ]
-      }
-    },
-    "/youtube/quota-usage/today": {
-      "get": {
-        "operationId": "YoutubeController_get",
-        "summary": "",
-        "description": "Get youtube quota usage information for today",
-        "deprecated": true,
-        "parameters": [],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Stats"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "youtube"
-        ]
-      }
-    },
     "/status": {
       "get": {
         "operationId": "StatusController_getStatus",
@@ -666,55 +615,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StatusDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "status"
-        ]
-      }
-    },
-    "/status/quota-usage": {
-      "get": {
-        "operationId": "StatusController_getQuotaStats",
-        "summary": "",
-        "description": "Get youtube quota usage information",
-        "parameters": [],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Stats"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "status"
-        ]
-      }
-    },
-    "/status/quota-usage/today": {
-      "get": {
-        "operationId": "StatusController_getQuotaStatsForToday",
-        "summary": "",
-        "description": "Get youtube quota usage information for today",
-        "parameters": [],
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Stats"
                 }
               }
             }
@@ -747,39 +647,6 @@
           "status"
         ]
       }
-    },
-    "/membership": {
-      "post": {
-        "operationId": "MembershipController_createMembership",
-        "summary": "",
-        "description": "Create Joystream's on-chain Membership for a verfifed YPP user. It will forward request\n       to Joystream faucet with an Authorization header to circumvent captcha verfication by the faucet",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateMembershipRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "default": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateMembershipResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "membership"
-        ]
-      }
     }
   },
   "info": {
@@ -799,10 +666,10 @@
       "SaveChannelRequest": {
         "type": "object",
         "properties": {
-          "authorizationCode": {
+          "youtubeVideoUrl": {
             "type": "string"
           },
-          "userId": {
+          "id": {
             "type": "string"
           },
           "email": {
@@ -822,27 +689,12 @@
           }
         },
         "required": [
-          "authorizationCode",
-          "userId",
+          "youtubeVideoUrl",
+          "id",
           "email",
           "joystreamChannelId",
           "shouldBeIngested",
           "videoCategoryId"
-        ]
-      },
-      "UserDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "email"
         ]
       },
       "ThumbnailsDto": {
@@ -856,16 +708,12 @@
           },
           "high": {
             "type": "string"
-          },
-          "standard": {
-            "type": "string"
           }
         },
         "required": [
           "default",
           "medium",
-          "high",
-          "standard"
+          "high"
         ]
       },
       "ChannelDto": {
@@ -943,15 +791,11 @@
       "SaveChannelResponse": {
         "type": "object",
         "properties": {
-          "user": {
-            "$ref": "#/components/schemas/UserDto"
-          },
           "channel": {
             "$ref": "#/components/schemas/ChannelDto"
           }
         },
         "required": [
-          "user",
           "channel"
         ]
       },
@@ -1129,6 +973,8 @@
             "enum": [
               "CHANNEL_NOT_FOUND",
               "VIDEO_NOT_FOUND",
+              "VIDEO_PRIVACY_STATUS_NOT_UNLISTED",
+              "VIDEO_TITLE_MISMATCH",
               "CHANNEL_ALREADY_REGISTERED",
               "CHANNEL_STATUS_SUSPENDED",
               "CHANNEL_CRITERIA_UNMET_SUBSCRIBERS",
@@ -1187,25 +1033,18 @@
       "VerifyChannelRequest": {
         "type": "object",
         "properties": {
-          "authorizationCode": {
-            "type": "string"
-          },
-          "youtubeRedirectUri": {
+          "youtubeVideoUrl": {
             "type": "string"
           }
         },
         "required": [
-          "authorizationCode",
-          "youtubeRedirectUri"
+          "youtubeVideoUrl"
         ]
       },
       "VerifyChannelResponse": {
         "type": "object",
         "properties": {
-          "email": {
-            "type": "string"
-          },
-          "userId": {
+          "id": {
             "type": "string"
           },
           "channelHandle": {
@@ -1228,8 +1067,7 @@
           }
         },
         "required": [
-          "email",
-          "userId",
+          "id",
           "channelHandle",
           "channelTitle",
           "channelDescription",
@@ -1237,10 +1075,6 @@
           "avatarUrl",
           "bannerUrl"
         ]
-      },
-      "Stats": {
-        "type": "object",
-        "properties": {}
       },
       "StatusDto": {
         "type": "object",
@@ -1261,55 +1095,9 @@
           "syncBacklog"
         ]
       },
-      "CreateMembershipRequest": {
+      "Stats": {
         "type": "object",
-        "properties": {
-          "userId": {
-            "type": "string"
-          },
-          "authorizationCode": {
-            "type": "string"
-          },
-          "account": {
-            "type": "string"
-          },
-          "handle": {
-            "type": "string"
-          },
-          "avatar": {
-            "type": "string"
-          },
-          "about": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "userId",
-          "authorizationCode",
-          "account",
-          "handle",
-          "avatar",
-          "about",
-          "name"
-        ]
-      },
-      "CreateMembershipResponse": {
-        "type": "object",
-        "properties": {
-          "memberId": {
-            "type": "number"
-          },
-          "handle": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "memberId",
-          "handle"
-        ]
+        "properties": {}
       }
     }
   }

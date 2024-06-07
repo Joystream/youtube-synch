@@ -1,3 +1,0 @@
-## clientSecret Type
-
-`string`

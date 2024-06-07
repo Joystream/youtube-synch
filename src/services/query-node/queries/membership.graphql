@@ -6,20 +6,15 @@ fragment MemberMetadataFields on MemberMetadata {
 fragment MembershipFields on Membership {
   id
   handle
-  controllerAccount
-  rootAccount
+  controllerAccount {
+    id
+  }
   metadata {
     ...MemberMetadataFields
   }
 }
 
-query getMembersByIds($ids: [ID!]) {
-  memberships(where: { id_in: $ids }) {
-    ...MembershipFields
-  }
-}
-
-query getMemberById($id: ID!) {
+query getMemberById($id: String!) {
   membershipByUniqueInput(where: { id: $id }) {
     ...MembershipFields
   }
