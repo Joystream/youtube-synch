@@ -7,7 +7,9 @@ fragment ChannelFields on Channel {
   language
   ownerMember {
     id
-    controllerAccount
+    controllerAccount {
+      id
+    }
   }
   totalVideosCreated
 }

@@ -118,7 +118,7 @@ export class ContentCreationService {
       await this.dynamodbService.videos.batchUpdateState(jobsToComplete().data, 'CreatingVideo')
 
       // send batch extrinsic
-      const { blockNumber, result } = await this.joystreamClient.sendBatchExtrinsic(collaborator.controllerAccount, [
+      const { blockNumber, result } = await this.joystreamClient.sendBatchExtrinsic(collaborator.controllerAccount.id, [
         ...txByJob.values(),
       ])
 

@@ -60,6 +60,7 @@ export class ChannelsController {
       const { id, youtubeVideoUrl, joystreamChannelId, shouldBeIngested, videoCategoryId, referrerChannelId } =
         channelInfo
 
+      // TODO: ensure video is still unlisted
       // TODO: check if needed. maybe add new flag `isSaved` to user record and check that instead
       // // Ensure that channel is not already registered for YPP program
       // if (await this.dynamodbService.repo.channels.get(id)) {
@@ -458,7 +459,7 @@ export class ChannelsController {
     }
 
     // verify the message signature using Channel owner's address
-    const { isValid } = signatureVerify(JSON.stringify(message), signature, jsChannel.ownerMember.controllerAccount)
+    const { isValid } = signatureVerify(JSON.stringify(message), signature, jsChannel.ownerMember.controllerAccount.id)
 
     // Ensure that the signature is valid and the message is not a playback message
     if (!isValid || channel.lastActedAt >= message.timestamp) {

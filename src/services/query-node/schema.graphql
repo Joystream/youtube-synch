@@ -28,11 +28,6 @@ type Account {
   email: String!
 
   """
-  Indicates whether the gateway account's e-mail has been confirmed or not.
-  """
-  isEmailConfirmed: Boolean!
-
-  """
   Indicates whether the access to the gateway account is blocked
   """
   isBlocked: Boolean!
@@ -43,14 +38,9 @@ type Account {
   registeredAt: DateTime!
 
   """
-  On-chain membership associated with the gateway account
-  """
-  membership: Membership!
-
-  """
   Blockchain (joystream) account associated with the gateway account
   """
-  joystreamAccount: String!
+  joystreamAccount: BlockchainAccount!
 
   """
   runtime notifications
@@ -66,19 +56,12 @@ type Account {
   notification preferences for the account
   """
   notificationPreferences: AccountNotificationPreferences!
-
-  """
-  ID of the channel which referred the user to the platform
-  """
-  referrerChannelId: String
 }
 
 type AccountData {
   id: String!
   email: String!
   joystreamAccount: String!
-  isEmailConfirmed: Boolean!
-  membershipId: String!
   followedChannels: [FollowedChannel!]!
   preferences: AccountNotificationPreferencesOutput
 }
@@ -121,6 +104,15 @@ type AccountNotificationPreferences {
   fundsFromCouncilReceived: NotificationPreference!
   fundsToExternalWalletSent: NotificationPreference!
   fundsFromWgReceived: NotificationPreference!
+  crtIssued: NotificationPreference!
+  crtMarketStarted: NotificationPreference!
+  crtMarketMint: NotificationPreference!
+  crtMarketBurn: NotificationPreference!
+  crtSaleStarted: NotificationPreference!
+  crtSaleMint: NotificationPreference!
+  crtRevenueShareStarted: NotificationPreference!
+  crtRevenueSharePlanned: NotificationPreference!
+  crtRevenueShareEnded: NotificationPreference!
 }
 
 input AccountNotificationPreferencesInput {
@@ -262,6 +254,24 @@ input AccountNotificationPreferencesWhereInput {
   fundsToExternalWalletSent: NotificationPreferenceWhereInput
   fundsFromWgReceived_isNull: Boolean
   fundsFromWgReceived: NotificationPreferenceWhereInput
+  crtIssued_isNull: Boolean
+  crtIssued: NotificationPreferenceWhereInput
+  crtMarketStarted_isNull: Boolean
+  crtMarketStarted: NotificationPreferenceWhereInput
+  crtMarketMint_isNull: Boolean
+  crtMarketMint: NotificationPreferenceWhereInput
+  crtMarketBurn_isNull: Boolean
+  crtMarketBurn: NotificationPreferenceWhereInput
+  crtSaleStarted_isNull: Boolean
+  crtSaleStarted: NotificationPreferenceWhereInput
+  crtSaleMint_isNull: Boolean
+  crtSaleMint: NotificationPreferenceWhereInput
+  crtRevenueShareStarted_isNull: Boolean
+  crtRevenueShareStarted: NotificationPreferenceWhereInput
+  crtRevenueSharePlanned_isNull: Boolean
+  crtRevenueSharePlanned: NotificationPreferenceWhereInput
+  crtRevenueShareEnded_isNull: Boolean
+  crtRevenueShareEnded: NotificationPreferenceWhereInput
 }
 
 enum AccountOrderByInput {
@@ -273,28 +283,12 @@ enum AccountOrderByInput {
   user_isRoot_DESC
   email_ASC
   email_DESC
-  isEmailConfirmed_ASC
-  isEmailConfirmed_DESC
   isBlocked_ASC
   isBlocked_DESC
   registeredAt_ASC
   registeredAt_DESC
-  membership_id_ASC
-  membership_id_DESC
-  membership_createdAt_ASC
-  membership_createdAt_DESC
-  membership_handle_ASC
-  membership_handle_DESC
-  membership_handleRaw_ASC
-  membership_handleRaw_DESC
-  membership_controllerAccount_ASC
-  membership_controllerAccount_DESC
-  membership_totalChannelsCreated_ASC
-  membership_totalChannelsCreated_DESC
-  joystreamAccount_ASC
-  joystreamAccount_DESC
-  referrerChannelId_ASC
-  referrerChannelId_DESC
+  joystreamAccount_id_ASC
+  joystreamAccount_id_DESC
 }
 
 type AccountsConnection {
@@ -340,9 +334,6 @@ input AccountWhereInput {
   email_not_startsWith: String
   email_endsWith: String
   email_not_endsWith: String
-  isEmailConfirmed_isNull: Boolean
-  isEmailConfirmed_eq: Boolean
-  isEmailConfirmed_not_eq: Boolean
   isBlocked_isNull: Boolean
   isBlocked_eq: Boolean
   isBlocked_not_eq: Boolean
@@ -355,47 +346,13 @@ input AccountWhereInput {
   registeredAt_lte: DateTime
   registeredAt_in: [DateTime!]
   registeredAt_not_in: [DateTime!]
-  membership_isNull: Boolean
-  membership: MembershipWhereInput
   joystreamAccount_isNull: Boolean
-  joystreamAccount_eq: String
-  joystreamAccount_not_eq: String
-  joystreamAccount_gt: String
-  joystreamAccount_gte: String
-  joystreamAccount_lt: String
-  joystreamAccount_lte: String
-  joystreamAccount_in: [String!]
-  joystreamAccount_not_in: [String!]
-  joystreamAccount_contains: String
-  joystreamAccount_not_contains: String
-  joystreamAccount_containsInsensitive: String
-  joystreamAccount_not_containsInsensitive: String
-  joystreamAccount_startsWith: String
-  joystreamAccount_not_startsWith: String
-  joystreamAccount_endsWith: String
-  joystreamAccount_not_endsWith: String
+  joystreamAccount: BlockchainAccountWhereInput
   notifications_every: NotificationWhereInput
   notifications_some: NotificationWhereInput
   notifications_none: NotificationWhereInput
   notificationPreferences_isNull: Boolean
   notificationPreferences: AccountNotificationPreferencesWhereInput
-  referrerChannelId_isNull: Boolean
-  referrerChannelId_eq: String
-  referrerChannelId_not_eq: String
-  referrerChannelId_gt: String
-  referrerChannelId_gte: String
-  referrerChannelId_lt: String
-  referrerChannelId_lte: String
-  referrerChannelId_in: [String!]
-  referrerChannelId_not_in: [String!]
-  referrerChannelId_contains: String
-  referrerChannelId_not_contains: String
-  referrerChannelId_containsInsensitive: String
-  referrerChannelId_not_containsInsensitive: String
-  referrerChannelId_startsWith: String
-  referrerChannelId_not_startsWith: String
-  referrerChannelId_endsWith: String
-  referrerChannelId_not_endsWith: String
   AND: [AccountWhereInput!]
   OR: [AccountWhereInput!]
 }
@@ -405,6 +362,339 @@ type AddVideoViewResult {
   viewId: String!
   viewsNum: Int!
   added: Boolean!
+}
+
+type AmmCurve {
+  """
+  counter
+  """
+  id: String!
+
+  """
+  token this Amm is for
+  """
+  token: CreatorToken!
+
+  """
+  quantity bought on the market by the amm
+  """
+  burnedByAmm: BigInt!
+
+  """
+  quantity sold to the market
+  """
+  mintedByAmm: BigInt!
+
+  """
+  the amm slope parameter a in the formula a * x + b
+  """
+  ammSlopeParameter: BigInt!
+
+  """
+  the amm intercept parameter b in the formula a * x + b
+  """
+  ammInitPrice: BigInt!
+
+  """
+  transaction for this amm
+  """
+  transactions(
+    where: AmmTransactionWhereInput
+    orderBy: [AmmTransactionOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [AmmTransaction!]!
+
+  """
+  finalized (i.e. closed)
+  """
+  finalized: Boolean!
+}
+
+type AmmCurveEdge {
+  node: AmmCurve!
+  cursor: String!
+}
+
+enum AmmCurveOrderByInput {
+  id_ASC
+  id_DESC
+  token_id_ASC
+  token_id_DESC
+  token_status_ASC
+  token_status_DESC
+  token_totalSupply_ASC
+  token_totalSupply_DESC
+  token_isFeatured_ASC
+  token_isFeatured_DESC
+  token_symbol_ASC
+  token_symbol_DESC
+  token_isInviteOnly_ASC
+  token_isInviteOnly_DESC
+  token_annualCreatorRewardPermill_ASC
+  token_annualCreatorRewardPermill_DESC
+  token_revenueShareRatioPermill_ASC
+  token_revenueShareRatioPermill_DESC
+  token_createdAt_ASC
+  token_createdAt_DESC
+  token_description_ASC
+  token_description_DESC
+  token_whitelistApplicantNote_ASC
+  token_whitelistApplicantNote_DESC
+  token_whitelistApplicantLink_ASC
+  token_whitelistApplicantLink_DESC
+  token_accountsNum_ASC
+  token_accountsNum_DESC
+  token_numberOfRevenueShareActivations_ASC
+  token_numberOfRevenueShareActivations_DESC
+  token_deissued_ASC
+  token_deissued_DESC
+  token_numberOfVestedTransferIssued_ASC
+  token_numberOfVestedTransferIssued_DESC
+  token_lastPrice_ASC
+  token_lastPrice_DESC
+  burnedByAmm_ASC
+  burnedByAmm_DESC
+  mintedByAmm_ASC
+  mintedByAmm_DESC
+  ammSlopeParameter_ASC
+  ammSlopeParameter_DESC
+  ammInitPrice_ASC
+  ammInitPrice_DESC
+  finalized_ASC
+  finalized_DESC
+}
+
+type AmmCurvesConnection {
+  edges: [AmmCurveEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input AmmCurveWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  token_isNull: Boolean
+  token: CreatorTokenWhereInput
+  burnedByAmm_isNull: Boolean
+  burnedByAmm_eq: BigInt
+  burnedByAmm_not_eq: BigInt
+  burnedByAmm_gt: BigInt
+  burnedByAmm_gte: BigInt
+  burnedByAmm_lt: BigInt
+  burnedByAmm_lte: BigInt
+  burnedByAmm_in: [BigInt!]
+  burnedByAmm_not_in: [BigInt!]
+  mintedByAmm_isNull: Boolean
+  mintedByAmm_eq: BigInt
+  mintedByAmm_not_eq: BigInt
+  mintedByAmm_gt: BigInt
+  mintedByAmm_gte: BigInt
+  mintedByAmm_lt: BigInt
+  mintedByAmm_lte: BigInt
+  mintedByAmm_in: [BigInt!]
+  mintedByAmm_not_in: [BigInt!]
+  ammSlopeParameter_isNull: Boolean
+  ammSlopeParameter_eq: BigInt
+  ammSlopeParameter_not_eq: BigInt
+  ammSlopeParameter_gt: BigInt
+  ammSlopeParameter_gte: BigInt
+  ammSlopeParameter_lt: BigInt
+  ammSlopeParameter_lte: BigInt
+  ammSlopeParameter_in: [BigInt!]
+  ammSlopeParameter_not_in: [BigInt!]
+  ammInitPrice_isNull: Boolean
+  ammInitPrice_eq: BigInt
+  ammInitPrice_not_eq: BigInt
+  ammInitPrice_gt: BigInt
+  ammInitPrice_gte: BigInt
+  ammInitPrice_lt: BigInt
+  ammInitPrice_lte: BigInt
+  ammInitPrice_in: [BigInt!]
+  ammInitPrice_not_in: [BigInt!]
+  transactions_every: AmmTransactionWhereInput
+  transactions_some: AmmTransactionWhereInput
+  transactions_none: AmmTransactionWhereInput
+  finalized_isNull: Boolean
+  finalized_eq: Boolean
+  finalized_not_eq: Boolean
+  AND: [AmmCurveWhereInput!]
+  OR: [AmmCurveWhereInput!]
+}
+
+type AmmTransaction {
+  """
+  counter
+  """
+  id: String!
+
+  """
+  amount of token bought/sold
+  """
+  quantity: BigInt!
+
+  """
+  total HAPI paid/received for the quantity
+  """
+  pricePaid: BigInt!
+
+  """
+  Reference to the Amm Sale
+  """
+  amm: AmmCurve!
+
+  """
+  buyer account
+  """
+  account: TokenAccount!
+
+  """
+  price per unit in HAPI
+  """
+  pricePerUnit: BigInt!
+
+  """
+  was it bought/sold
+  """
+  transactionType: AmmTransactionType!
+
+  """
+  block
+  """
+  createdIn: Int!
+}
+
+type AmmTransactionEdge {
+  node: AmmTransaction!
+  cursor: String!
+}
+
+enum AmmTransactionOrderByInput {
+  id_ASC
+  id_DESC
+  quantity_ASC
+  quantity_DESC
+  pricePaid_ASC
+  pricePaid_DESC
+  amm_id_ASC
+  amm_id_DESC
+  amm_burnedByAmm_ASC
+  amm_burnedByAmm_DESC
+  amm_mintedByAmm_ASC
+  amm_mintedByAmm_DESC
+  amm_ammSlopeParameter_ASC
+  amm_ammSlopeParameter_DESC
+  amm_ammInitPrice_ASC
+  amm_ammInitPrice_DESC
+  amm_finalized_ASC
+  amm_finalized_DESC
+  account_id_ASC
+  account_id_DESC
+  account_stakedAmount_ASC
+  account_stakedAmount_DESC
+  account_totalAmount_ASC
+  account_totalAmount_DESC
+  account_deleted_ASC
+  account_deleted_DESC
+  pricePerUnit_ASC
+  pricePerUnit_DESC
+  transactionType_ASC
+  transactionType_DESC
+  createdIn_ASC
+  createdIn_DESC
+}
+
+type AmmTransactionsConnection {
+  edges: [AmmTransactionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+enum AmmTransactionType {
+  BUY
+  SELL
+}
+
+input AmmTransactionWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  quantity_isNull: Boolean
+  quantity_eq: BigInt
+  quantity_not_eq: BigInt
+  quantity_gt: BigInt
+  quantity_gte: BigInt
+  quantity_lt: BigInt
+  quantity_lte: BigInt
+  quantity_in: [BigInt!]
+  quantity_not_in: [BigInt!]
+  pricePaid_isNull: Boolean
+  pricePaid_eq: BigInt
+  pricePaid_not_eq: BigInt
+  pricePaid_gt: BigInt
+  pricePaid_gte: BigInt
+  pricePaid_lt: BigInt
+  pricePaid_lte: BigInt
+  pricePaid_in: [BigInt!]
+  pricePaid_not_in: [BigInt!]
+  amm_isNull: Boolean
+  amm: AmmCurveWhereInput
+  account_isNull: Boolean
+  account: TokenAccountWhereInput
+  pricePerUnit_isNull: Boolean
+  pricePerUnit_eq: BigInt
+  pricePerUnit_not_eq: BigInt
+  pricePerUnit_gt: BigInt
+  pricePerUnit_gte: BigInt
+  pricePerUnit_lt: BigInt
+  pricePerUnit_lte: BigInt
+  pricePerUnit_in: [BigInt!]
+  pricePerUnit_not_in: [BigInt!]
+  transactionType_isNull: Boolean
+  transactionType_eq: AmmTransactionType
+  transactionType_not_eq: AmmTransactionType
+  transactionType_in: [AmmTransactionType!]
+  transactionType_not_in: [AmmTransactionType!]
+  createdIn_isNull: Boolean
+  createdIn_eq: Int
+  createdIn_not_eq: Int
+  createdIn_gt: Int
+  createdIn_gte: Int
+  createdIn_lt: Int
+  createdIn_lte: Int
+  createdIn_in: [Int!]
+  createdIn_not_in: [Int!]
+  AND: [AmmTransactionWhereInput!]
+  OR: [AmmTransactionWhereInput!]
 }
 
 type App {
@@ -476,8 +766,6 @@ enum AppOrderByInput {
   ownerMember_handle_DESC
   ownerMember_handleRaw_ASC
   ownerMember_handleRaw_DESC
-  ownerMember_controllerAccount_ASC
-  ownerMember_controllerAccount_DESC
   ownerMember_totalChannelsCreated_ASC
   ownerMember_totalChannelsCreated_DESC
   websiteUrl_ASC
@@ -899,8 +1187,6 @@ enum AuctionOrderByInput {
   winningMember_handle_DESC
   winningMember_handleRaw_ASC
   winningMember_handleRaw_DESC
-  winningMember_controllerAccount_ASC
-  winningMember_controllerAccount_DESC
   winningMember_totalChannelsCreated_ASC
   winningMember_totalChannelsCreated_DESC
   startingPrice_ASC
@@ -1169,8 +1455,6 @@ enum AuctionWhitelistedMemberOrderByInput {
   member_handle_DESC
   member_handleRaw_ASC
   member_handleRaw_DESC
-  member_controllerAccount_ASC
-  member_controllerAccount_DESC
   member_totalChannelsCreated_ASC
   member_totalChannelsCreated_DESC
 }
@@ -1304,8 +1588,6 @@ enum BannedMemberOrderByInput {
   member_handle_DESC
   member_handleRaw_ASC
   member_handleRaw_DESC
-  member_controllerAccount_ASC
-  member_controllerAccount_DESC
   member_totalChannelsCreated_ASC
   member_totalChannelsCreated_DESC
   channel_id_ASC
@@ -1336,8 +1618,12 @@ enum BannedMemberOrderByInput {
   channel_videoViewsNum_DESC
   channel_totalVideosCreated_ASC
   channel_totalVideosCreated_DESC
+  channel_revenueShareRatioPercent_ASC
+  channel_revenueShareRatioPercent_DESC
   channel_cumulativeRewardClaimed_ASC
   channel_cumulativeRewardClaimed_DESC
+  channel_cumulativeRevenue_ASC
+  channel_cumulativeRevenue_DESC
   channel_cumulativeReward_ASC
   channel_cumulativeReward_DESC
   channel_channelWeight_ASC
@@ -1374,6 +1660,180 @@ input BannedMemberWhereInput {
   channel: ChannelWhereInput
   AND: [BannedMemberWhereInput!]
   OR: [BannedMemberWhereInput!]
+}
+
+type Benefit {
+  """
+  counter
+  """
+  id: String!
+
+  """
+  token the benefit is for
+  """
+  token: CreatorToken!
+
+  """
+  emoji for the benefit
+  """
+  emojiCode: String
+
+  """
+  title for the benefit
+  """
+  title: String!
+
+  """
+  description for the benefit
+  """
+  description: String!
+
+  """
+  order in which the benefits is displayed
+  """
+  displayOrder: Int!
+}
+
+type BenefitEdge {
+  node: Benefit!
+  cursor: String!
+}
+
+enum BenefitOrderByInput {
+  id_ASC
+  id_DESC
+  token_id_ASC
+  token_id_DESC
+  token_status_ASC
+  token_status_DESC
+  token_totalSupply_ASC
+  token_totalSupply_DESC
+  token_isFeatured_ASC
+  token_isFeatured_DESC
+  token_symbol_ASC
+  token_symbol_DESC
+  token_isInviteOnly_ASC
+  token_isInviteOnly_DESC
+  token_annualCreatorRewardPermill_ASC
+  token_annualCreatorRewardPermill_DESC
+  token_revenueShareRatioPermill_ASC
+  token_revenueShareRatioPermill_DESC
+  token_createdAt_ASC
+  token_createdAt_DESC
+  token_description_ASC
+  token_description_DESC
+  token_whitelistApplicantNote_ASC
+  token_whitelistApplicantNote_DESC
+  token_whitelistApplicantLink_ASC
+  token_whitelistApplicantLink_DESC
+  token_accountsNum_ASC
+  token_accountsNum_DESC
+  token_numberOfRevenueShareActivations_ASC
+  token_numberOfRevenueShareActivations_DESC
+  token_deissued_ASC
+  token_deissued_DESC
+  token_numberOfVestedTransferIssued_ASC
+  token_numberOfVestedTransferIssued_DESC
+  token_lastPrice_ASC
+  token_lastPrice_DESC
+  emojiCode_ASC
+  emojiCode_DESC
+  title_ASC
+  title_DESC
+  description_ASC
+  description_DESC
+  displayOrder_ASC
+  displayOrder_DESC
+}
+
+type BenefitsConnection {
+  edges: [BenefitEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input BenefitWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  token_isNull: Boolean
+  token: CreatorTokenWhereInput
+  emojiCode_isNull: Boolean
+  emojiCode_eq: String
+  emojiCode_not_eq: String
+  emojiCode_gt: String
+  emojiCode_gte: String
+  emojiCode_lt: String
+  emojiCode_lte: String
+  emojiCode_in: [String!]
+  emojiCode_not_in: [String!]
+  emojiCode_contains: String
+  emojiCode_not_contains: String
+  emojiCode_containsInsensitive: String
+  emojiCode_not_containsInsensitive: String
+  emojiCode_startsWith: String
+  emojiCode_not_startsWith: String
+  emojiCode_endsWith: String
+  emojiCode_not_endsWith: String
+  title_isNull: Boolean
+  title_eq: String
+  title_not_eq: String
+  title_gt: String
+  title_gte: String
+  title_lt: String
+  title_lte: String
+  title_in: [String!]
+  title_not_in: [String!]
+  title_contains: String
+  title_not_contains: String
+  title_containsInsensitive: String
+  title_not_containsInsensitive: String
+  title_startsWith: String
+  title_not_startsWith: String
+  title_endsWith: String
+  title_not_endsWith: String
+  description_isNull: Boolean
+  description_eq: String
+  description_not_eq: String
+  description_gt: String
+  description_gte: String
+  description_lt: String
+  description_lte: String
+  description_in: [String!]
+  description_not_in: [String!]
+  description_contains: String
+  description_not_contains: String
+  description_containsInsensitive: String
+  description_not_containsInsensitive: String
+  description_startsWith: String
+  description_not_startsWith: String
+  description_endsWith: String
+  description_not_endsWith: String
+  displayOrder_isNull: Boolean
+  displayOrder_eq: Int
+  displayOrder_not_eq: Int
+  displayOrder_gt: Int
+  displayOrder_gte: Int
+  displayOrder_lt: Int
+  displayOrder_lte: Int
+  displayOrder_in: [Int!]
+  displayOrder_not_in: [Int!]
+  AND: [BenefitWhereInput!]
+  OR: [BenefitWhereInput!]
 }
 
 """
@@ -1487,8 +1947,6 @@ enum BidOrderByInput {
   bidder_handle_DESC
   bidder_handleRaw_ASC
   bidder_handleRaw_DESC
-  bidder_controllerAccount_ASC
-  bidder_controllerAccount_DESC
   bidder_totalChannelsCreated_ASC
   bidder_totalChannelsCreated_DESC
   amount_ASC
@@ -1592,6 +2050,59 @@ input BidWhereInput {
 Big number integer
 """
 scalar BigInt
+
+type BlockchainAccount {
+  """
+  The blockchain account id/address
+  """
+  id: String!
+
+  """
+  Membership associated with the blockchain account (controllerAccount)
+  """
+  memberships(where: MembershipWhereInput, orderBy: [MembershipOrderByInput!], offset: Int, limit: Int): [Membership!]!
+}
+
+type BlockchainAccountEdge {
+  node: BlockchainAccount!
+  cursor: String!
+}
+
+enum BlockchainAccountOrderByInput {
+  id_ASC
+  id_DESC
+}
+
+type BlockchainAccountsConnection {
+  edges: [BlockchainAccountEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input BlockchainAccountWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  memberships_every: MembershipWhereInput
+  memberships_some: MembershipWhereInput
+  memberships_none: MembershipWhereInput
+  AND: [BlockchainAccountWhereInput!]
+  OR: [BlockchainAccountWhereInput!]
+}
 
 type BuyNowCanceledEventData {
   """
@@ -1739,9 +2250,24 @@ type Channel {
   totalVideosCreated: Int!
 
   """
+  % of channel balance that the creator devotes to revenue shares
+  """
+  revenueShareRatioPercent: Int
+
+  """
   Cumulative rewards claimed by this channel
   """
   cumulativeRewardClaimed: BigInt!
+
+  """
+  Token issued by channel if any
+  """
+  creatorToken: TokenChannel
+
+  """
+  Cumulative total revenue coming from nft sales + member payments + council payouts
+  """
+  cumulativeRevenue: BigInt!
 
   """
   Cumulative rewards paid to this channel
@@ -1757,6 +2283,28 @@ type Channel {
   Channel Ypp Status: either unverified , verified or suspended
   """
   yppStatus: ChannelYppStatus!
+}
+
+type ChannelAssetsDeletedByModeratorEventData {
+  """
+  Channel whose assets were deleted
+  """
+  channel: Channel!
+
+  """
+  IDs of channel assets being deleted by moderator
+  """
+  assetIds: [BigInt!]
+
+  """
+  Actor who deleted the channel assets.
+  """
+  deletedBy: ContentActor!
+
+  """
+  why the channel assets were deleted
+  """
+  rationale: String!
 }
 
 type ChannelCreated {
@@ -1945,8 +2493,6 @@ enum ChannelOrderByInput {
   ownerMember_handle_DESC
   ownerMember_handleRaw_ASC
   ownerMember_handleRaw_DESC
-  ownerMember_controllerAccount_ASC
-  ownerMember_controllerAccount_DESC
   ownerMember_totalChannelsCreated_ASC
   ownerMember_totalChannelsCreated_DESC
   title_ASC
@@ -2025,8 +2571,14 @@ enum ChannelOrderByInput {
   entryApp_authKey_DESC
   totalVideosCreated_ASC
   totalVideosCreated_DESC
+  revenueShareRatioPercent_ASC
+  revenueShareRatioPercent_DESC
   cumulativeRewardClaimed_ASC
   cumulativeRewardClaimed_DESC
+  creatorToken_id_ASC
+  creatorToken_id_DESC
+  cumulativeRevenue_ASC
+  cumulativeRevenue_DESC
   cumulativeReward_ASC
   cumulativeReward_DESC
   channelWeight_ASC
@@ -2211,8 +2763,12 @@ enum ChannelSuspensionOrderByInput {
   channel_videoViewsNum_DESC
   channel_totalVideosCreated_ASC
   channel_totalVideosCreated_DESC
+  channel_revenueShareRatioPercent_ASC
+  channel_revenueShareRatioPercent_DESC
   channel_cumulativeRewardClaimed_ASC
   channel_cumulativeRewardClaimed_DESC
+  channel_cumulativeRevenue_ASC
+  channel_cumulativeRevenue_DESC
   channel_cumulativeReward_ASC
   channel_cumulativeReward_DESC
   channel_channelWeight_ASC
@@ -2319,8 +2875,12 @@ enum ChannelVerificationOrderByInput {
   channel_videoViewsNum_DESC
   channel_totalVideosCreated_ASC
   channel_totalVideosCreated_DESC
+  channel_revenueShareRatioPercent_ASC
+  channel_revenueShareRatioPercent_DESC
   channel_cumulativeRewardClaimed_ASC
   channel_cumulativeRewardClaimed_DESC
+  channel_cumulativeRevenue_ASC
+  channel_cumulativeRevenue_DESC
   channel_cumulativeReward_ASC
   channel_cumulativeReward_DESC
   channel_channelWeight_ASC
@@ -2548,6 +3108,15 @@ input ChannelWhereInput {
   totalVideosCreated_lte: Int
   totalVideosCreated_in: [Int!]
   totalVideosCreated_not_in: [Int!]
+  revenueShareRatioPercent_isNull: Boolean
+  revenueShareRatioPercent_eq: Int
+  revenueShareRatioPercent_not_eq: Int
+  revenueShareRatioPercent_gt: Int
+  revenueShareRatioPercent_gte: Int
+  revenueShareRatioPercent_lt: Int
+  revenueShareRatioPercent_lte: Int
+  revenueShareRatioPercent_in: [Int!]
+  revenueShareRatioPercent_not_in: [Int!]
   cumulativeRewardClaimed_isNull: Boolean
   cumulativeRewardClaimed_eq: BigInt
   cumulativeRewardClaimed_not_eq: BigInt
@@ -2557,6 +3126,17 @@ input ChannelWhereInput {
   cumulativeRewardClaimed_lte: BigInt
   cumulativeRewardClaimed_in: [BigInt!]
   cumulativeRewardClaimed_not_in: [BigInt!]
+  creatorToken_isNull: Boolean
+  creatorToken: TokenChannelWhereInput
+  cumulativeRevenue_isNull: Boolean
+  cumulativeRevenue_eq: BigInt
+  cumulativeRevenue_not_eq: BigInt
+  cumulativeRevenue_gt: BigInt
+  cumulativeRevenue_gte: BigInt
+  cumulativeRevenue_lt: BigInt
+  cumulativeRevenue_lte: BigInt
+  cumulativeRevenue_in: [BigInt!]
+  cumulativeRevenue_not_in: [BigInt!]
   cumulativeReward_isNull: Boolean
   cumulativeReward_eq: BigInt
   cumulativeReward_not_eq: BigInt
@@ -2723,8 +3303,6 @@ enum CommentOrderByInput {
   author_handle_DESC
   author_handleRaw_ASC
   author_handleRaw_DESC
-  author_controllerAccount_ASC
-  author_controllerAccount_DESC
   author_totalChannelsCreated_ASC
   author_totalChannelsCreated_DESC
   text_ASC
@@ -2775,6 +3353,8 @@ enum CommentOrderByInput {
   video_videoRelevance_DESC
   video_isShort_ASC
   video_isShort_DESC
+  video_isShortDerived_ASC
+  video_isShortDerived_DESC
   video_includeInHomeFeed_ASC
   video_includeInHomeFeed_DESC
   status_ASC
@@ -2888,8 +3468,6 @@ enum CommentReactionOrderByInput {
   member_handle_DESC
   member_handleRaw_ASC
   member_handleRaw_DESC
-  member_controllerAccount_ASC
-  member_controllerAccount_DESC
   member_totalChannelsCreated_ASC
   member_totalChannelsCreated_DESC
   comment_id_ASC
@@ -2956,6 +3534,8 @@ enum CommentReactionOrderByInput {
   video_videoRelevance_DESC
   video_isShort_ASC
   video_isShort_DESC
+  video_isShortDerived_ASC
+  video_isShortDerived_DESC
   video_includeInHomeFeed_ASC
   video_includeInHomeFeed_DESC
 }
@@ -3219,6 +3799,11 @@ enum Continent {
   SA
 }
 
+type CreateAccountMembershipResult {
+  accountId: String!
+  memberId: Float!
+}
+
 type CreatorReceivesAuctionBid {
   """
   videoId used for notification link
@@ -3244,6 +3829,813 @@ type CreatorReceivesAuctionBid {
   bid amount
   """
   amount: BigInt!
+}
+
+type CreatorToken {
+  """
+  runtime token identifier
+  """
+  id: String!
+
+  """
+  status sale / market / idle
+  """
+  status: TokenStatus!
+
+  """
+  avatar object (profile picture)
+  """
+  avatar: TokenAvatar
+
+  """
+  total supply
+  """
+  totalSupply: BigInt!
+
+  """
+  Flag to indicate whether the CRT is featured or not
+  """
+  isFeatured: Boolean!
+
+  """
+  sales issued for this token
+  """
+  sales(where: SaleWhereInput, orderBy: [SaleOrderByInput!], offset: Int, limit: Int): [Sale!]!
+
+  """
+  symbol for the token uniqueness guaranteed by runtime
+  """
+  symbol: String
+
+  """
+  access status invite only vs anyone
+  """
+  isInviteOnly: Boolean!
+
+  """
+  creator annual revenue (minted)
+  """
+  annualCreatorRewardPermill: Int!
+
+  """
+  revenue share ratio between creator and holder
+  """
+  revenueShareRatioPermill: Int!
+
+  """
+  revenue shares issued for this token
+  """
+  revenueShares(
+    where: RevenueShareWhereInput
+    orderBy: [RevenueShareOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [RevenueShare!]!
+
+  """
+  amm curves issued for this token
+  """
+  ammCurves(where: AmmCurveWhereInput, orderBy: [AmmCurveOrderByInput!], offset: Int, limit: Int): [AmmCurve!]!
+
+  """
+  date at which this token was created
+  """
+  createdAt: DateTime!
+
+  """
+  channel from which the token is issued uniqueness guaranteed by runtime
+  """
+  channel: TokenChannel
+
+  """
+  video for the token presentation page
+  """
+  trailerVideo(
+    where: TrailerVideoWhereInput
+    orderBy: [TrailerVideoOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [TrailerVideo!]!
+
+  """
+  about information displayed under the presentation video
+  """
+  description: String
+
+  """
+  list of benefits for the token
+  """
+  benefits(where: BenefitWhereInput, orderBy: [BenefitOrderByInput!], offset: Int, limit: Int): [Benefit!]!
+
+  """
+  note from creator to member interested in joining the whitelist
+  """
+  whitelistApplicantNote: String
+
+  """
+  link for creator to member interested in joining the whitelist
+  """
+  whitelistApplicantLink: String
+
+  """
+  holders having some amount of this token
+  """
+  accounts(
+    where: TokenAccountWhereInput
+    orderBy: [TokenAccountOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [TokenAccount!]!
+
+  """
+  number of accounts to avoid aggregate COUNT
+  """
+  accountsNum: Int!
+
+  """
+  number of revenue shares issued
+  """
+  numberOfRevenueShareActivations: Int!
+
+  """
+  whether it has been deissued or not
+  """
+  deissued: Boolean!
+
+  """
+  current amm sale if ongoing
+  """
+  currentAmmSale: AmmCurve
+
+  """
+  current sale if ongoing
+  """
+  currentSale: Sale
+
+  """
+  current revenue share if ongoing
+  """
+  currentRevenueShare: RevenueShare
+
+  """
+  number of vested transfer completed
+  """
+  numberOfVestedTransferIssued: Int!
+
+  """
+  last unit price available
+  """
+  lastPrice: BigInt
+}
+
+type CreatorTokenEdge {
+  node: CreatorToken!
+  cursor: String!
+}
+
+type CreatorTokenIssued {
+  """
+  channel title for notification text
+  """
+  channelTitle: String!
+
+  """
+  symbol of the token
+  """
+  tokenSymbol: String!
+
+  """
+  id of the token
+  """
+  tokenId: String!
+
+  """
+  channel Id used for link
+  """
+  channelId: String!
+}
+
+type CreatorTokenIssuedEventData {
+  """
+  Token that was issued
+  """
+  token: CreatorToken
+}
+
+type CreatorTokenMarketBurn {
+  """
+  channel title for notification avatar
+  """
+  channelId: String!
+
+  """
+  handle of member that burned tokens
+  """
+  burnerHandle: String!
+
+  """
+  id of member that burned tokens
+  """
+  burnerId: String!
+
+  """
+  amount of tokens that user burned
+  """
+  burnedTokenAmount: BigInt!
+
+  """
+  amount of joy that user received for burning
+  """
+  receivedJoyAmount: BigInt!
+
+  """
+  symbol of the token
+  """
+  tokenSymbol: String!
+
+  """
+  id of the token
+  """
+  tokenId: String!
+}
+
+type CreatorTokenMarketBurnEventData {
+  """
+  Token for which transaction happened
+  """
+  token: CreatorToken
+
+  """
+  Details of the transaction that happened
+  """
+  ammBurnTransaction: AmmTransaction
+}
+
+type CreatorTokenMarketMint {
+  """
+  channel title for notification avatar
+  """
+  channelId: String!
+
+  """
+  handle of member that minted tokens
+  """
+  minterHandle: String!
+
+  """
+  id of member that minted tokens
+  """
+  minterId: String!
+
+  """
+  amount of tokens that user minted
+  """
+  mintedTokenAmount: BigInt!
+
+  """
+  amount of joy that user used for minting
+  """
+  paiedJoyAmount: BigInt!
+
+  """
+  symbol of the token
+  """
+  tokenSymbol: String!
+
+  """
+  id of the token
+  """
+  tokenId: String!
+}
+
+type CreatorTokenMarketMintEventData {
+  """
+  Token for which transaction happened
+  """
+  token: CreatorToken
+
+  """
+  Details of the transaction that happened
+  """
+  ammMintTransaction: AmmTransaction
+}
+
+type CreatorTokenMarketStarted {
+  """
+  channel title for notification text
+  """
+  channelTitle: String!
+
+  """
+  symbol of the token
+  """
+  tokenSymbol: String!
+
+  """
+  id of the token
+  """
+  tokenId: String!
+
+  """
+  channel Id used for link
+  """
+  channelId: String!
+}
+
+type CreatorTokenMarketStartedEventData {
+  """
+  Token for which market was created
+  """
+  token: CreatorToken
+
+  """
+  Details of the created market
+  """
+  ammCurve: AmmCurve
+}
+
+enum CreatorTokenOrderByInput {
+  id_ASC
+  id_DESC
+  status_ASC
+  status_DESC
+  avatar_avatarUri_ASC
+  avatar_avatarUri_DESC
+  avatar_isTypeOf_ASC
+  avatar_isTypeOf_DESC
+  totalSupply_ASC
+  totalSupply_DESC
+  isFeatured_ASC
+  isFeatured_DESC
+  symbol_ASC
+  symbol_DESC
+  isInviteOnly_ASC
+  isInviteOnly_DESC
+  annualCreatorRewardPermill_ASC
+  annualCreatorRewardPermill_DESC
+  revenueShareRatioPermill_ASC
+  revenueShareRatioPermill_DESC
+  createdAt_ASC
+  createdAt_DESC
+  channel_id_ASC
+  channel_id_DESC
+  description_ASC
+  description_DESC
+  whitelistApplicantNote_ASC
+  whitelistApplicantNote_DESC
+  whitelistApplicantLink_ASC
+  whitelistApplicantLink_DESC
+  accountsNum_ASC
+  accountsNum_DESC
+  numberOfRevenueShareActivations_ASC
+  numberOfRevenueShareActivations_DESC
+  deissued_ASC
+  deissued_DESC
+  currentAmmSale_id_ASC
+  currentAmmSale_id_DESC
+  currentAmmSale_burnedByAmm_ASC
+  currentAmmSale_burnedByAmm_DESC
+  currentAmmSale_mintedByAmm_ASC
+  currentAmmSale_mintedByAmm_DESC
+  currentAmmSale_ammSlopeParameter_ASC
+  currentAmmSale_ammSlopeParameter_DESC
+  currentAmmSale_ammInitPrice_ASC
+  currentAmmSale_ammInitPrice_DESC
+  currentAmmSale_finalized_ASC
+  currentAmmSale_finalized_DESC
+  currentSale_id_ASC
+  currentSale_id_DESC
+  currentSale_pricePerUnit_ASC
+  currentSale_pricePerUnit_DESC
+  currentSale_tokenSaleAllocation_ASC
+  currentSale_tokenSaleAllocation_DESC
+  currentSale_tokensSold_ASC
+  currentSale_tokensSold_DESC
+  currentSale_createdIn_ASC
+  currentSale_createdIn_DESC
+  currentSale_startBlock_ASC
+  currentSale_startBlock_DESC
+  currentSale_endsAt_ASC
+  currentSale_endsAt_DESC
+  currentSale_termsAndConditions_ASC
+  currentSale_termsAndConditions_DESC
+  currentSale_maxAmountPerMember_ASC
+  currentSale_maxAmountPerMember_DESC
+  currentSale_finalized_ASC
+  currentSale_finalized_DESC
+  currentRevenueShare_id_ASC
+  currentRevenueShare_id_DESC
+  currentRevenueShare_createdIn_ASC
+  currentRevenueShare_createdIn_DESC
+  currentRevenueShare_startingAt_ASC
+  currentRevenueShare_startingAt_DESC
+  currentRevenueShare_endsAt_ASC
+  currentRevenueShare_endsAt_DESC
+  currentRevenueShare_potentialParticipantsNum_ASC
+  currentRevenueShare_potentialParticipantsNum_DESC
+  currentRevenueShare_participantsNum_ASC
+  currentRevenueShare_participantsNum_DESC
+  currentRevenueShare_allocation_ASC
+  currentRevenueShare_allocation_DESC
+  currentRevenueShare_claimed_ASC
+  currentRevenueShare_claimed_DESC
+  currentRevenueShare_finalized_ASC
+  currentRevenueShare_finalized_DESC
+  numberOfVestedTransferIssued_ASC
+  numberOfVestedTransferIssued_DESC
+  lastPrice_ASC
+  lastPrice_DESC
+}
+
+type CreatorTokenRevenueShareEnded {
+  """
+  channel title for notification text
+  """
+  channelTitle: String!
+
+  """
+  channel title for notification avatar
+  """
+  channelId: String!
+
+  """
+  symbol of the token
+  """
+  tokenSymbol: String!
+
+  """
+  id of created revenue share to verify its' viability in future
+  """
+  revenueShareId: String!
+
+  """
+  id of token
+  """
+  tokenId: String!
+}
+
+type CreatorTokenRevenueSharePlanned {
+  """
+  channel title for notification text
+  """
+  channelTitle: String!
+
+  """
+  channel title for notification avatar
+  """
+  channelId: String!
+
+  """
+  symbol of the token
+  """
+  tokenSymbol: String!
+
+  """
+  id of the token
+  """
+  tokenId: String!
+
+  """
+  block on which split is planned to start
+  """
+  plannedAt: Int!
+
+  """
+  id of created revenue share to verify its' viability in future
+  """
+  revenueShareId: String!
+}
+
+type CreatorTokenRevenueShareStarted {
+  """
+  channel title for notification text
+  """
+  channelTitle: String!
+
+  """
+  channel title for notification avatar
+  """
+  channelId: String!
+
+  """
+  symbol of the token
+  """
+  tokenSymbol: String!
+
+  """
+  id of created revenue share to verify its' viability in future
+  """
+  revenueShareId: String!
+
+  """
+  id of token
+  """
+  tokenId: String!
+}
+
+type CreatorTokenRevenueSplitIssuedEventData {
+  """
+  Token for which split was issued
+  """
+  token: CreatorToken
+
+  """
+  Details of the revenue split
+  """
+  revenueShare: RevenueShare
+}
+
+type CreatorTokenSaleMint {
+  """
+  channel title for notification avatar
+  """
+  channelId: String!
+
+  """
+  handle of member that minted tokens
+  """
+  minterHandle: String!
+
+  """
+  id of member that minted tokens
+  """
+  minterId: String!
+
+  """
+  amount of tokens that user minted
+  """
+  mintedTokenAmount: BigInt!
+
+  """
+  amount of joy that user used for minting
+  """
+  paiedJoyAmount: BigInt!
+
+  """
+  symbol of the token
+  """
+  tokenSymbol: String!
+
+  """
+  id of the token
+  """
+  tokenId: String!
+}
+
+type CreatorTokenSaleMintEventData {
+  """
+  Token for which transaction happened
+  """
+  token: CreatorToken
+
+  """
+  Details of the transaction that happened
+  """
+  saleTransaction: SaleTransaction
+}
+
+type CreatorTokenSaleStarted {
+  """
+  channel title for notification text
+  """
+  channelTitle: String!
+
+  """
+  symbol of the token
+  """
+  tokenSymbol: String!
+
+  """
+  id of the token
+  """
+  tokenId: String!
+
+  """
+  channel Id used for link
+  """
+  channelId: String!
+}
+
+type CreatorTokenSaleStartedEventData {
+  """
+  Token for which sale was created
+  """
+  token: CreatorToken
+
+  """
+  Details of the created sale
+  """
+  sale: Sale
+}
+
+type CreatorTokensConnection {
+  edges: [CreatorTokenEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input CreatorTokenWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  status_isNull: Boolean
+  status_eq: TokenStatus
+  status_not_eq: TokenStatus
+  status_in: [TokenStatus!]
+  status_not_in: [TokenStatus!]
+  avatar_isNull: Boolean
+  avatar: TokenAvatarWhereInput
+  totalSupply_isNull: Boolean
+  totalSupply_eq: BigInt
+  totalSupply_not_eq: BigInt
+  totalSupply_gt: BigInt
+  totalSupply_gte: BigInt
+  totalSupply_lt: BigInt
+  totalSupply_lte: BigInt
+  totalSupply_in: [BigInt!]
+  totalSupply_not_in: [BigInt!]
+  isFeatured_isNull: Boolean
+  isFeatured_eq: Boolean
+  isFeatured_not_eq: Boolean
+  sales_every: SaleWhereInput
+  sales_some: SaleWhereInput
+  sales_none: SaleWhereInput
+  symbol_isNull: Boolean
+  symbol_eq: String
+  symbol_not_eq: String
+  symbol_gt: String
+  symbol_gte: String
+  symbol_lt: String
+  symbol_lte: String
+  symbol_in: [String!]
+  symbol_not_in: [String!]
+  symbol_contains: String
+  symbol_not_contains: String
+  symbol_containsInsensitive: String
+  symbol_not_containsInsensitive: String
+  symbol_startsWith: String
+  symbol_not_startsWith: String
+  symbol_endsWith: String
+  symbol_not_endsWith: String
+  isInviteOnly_isNull: Boolean
+  isInviteOnly_eq: Boolean
+  isInviteOnly_not_eq: Boolean
+  annualCreatorRewardPermill_isNull: Boolean
+  annualCreatorRewardPermill_eq: Int
+  annualCreatorRewardPermill_not_eq: Int
+  annualCreatorRewardPermill_gt: Int
+  annualCreatorRewardPermill_gte: Int
+  annualCreatorRewardPermill_lt: Int
+  annualCreatorRewardPermill_lte: Int
+  annualCreatorRewardPermill_in: [Int!]
+  annualCreatorRewardPermill_not_in: [Int!]
+  revenueShareRatioPermill_isNull: Boolean
+  revenueShareRatioPermill_eq: Int
+  revenueShareRatioPermill_not_eq: Int
+  revenueShareRatioPermill_gt: Int
+  revenueShareRatioPermill_gte: Int
+  revenueShareRatioPermill_lt: Int
+  revenueShareRatioPermill_lte: Int
+  revenueShareRatioPermill_in: [Int!]
+  revenueShareRatioPermill_not_in: [Int!]
+  revenueShares_every: RevenueShareWhereInput
+  revenueShares_some: RevenueShareWhereInput
+  revenueShares_none: RevenueShareWhereInput
+  ammCurves_every: AmmCurveWhereInput
+  ammCurves_some: AmmCurveWhereInput
+  ammCurves_none: AmmCurveWhereInput
+  createdAt_isNull: Boolean
+  createdAt_eq: DateTime
+  createdAt_not_eq: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_in: [DateTime!]
+  createdAt_not_in: [DateTime!]
+  channel_isNull: Boolean
+  channel: TokenChannelWhereInput
+  trailerVideo_every: TrailerVideoWhereInput
+  trailerVideo_some: TrailerVideoWhereInput
+  trailerVideo_none: TrailerVideoWhereInput
+  description_isNull: Boolean
+  description_eq: String
+  description_not_eq: String
+  description_gt: String
+  description_gte: String
+  description_lt: String
+  description_lte: String
+  description_in: [String!]
+  description_not_in: [String!]
+  description_contains: String
+  description_not_contains: String
+  description_containsInsensitive: String
+  description_not_containsInsensitive: String
+  description_startsWith: String
+  description_not_startsWith: String
+  description_endsWith: String
+  description_not_endsWith: String
+  benefits_every: BenefitWhereInput
+  benefits_some: BenefitWhereInput
+  benefits_none: BenefitWhereInput
+  whitelistApplicantNote_isNull: Boolean
+  whitelistApplicantNote_eq: String
+  whitelistApplicantNote_not_eq: String
+  whitelistApplicantNote_gt: String
+  whitelistApplicantNote_gte: String
+  whitelistApplicantNote_lt: String
+  whitelistApplicantNote_lte: String
+  whitelistApplicantNote_in: [String!]
+  whitelistApplicantNote_not_in: [String!]
+  whitelistApplicantNote_contains: String
+  whitelistApplicantNote_not_contains: String
+  whitelistApplicantNote_containsInsensitive: String
+  whitelistApplicantNote_not_containsInsensitive: String
+  whitelistApplicantNote_startsWith: String
+  whitelistApplicantNote_not_startsWith: String
+  whitelistApplicantNote_endsWith: String
+  whitelistApplicantNote_not_endsWith: String
+  whitelistApplicantLink_isNull: Boolean
+  whitelistApplicantLink_eq: String
+  whitelistApplicantLink_not_eq: String
+  whitelistApplicantLink_gt: String
+  whitelistApplicantLink_gte: String
+  whitelistApplicantLink_lt: String
+  whitelistApplicantLink_lte: String
+  whitelistApplicantLink_in: [String!]
+  whitelistApplicantLink_not_in: [String!]
+  whitelistApplicantLink_contains: String
+  whitelistApplicantLink_not_contains: String
+  whitelistApplicantLink_containsInsensitive: String
+  whitelistApplicantLink_not_containsInsensitive: String
+  whitelistApplicantLink_startsWith: String
+  whitelistApplicantLink_not_startsWith: String
+  whitelistApplicantLink_endsWith: String
+  whitelistApplicantLink_not_endsWith: String
+  accounts_every: TokenAccountWhereInput
+  accounts_some: TokenAccountWhereInput
+  accounts_none: TokenAccountWhereInput
+  accountsNum_isNull: Boolean
+  accountsNum_eq: Int
+  accountsNum_not_eq: Int
+  accountsNum_gt: Int
+  accountsNum_gte: Int
+  accountsNum_lt: Int
+  accountsNum_lte: Int
+  accountsNum_in: [Int!]
+  accountsNum_not_in: [Int!]
+  numberOfRevenueShareActivations_isNull: Boolean
+  numberOfRevenueShareActivations_eq: Int
+  numberOfRevenueShareActivations_not_eq: Int
+  numberOfRevenueShareActivations_gt: Int
+  numberOfRevenueShareActivations_gte: Int
+  numberOfRevenueShareActivations_lt: Int
+  numberOfRevenueShareActivations_lte: Int
+  numberOfRevenueShareActivations_in: [Int!]
+  numberOfRevenueShareActivations_not_in: [Int!]
+  deissued_isNull: Boolean
+  deissued_eq: Boolean
+  deissued_not_eq: Boolean
+  currentAmmSale_isNull: Boolean
+  currentAmmSale: AmmCurveWhereInput
+  currentSale_isNull: Boolean
+  currentSale: SaleWhereInput
+  currentRevenueShare_isNull: Boolean
+  currentRevenueShare: RevenueShareWhereInput
+  numberOfVestedTransferIssued_isNull: Boolean
+  numberOfVestedTransferIssued_eq: Int
+  numberOfVestedTransferIssued_not_eq: Int
+  numberOfVestedTransferIssued_gt: Int
+  numberOfVestedTransferIssued_gte: Int
+  numberOfVestedTransferIssued_lt: Int
+  numberOfVestedTransferIssued_lte: Int
+  numberOfVestedTransferIssued_in: [Int!]
+  numberOfVestedTransferIssued_not_in: [Int!]
+  lastPrice_isNull: Boolean
+  lastPrice_eq: BigInt
+  lastPrice_not_eq: BigInt
+  lastPrice_gt: BigInt
+  lastPrice_gte: BigInt
+  lastPrice_lt: BigInt
+  lastPrice_lte: BigInt
+  lastPrice_in: [BigInt!]
+  lastPrice_not_in: [BigInt!]
+  AND: [CreatorTokenWhereInput!]
+  OR: [CreatorTokenWhereInput!]
 }
 
 type Curator {
@@ -4085,6 +5477,107 @@ input DistributionBucketWhereInput {
   OR: [DistributionBucketWhereInput!]
 }
 
+type EmailConfirmationToken {
+  """
+  The token itself (32-byte string, securely random)
+  """
+  id: String!
+
+  """
+  When was the token issued
+  """
+  issuedAt: DateTime!
+
+  """
+  When does the token expire or when has it expired
+  """
+  expiry: DateTime!
+
+  """
+  The email the token was issued for
+  """
+  email: String!
+}
+
+type EmailConfirmationTokenEdge {
+  node: EmailConfirmationToken!
+  cursor: String!
+}
+
+enum EmailConfirmationTokenOrderByInput {
+  id_ASC
+  id_DESC
+  issuedAt_ASC
+  issuedAt_DESC
+  expiry_ASC
+  expiry_DESC
+  email_ASC
+  email_DESC
+}
+
+type EmailConfirmationTokensConnection {
+  edges: [EmailConfirmationTokenEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input EmailConfirmationTokenWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  issuedAt_isNull: Boolean
+  issuedAt_eq: DateTime
+  issuedAt_not_eq: DateTime
+  issuedAt_gt: DateTime
+  issuedAt_gte: DateTime
+  issuedAt_lt: DateTime
+  issuedAt_lte: DateTime
+  issuedAt_in: [DateTime!]
+  issuedAt_not_in: [DateTime!]
+  expiry_isNull: Boolean
+  expiry_eq: DateTime
+  expiry_not_eq: DateTime
+  expiry_gt: DateTime
+  expiry_gte: DateTime
+  expiry_lt: DateTime
+  expiry_lte: DateTime
+  expiry_in: [DateTime!]
+  expiry_not_in: [DateTime!]
+  email_isNull: Boolean
+  email_eq: String
+  email_not_eq: String
+  email_gt: String
+  email_gte: String
+  email_lt: String
+  email_lte: String
+  email_in: [String!]
+  email_not_in: [String!]
+  email_contains: String
+  email_not_contains: String
+  email_containsInsensitive: String
+  email_not_containsInsensitive: String
+  email_startsWith: String
+  email_not_startsWith: String
+  email_endsWith: String
+  email_not_endsWith: String
+  AND: [EmailConfirmationTokenWhereInput!]
+  OR: [EmailConfirmationTokenWhereInput!]
+}
+
 type EmailDeliveryAttempt {
   """
   UUID
@@ -4218,16 +5711,10 @@ enum EncryptionArtifactsOrderByInput {
   account_id_DESC
   account_email_ASC
   account_email_DESC
-  account_isEmailConfirmed_ASC
-  account_isEmailConfirmed_DESC
   account_isBlocked_ASC
   account_isBlocked_DESC
   account_registeredAt_ASC
   account_registeredAt_DESC
-  account_joystreamAccount_ASC
-  account_joystreamAccount_DESC
-  account_referrerChannelId_ASC
-  account_referrerChannelId_DESC
   cipherIv_ASC
   cipherIv_DESC
   encryptedSeed_ASC
@@ -4387,7 +5874,16 @@ union EventData =
   | ChannelPayoutsUpdatedEventData
   | ChannelPaymentMadeEventData
   | MemberBannedFromChannelEventData
+  | ChannelAssetsDeletedByModeratorEventData
+  | VideoAssetsDeletedByModeratorEventData
   | VideoReactionEventData
+  | CreatorTokenIssuedEventData
+  | CreatorTokenMarketStartedEventData
+  | CreatorTokenMarketMintEventData
+  | CreatorTokenMarketBurnEventData
+  | CreatorTokenSaleStartedEventData
+  | CreatorTokenSaleMintEventData
+  | CreatorTokenRevenueSplitIssuedEventData
 
 input EventDataWhereInput {
   channel_isNull: Boolean
@@ -4562,8 +6058,28 @@ input EventDataWhereInput {
   action_isNull: Boolean
   action_eq: Boolean
   action_not_eq: Boolean
+  assetIds_isNull: Boolean
+  assetIds_containsAll: [BigInt!]
+  assetIds_containsAny: [BigInt!]
+  assetIds_containsNone: [BigInt!]
+  deletedBy_isNull: Boolean
+  deletedBy: ContentActorWhereInput
   videoReaction_isNull: Boolean
   videoReaction: VideoReactionWhereInput
+  token_isNull: Boolean
+  token: CreatorTokenWhereInput
+  ammCurve_isNull: Boolean
+  ammCurve: AmmCurveWhereInput
+  ammMintTransaction_isNull: Boolean
+  ammMintTransaction: AmmTransactionWhereInput
+  ammBurnTransaction_isNull: Boolean
+  ammBurnTransaction: AmmTransactionWhereInput
+  sale_isNull: Boolean
+  sale: SaleWhereInput
+  saleTransaction_isNull: Boolean
+  saleTransaction: SaleTransactionWhereInput
+  revenueShare_isNull: Boolean
+  revenueShare: RevenueShareWhereInput
   isTypeOf_isNull: Boolean
   isTypeOf_eq: String
   isTypeOf_not_eq: String
@@ -5023,6 +6539,18 @@ type GeographicalAreaSubdivistion {
   subdivisionCode: String
 }
 
+type GetAccountTransferrableBalanceResult {
+  transferrableCrtAmount: Int!
+}
+
+type GetCumulativeHistoricalShareAllocationResult {
+  cumulativeHistoricalAllocation: String!
+}
+
+type GetShareDividendsResult {
+  dividendJoyAmount: String!
+}
+
 type GrantOrRevokeOperatorPermissionsResult {
   newPermissions: [OperatorPermission!]!
 }
@@ -5047,6 +6575,14 @@ type HigherBidPlaced {
   new bidder handle
   """
   newBidderHandle: String!
+}
+
+type InitialIssuanceVestingSource {
+  phantom: Int
+}
+
+type IssuerTransferVestingSource {
+  phantom: Int
 }
 
 type KillSwitch {
@@ -5237,8 +6773,6 @@ enum MemberMetadataOrderByInput {
   member_handle_DESC
   member_handleRaw_ASC
   member_handleRaw_DESC
-  member_controllerAccount_ASC
-  member_controllerAccount_DESC
   member_totalChannelsCreated_ASC
   member_totalChannelsCreated_DESC
 }
@@ -5342,7 +6876,7 @@ type Membership {
   """
   Member's controller account id
   """
-  controllerAccount: String!
+  controllerAccount: BlockchainAccount!
 
   """
   Auctions in which is this user whitelisted to participate
@@ -5373,6 +6907,16 @@ type Membership {
   Number of channels ever created by this member
   """
   totalChannelsCreated: Int!
+
+  """
+  token accounts
+  """
+  tokenAccounts(
+    where: TokenAccountWhereInput
+    orderBy: [TokenAccountOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [TokenAccount!]!
 }
 
 type MembershipEdge {
@@ -5395,8 +6939,8 @@ enum MembershipOrderByInput {
   metadata_name_DESC
   metadata_about_ASC
   metadata_about_DESC
-  controllerAccount_ASC
-  controllerAccount_DESC
+  controllerAccount_id_ASC
+  controllerAccount_id_DESC
   totalChannelsCreated_ASC
   totalChannelsCreated_DESC
 }
@@ -5471,22 +7015,7 @@ input MembershipWhereInput {
   metadata_isNull: Boolean
   metadata: MemberMetadataWhereInput
   controllerAccount_isNull: Boolean
-  controllerAccount_eq: String
-  controllerAccount_not_eq: String
-  controllerAccount_gt: String
-  controllerAccount_gte: String
-  controllerAccount_lt: String
-  controllerAccount_lte: String
-  controllerAccount_in: [String!]
-  controllerAccount_not_in: [String!]
-  controllerAccount_contains: String
-  controllerAccount_not_contains: String
-  controllerAccount_containsInsensitive: String
-  controllerAccount_not_containsInsensitive: String
-  controllerAccount_startsWith: String
-  controllerAccount_not_startsWith: String
-  controllerAccount_endsWith: String
-  controllerAccount_not_endsWith: String
+  controllerAccount: BlockchainAccountWhereInput
   whitelistedInAuctions_every: AuctionWhitelistedMemberWhereInput
   whitelistedInAuctions_some: AuctionWhitelistedMemberWhereInput
   whitelistedInAuctions_none: AuctionWhitelistedMemberWhereInput
@@ -5505,6 +7034,9 @@ input MembershipWhereInput {
   totalChannelsCreated_lte: Int
   totalChannelsCreated_in: [Int!]
   totalChannelsCreated_not_in: [Int!]
+  tokenAccounts_every: TokenAccountWhereInput
+  tokenAccounts_some: TokenAccountWhereInput
+  tokenAccounts_none: TokenAccountWhereInput
   AND: [MembershipWhereInput!]
   OR: [MembershipWhereInput!]
 }
@@ -5610,6 +7142,27 @@ type MetaprotocolTransactionStatusEventData {
 }
 
 type Mutation {
+  createAccountMembership(
+    """
+    Membership Handle
+    """
+    handle: String!
+
+    """
+    Membership avatar URL
+    """
+    avatar: String!
+
+    """
+    `about` information to associate with new Membership
+    """
+    about: String!
+
+    """
+    Membership name
+    """
+    name: String!
+  ): CreateAccountMembershipResult!
   setAppAssetStorage(
     """
     The app asset storage link to be set
@@ -5689,6 +7242,12 @@ type Mutation {
     """
     featuredNftsIds: [String!]!
   ): SetFeaturedNftsResult!
+  setFeaturedCrts(
+    """
+    IDs of the CRTs that should be featured by the Gateway
+    """
+    featuredCrtsIds: [String!]!
+  ): SetFeaturedCrtsResult!
   excludeContent(
     """
     Type of the content to exclude/hide
@@ -5732,6 +7291,11 @@ type Mutation {
   suspendChannels(channelIds: [String!]!): [SuspendChannelResult!]!
   verifyChannel(channelIds: [String!]!): VerifyChannelResult!
   excludeChannel(channelId: String!, rationale: String!): ExcludeChannelResult!
+  requestNftFeatured(nftId: String!, rationale: String!): NftFeaturedRequstInfo!
+  markNotificationsAsRead(notificationIds: [String!]!): MarkNotificationsAsReadResult!
+  setAccountNotificationPreferences(
+    notificationPreferences: AccountNotificationPreferencesInput!
+  ): AccountNotificationPreferencesOutput!
   setOrUnsetPublicFeedVideos(
     videoIds: [String!]!
 
@@ -5743,11 +7307,6 @@ type Mutation {
   addVideoView(videoId: String!): AddVideoViewResult!
   reportVideo(videoId: String!, rationale: String!): VideoReportInfo!
   excludeVideo(videoId: String!, rationale: String!): ExcludeVideoInfo!
-  requestNftFeatured(nftId: String!, rationale: String!): NftFeaturedRequstInfo!
-  markNotificationsAsRead(notificationIds: [String!]!): MarkNotificationsAsReadResult!
-  setAccountNotificationPreferences(
-    notificationPreferences: AccountNotificationPreferencesInput!
-  ): AccountNotificationPreferencesOutput!
 }
 
 type NewAuction {
@@ -5845,8 +7404,6 @@ enum NftActivityOrderByInput {
   member_handle_DESC
   member_handleRaw_ASC
   member_handleRaw_DESC
-  member_controllerAccount_ASC
-  member_controllerAccount_DESC
   member_totalChannelsCreated_ASC
   member_totalChannelsCreated_DESC
   event_id_ASC
@@ -6344,6 +7901,11 @@ type Notification {
   createdAt: DateTime!
 
   """
+  block after which notification should be dispatched (if null, then it should be dispatched immediately)
+  """
+  dispatchBlock: Int
+
+  """
   recipient
   """
   recipient: RecipientType!
@@ -6401,6 +7963,8 @@ enum NotificationEmailDeliveryOrderByInput {
   notification_inApp_DESC
   notification_createdAt_ASC
   notification_createdAt_DESC
+  notification_dispatchBlock_ASC
+  notification_dispatchBlock_DESC
   discard_ASC
   discard_DESC
 }
@@ -6442,16 +8006,10 @@ enum NotificationOrderByInput {
   account_id_DESC
   account_email_ASC
   account_email_DESC
-  account_isEmailConfirmed_ASC
-  account_isEmailConfirmed_DESC
   account_isBlocked_ASC
   account_isBlocked_DESC
   account_registeredAt_ASC
   account_registeredAt_DESC
-  account_joystreamAccount_ASC
-  account_joystreamAccount_DESC
-  account_referrerChannelId_ASC
-  account_referrerChannelId_DESC
   notificationType_channelTitle_ASC
   notificationType_channelTitle_DESC
   notificationType_videoTitle_ASC
@@ -6494,6 +8052,30 @@ enum NotificationOrderByInput {
   notificationType_newBidderId_DESC
   notificationType_newBidderHandle_ASC
   notificationType_newBidderHandle_DESC
+  notificationType_tokenSymbol_ASC
+  notificationType_tokenSymbol_DESC
+  notificationType_tokenId_ASC
+  notificationType_tokenId_DESC
+  notificationType_minterHandle_ASC
+  notificationType_minterHandle_DESC
+  notificationType_minterId_ASC
+  notificationType_minterId_DESC
+  notificationType_mintedTokenAmount_ASC
+  notificationType_mintedTokenAmount_DESC
+  notificationType_paiedJoyAmount_ASC
+  notificationType_paiedJoyAmount_DESC
+  notificationType_burnerHandle_ASC
+  notificationType_burnerHandle_DESC
+  notificationType_burnerId_ASC
+  notificationType_burnerId_DESC
+  notificationType_burnedTokenAmount_ASC
+  notificationType_burnedTokenAmount_DESC
+  notificationType_receivedJoyAmount_ASC
+  notificationType_receivedJoyAmount_DESC
+  notificationType_revenueShareId_ASC
+  notificationType_revenueShareId_DESC
+  notificationType_plannedAt_ASC
+  notificationType_plannedAt_DESC
   notificationType_isTypeOf_ASC
   notificationType_isTypeOf_DESC
   event_id_ASC
@@ -6516,6 +8098,8 @@ enum NotificationOrderByInput {
   inApp_DESC
   createdAt_ASC
   createdAt_DESC
+  dispatchBlock_ASC
+  dispatchBlock_DESC
   recipient_isTypeOf_ASC
   recipient_isTypeOf_DESC
 }
@@ -6581,6 +8165,15 @@ union NotificationType =
   | HigherBidPlaced
   | AuctionWon
   | AuctionLost
+  | CreatorTokenIssued
+  | CreatorTokenMarketStarted
+  | CreatorTokenSaleStarted
+  | CreatorTokenMarketMint
+  | CreatorTokenMarketBurn
+  | CreatorTokenSaleMint
+  | CreatorTokenRevenueShareStarted
+  | CreatorTokenRevenueSharePlanned
+  | CreatorTokenRevenueShareEnded
 
 input NotificationTypeWhereInput {
   channelTitle_isNull: Boolean
@@ -6918,6 +8511,170 @@ input NotificationTypeWhereInput {
   newBidderHandle_not_endsWith: String
   type_isNull: Boolean
   type: AuctionTypeWhereInput
+  tokenSymbol_isNull: Boolean
+  tokenSymbol_eq: String
+  tokenSymbol_not_eq: String
+  tokenSymbol_gt: String
+  tokenSymbol_gte: String
+  tokenSymbol_lt: String
+  tokenSymbol_lte: String
+  tokenSymbol_in: [String!]
+  tokenSymbol_not_in: [String!]
+  tokenSymbol_contains: String
+  tokenSymbol_not_contains: String
+  tokenSymbol_containsInsensitive: String
+  tokenSymbol_not_containsInsensitive: String
+  tokenSymbol_startsWith: String
+  tokenSymbol_not_startsWith: String
+  tokenSymbol_endsWith: String
+  tokenSymbol_not_endsWith: String
+  tokenId_isNull: Boolean
+  tokenId_eq: String
+  tokenId_not_eq: String
+  tokenId_gt: String
+  tokenId_gte: String
+  tokenId_lt: String
+  tokenId_lte: String
+  tokenId_in: [String!]
+  tokenId_not_in: [String!]
+  tokenId_contains: String
+  tokenId_not_contains: String
+  tokenId_containsInsensitive: String
+  tokenId_not_containsInsensitive: String
+  tokenId_startsWith: String
+  tokenId_not_startsWith: String
+  tokenId_endsWith: String
+  tokenId_not_endsWith: String
+  minterHandle_isNull: Boolean
+  minterHandle_eq: String
+  minterHandle_not_eq: String
+  minterHandle_gt: String
+  minterHandle_gte: String
+  minterHandle_lt: String
+  minterHandle_lte: String
+  minterHandle_in: [String!]
+  minterHandle_not_in: [String!]
+  minterHandle_contains: String
+  minterHandle_not_contains: String
+  minterHandle_containsInsensitive: String
+  minterHandle_not_containsInsensitive: String
+  minterHandle_startsWith: String
+  minterHandle_not_startsWith: String
+  minterHandle_endsWith: String
+  minterHandle_not_endsWith: String
+  minterId_isNull: Boolean
+  minterId_eq: String
+  minterId_not_eq: String
+  minterId_gt: String
+  minterId_gte: String
+  minterId_lt: String
+  minterId_lte: String
+  minterId_in: [String!]
+  minterId_not_in: [String!]
+  minterId_contains: String
+  minterId_not_contains: String
+  minterId_containsInsensitive: String
+  minterId_not_containsInsensitive: String
+  minterId_startsWith: String
+  minterId_not_startsWith: String
+  minterId_endsWith: String
+  minterId_not_endsWith: String
+  mintedTokenAmount_isNull: Boolean
+  mintedTokenAmount_eq: BigInt
+  mintedTokenAmount_not_eq: BigInt
+  mintedTokenAmount_gt: BigInt
+  mintedTokenAmount_gte: BigInt
+  mintedTokenAmount_lt: BigInt
+  mintedTokenAmount_lte: BigInt
+  mintedTokenAmount_in: [BigInt!]
+  mintedTokenAmount_not_in: [BigInt!]
+  paiedJoyAmount_isNull: Boolean
+  paiedJoyAmount_eq: BigInt
+  paiedJoyAmount_not_eq: BigInt
+  paiedJoyAmount_gt: BigInt
+  paiedJoyAmount_gte: BigInt
+  paiedJoyAmount_lt: BigInt
+  paiedJoyAmount_lte: BigInt
+  paiedJoyAmount_in: [BigInt!]
+  paiedJoyAmount_not_in: [BigInt!]
+  burnerHandle_isNull: Boolean
+  burnerHandle_eq: String
+  burnerHandle_not_eq: String
+  burnerHandle_gt: String
+  burnerHandle_gte: String
+  burnerHandle_lt: String
+  burnerHandle_lte: String
+  burnerHandle_in: [String!]
+  burnerHandle_not_in: [String!]
+  burnerHandle_contains: String
+  burnerHandle_not_contains: String
+  burnerHandle_containsInsensitive: String
+  burnerHandle_not_containsInsensitive: String
+  burnerHandle_startsWith: String
+  burnerHandle_not_startsWith: String
+  burnerHandle_endsWith: String
+  burnerHandle_not_endsWith: String
+  burnerId_isNull: Boolean
+  burnerId_eq: String
+  burnerId_not_eq: String
+  burnerId_gt: String
+  burnerId_gte: String
+  burnerId_lt: String
+  burnerId_lte: String
+  burnerId_in: [String!]
+  burnerId_not_in: [String!]
+  burnerId_contains: String
+  burnerId_not_contains: String
+  burnerId_containsInsensitive: String
+  burnerId_not_containsInsensitive: String
+  burnerId_startsWith: String
+  burnerId_not_startsWith: String
+  burnerId_endsWith: String
+  burnerId_not_endsWith: String
+  burnedTokenAmount_isNull: Boolean
+  burnedTokenAmount_eq: BigInt
+  burnedTokenAmount_not_eq: BigInt
+  burnedTokenAmount_gt: BigInt
+  burnedTokenAmount_gte: BigInt
+  burnedTokenAmount_lt: BigInt
+  burnedTokenAmount_lte: BigInt
+  burnedTokenAmount_in: [BigInt!]
+  burnedTokenAmount_not_in: [BigInt!]
+  receivedJoyAmount_isNull: Boolean
+  receivedJoyAmount_eq: BigInt
+  receivedJoyAmount_not_eq: BigInt
+  receivedJoyAmount_gt: BigInt
+  receivedJoyAmount_gte: BigInt
+  receivedJoyAmount_lt: BigInt
+  receivedJoyAmount_lte: BigInt
+  receivedJoyAmount_in: [BigInt!]
+  receivedJoyAmount_not_in: [BigInt!]
+  revenueShareId_isNull: Boolean
+  revenueShareId_eq: String
+  revenueShareId_not_eq: String
+  revenueShareId_gt: String
+  revenueShareId_gte: String
+  revenueShareId_lt: String
+  revenueShareId_lte: String
+  revenueShareId_in: [String!]
+  revenueShareId_not_in: [String!]
+  revenueShareId_contains: String
+  revenueShareId_not_contains: String
+  revenueShareId_containsInsensitive: String
+  revenueShareId_not_containsInsensitive: String
+  revenueShareId_startsWith: String
+  revenueShareId_not_startsWith: String
+  revenueShareId_endsWith: String
+  revenueShareId_not_endsWith: String
+  plannedAt_isNull: Boolean
+  plannedAt_eq: Int
+  plannedAt_not_eq: Int
+  plannedAt_gt: Int
+  plannedAt_gte: Int
+  plannedAt_lt: Int
+  plannedAt_lte: Int
+  plannedAt_in: [Int!]
+  plannedAt_not_in: [Int!]
   isTypeOf_isNull: Boolean
   isTypeOf_eq: String
   isTypeOf_not_eq: String
@@ -6975,6 +8732,15 @@ input NotificationWhereInput {
   createdAt_lte: DateTime
   createdAt_in: [DateTime!]
   createdAt_not_in: [DateTime!]
+  dispatchBlock_isNull: Boolean
+  dispatchBlock_eq: Int
+  dispatchBlock_not_eq: Int
+  dispatchBlock_gt: Int
+  dispatchBlock_gte: Int
+  dispatchBlock_lt: Int
+  dispatchBlock_lte: Int
+  dispatchBlock_in: [Int!]
+  dispatchBlock_not_in: [Int!]
   recipient_isNull: Boolean
   recipient: RecipientTypeWhereInput
   AND: [NotificationWhereInput!]
@@ -7029,6 +8795,7 @@ enum OperatorPermission {
   EXCLUDE_CONTENT
   RESTORE_CONTENT
   SET_PUBLIC_FEED_VIDEOS
+  SET_FEATURED_CRTS
 }
 
 """
@@ -7144,6 +8911,8 @@ enum OwnedNftOrderByInput {
   video_videoRelevance_DESC
   video_isShort_ASC
   video_isShort_DESC
+  video_isShortDerived_ASC
+  video_isShortDerived_DESC
   video_includeInHomeFeed_ASC
   video_includeInHomeFeed_DESC
   owner_isTypeOf_ASC
@@ -7303,6 +9072,7 @@ enum PublicFeedOperationType {
 }
 
 type Query {
+  accountData: AccountData!
   getKillSwitch: KillSwitch!
   videoHero: VideoHero
   extendedChannels(where: ExtendedChannelWhereInput, orderBy: [ChannelOrderByInput!], limit: Int): [ExtendedChannel!]!
@@ -7318,6 +9088,14 @@ type Query {
     orderBy: ChannelNftCollectorsOrderByInput
     limit: Int
   ): [ChannelNftCollector!]!
+  getShareDividend(tokenId: String!, stakingAmount: Int!): GetShareDividendsResult!
+  getCumulativeHistoricalShareAllocation(tokenId: String!): GetCumulativeHistoricalShareAllocationResult!
+  getAccountTransferrableBalance(
+    tokenId: String!
+    memberId: String!
+    currentBlockHeight: Int!
+  ): GetAccountTransferrableBalanceResult!
+  endingAuctionsNfts(where: OwnedNftWhereInput, limit: Int, offset: Int): [OwnedNft!]!
   extendedVideoCategories: [ExtendedVideoCategory!]!
   mostViewedVideosConnection(
     after: String
@@ -7340,8 +9118,6 @@ type Query {
     """
     limit: Int = 100
   ): [Video!]!
-  endingAuctionsNfts(where: OwnedNftWhereInput, limit: Int, offset: Int): [OwnedNft!]!
-  accountData: AccountData!
   users(where: UserWhereInput, orderBy: [UserOrderByInput!], offset: Int, limit: Int): [User!]!
   userById(id: String!): User
   userByUniqueInput(where: WhereIdInput!): User @deprecated(reason: "Use userById")
@@ -7398,6 +9174,21 @@ type Query {
   tokenById(id: String!): Token
   tokenByUniqueInput(where: WhereIdInput!): Token @deprecated(reason: "Use tokenById")
   tokensConnection(orderBy: [TokenOrderByInput!]!, after: String, first: Int, where: TokenWhereInput): TokensConnection!
+  emailConfirmationTokens(
+    where: EmailConfirmationTokenWhereInput
+    orderBy: [EmailConfirmationTokenOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [EmailConfirmationToken!]!
+  emailConfirmationTokenById(id: String!): EmailConfirmationToken
+  emailConfirmationTokenByUniqueInput(where: WhereIdInput!): EmailConfirmationToken
+    @deprecated(reason: "Use emailConfirmationTokenById")
+  emailConfirmationTokensConnection(
+    orderBy: [EmailConfirmationTokenOrderByInput!]!
+    after: String
+    first: Int
+    where: EmailConfirmationTokenWhereInput
+  ): EmailConfirmationTokensConnection!
   events(where: EventWhereInput, orderBy: [EventOrderByInput!], offset: Int, limit: Int): [Event!]!
   eventById(id: String!): Event
   eventByUniqueInput(where: WhereIdInput!): Event @deprecated(reason: "Use eventById")
@@ -7872,6 +9663,178 @@ type Query {
   appById(id: String!): App
   appByUniqueInput(where: WhereIdInput!): App @deprecated(reason: "Use appById")
   appsConnection(orderBy: [AppOrderByInput!]!, after: String, first: Int, where: AppWhereInput): AppsConnection!
+  creatorTokens(
+    where: CreatorTokenWhereInput
+    orderBy: [CreatorTokenOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [CreatorToken!]!
+  creatorTokenById(id: String!): CreatorToken
+  creatorTokenByUniqueInput(where: WhereIdInput!): CreatorToken @deprecated(reason: "Use creatorTokenById")
+  creatorTokensConnection(
+    orderBy: [CreatorTokenOrderByInput!]!
+    after: String
+    first: Int
+    where: CreatorTokenWhereInput
+  ): CreatorTokensConnection!
+  trailerVideos(
+    where: TrailerVideoWhereInput
+    orderBy: [TrailerVideoOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [TrailerVideo!]!
+  trailerVideoById(id: String!): TrailerVideo
+  trailerVideoByUniqueInput(where: WhereIdInput!): TrailerVideo @deprecated(reason: "Use trailerVideoById")
+  trailerVideosConnection(
+    orderBy: [TrailerVideoOrderByInput!]!
+    after: String
+    first: Int
+    where: TrailerVideoWhereInput
+  ): TrailerVideosConnection!
+  tokenChannels(
+    where: TokenChannelWhereInput
+    orderBy: [TokenChannelOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [TokenChannel!]!
+  tokenChannelById(id: String!): TokenChannel
+  tokenChannelByUniqueInput(where: WhereIdInput!): TokenChannel @deprecated(reason: "Use tokenChannelById")
+  tokenChannelsConnection(
+    orderBy: [TokenChannelOrderByInput!]!
+    after: String
+    first: Int
+    where: TokenChannelWhereInput
+  ): TokenChannelsConnection!
+  revenueShares(
+    where: RevenueShareWhereInput
+    orderBy: [RevenueShareOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [RevenueShare!]!
+  revenueShareById(id: String!): RevenueShare
+  revenueShareByUniqueInput(where: WhereIdInput!): RevenueShare @deprecated(reason: "Use revenueShareById")
+  revenueSharesConnection(
+    orderBy: [RevenueShareOrderByInput!]!
+    after: String
+    first: Int
+    where: RevenueShareWhereInput
+  ): RevenueSharesConnection!
+  benefits(where: BenefitWhereInput, orderBy: [BenefitOrderByInput!], offset: Int, limit: Int): [Benefit!]!
+  benefitById(id: String!): Benefit
+  benefitByUniqueInput(where: WhereIdInput!): Benefit @deprecated(reason: "Use benefitById")
+  benefitsConnection(
+    orderBy: [BenefitOrderByInput!]!
+    after: String
+    first: Int
+    where: BenefitWhereInput
+  ): BenefitsConnection!
+  sales(where: SaleWhereInput, orderBy: [SaleOrderByInput!], offset: Int, limit: Int): [Sale!]!
+  saleById(id: String!): Sale
+  saleByUniqueInput(where: WhereIdInput!): Sale @deprecated(reason: "Use saleById")
+  salesConnection(orderBy: [SaleOrderByInput!]!, after: String, first: Int, where: SaleWhereInput): SalesConnection!
+  vestedSales(where: VestedSaleWhereInput, orderBy: [VestedSaleOrderByInput!], offset: Int, limit: Int): [VestedSale!]!
+  vestedSaleById(id: String!): VestedSale
+  vestedSaleByUniqueInput(where: WhereIdInput!): VestedSale @deprecated(reason: "Use vestedSaleById")
+  vestedSalesConnection(
+    orderBy: [VestedSaleOrderByInput!]!
+    after: String
+    first: Int
+    where: VestedSaleWhereInput
+  ): VestedSalesConnection!
+  saleTransactions(
+    where: SaleTransactionWhereInput
+    orderBy: [SaleTransactionOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [SaleTransaction!]!
+  saleTransactionById(id: String!): SaleTransaction
+  saleTransactionByUniqueInput(where: WhereIdInput!): SaleTransaction @deprecated(reason: "Use saleTransactionById")
+  saleTransactionsConnection(
+    orderBy: [SaleTransactionOrderByInput!]!
+    after: String
+    first: Int
+    where: SaleTransactionWhereInput
+  ): SaleTransactionsConnection!
+  ammCurves(where: AmmCurveWhereInput, orderBy: [AmmCurveOrderByInput!], offset: Int, limit: Int): [AmmCurve!]!
+  ammCurveById(id: String!): AmmCurve
+  ammCurveByUniqueInput(where: WhereIdInput!): AmmCurve @deprecated(reason: "Use ammCurveById")
+  ammCurvesConnection(
+    orderBy: [AmmCurveOrderByInput!]!
+    after: String
+    first: Int
+    where: AmmCurveWhereInput
+  ): AmmCurvesConnection!
+  ammTransactions(
+    where: AmmTransactionWhereInput
+    orderBy: [AmmTransactionOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [AmmTransaction!]!
+  ammTransactionById(id: String!): AmmTransaction
+  ammTransactionByUniqueInput(where: WhereIdInput!): AmmTransaction @deprecated(reason: "Use ammTransactionById")
+  ammTransactionsConnection(
+    orderBy: [AmmTransactionOrderByInput!]!
+    after: String
+    first: Int
+    where: AmmTransactionWhereInput
+  ): AmmTransactionsConnection!
+  tokenAccounts(
+    where: TokenAccountWhereInput
+    orderBy: [TokenAccountOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [TokenAccount!]!
+  tokenAccountById(id: String!): TokenAccount
+  tokenAccountByUniqueInput(where: WhereIdInput!): TokenAccount @deprecated(reason: "Use tokenAccountById")
+  tokenAccountsConnection(
+    orderBy: [TokenAccountOrderByInput!]!
+    after: String
+    first: Int
+    where: TokenAccountWhereInput
+  ): TokenAccountsConnection!
+  vestedAccounts(
+    where: VestedAccountWhereInput
+    orderBy: [VestedAccountOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [VestedAccount!]!
+  vestedAccountById(id: String!): VestedAccount
+  vestedAccountByUniqueInput(where: WhereIdInput!): VestedAccount @deprecated(reason: "Use vestedAccountById")
+  vestedAccountsConnection(
+    orderBy: [VestedAccountOrderByInput!]!
+    after: String
+    first: Int
+    where: VestedAccountWhereInput
+  ): VestedAccountsConnection!
+  vestingSchedules(
+    where: VestingScheduleWhereInput
+    orderBy: [VestingScheduleOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [VestingSchedule!]!
+  vestingScheduleById(id: String!): VestingSchedule
+  vestingScheduleByUniqueInput(where: WhereIdInput!): VestingSchedule @deprecated(reason: "Use vestingScheduleById")
+  vestingSchedulesConnection(
+    orderBy: [VestingScheduleOrderByInput!]!
+    after: String
+    first: Int
+    where: VestingScheduleWhereInput
+  ): VestingSchedulesConnection!
+  revenueShareParticipations(
+    where: RevenueShareParticipationWhereInput
+    orderBy: [RevenueShareParticipationOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [RevenueShareParticipation!]!
+  revenueShareParticipationById(id: String!): RevenueShareParticipation
+  revenueShareParticipationByUniqueInput(where: WhereIdInput!): RevenueShareParticipation
+    @deprecated(reason: "Use revenueShareParticipationById")
+  revenueShareParticipationsConnection(
+    orderBy: [RevenueShareParticipationOrderByInput!]!
+    after: String
+    first: Int
+    where: RevenueShareParticipationWhereInput
+  ): RevenueShareParticipationsConnection!
   curatorGroups(
     where: CuratorGroupWhereInput
     orderBy: [CuratorGroupOrderByInput!]
@@ -7895,6 +9858,21 @@ type Query {
     first: Int
     where: CuratorWhereInput
   ): CuratorsConnection!
+  blockchainAccounts(
+    where: BlockchainAccountWhereInput
+    orderBy: [BlockchainAccountOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [BlockchainAccount!]!
+  blockchainAccountById(id: String!): BlockchainAccount
+  blockchainAccountByUniqueInput(where: WhereIdInput!): BlockchainAccount
+    @deprecated(reason: "Use blockchainAccountById")
+  blockchainAccountsConnection(
+    orderBy: [BlockchainAccountOrderByInput!]!
+    after: String
+    first: Int
+    where: BlockchainAccountWhereInput
+  ): BlockchainAccountsConnection!
   memberMetadata(
     where: MemberMetadataWhereInput
     orderBy: [MemberMetadataOrderByInput!]
@@ -8229,6 +10207,762 @@ type RestoreContentResult {
   numberOfEntitiesAffected: Int!
 }
 
+type RevenueShare {
+  """
+  counter
+  """
+  id: String!
+
+  """
+  token which this revenue share is for
+  """
+  token: CreatorToken!
+
+  """
+  list of participating members
+  """
+  stakers(
+    where: RevenueShareParticipationWhereInput
+    orderBy: [RevenueShareParticipationOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [RevenueShareParticipation!]!
+
+  """
+  block at which the revenue share was issued
+  """
+  createdIn: Int!
+
+  """
+  starting block
+  """
+  startingAt: Int!
+
+  """
+  ending block
+  """
+  endsAt: Int!
+
+  """
+  number of holders that could join the split before it ended
+  """
+  potentialParticipantsNum: Int
+
+  """
+  Number of participants (stackers)
+  """
+  participantsNum: Int!
+
+  """
+  total number of HAPI allocated
+  """
+  allocation: BigInt!
+
+  """
+  amounts claimed so far in order to avoid SUM aggregations
+  """
+  claimed: BigInt!
+
+  """
+  finalized
+  """
+  finalized: Boolean!
+}
+
+type RevenueShareEdge {
+  node: RevenueShare!
+  cursor: String!
+}
+
+enum RevenueShareOrderByInput {
+  id_ASC
+  id_DESC
+  token_id_ASC
+  token_id_DESC
+  token_status_ASC
+  token_status_DESC
+  token_totalSupply_ASC
+  token_totalSupply_DESC
+  token_isFeatured_ASC
+  token_isFeatured_DESC
+  token_symbol_ASC
+  token_symbol_DESC
+  token_isInviteOnly_ASC
+  token_isInviteOnly_DESC
+  token_annualCreatorRewardPermill_ASC
+  token_annualCreatorRewardPermill_DESC
+  token_revenueShareRatioPermill_ASC
+  token_revenueShareRatioPermill_DESC
+  token_createdAt_ASC
+  token_createdAt_DESC
+  token_description_ASC
+  token_description_DESC
+  token_whitelistApplicantNote_ASC
+  token_whitelistApplicantNote_DESC
+  token_whitelistApplicantLink_ASC
+  token_whitelistApplicantLink_DESC
+  token_accountsNum_ASC
+  token_accountsNum_DESC
+  token_numberOfRevenueShareActivations_ASC
+  token_numberOfRevenueShareActivations_DESC
+  token_deissued_ASC
+  token_deissued_DESC
+  token_numberOfVestedTransferIssued_ASC
+  token_numberOfVestedTransferIssued_DESC
+  token_lastPrice_ASC
+  token_lastPrice_DESC
+  createdIn_ASC
+  createdIn_DESC
+  startingAt_ASC
+  startingAt_DESC
+  endsAt_ASC
+  endsAt_DESC
+  potentialParticipantsNum_ASC
+  potentialParticipantsNum_DESC
+  participantsNum_ASC
+  participantsNum_DESC
+  allocation_ASC
+  allocation_DESC
+  claimed_ASC
+  claimed_DESC
+  finalized_ASC
+  finalized_DESC
+}
+
+type RevenueShareParticipation {
+  """
+  counter
+  """
+  id: String!
+
+  """
+  participating Account
+  """
+  account: TokenAccount!
+
+  """
+  revenue share the account is participating in
+  """
+  revenueShare: RevenueShare!
+
+  """
+  staked amount
+  """
+  stakedAmount: BigInt!
+
+  """
+  eearned joy amounts
+  """
+  earnings: BigInt!
+
+  """
+  block
+  """
+  createdIn: Int!
+
+  """
+  whether the account unstaked funds, recoving the participation
+  """
+  recovered: Boolean!
+}
+
+type RevenueShareParticipationEdge {
+  node: RevenueShareParticipation!
+  cursor: String!
+}
+
+enum RevenueShareParticipationOrderByInput {
+  id_ASC
+  id_DESC
+  account_id_ASC
+  account_id_DESC
+  account_stakedAmount_ASC
+  account_stakedAmount_DESC
+  account_totalAmount_ASC
+  account_totalAmount_DESC
+  account_deleted_ASC
+  account_deleted_DESC
+  revenueShare_id_ASC
+  revenueShare_id_DESC
+  revenueShare_createdIn_ASC
+  revenueShare_createdIn_DESC
+  revenueShare_startingAt_ASC
+  revenueShare_startingAt_DESC
+  revenueShare_endsAt_ASC
+  revenueShare_endsAt_DESC
+  revenueShare_potentialParticipantsNum_ASC
+  revenueShare_potentialParticipantsNum_DESC
+  revenueShare_participantsNum_ASC
+  revenueShare_participantsNum_DESC
+  revenueShare_allocation_ASC
+  revenueShare_allocation_DESC
+  revenueShare_claimed_ASC
+  revenueShare_claimed_DESC
+  revenueShare_finalized_ASC
+  revenueShare_finalized_DESC
+  stakedAmount_ASC
+  stakedAmount_DESC
+  earnings_ASC
+  earnings_DESC
+  createdIn_ASC
+  createdIn_DESC
+  recovered_ASC
+  recovered_DESC
+}
+
+type RevenueShareParticipationsConnection {
+  edges: [RevenueShareParticipationEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input RevenueShareParticipationWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  account_isNull: Boolean
+  account: TokenAccountWhereInput
+  revenueShare_isNull: Boolean
+  revenueShare: RevenueShareWhereInput
+  stakedAmount_isNull: Boolean
+  stakedAmount_eq: BigInt
+  stakedAmount_not_eq: BigInt
+  stakedAmount_gt: BigInt
+  stakedAmount_gte: BigInt
+  stakedAmount_lt: BigInt
+  stakedAmount_lte: BigInt
+  stakedAmount_in: [BigInt!]
+  stakedAmount_not_in: [BigInt!]
+  earnings_isNull: Boolean
+  earnings_eq: BigInt
+  earnings_not_eq: BigInt
+  earnings_gt: BigInt
+  earnings_gte: BigInt
+  earnings_lt: BigInt
+  earnings_lte: BigInt
+  earnings_in: [BigInt!]
+  earnings_not_in: [BigInt!]
+  createdIn_isNull: Boolean
+  createdIn_eq: Int
+  createdIn_not_eq: Int
+  createdIn_gt: Int
+  createdIn_gte: Int
+  createdIn_lt: Int
+  createdIn_lte: Int
+  createdIn_in: [Int!]
+  createdIn_not_in: [Int!]
+  recovered_isNull: Boolean
+  recovered_eq: Boolean
+  recovered_not_eq: Boolean
+  AND: [RevenueShareParticipationWhereInput!]
+  OR: [RevenueShareParticipationWhereInput!]
+}
+
+type RevenueSharesConnection {
+  edges: [RevenueShareEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input RevenueShareWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  token_isNull: Boolean
+  token: CreatorTokenWhereInput
+  stakers_every: RevenueShareParticipationWhereInput
+  stakers_some: RevenueShareParticipationWhereInput
+  stakers_none: RevenueShareParticipationWhereInput
+  createdIn_isNull: Boolean
+  createdIn_eq: Int
+  createdIn_not_eq: Int
+  createdIn_gt: Int
+  createdIn_gte: Int
+  createdIn_lt: Int
+  createdIn_lte: Int
+  createdIn_in: [Int!]
+  createdIn_not_in: [Int!]
+  startingAt_isNull: Boolean
+  startingAt_eq: Int
+  startingAt_not_eq: Int
+  startingAt_gt: Int
+  startingAt_gte: Int
+  startingAt_lt: Int
+  startingAt_lte: Int
+  startingAt_in: [Int!]
+  startingAt_not_in: [Int!]
+  endsAt_isNull: Boolean
+  endsAt_eq: Int
+  endsAt_not_eq: Int
+  endsAt_gt: Int
+  endsAt_gte: Int
+  endsAt_lt: Int
+  endsAt_lte: Int
+  endsAt_in: [Int!]
+  endsAt_not_in: [Int!]
+  potentialParticipantsNum_isNull: Boolean
+  potentialParticipantsNum_eq: Int
+  potentialParticipantsNum_not_eq: Int
+  potentialParticipantsNum_gt: Int
+  potentialParticipantsNum_gte: Int
+  potentialParticipantsNum_lt: Int
+  potentialParticipantsNum_lte: Int
+  potentialParticipantsNum_in: [Int!]
+  potentialParticipantsNum_not_in: [Int!]
+  participantsNum_isNull: Boolean
+  participantsNum_eq: Int
+  participantsNum_not_eq: Int
+  participantsNum_gt: Int
+  participantsNum_gte: Int
+  participantsNum_lt: Int
+  participantsNum_lte: Int
+  participantsNum_in: [Int!]
+  participantsNum_not_in: [Int!]
+  allocation_isNull: Boolean
+  allocation_eq: BigInt
+  allocation_not_eq: BigInt
+  allocation_gt: BigInt
+  allocation_gte: BigInt
+  allocation_lt: BigInt
+  allocation_lte: BigInt
+  allocation_in: [BigInt!]
+  allocation_not_in: [BigInt!]
+  claimed_isNull: Boolean
+  claimed_eq: BigInt
+  claimed_not_eq: BigInt
+  claimed_gt: BigInt
+  claimed_gte: BigInt
+  claimed_lt: BigInt
+  claimed_lte: BigInt
+  claimed_in: [BigInt!]
+  claimed_not_in: [BigInt!]
+  finalized_isNull: Boolean
+  finalized_eq: Boolean
+  finalized_not_eq: Boolean
+  AND: [RevenueShareWhereInput!]
+  OR: [RevenueShareWhereInput!]
+}
+
+type Sale {
+  """
+  counter
+  """
+  id: String!
+
+  """
+  token for which the sale is issued
+  """
+  token: CreatorToken!
+
+  """
+  constant price in HAPI for each token
+  """
+  pricePerUnit: BigInt!
+
+  """
+  total amount of token on sale
+  """
+  tokenSaleAllocation: BigInt!
+
+  """
+  amount of tokens that has been sold
+  """
+  tokensSold: BigInt!
+
+  """
+  creation block
+  """
+  createdIn: Int!
+
+  """
+  sale start block
+  """
+  startBlock: Int!
+
+  """
+  ending block
+  """
+  endsAt: Int!
+
+  """
+  terms and conditions text
+  """
+  termsAndConditions: String!
+
+  """
+  max amount that member can purchase
+  """
+  maxAmountPerMember: BigInt
+
+  """
+  transactions references
+  """
+  transactions(
+    where: SaleTransactionWhereInput
+    orderBy: [SaleTransactionOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [SaleTransaction!]!
+
+  """
+  finalized
+  """
+  finalized: Boolean!
+
+  """
+  vesting schedule for sale
+  """
+  vestedSale: VestedSale
+
+  """
+  sale funds source
+  """
+  fundsSourceAccount: TokenAccount!
+}
+
+type SaleEdge {
+  node: Sale!
+  cursor: String!
+}
+
+enum SaleOrderByInput {
+  id_ASC
+  id_DESC
+  token_id_ASC
+  token_id_DESC
+  token_status_ASC
+  token_status_DESC
+  token_totalSupply_ASC
+  token_totalSupply_DESC
+  token_isFeatured_ASC
+  token_isFeatured_DESC
+  token_symbol_ASC
+  token_symbol_DESC
+  token_isInviteOnly_ASC
+  token_isInviteOnly_DESC
+  token_annualCreatorRewardPermill_ASC
+  token_annualCreatorRewardPermill_DESC
+  token_revenueShareRatioPermill_ASC
+  token_revenueShareRatioPermill_DESC
+  token_createdAt_ASC
+  token_createdAt_DESC
+  token_description_ASC
+  token_description_DESC
+  token_whitelistApplicantNote_ASC
+  token_whitelistApplicantNote_DESC
+  token_whitelistApplicantLink_ASC
+  token_whitelistApplicantLink_DESC
+  token_accountsNum_ASC
+  token_accountsNum_DESC
+  token_numberOfRevenueShareActivations_ASC
+  token_numberOfRevenueShareActivations_DESC
+  token_deissued_ASC
+  token_deissued_DESC
+  token_numberOfVestedTransferIssued_ASC
+  token_numberOfVestedTransferIssued_DESC
+  token_lastPrice_ASC
+  token_lastPrice_DESC
+  pricePerUnit_ASC
+  pricePerUnit_DESC
+  tokenSaleAllocation_ASC
+  tokenSaleAllocation_DESC
+  tokensSold_ASC
+  tokensSold_DESC
+  createdIn_ASC
+  createdIn_DESC
+  startBlock_ASC
+  startBlock_DESC
+  endsAt_ASC
+  endsAt_DESC
+  termsAndConditions_ASC
+  termsAndConditions_DESC
+  maxAmountPerMember_ASC
+  maxAmountPerMember_DESC
+  finalized_ASC
+  finalized_DESC
+  vestedSale_id_ASC
+  vestedSale_id_DESC
+  fundsSourceAccount_id_ASC
+  fundsSourceAccount_id_DESC
+  fundsSourceAccount_stakedAmount_ASC
+  fundsSourceAccount_stakedAmount_DESC
+  fundsSourceAccount_totalAmount_ASC
+  fundsSourceAccount_totalAmount_DESC
+  fundsSourceAccount_deleted_ASC
+  fundsSourceAccount_deleted_DESC
+}
+
+type SalesConnection {
+  edges: [SaleEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type SaleTransaction {
+  """
+  counter
+  """
+  id: String!
+
+  """
+  amount of token bought
+  """
+  quantity: BigInt!
+
+  """
+  sale
+  """
+  sale: Sale!
+
+  """
+  buyer account
+  """
+  account: TokenAccount!
+
+  """
+  block
+  """
+  createdIn: Int!
+}
+
+type SaleTransactionEdge {
+  node: SaleTransaction!
+  cursor: String!
+}
+
+enum SaleTransactionOrderByInput {
+  id_ASC
+  id_DESC
+  quantity_ASC
+  quantity_DESC
+  sale_id_ASC
+  sale_id_DESC
+  sale_pricePerUnit_ASC
+  sale_pricePerUnit_DESC
+  sale_tokenSaleAllocation_ASC
+  sale_tokenSaleAllocation_DESC
+  sale_tokensSold_ASC
+  sale_tokensSold_DESC
+  sale_createdIn_ASC
+  sale_createdIn_DESC
+  sale_startBlock_ASC
+  sale_startBlock_DESC
+  sale_endsAt_ASC
+  sale_endsAt_DESC
+  sale_termsAndConditions_ASC
+  sale_termsAndConditions_DESC
+  sale_maxAmountPerMember_ASC
+  sale_maxAmountPerMember_DESC
+  sale_finalized_ASC
+  sale_finalized_DESC
+  account_id_ASC
+  account_id_DESC
+  account_stakedAmount_ASC
+  account_stakedAmount_DESC
+  account_totalAmount_ASC
+  account_totalAmount_DESC
+  account_deleted_ASC
+  account_deleted_DESC
+  createdIn_ASC
+  createdIn_DESC
+}
+
+type SaleTransactionsConnection {
+  edges: [SaleTransactionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input SaleTransactionWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  quantity_isNull: Boolean
+  quantity_eq: BigInt
+  quantity_not_eq: BigInt
+  quantity_gt: BigInt
+  quantity_gte: BigInt
+  quantity_lt: BigInt
+  quantity_lte: BigInt
+  quantity_in: [BigInt!]
+  quantity_not_in: [BigInt!]
+  sale_isNull: Boolean
+  sale: SaleWhereInput
+  account_isNull: Boolean
+  account: TokenAccountWhereInput
+  createdIn_isNull: Boolean
+  createdIn_eq: Int
+  createdIn_not_eq: Int
+  createdIn_gt: Int
+  createdIn_gte: Int
+  createdIn_lt: Int
+  createdIn_lte: Int
+  createdIn_in: [Int!]
+  createdIn_not_in: [Int!]
+  AND: [SaleTransactionWhereInput!]
+  OR: [SaleTransactionWhereInput!]
+}
+
+type SaleVestingSource {
+  sale: Sale!
+}
+
+input SaleWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  token_isNull: Boolean
+  token: CreatorTokenWhereInput
+  pricePerUnit_isNull: Boolean
+  pricePerUnit_eq: BigInt
+  pricePerUnit_not_eq: BigInt
+  pricePerUnit_gt: BigInt
+  pricePerUnit_gte: BigInt
+  pricePerUnit_lt: BigInt
+  pricePerUnit_lte: BigInt
+  pricePerUnit_in: [BigInt!]
+  pricePerUnit_not_in: [BigInt!]
+  tokenSaleAllocation_isNull: Boolean
+  tokenSaleAllocation_eq: BigInt
+  tokenSaleAllocation_not_eq: BigInt
+  tokenSaleAllocation_gt: BigInt
+  tokenSaleAllocation_gte: BigInt
+  tokenSaleAllocation_lt: BigInt
+  tokenSaleAllocation_lte: BigInt
+  tokenSaleAllocation_in: [BigInt!]
+  tokenSaleAllocation_not_in: [BigInt!]
+  tokensSold_isNull: Boolean
+  tokensSold_eq: BigInt
+  tokensSold_not_eq: BigInt
+  tokensSold_gt: BigInt
+  tokensSold_gte: BigInt
+  tokensSold_lt: BigInt
+  tokensSold_lte: BigInt
+  tokensSold_in: [BigInt!]
+  tokensSold_not_in: [BigInt!]
+  createdIn_isNull: Boolean
+  createdIn_eq: Int
+  createdIn_not_eq: Int
+  createdIn_gt: Int
+  createdIn_gte: Int
+  createdIn_lt: Int
+  createdIn_lte: Int
+  createdIn_in: [Int!]
+  createdIn_not_in: [Int!]
+  startBlock_isNull: Boolean
+  startBlock_eq: Int
+  startBlock_not_eq: Int
+  startBlock_gt: Int
+  startBlock_gte: Int
+  startBlock_lt: Int
+  startBlock_lte: Int
+  startBlock_in: [Int!]
+  startBlock_not_in: [Int!]
+  endsAt_isNull: Boolean
+  endsAt_eq: Int
+  endsAt_not_eq: Int
+  endsAt_gt: Int
+  endsAt_gte: Int
+  endsAt_lt: Int
+  endsAt_lte: Int
+  endsAt_in: [Int!]
+  endsAt_not_in: [Int!]
+  termsAndConditions_isNull: Boolean
+  termsAndConditions_eq: String
+  termsAndConditions_not_eq: String
+  termsAndConditions_gt: String
+  termsAndConditions_gte: String
+  termsAndConditions_lt: String
+  termsAndConditions_lte: String
+  termsAndConditions_in: [String!]
+  termsAndConditions_not_in: [String!]
+  termsAndConditions_contains: String
+  termsAndConditions_not_contains: String
+  termsAndConditions_containsInsensitive: String
+  termsAndConditions_not_containsInsensitive: String
+  termsAndConditions_startsWith: String
+  termsAndConditions_not_startsWith: String
+  termsAndConditions_endsWith: String
+  termsAndConditions_not_endsWith: String
+  maxAmountPerMember_isNull: Boolean
+  maxAmountPerMember_eq: BigInt
+  maxAmountPerMember_not_eq: BigInt
+  maxAmountPerMember_gt: BigInt
+  maxAmountPerMember_gte: BigInt
+  maxAmountPerMember_lt: BigInt
+  maxAmountPerMember_lte: BigInt
+  maxAmountPerMember_in: [BigInt!]
+  maxAmountPerMember_not_in: [BigInt!]
+  transactions_every: SaleTransactionWhereInput
+  transactions_some: SaleTransactionWhereInput
+  transactions_none: SaleTransactionWhereInput
+  finalized_isNull: Boolean
+  finalized_eq: Boolean
+  finalized_not_eq: Boolean
+  vestedSale_isNull: Boolean
+  vestedSale: VestedSaleWhereInput
+  fundsSourceAccount_isNull: Boolean
+  fundsSourceAccount: TokenAccountWhereInput
+  AND: [SaleWhereInput!]
+  OR: [SaleWhereInput!]
+}
+
 type Session {
   """
   Unique identifier (32-byte string, securely random)
@@ -8421,16 +11155,10 @@ enum SessionOrderByInput {
   account_id_DESC
   account_email_ASC
   account_email_DESC
-  account_isEmailConfirmed_ASC
-  account_isEmailConfirmed_DESC
   account_isBlocked_ASC
   account_isBlocked_DESC
   account_registeredAt_ASC
   account_registeredAt_DESC
-  account_joystreamAccount_ASC
-  account_joystreamAccount_DESC
-  account_referrerChannelId_ASC
-  account_referrerChannelId_DESC
   ip_ASC
   ip_DESC
   startedAt_ASC
@@ -8578,6 +11306,13 @@ type SetCategoryFeaturedVideosResult {
   categoryId: String!
   numberOfFeaturedVideosUnset: Int!
   numberOfFeaturedVideosSet: Int!
+}
+
+type SetFeaturedCrtsResult {
+  """
+  The updated number of crts that are now explicitly featured by the Gateway
+  """
+  newNumberOfCrtsFeatured: Int
 }
 
 type SetFeaturedNftsResult {
@@ -9486,6 +12221,389 @@ type Token {
   issuedFor: Account!
 }
 
+type TokenAccount {
+  """
+  counter
+  """
+  id: String!
+
+  """
+  member id ref
+  """
+  member: Membership!
+
+  """
+  token for which the account is created
+  """
+  token: CreatorToken!
+
+  """
+  staked amount, to avoid walking to split participations
+  """
+  stakedAmount: BigInt!
+
+  """
+  total token amount (not necessarely liqud) for the account
+  """
+  totalAmount: BigInt!
+
+  """
+  sale transactions for this account
+  """
+  saleTransactions(
+    where: SaleTransactionWhereInput
+    orderBy: [SaleTransactionOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [SaleTransaction!]!
+
+  """
+  amm transactions for this account
+  """
+  ammTransactions(
+    where: AmmTransactionWhereInput
+    orderBy: [AmmTransactionOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [AmmTransaction!]!
+
+  """
+  information about token account's participation in revenue shares
+  """
+  revenueShareParticipation(
+    where: RevenueShareParticipationWhereInput
+    orderBy: [RevenueShareParticipationOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [RevenueShareParticipation!]!
+
+  """
+  vesting schedule info, it can be empty if no vesting schedules are pending
+  """
+  vestingSchedules(
+    where: VestedAccountWhereInput
+    orderBy: [VestedAccountOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [VestedAccount!]!
+
+  """
+  has been deleted or not
+  """
+  deleted: Boolean!
+}
+
+type TokenAccountEdge {
+  node: TokenAccount!
+  cursor: String!
+}
+
+enum TokenAccountOrderByInput {
+  id_ASC
+  id_DESC
+  member_id_ASC
+  member_id_DESC
+  member_createdAt_ASC
+  member_createdAt_DESC
+  member_handle_ASC
+  member_handle_DESC
+  member_handleRaw_ASC
+  member_handleRaw_DESC
+  member_totalChannelsCreated_ASC
+  member_totalChannelsCreated_DESC
+  token_id_ASC
+  token_id_DESC
+  token_status_ASC
+  token_status_DESC
+  token_totalSupply_ASC
+  token_totalSupply_DESC
+  token_isFeatured_ASC
+  token_isFeatured_DESC
+  token_symbol_ASC
+  token_symbol_DESC
+  token_isInviteOnly_ASC
+  token_isInviteOnly_DESC
+  token_annualCreatorRewardPermill_ASC
+  token_annualCreatorRewardPermill_DESC
+  token_revenueShareRatioPermill_ASC
+  token_revenueShareRatioPermill_DESC
+  token_createdAt_ASC
+  token_createdAt_DESC
+  token_description_ASC
+  token_description_DESC
+  token_whitelistApplicantNote_ASC
+  token_whitelistApplicantNote_DESC
+  token_whitelistApplicantLink_ASC
+  token_whitelistApplicantLink_DESC
+  token_accountsNum_ASC
+  token_accountsNum_DESC
+  token_numberOfRevenueShareActivations_ASC
+  token_numberOfRevenueShareActivations_DESC
+  token_deissued_ASC
+  token_deissued_DESC
+  token_numberOfVestedTransferIssued_ASC
+  token_numberOfVestedTransferIssued_DESC
+  token_lastPrice_ASC
+  token_lastPrice_DESC
+  stakedAmount_ASC
+  stakedAmount_DESC
+  totalAmount_ASC
+  totalAmount_DESC
+  deleted_ASC
+  deleted_DESC
+}
+
+type TokenAccountsConnection {
+  edges: [TokenAccountEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input TokenAccountWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  member_isNull: Boolean
+  member: MembershipWhereInput
+  token_isNull: Boolean
+  token: CreatorTokenWhereInput
+  stakedAmount_isNull: Boolean
+  stakedAmount_eq: BigInt
+  stakedAmount_not_eq: BigInt
+  stakedAmount_gt: BigInt
+  stakedAmount_gte: BigInt
+  stakedAmount_lt: BigInt
+  stakedAmount_lte: BigInt
+  stakedAmount_in: [BigInt!]
+  stakedAmount_not_in: [BigInt!]
+  totalAmount_isNull: Boolean
+  totalAmount_eq: BigInt
+  totalAmount_not_eq: BigInt
+  totalAmount_gt: BigInt
+  totalAmount_gte: BigInt
+  totalAmount_lt: BigInt
+  totalAmount_lte: BigInt
+  totalAmount_in: [BigInt!]
+  totalAmount_not_in: [BigInt!]
+  saleTransactions_every: SaleTransactionWhereInput
+  saleTransactions_some: SaleTransactionWhereInput
+  saleTransactions_none: SaleTransactionWhereInput
+  ammTransactions_every: AmmTransactionWhereInput
+  ammTransactions_some: AmmTransactionWhereInput
+  ammTransactions_none: AmmTransactionWhereInput
+  revenueShareParticipation_every: RevenueShareParticipationWhereInput
+  revenueShareParticipation_some: RevenueShareParticipationWhereInput
+  revenueShareParticipation_none: RevenueShareParticipationWhereInput
+  vestingSchedules_every: VestedAccountWhereInput
+  vestingSchedules_some: VestedAccountWhereInput
+  vestingSchedules_none: VestedAccountWhereInput
+  deleted_isNull: Boolean
+  deleted_eq: Boolean
+  deleted_not_eq: Boolean
+  AND: [TokenAccountWhereInput!]
+  OR: [TokenAccountWhereInput!]
+}
+
+union TokenAvatar = TokenAvatarObject | TokenAvatarUri
+
+type TokenAvatarObject {
+  """
+  The avatar data object
+  """
+  avatarObject: StorageDataObject!
+}
+
+type TokenAvatarUri {
+  """
+  The avatar URL
+  """
+  avatarUri: String!
+}
+
+input TokenAvatarWhereInput {
+  avatarObject_isNull: Boolean
+  avatarObject: StorageDataObjectWhereInput
+  avatarUri_isNull: Boolean
+  avatarUri_eq: String
+  avatarUri_not_eq: String
+  avatarUri_gt: String
+  avatarUri_gte: String
+  avatarUri_lt: String
+  avatarUri_lte: String
+  avatarUri_in: [String!]
+  avatarUri_not_in: [String!]
+  avatarUri_contains: String
+  avatarUri_not_contains: String
+  avatarUri_containsInsensitive: String
+  avatarUri_not_containsInsensitive: String
+  avatarUri_startsWith: String
+  avatarUri_not_startsWith: String
+  avatarUri_endsWith: String
+  avatarUri_not_endsWith: String
+  isTypeOf_isNull: Boolean
+  isTypeOf_eq: String
+  isTypeOf_not_eq: String
+  isTypeOf_gt: String
+  isTypeOf_gte: String
+  isTypeOf_lt: String
+  isTypeOf_lte: String
+  isTypeOf_in: [String!]
+  isTypeOf_not_in: [String!]
+  isTypeOf_contains: String
+  isTypeOf_not_contains: String
+  isTypeOf_containsInsensitive: String
+  isTypeOf_not_containsInsensitive: String
+  isTypeOf_startsWith: String
+  isTypeOf_not_startsWith: String
+  isTypeOf_endsWith: String
+  isTypeOf_not_endsWith: String
+}
+
+type TokenChannel {
+  """
+  counter
+  """
+  id: String!
+
+  """
+  token reference
+  """
+  token: CreatorToken!
+
+  """
+  channel reference
+  """
+  channel: Channel!
+}
+
+type TokenChannelEdge {
+  node: TokenChannel!
+  cursor: String!
+}
+
+enum TokenChannelOrderByInput {
+  id_ASC
+  id_DESC
+  token_id_ASC
+  token_id_DESC
+  token_status_ASC
+  token_status_DESC
+  token_totalSupply_ASC
+  token_totalSupply_DESC
+  token_isFeatured_ASC
+  token_isFeatured_DESC
+  token_symbol_ASC
+  token_symbol_DESC
+  token_isInviteOnly_ASC
+  token_isInviteOnly_DESC
+  token_annualCreatorRewardPermill_ASC
+  token_annualCreatorRewardPermill_DESC
+  token_revenueShareRatioPermill_ASC
+  token_revenueShareRatioPermill_DESC
+  token_createdAt_ASC
+  token_createdAt_DESC
+  token_description_ASC
+  token_description_DESC
+  token_whitelistApplicantNote_ASC
+  token_whitelistApplicantNote_DESC
+  token_whitelistApplicantLink_ASC
+  token_whitelistApplicantLink_DESC
+  token_accountsNum_ASC
+  token_accountsNum_DESC
+  token_numberOfRevenueShareActivations_ASC
+  token_numberOfRevenueShareActivations_DESC
+  token_deissued_ASC
+  token_deissued_DESC
+  token_numberOfVestedTransferIssued_ASC
+  token_numberOfVestedTransferIssued_DESC
+  token_lastPrice_ASC
+  token_lastPrice_DESC
+  channel_id_ASC
+  channel_id_DESC
+  channel_createdAt_ASC
+  channel_createdAt_DESC
+  channel_title_ASC
+  channel_title_DESC
+  channel_description_ASC
+  channel_description_DESC
+  channel_isPublic_ASC
+  channel_isPublic_DESC
+  channel_isCensored_ASC
+  channel_isCensored_DESC
+  channel_isExcluded_ASC
+  channel_isExcluded_DESC
+  channel_language_ASC
+  channel_language_DESC
+  channel_createdInBlock_ASC
+  channel_createdInBlock_DESC
+  channel_rewardAccount_ASC
+  channel_rewardAccount_DESC
+  channel_channelStateBloatBond_ASC
+  channel_channelStateBloatBond_DESC
+  channel_followsNum_ASC
+  channel_followsNum_DESC
+  channel_videoViewsNum_ASC
+  channel_videoViewsNum_DESC
+  channel_totalVideosCreated_ASC
+  channel_totalVideosCreated_DESC
+  channel_revenueShareRatioPercent_ASC
+  channel_revenueShareRatioPercent_DESC
+  channel_cumulativeRewardClaimed_ASC
+  channel_cumulativeRewardClaimed_DESC
+  channel_cumulativeRevenue_ASC
+  channel_cumulativeRevenue_DESC
+  channel_cumulativeReward_ASC
+  channel_cumulativeReward_DESC
+  channel_channelWeight_ASC
+  channel_channelWeight_DESC
+}
+
+type TokenChannelsConnection {
+  edges: [TokenChannelEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input TokenChannelWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  token_isNull: Boolean
+  token: CreatorTokenWhereInput
+  channel_isNull: Boolean
+  channel: ChannelWhereInput
+  AND: [TokenChannelWhereInput!]
+  OR: [TokenChannelWhereInput!]
+}
+
 type TokenEdge {
   node: Token!
   cursor: String!
@@ -9504,22 +12622,22 @@ enum TokenOrderByInput {
   issuedFor_id_DESC
   issuedFor_email_ASC
   issuedFor_email_DESC
-  issuedFor_isEmailConfirmed_ASC
-  issuedFor_isEmailConfirmed_DESC
   issuedFor_isBlocked_ASC
   issuedFor_isBlocked_DESC
   issuedFor_registeredAt_ASC
   issuedFor_registeredAt_DESC
-  issuedFor_joystreamAccount_ASC
-  issuedFor_joystreamAccount_DESC
-  issuedFor_referrerChannelId_ASC
-  issuedFor_referrerChannelId_DESC
 }
 
 type TokensConnection {
   edges: [TokenEdge!]!
   pageInfo: PageInfo!
   totalCount: Int!
+}
+
+enum TokenStatus {
+  SALE
+  MARKET
+  IDLE
 }
 
 enum TokenType {
@@ -9577,6 +12695,149 @@ type TopSellingChannelsResult {
   channel: Channel!
   amount: String!
   nftSold: Int!
+}
+
+type TrailerVideo {
+  """
+  counter
+  """
+  id: String!
+
+  """
+  video reference
+  """
+  video: Video!
+
+  """
+  token reference, unique as one token cannot have multiple trailers
+  """
+  token: CreatorToken!
+}
+
+type TrailerVideoEdge {
+  node: TrailerVideo!
+  cursor: String!
+}
+
+enum TrailerVideoOrderByInput {
+  id_ASC
+  id_DESC
+  video_id_ASC
+  video_id_DESC
+  video_createdAt_ASC
+  video_createdAt_DESC
+  video_title_ASC
+  video_title_DESC
+  video_description_ASC
+  video_description_DESC
+  video_duration_ASC
+  video_duration_DESC
+  video_language_ASC
+  video_language_DESC
+  video_orionLanguage_ASC
+  video_orionLanguage_DESC
+  video_hasMarketing_ASC
+  video_hasMarketing_DESC
+  video_publishedBeforeJoystream_ASC
+  video_publishedBeforeJoystream_DESC
+  video_isPublic_ASC
+  video_isPublic_DESC
+  video_isCensored_ASC
+  video_isCensored_DESC
+  video_isExcluded_ASC
+  video_isExcluded_DESC
+  video_isExplicit_ASC
+  video_isExplicit_DESC
+  video_videoStateBloatBond_ASC
+  video_videoStateBloatBond_DESC
+  video_createdInBlock_ASC
+  video_createdInBlock_DESC
+  video_isCommentSectionEnabled_ASC
+  video_isCommentSectionEnabled_DESC
+  video_commentsCount_ASC
+  video_commentsCount_DESC
+  video_isReactionFeatureEnabled_ASC
+  video_isReactionFeatureEnabled_DESC
+  video_reactionsCount_ASC
+  video_reactionsCount_DESC
+  video_viewsNum_ASC
+  video_viewsNum_DESC
+  video_ytVideoId_ASC
+  video_ytVideoId_DESC
+  video_videoRelevance_ASC
+  video_videoRelevance_DESC
+  video_isShort_ASC
+  video_isShort_DESC
+  video_isShortDerived_ASC
+  video_isShortDerived_DESC
+  video_includeInHomeFeed_ASC
+  video_includeInHomeFeed_DESC
+  token_id_ASC
+  token_id_DESC
+  token_status_ASC
+  token_status_DESC
+  token_totalSupply_ASC
+  token_totalSupply_DESC
+  token_isFeatured_ASC
+  token_isFeatured_DESC
+  token_symbol_ASC
+  token_symbol_DESC
+  token_isInviteOnly_ASC
+  token_isInviteOnly_DESC
+  token_annualCreatorRewardPermill_ASC
+  token_annualCreatorRewardPermill_DESC
+  token_revenueShareRatioPermill_ASC
+  token_revenueShareRatioPermill_DESC
+  token_createdAt_ASC
+  token_createdAt_DESC
+  token_description_ASC
+  token_description_DESC
+  token_whitelistApplicantNote_ASC
+  token_whitelistApplicantNote_DESC
+  token_whitelistApplicantLink_ASC
+  token_whitelistApplicantLink_DESC
+  token_accountsNum_ASC
+  token_accountsNum_DESC
+  token_numberOfRevenueShareActivations_ASC
+  token_numberOfRevenueShareActivations_DESC
+  token_deissued_ASC
+  token_deissued_DESC
+  token_numberOfVestedTransferIssued_ASC
+  token_numberOfVestedTransferIssued_DESC
+  token_lastPrice_ASC
+  token_lastPrice_DESC
+}
+
+type TrailerVideosConnection {
+  edges: [TrailerVideoEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input TrailerVideoWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  video_isNull: Boolean
+  video: VideoWhereInput
+  token_isNull: Boolean
+  token: CreatorTokenWhereInput
+  AND: [TrailerVideoWhereInput!]
+  OR: [TrailerVideoWhereInput!]
 }
 
 """
@@ -9741,16 +13002,10 @@ enum UserOrderByInput {
   account_id_DESC
   account_email_ASC
   account_email_DESC
-  account_isEmailConfirmed_ASC
-  account_isEmailConfirmed_DESC
   account_isBlocked_ASC
   account_isBlocked_DESC
   account_registeredAt_ASC
   account_registeredAt_DESC
-  account_joystreamAccount_ASC
-  account_joystreamAccount_DESC
-  account_referrerChannelId_ASC
-  account_referrerChannelId_DESC
 }
 
 type UsersConnection {
@@ -9806,6 +13061,399 @@ type VerifyChannelResult {
   id: String!
   channelId: String!
   createdAt: DateTime!
+}
+
+type VestedAccount {
+  """
+  counter
+  """
+  id: String!
+
+  """
+  vesting schedule reference
+  """
+  vesting: VestingSchedule!
+
+  """
+  account reference
+  """
+  account: TokenAccount!
+
+  """
+  total amount the schedule is vested
+  """
+  totalVestingAmount: BigInt!
+
+  """
+  vesting source
+  """
+  vestingSource: VestingSource!
+
+  """
+  acquired at block
+  """
+  acquiredAt: Int!
+}
+
+type VestedAccountEdge {
+  node: VestedAccount!
+  cursor: String!
+}
+
+enum VestedAccountOrderByInput {
+  id_ASC
+  id_DESC
+  vesting_id_ASC
+  vesting_id_DESC
+  vesting_cliffRatioPermill_ASC
+  vesting_cliffRatioPermill_DESC
+  vesting_vestingDurationBlocks_ASC
+  vesting_vestingDurationBlocks_DESC
+  vesting_cliffDurationBlocks_ASC
+  vesting_cliffDurationBlocks_DESC
+  vesting_endsAt_ASC
+  vesting_endsAt_DESC
+  vesting_cliffBlock_ASC
+  vesting_cliffBlock_DESC
+  account_id_ASC
+  account_id_DESC
+  account_stakedAmount_ASC
+  account_stakedAmount_DESC
+  account_totalAmount_ASC
+  account_totalAmount_DESC
+  account_deleted_ASC
+  account_deleted_DESC
+  totalVestingAmount_ASC
+  totalVestingAmount_DESC
+  vestingSource_phantom_ASC
+  vestingSource_phantom_DESC
+  vestingSource_isTypeOf_ASC
+  vestingSource_isTypeOf_DESC
+  acquiredAt_ASC
+  acquiredAt_DESC
+}
+
+type VestedAccountsConnection {
+  edges: [VestedAccountEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input VestedAccountWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  vesting_isNull: Boolean
+  vesting: VestingScheduleWhereInput
+  account_isNull: Boolean
+  account: TokenAccountWhereInput
+  totalVestingAmount_isNull: Boolean
+  totalVestingAmount_eq: BigInt
+  totalVestingAmount_not_eq: BigInt
+  totalVestingAmount_gt: BigInt
+  totalVestingAmount_gte: BigInt
+  totalVestingAmount_lt: BigInt
+  totalVestingAmount_lte: BigInt
+  totalVestingAmount_in: [BigInt!]
+  totalVestingAmount_not_in: [BigInt!]
+  vestingSource_isNull: Boolean
+  vestingSource: VestingSourceWhereInput
+  acquiredAt_isNull: Boolean
+  acquiredAt_eq: Int
+  acquiredAt_not_eq: Int
+  acquiredAt_gt: Int
+  acquiredAt_gte: Int
+  acquiredAt_lt: Int
+  acquiredAt_lte: Int
+  acquiredAt_in: [Int!]
+  acquiredAt_not_in: [Int!]
+  AND: [VestedAccountWhereInput!]
+  OR: [VestedAccountWhereInput!]
+}
+
+type VestedSale {
+  """
+  counter
+  """
+  id: String!
+
+  """
+  Sale reference
+  """
+  sale: Sale!
+
+  """
+  vesting schedule reference
+  """
+  vesting: VestingSchedule!
+}
+
+type VestedSaleEdge {
+  node: VestedSale!
+  cursor: String!
+}
+
+enum VestedSaleOrderByInput {
+  id_ASC
+  id_DESC
+  sale_id_ASC
+  sale_id_DESC
+  sale_pricePerUnit_ASC
+  sale_pricePerUnit_DESC
+  sale_tokenSaleAllocation_ASC
+  sale_tokenSaleAllocation_DESC
+  sale_tokensSold_ASC
+  sale_tokensSold_DESC
+  sale_createdIn_ASC
+  sale_createdIn_DESC
+  sale_startBlock_ASC
+  sale_startBlock_DESC
+  sale_endsAt_ASC
+  sale_endsAt_DESC
+  sale_termsAndConditions_ASC
+  sale_termsAndConditions_DESC
+  sale_maxAmountPerMember_ASC
+  sale_maxAmountPerMember_DESC
+  sale_finalized_ASC
+  sale_finalized_DESC
+  vesting_id_ASC
+  vesting_id_DESC
+  vesting_cliffRatioPermill_ASC
+  vesting_cliffRatioPermill_DESC
+  vesting_vestingDurationBlocks_ASC
+  vesting_vestingDurationBlocks_DESC
+  vesting_cliffDurationBlocks_ASC
+  vesting_cliffDurationBlocks_DESC
+  vesting_endsAt_ASC
+  vesting_endsAt_DESC
+  vesting_cliffBlock_ASC
+  vesting_cliffBlock_DESC
+}
+
+type VestedSalesConnection {
+  edges: [VestedSaleEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input VestedSaleWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  sale_isNull: Boolean
+  sale: SaleWhereInput
+  vesting_isNull: Boolean
+  vesting: VestingScheduleWhereInput
+  AND: [VestedSaleWhereInput!]
+  OR: [VestedSaleWhereInput!]
+}
+
+type VestingSchedule {
+  """
+  counter
+  """
+  id: String!
+
+  """
+  Permill of amount vested immediately after cliff period
+  """
+  cliffRatioPermill: Int!
+
+  """
+  vesting duration in blocks
+  """
+  vestingDurationBlocks: Int!
+
+  """
+  cliff duration in blocks
+  """
+  cliffDurationBlocks: Int!
+
+  """
+  vesting ending block
+  """
+  endsAt: Int!
+
+  """
+  cliff block
+  """
+  cliffBlock: Int!
+
+  """
+  accounts reference
+  """
+  accounts(
+    where: VestedAccountWhereInput
+    orderBy: [VestedAccountOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [VestedAccount!]!
+
+  """
+  vesting schedule for sale
+  """
+  vestedSale: VestedSale
+}
+
+type VestingScheduleEdge {
+  node: VestingSchedule!
+  cursor: String!
+}
+
+enum VestingScheduleOrderByInput {
+  id_ASC
+  id_DESC
+  cliffRatioPermill_ASC
+  cliffRatioPermill_DESC
+  vestingDurationBlocks_ASC
+  vestingDurationBlocks_DESC
+  cliffDurationBlocks_ASC
+  cliffDurationBlocks_DESC
+  endsAt_ASC
+  endsAt_DESC
+  cliffBlock_ASC
+  cliffBlock_DESC
+  vestedSale_id_ASC
+  vestedSale_id_DESC
+}
+
+type VestingSchedulesConnection {
+  edges: [VestingScheduleEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input VestingScheduleWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  cliffRatioPermill_isNull: Boolean
+  cliffRatioPermill_eq: Int
+  cliffRatioPermill_not_eq: Int
+  cliffRatioPermill_gt: Int
+  cliffRatioPermill_gte: Int
+  cliffRatioPermill_lt: Int
+  cliffRatioPermill_lte: Int
+  cliffRatioPermill_in: [Int!]
+  cliffRatioPermill_not_in: [Int!]
+  vestingDurationBlocks_isNull: Boolean
+  vestingDurationBlocks_eq: Int
+  vestingDurationBlocks_not_eq: Int
+  vestingDurationBlocks_gt: Int
+  vestingDurationBlocks_gte: Int
+  vestingDurationBlocks_lt: Int
+  vestingDurationBlocks_lte: Int
+  vestingDurationBlocks_in: [Int!]
+  vestingDurationBlocks_not_in: [Int!]
+  cliffDurationBlocks_isNull: Boolean
+  cliffDurationBlocks_eq: Int
+  cliffDurationBlocks_not_eq: Int
+  cliffDurationBlocks_gt: Int
+  cliffDurationBlocks_gte: Int
+  cliffDurationBlocks_lt: Int
+  cliffDurationBlocks_lte: Int
+  cliffDurationBlocks_in: [Int!]
+  cliffDurationBlocks_not_in: [Int!]
+  endsAt_isNull: Boolean
+  endsAt_eq: Int
+  endsAt_not_eq: Int
+  endsAt_gt: Int
+  endsAt_gte: Int
+  endsAt_lt: Int
+  endsAt_lte: Int
+  endsAt_in: [Int!]
+  endsAt_not_in: [Int!]
+  cliffBlock_isNull: Boolean
+  cliffBlock_eq: Int
+  cliffBlock_not_eq: Int
+  cliffBlock_gt: Int
+  cliffBlock_gte: Int
+  cliffBlock_lt: Int
+  cliffBlock_lte: Int
+  cliffBlock_in: [Int!]
+  cliffBlock_not_in: [Int!]
+  accounts_every: VestedAccountWhereInput
+  accounts_some: VestedAccountWhereInput
+  accounts_none: VestedAccountWhereInput
+  vestedSale_isNull: Boolean
+  vestedSale: VestedSaleWhereInput
+  AND: [VestingScheduleWhereInput!]
+  OR: [VestingScheduleWhereInput!]
+}
+
+union VestingSource = InitialIssuanceVestingSource | IssuerTransferVestingSource | SaleVestingSource
+
+input VestingSourceWhereInput {
+  phantom_isNull: Boolean
+  phantom_eq: Int
+  phantom_not_eq: Int
+  phantom_gt: Int
+  phantom_gte: Int
+  phantom_lt: Int
+  phantom_lte: Int
+  phantom_in: [Int!]
+  phantom_not_in: [Int!]
+  sale_isNull: Boolean
+  sale: SaleWhereInput
+  isTypeOf_isNull: Boolean
+  isTypeOf_eq: String
+  isTypeOf_not_eq: String
+  isTypeOf_gt: String
+  isTypeOf_gte: String
+  isTypeOf_lt: String
+  isTypeOf_lte: String
+  isTypeOf_in: [String!]
+  isTypeOf_not_in: [String!]
+  isTypeOf_contains: String
+  isTypeOf_not_contains: String
+  isTypeOf_containsInsensitive: String
+  isTypeOf_not_containsInsensitive: String
+  isTypeOf_startsWith: String
+  isTypeOf_not_startsWith: String
+  isTypeOf_endsWith: String
+  isTypeOf_not_endsWith: String
 }
 
 type Video {
@@ -9990,6 +13638,16 @@ type Video {
   ytVideoId: String
 
   """
+  token for which this video is trailer
+  """
+  trailerVideoForToken(
+    where: TrailerVideoWhereInput
+    orderBy: [TrailerVideoOrderByInput!]
+    offset: Int
+    limit: Int
+  ): [TrailerVideo!]!
+
+  """
   Video relevance score based on the views, reactions, comments and update date
   """
   videoRelevance: Float!
@@ -10000,9 +13658,37 @@ type Video {
   isShort: Boolean
 
   """
+  Whether the video is a short format, vertical video, and it derived based on
+  video dimension (i.e. was not set in metadata)
+  """
+  isShortDerived: Boolean
+
+  """
   Optional boolean flag to indicate if the video should be included in the home feed/page.
   """
   includeInHomeFeed: Boolean
+}
+
+type VideoAssetsDeletedByModeratorEventData {
+  """
+  Video whose assets were deleted
+  """
+  video: Video!
+
+  """
+  IDs of video assets being deleted by moderator
+  """
+  assetIds: [BigInt!]
+
+  """
+  Actor who deleted the video assets.
+  """
+  deletedBy: ContentActor!
+
+  """
+  why the video assets were deleted
+  """
+  rationale: String!
 }
 
 type VideoCategoriesConnection {
@@ -10278,6 +13964,8 @@ enum VideoFeaturedInCategoryOrderByInput {
   video_videoRelevance_DESC
   video_isShort_ASC
   video_isShort_DESC
+  video_isShortDerived_ASC
+  video_isShortDerived_DESC
   video_includeInHomeFeed_ASC
   video_includeInHomeFeed_DESC
   category_id_ASC
@@ -10423,6 +14111,8 @@ enum VideoHeroOrderByInput {
   video_videoRelevance_DESC
   video_isShort_ASC
   video_isShort_DESC
+  video_isShortDerived_ASC
+  video_isShortDerived_DESC
   video_includeInHomeFeed_ASC
   video_includeInHomeFeed_DESC
   heroTitle_ASC
@@ -10764,6 +14454,8 @@ enum VideoMediaMetadataOrderByInput {
   video_videoRelevance_DESC
   video_isShort_ASC
   video_isShort_DESC
+  video_isShortDerived_ASC
+  video_isShortDerived_DESC
   video_includeInHomeFeed_ASC
   video_includeInHomeFeed_DESC
   createdInBlock_ASC
@@ -10865,8 +14557,12 @@ enum VideoOrderByInput {
   channel_videoViewsNum_DESC
   channel_totalVideosCreated_ASC
   channel_totalVideosCreated_DESC
+  channel_revenueShareRatioPercent_ASC
+  channel_revenueShareRatioPercent_DESC
   channel_cumulativeRewardClaimed_ASC
   channel_cumulativeRewardClaimed_DESC
+  channel_cumulativeRevenue_ASC
+  channel_cumulativeRevenue_DESC
   channel_cumulativeReward_ASC
   channel_cumulativeReward_DESC
   channel_channelWeight_ASC
@@ -11023,6 +14719,8 @@ enum VideoOrderByInput {
   videoRelevance_DESC
   isShort_ASC
   isShort_DESC
+  isShortDerived_ASC
+  isShortDerived_DESC
   includeInHomeFeed_ASC
   includeInHomeFeed_DESC
 }
@@ -11108,8 +14806,6 @@ enum VideoReactionOrderByInput {
   member_handle_DESC
   member_handleRaw_ASC
   member_handleRaw_DESC
-  member_controllerAccount_ASC
-  member_controllerAccount_DESC
   member_totalChannelsCreated_ASC
   member_totalChannelsCreated_DESC
   video_id_ASC
@@ -11158,6 +14854,8 @@ enum VideoReactionOrderByInput {
   video_videoRelevance_DESC
   video_isShort_ASC
   video_isShort_DESC
+  video_isShortDerived_ASC
+  video_isShortDerived_DESC
   video_includeInHomeFeed_ASC
   video_includeInHomeFeed_DESC
 }
@@ -11325,6 +15023,8 @@ enum VideoSubtitleOrderByInput {
   video_videoRelevance_DESC
   video_isShort_ASC
   video_isShort_DESC
+  video_isShortDerived_ASC
+  video_isShortDerived_DESC
   video_includeInHomeFeed_ASC
   video_includeInHomeFeed_DESC
   type_ASC
@@ -11760,6 +15460,9 @@ input VideoWhereInput {
   ytVideoId_not_startsWith: String
   ytVideoId_endsWith: String
   ytVideoId_not_endsWith: String
+  trailerVideoForToken_every: TrailerVideoWhereInput
+  trailerVideoForToken_some: TrailerVideoWhereInput
+  trailerVideoForToken_none: TrailerVideoWhereInput
   videoRelevance_isNull: Boolean
   videoRelevance_eq: Float
   videoRelevance_not_eq: Float
@@ -11772,6 +15475,9 @@ input VideoWhereInput {
   isShort_isNull: Boolean
   isShort_eq: Boolean
   isShort_not_eq: Boolean
+  isShortDerived_isNull: Boolean
+  isShortDerived_eq: Boolean
+  isShortDerived_not_eq: Boolean
   includeInHomeFeed_isNull: Boolean
   includeInHomeFeed_eq: Boolean
   includeInHomeFeed_not_eq: Boolean
