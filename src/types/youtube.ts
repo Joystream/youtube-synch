@@ -14,9 +14,6 @@ export class YtChannel {
   // Youtube channel custom URL. Also known as youtube channel handle
   customUrl: string
 
-  // user provided email
-  email: string
-
   // ID of the corresponding Joystream Channel
   joystreamChannelId: number
 

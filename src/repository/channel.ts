@@ -24,9 +24,6 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
         hashKey: true,
       },
 
-      // user provided email
-      email: String,
-
       // ID of the corresponding Joystream Channel
       joystreamChannelId: {
         type: Number,
