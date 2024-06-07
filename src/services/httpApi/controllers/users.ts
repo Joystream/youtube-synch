@@ -48,6 +48,9 @@ export class UsersController {
         throw errors
       }
 
+      // save user & set joystreamMemberId if user already existed
+      await this.dynamodbService.users.save(user)
+
       // return verified user
       return {
         id: user.id,
