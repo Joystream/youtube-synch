@@ -194,7 +194,6 @@ export class YoutubeOperationalApi {
       },
       historicalVideoSyncedSize: 0,
       bannerImageUrl: channel.snippet.banner[0]?.url,
-      //   language: channel.snippet?.defaultLanguage, // TODO: find workaround for channel
       publishedAt: new Date(channel.about.stats?.joinedDate).toISOString(),
       performUnauthorizedSync: false,
       shouldBeIngested: true,

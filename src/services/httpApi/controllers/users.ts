@@ -59,7 +59,6 @@ export class UsersController {
         avatarUrl: channel.thumbnails.high,
         bannerUrl: channel.bannerImageUrl,
         channelHandle: channel.customUrl,
-        channelLanguage: channel.language,
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : error

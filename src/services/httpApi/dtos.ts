@@ -139,7 +139,6 @@ export class ChannelDto {
     this.joystreamChannelId = channel.joystreamChannelId
     this.referrerChannelId = channel.referrerChannelId
     this.videoCategoryId = channel.videoCategoryId
-    this.language = channel.language
     this.shouldBeIngested = channel.shouldBeIngested
     this.yppStatus = channel.yppStatus
     this.thumbnails = channel.thumbnails
@@ -199,9 +198,6 @@ export class VerifyChannelResponse {
 
   // Youtube Channel description
   @IsString() @ApiProperty({ required: true }) channelDescription: string
-
-  // Youtube Channel default language
-  @IsString() @ApiProperty() channelLanguage: string
 
   // Youtube Channel avatar URL
   @IsString() @ApiProperty({ required: true }) avatarUrl: string

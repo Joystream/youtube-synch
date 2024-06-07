@@ -37,9 +37,6 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
       // video category ID to be added to all synced videos
       videoCategoryId: String,
 
-      // default language of youtube channel
-      language: String,
-
       // language of corresponding Joystream channel
       joystreamChannelLanguageIso: String,
 
@@ -114,8 +111,6 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
           default: String,
           medium: String,
           high: String,
-          maxRes: String,
-          standard: String,
         },
       },
 

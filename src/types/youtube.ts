@@ -29,9 +29,6 @@ export class YtChannel {
   // Channel description
   description: string
 
-  // default language of youtube channel
-  language: string
-
   // language ISO of corresponding Joystream channel
   joystreamChannelLanguageIso?: string
 
