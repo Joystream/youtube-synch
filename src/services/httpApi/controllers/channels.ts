@@ -167,6 +167,32 @@ export class ChannelsController {
     }
   }
 
+  @Delete(':joystreamChannelId')
+  @ApiResponse({ type: ChannelDto })
+  @ApiOperation({ description: 'Retrieves channel by joystreamChannelId' })
+  async delete(
+    @Headers('authorization') authorizationHeader: string,
+    @Param('joystreamChannelId', ParseIntPipe) id: number
+  ) {
+    const yppOwnerKey = authorizationHeader ? authorizationHeader.split(' ')[1] : ''
+    // TODO: fix this YT_SYNCH__HTTP_API__OWNER_KEY config value
+    if (yppOwnerKey !== process.env.YT_SYNCH__HTTP_API__OWNER_KEY) {
+      throw new UnauthorizedException('Invalid YPP owner key')
+    }
+
+    try {
+      // Get records
+      const channel = await this.dynamodbService.channels.getByJoystreamId(id)
+
+      // Delete records
+      await this.dynamodbService.repo.channels.delete(channel.id, channel.userId)
+      await this.dynamodbService.repo.users.delete(channel.userId)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new NotFoundException(message)
+    }
+  }
+
   @Get()
   @ApiResponse({ type: ChannelDto })
   @ApiOperation({ description: 'Retrieves the most recently verified 30 channels desc by date' })
