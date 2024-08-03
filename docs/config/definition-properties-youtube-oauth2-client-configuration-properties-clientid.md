@@ -1,3 +1,0 @@
-## clientId Type
-
-`string`

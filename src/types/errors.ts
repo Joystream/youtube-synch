@@ -2,6 +2,8 @@ export namespace ExitCodes {
   export enum YoutubeApi {
     CHANNEL_NOT_FOUND = 'CHANNEL_NOT_FOUND',
     VIDEO_NOT_FOUND = 'VIDEO_NOT_FOUND',
+    VIDEO_PRIVACY_STATUS_NOT_UNLISTED = 'VIDEO_PRIVACY_STATUS_NOT_UNLISTED',
+    VIDEO_TITLE_MISMATCH = 'VIDEO_TITLE_MISMATCH',
     CHANNEL_ALREADY_REGISTERED = 'CHANNEL_ALREADY_REGISTERED',
     CHANNEL_STATUS_SUSPENDED = 'CHANNEL_STATUS_SUSPENDED',
     CHANNEL_CRITERIA_UNMET_SUBSCRIBERS = 'CHANNEL_CRITERIA_UNMET_SUBSCRIBERS',
@@ -62,15 +64,6 @@ export class StorageApiError {
 export class QueryNodeApiError {
   constructor(
     public code: ExitCodes.QueryNodeApi,
-    public message?: string,
-    public result?: number | string | Date,
-    public expected?: number | string | Date
-  ) {}
-}
-
-export class FaucetApiError {
-  constructor(
-    public code: string,
     public message?: string,
     public result?: number | string | Date,
     public expected?: number | string | Date

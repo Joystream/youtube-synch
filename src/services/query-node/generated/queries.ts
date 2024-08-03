@@ -69,7 +69,7 @@ export type ChannelFieldsFragment = {
   language?: string | null
   totalVideosCreated: number
   videos: Array<{ id: string; videoStateBloatBond: any }>
-  ownerMember?: { id: string; controllerAccount: string } | null
+  ownerMember?: { id: string; controllerAccount: { id: string } } | null
 }
 
 export type GetChannelByIdQueryVariables = Types.Exact<{
@@ -82,7 +82,7 @@ export type GetChannelByIdQuery = {
     language?: string | null
     totalVideosCreated: number
     videos: Array<{ id: string; videoStateBloatBond: any }>
-    ownerMember?: { id: string; controllerAccount: string } | null
+    ownerMember?: { id: string; controllerAccount: { id: string } } | null
   } | null
 }
 
@@ -128,7 +128,7 @@ export type MemberMetadataFieldsFragment = { name?: string | null; about?: strin
 export type MembershipFieldsFragment = {
   id: string
   handle: string
-  controllerAccount: string
+  controllerAccount: { id: string }
   metadata?: { name?: string | null; about?: string | null } | null
 }
 
@@ -140,7 +140,7 @@ export type GetMemberByIdQuery = {
   membershipByUniqueInput?: {
     id: string
     handle: string
-    controllerAccount: string
+    controllerAccount: { id: string }
     metadata?: { name?: string | null; about?: string | null } | null
   } | null
 }
@@ -205,7 +205,9 @@ export const ChannelFields = gql`
     language
     ownerMember {
       id
-      controllerAccount
+      controllerAccount {
+        id
+      }
     }
     totalVideosCreated
   }
@@ -238,7 +240,9 @@ export const MembershipFields = gql`
   fragment MembershipFields on Membership {
     id
     handle
-    controllerAccount
+    controllerAccount {
+      id
+    }
     metadata {
       ...MemberMetadataFields
     }

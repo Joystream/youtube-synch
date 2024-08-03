@@ -28,7 +28,7 @@ export type DisplaySafeConfig = Omit<Config, 'youtube' | 'aws' | 'httpApi' | 'jo
   httpApi: Secret<Config['httpApi']>
   youtube: Secret<Config['youtube']>
   joystream: Secret<Config['joystream']>
-  logs?:  { elastic:  Secret<NonNullable<Config['logs']>['elastic']> }
+  logs?: { elastic: Secret<NonNullable<Config['logs']>['elastic']> }
   aws?: { credentials: Secret<NonNullable<Config['aws']>['credentials']> }
 }
 

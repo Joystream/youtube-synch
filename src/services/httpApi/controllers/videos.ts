@@ -3,7 +3,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { DynamodbService } from '../../../repository'
 import { YtVideo } from '../../../types/youtube'
 
-@Controller('users/:userId/videos')
+@Controller('channels/:channelId/videos')
 @ApiTags('channels')
 export class VideosController {
   constructor(private dynamodbService: DynamodbService) {}
@@ -11,10 +11,10 @@ export class VideosController {
   @Get()
   @ApiResponse({ type: YtVideo, isArray: true })
   @ApiOperation({ description: `Get videos across all channels owned by the user` })
-  async get(@Param('userId') userId: string): Promise<YtVideo[]> {
+  async get(@Param('channelId') channelId: string): Promise<YtVideo[]> {
     try {
       // Get channels of the user
-      const channel = await this.dynamodbService.channels.getByUserId(userId)
+      const channel = await this.dynamodbService.channels.getById(channelId)
 
       // Get videos across all channels
       const result = await this.dynamodbService.repo.videos.query({ channelId: channel.id }, (q) => q)

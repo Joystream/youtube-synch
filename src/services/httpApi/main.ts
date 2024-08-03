@@ -15,15 +15,8 @@ import { QueryNodeApi } from '../query-node/api'
 import { RuntimeApi } from '../runtime/api'
 import { ContentProcessingClient } from '../syncProcessing'
 import { YoutubePollingService } from '../syncProcessing/YoutubePollingService'
-import { IYoutubeApi } from '../youtube/api'
-import {
-  ChannelsController,
-  StatusController,
-  UsersController,
-  VideosController,
-  YoutubeController,
-} from './controllers'
-import { MembershipController } from './controllers/membership'
+import { YoutubeApi } from '../youtube'
+import { ChannelsController, StatusController, UsersController, VideosController } from './controllers'
 import { ReferrersController } from './controllers/referrers'
 
 class ApiModule {}
@@ -62,7 +55,7 @@ export async function bootstrapHttpApi(
   logging: LoggingService,
   runtimeApi: RuntimeApi,
   queryNodeApi: QueryNodeApi,
-  youtubeApi: IYoutubeApi,
+  youtubeApi: YoutubeApi,
   youtubePollingService: YoutubePollingService,
   contentProcessingClient: ContentProcessingClient
 ) {
@@ -75,15 +68,7 @@ export async function bootstrapHttpApi(
     module: ApiModule,
     imports: [],
     exports: [],
-    controllers: [
-      VideosController,
-      ChannelsController,
-      ReferrersController,
-      UsersController,
-      YoutubeController,
-      StatusController,
-      MembershipController,
-    ],
+    controllers: [VideosController, ChannelsController, ReferrersController, UsersController, StatusController],
     providers: [
       {
         provide: DynamodbService,
@@ -106,7 +91,7 @@ export async function bootstrapHttpApi(
         useValue: contentProcessingClient,
       },
       {
-        provide: 'youtube',
+        provide: YoutubeApi,
         useValue: youtubeApi,
       },
       {

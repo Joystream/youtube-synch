@@ -6,7 +6,9 @@ fragment MemberMetadataFields on MemberMetadata {
 fragment MembershipFields on Membership {
   id
   handle
-  controllerAccount
+  controllerAccount {
+    id
+  }
   metadata {
     ...MemberMetadataFields
   }

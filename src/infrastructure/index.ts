@@ -17,13 +17,8 @@ const userTable = new aws.dynamodb.Table('users', {
 
 const channelsTable = new aws.dynamodb.Table('channels', {
   name: `${resourcePrefix}channels`,
-  hashKey: nameof<YtChannel>('userId'),
-  rangeKey: nameof<YtChannel>('id'),
+  hashKey: nameof<YtChannel>('id'),
   attributes: [
-    {
-      name: nameof<YtChannel>('userId'),
-      type: 'S',
-    },
     {
       name: nameof<YtChannel>('id'),
       type: 'S',

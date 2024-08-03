@@ -10,7 +10,7 @@ import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
 import { RuntimeApi } from '../runtime/api'
 import { JoystreamClient } from '../runtime/client'
-import { IYoutubeApi } from '../youtube/api'
+import { YoutubeApi } from '../youtube/'
 import { ContentCreationService } from './ContentCreationService'
 import { ContentDownloadService } from './ContentDownloadService'
 import { ContentMetadataService } from './ContentMetadataService'
@@ -89,7 +89,7 @@ export class ContentProcessingService extends ContentProcessingClient implements
     private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['endpoints'] & ReadonlyConfig['proxy'],
     logging: LoggingService,
     private dynamodbService: DynamodbService,
-    youtubeApi: IYoutubeApi,
+    youtubeApi: YoutubeApi,
     runtimeApi: RuntimeApi,
     private joystreamClient: JoystreamClient,
     queryNodeApi: QueryNodeApi

@@ -14,19 +14,6 @@ export interface YoutubeSyncNodeConfiguration {
    */
   joystream: {
     /**
-     * Joystream's faucet configuration (needed for captcha-free membership creation)
-     */
-    faucet: {
-      /**
-       * Joystream's faucet URL
-       */
-      endpoint: string
-      /**
-       * Bearer Authentication Key needed to bypass captcha verification on Faucet
-       */
-      captchaBypassKey: string
-    }
-    /**
      * Joystream Metaprotocol App specific configuration
      */
     app: {
@@ -69,7 +56,7 @@ export interface YoutubeSyncNodeConfiguration {
     console?: ConsoleLoggingOptions
     elastic?: ElasticsearchLoggingOptions
   }
-  youtube: YoutubeOauth2ClientConfiguration
+  youtube: YoutubeRelatedConfiguration
   aws?: AWSConfigurationsNeededToConnectWithDynamoDBInstance
   proxy?: Socks5ProxyClientConfigurationUsedByYtDlpToBypassIPBlockageByYoutube
   /**
@@ -184,25 +171,19 @@ export interface ElasticsearchAuthenticationOptions {
   password: string
 }
 /**
- * Youtube Oauth2 Client configuration
+ * Youtube related configuration
  */
-export interface YoutubeOauth2ClientConfiguration {
+export interface YoutubeRelatedConfiguration {
+  operationalApi: YoutubeOperationalAPIHttpsGithubComBenjaminLoisonYouTubeOperationalAPIConfiguration
+}
+/**
+ * Youtube Operational API (https://github.com/Benjamin-Loison/YouTube-operational-API) configuration
+ */
+export interface YoutubeOperationalAPIHttpsGithubComBenjaminLoisonYouTubeOperationalAPIConfiguration {
   /**
-   * Youtube Oauth2 Client Id
+   * URL of the Youtube Operational API server (for example: http://localhost:8080)
    */
-  clientId: string
-  /**
-   * Youtube Oauth2 Client Secret
-   */
-  clientSecret: string
-  /**
-   * Maximum percentage of daily Youtube API quota that can be used by the Periodic polling service. Once this limit is reached the service will stop polling for new videos until the next day(when Quota resets). All the remaining quota (100 - maxAllowedQuotaUsageInPercentage) will be used for potential channel's signups.
-   */
-  maxAllowedQuotaUsageInPercentage?: number
-  /**
-   * Path to the Google Cloud's Application Default Credentials (ADC) key file. It is required to periodically monitor the Youtube API quota usage.
-   */
-  adcKeyFilePath?: string
+  url: string
 }
 /**
  * AWS configurations needed to connect with DynamoDB instance

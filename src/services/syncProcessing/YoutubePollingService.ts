@@ -5,14 +5,14 @@ import { IDynamodbService } from '../../repository'
 import { YtChannel, YtDlpFlatPlaylistOutput, verifiedVariants } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
-import { IYoutubeApi } from '../youtube/api'
+import { YoutubeApi } from '../youtube'
 
 export class YoutubePollingService {
   private logger: Logger
 
   public constructor(
     logging: LoggingService,
-    private youtubeApi: IYoutubeApi,
+    private youtubeApi: YoutubeApi,
     private dynamodbService: IDynamodbService,
     private joystreamClient: JoystreamClient
   ) {
@@ -101,7 +101,7 @@ export class YoutubePollingService {
           channelsToBeIngested.map(async (ch) => {
             try {
               // ensure that channel exists on Youtube
-              await this.youtubeApi.ytdlpClient.ensureChannelExists(ch.id)
+              await this.youtubeApi.ytdlp.getChannel(ch.id)
 
               // ensure that Ypp collaborator member is still set as channel's collaborator
               const isCollaboratorSet = await this.joystreamClient.doesChannelHaveCollaborator(ch.joystreamChannelId)
@@ -158,7 +158,7 @@ export class YoutubePollingService {
       const historicalVideosCountLimit = YtChannel.videoCap(channel)
 
       // get iDs of all sync-able videos within the channel limits
-      const videosIds = await this.youtubeApi.ytdlpClient.getVideosIDs(channel, historicalVideosCountLimit)
+      const videosIds = await this.youtubeApi.ytdlp.getVideosIDs(channel, historicalVideosCountLimit)
 
       // get all video Ids that are not yet being tracked
       let untrackedVideosIds = await this.getUntrackedVideosIds(channel, videosIds)
@@ -169,7 +169,7 @@ export class YoutubePollingService {
       }
 
       //  get all videos that are not yet being tracked
-      const untrackedVideos = await this.youtubeApi.ytdlpClient.getVideos(channel, untrackedVideosIds)
+      const untrackedVideos = await this.youtubeApi.ytdlp.getVideos(channel, untrackedVideosIds)
 
       // save all new videos to DB including
       await this.dynamodbService.repo.videos.upsertAll(untrackedVideos)
