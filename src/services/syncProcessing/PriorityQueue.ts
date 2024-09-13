@@ -78,14 +78,20 @@ class PriorityJobQueue<
         )
   }
 
+  processingTasks = new Set<string>()
+
   private setupConcurrentProcessing(processor: ConcurrentProcessor<T, R>) {
     const wrappedProcessor = async (job: Job<T, R>) => {
-      await this.asyncLock.acquire(this.RECALCULATE_PRIORITY_LOCK_KEY, () => this.processingCount++)
+      await this.asyncLock.acquire(this.RECALCULATE_PRIORITY_LOCK_KEY, () => {
+        this.processingCount++
+        this.processingTasks.add(job.id || '')
+      })
 
       try {
         return await processor(job)
       } finally {
         this.processingCount--
+        this.processingTasks.delete(job.id || '')
       }
     }
 
@@ -186,6 +192,7 @@ class PriorityJobQueue<
     await this.asyncLock.acquire(this.RECALCULATE_PRIORITY_LOCK_KEY, async () => {
       // Wait until all processing tasks have completed
       while (this.processingCount > 0) {
+        console.log('recalculateJobsPriority', this.queue.name, this.processingCount, this.processingTasks)
         await new Promise((resolve) => setTimeout(resolve, 1000))
       }
 

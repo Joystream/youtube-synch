@@ -40,6 +40,8 @@ export class ContentCreationService {
       return { jobs, data }
     }
 
+    // TODO: remove
+    const duplicateJobs: Job<CreateVideoJobData, any, string>[] = []
     try {
       const [app, collaborator] = await Promise.all([
         this.joystreamClient.getApp(),
@@ -82,26 +84,28 @@ export class ContentCreationService {
                 { videoId: job.data.id, channelId: channel.joystreamChannelId }
               )
               await this.dynamodbService.videos.updateState(job.data, 'CreatingVideo')
-              process.exit(1)
-            }
+              await this.ensureContentStateConsistency()
+              duplicateJobs.push(job)
+              // await job.moveToFailed(new Error(), job.token || '')
+            } else {
+              // create submittable tx
+              const tx = await this.joystreamClient.createVideoTx(
+                app.id,
+                appActionNonce + i,
+                collaborator,
+                extrinsicDefaults,
+                { ...job.data, joystreamChannelId: channel.joystreamChannelId, videoMetadata }
+              )
 
-            // create submittable tx
-            const tx = await this.joystreamClient.createVideoTx(
-              app.id,
-              appActionNonce + i,
-              collaborator,
-              extrinsicDefaults,
-              { ...job.data, joystreamChannelId: channel.joystreamChannelId, videoMetadata }
-            )
+              // set submittable tx for each job
+              txByJob.set(job, tx)
 
-            // set submittable tx for each job
-            txByJob.set(job, tx)
-
-            // update historicalVideoSyncedSize by adding the size of historical videos
-            const isHistoricalVideo = new Date(job.data.publishedAt) < channel.createdAt
-            if (isHistoricalVideo) {
-              const size = SyncUtils.getSizeFromVideoMetadata(videoMetadata)
-              channel.historicalVideoSyncedSize += size
+              // update historicalVideoSyncedSize by adding the size of historical videos
+              const isHistoricalVideo = new Date(job.data.publishedAt) < channel.createdAt
+              if (isHistoricalVideo) {
+                const size = SyncUtils.getSizeFromVideoMetadata(videoMetadata)
+                channel.historicalVideoSyncedSize += size
+              }
             }
           }
 
@@ -111,7 +115,7 @@ export class ContentCreationService {
 
       // No jobs planned to be executed in this batch
       if (jobsToComplete().jobs.length === 0) {
-        return []
+        return [...duplicateJobs]
       }
 
       // pre-commit videos state to 'CreatingVideo' to lock the videos
@@ -137,7 +141,7 @@ export class ContentCreationService {
       })
 
       // return completed jobs
-      return [...jobsToComplete().jobs]
+      return [...jobsToComplete().jobs, ...duplicateJobs]
     } catch (err) {
       err = new Error(
         `Got error creating ${txByJob.size} videos: \n ${JSON.stringify({

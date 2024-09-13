@@ -16,7 +16,7 @@ services:
       # since docker-compose does not support creating bind-mount volume with empty path.
       - ${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-./package.json}:${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-/package.json}:ro
       # mount the AWS credentials file to docker container home directory
-      - ~/.aws/:/root/.aws:ro
+      - ~/.aws/:/root/.aws:ro # ? Not needed?
     env_file:
       - .env
     environment:
@@ -44,6 +44,7 @@ services:
       - 127.0.0.1:${YT_SYNCH__HTTP_API__PORT}:${YT_SYNCH__HTTP_API__PORT}
     networks:
       - youtube-synch
+      - ip6net
     command: ['./scripts/start-youtube-synch.sh', '--service', 'httpApi']
 
   youtube-synch_sync:
@@ -91,6 +92,7 @@ services:
       # YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY: ${YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY}
     networks:
       - youtube-synch
+      - ip6net
     command: ['./bin/run', 'start', '--service', 'sync']
 
   redis:
@@ -104,6 +106,19 @@ services:
     volumes:
       - redis-data:/data
 
+  # ipv6-assigner:
+  #   image: node:18
+  #   container_name: ipv6-assigner
+  #   working_dir: /ipv6-assigner
+  #   env_file:
+  #     # relative to working directory where docker-compose was run from
+  #     - .env
+  #   volumes:
+  #     - .:/ipv6-assigner
+  #     - ~/.aws/:/root/.aws:ro
+  #   restart: on-failure
+  #   command: sh -c "npx ts-node src/utils/assignIpv6Adress.ts"
+
 volumes:
   logs:
     driver: local
@@ -115,3 +130,8 @@ volumes:
 networks:
   youtube-synch:
     name: youtube-synch
+  ip6net:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 2001:db8::/64

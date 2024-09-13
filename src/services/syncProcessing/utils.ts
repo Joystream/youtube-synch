@@ -35,14 +35,14 @@ export class SyncUtils {
     throw new Error(`Failed to get video file path: ${videoId}. File not found.`)
   }
 
-  static fileSize(videoId: string): number {
+  static videoSize(videoId: string): number {
     const videoFilePath = this.expectedVideoFilePath(videoId)
     return fs.statSync(videoFilePath).size
   }
 
   static async removeVideoFile(videoId: string) {
     const path = this.expectedVideoFilePath(videoId)
-    const size = this.fileSize(videoId)
+    const size = this.videoSize(videoId)
     await fsPromises.unlink(path)
     this.downloadedVideoFilePaths.delete(videoId)
     this.downloadedVideosSizeSum -= size

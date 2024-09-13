@@ -65,6 +65,18 @@ export class ContentUploadService {
       // After upload is successful, remove the video file from local storage
       await SyncUtils.removeVideoFile(video.id)
     } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.message.includes(`File multihash doesn't match the data object's ipfsContentId`) ||
+          error.message.includes(`File size doesn't match the data object's`) ||
+          error.message.includes(`doesn't exist in storage bag`))
+      ) {
+        console.log('VideoUnavailable::Other', job.data.id)
+        await this.dynamodbService.videos.updateState(job.data, 'VideoUnavailable::Other')
+        await SyncUtils.removeVideoFile(video.id)
+        return
+      }
+
       // Update video state and save to DB
       await this.dynamodbService.videos.updateState(job.data, 'UploadFailed')
 
