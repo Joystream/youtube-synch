@@ -8,17 +8,17 @@ sync:
   enable: true
   downloadsDir: ./local/data
   intervals: # in minutes
-    youtubePolling: 30
-    contentProcessing: 1
+    youtubePolling: 1440 # 24 hours
+    contentProcessing: 5
   limits:
     dailyApiQuota:
       sync: 9500
       signup: 500
-    maxConcurrentDownloads: 50
-    maxConcurrentUploads: 50
+    maxConcurrentDownloads: 1
+    maxConcurrentUploads: 20
     createVideoTxBatchSize: 10
-    pendingDownloadTimeoutSec: 600 # 10 mins
-    storage: 100G
+    pendingDownloadTimeoutSec: 3600 # 1 hour
+    storage: 1000G
 logs:
   file:
     level: debug
@@ -66,11 +66,11 @@ joystream:
 creatorOnboardingRequirements:
   # ! Production values
   minimumSubscribersCount: 50
-  minimumVideosCount: 10
-  minimumVideoAgeHours: 720 # (24 hours x 30 days) 1 month
-  minimumChannelAgeHours: 2160 # (3 x 24 hours x 30 days) 3 months
-  minimumVideosPerMonth: 1
-  monthsToConsider: 1
+  minimumVideosCount: 2
+  minimumVideoAgeHours: 0 # (24 hours x 30 days) 1 month
+  minimumChannelAgeHours: 720 # (3 x 24 hours x 30 days) 3 months
+  minimumVideosPerMonth: 0
+  monthsToConsider: 0
   # ! Development values
   # minimumSubscribersCount: 1
   # minimumVideosCount: 1
