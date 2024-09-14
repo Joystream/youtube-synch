@@ -9,7 +9,7 @@ import {
   hubspotClient,
   mapDynamoItemToContactFields,
   mapReferrerToContactFields,
-  updateYppContacts,
+  updateYppContacts
 } from './hubspot'
 import { ChannelYppStatus, HubspotYPPContact } from './types'
 
@@ -101,6 +101,7 @@ export async function updateHubspotWithCalculatedRewards() {
         `Skipping rewards calculation for this cycle as this channel signed up after cutoff date`,
         contact.gleev_channel_id
       )
+      console.log(new Date(contact.date_signed_up_to_ypp), cutoffDate)
       continue
     }
 
@@ -116,6 +117,16 @@ export async function updateHubspotWithCalculatedRewards() {
 
     const anyRewardOwed = sign_up_reward_in_usd + latest_referral_reward_in_usd + videos_sync_reward_in_usd
 
+    console.log(
+      contact.channel_url,
+      contact.gleev_channel_id,
+      contact.yppstatus,
+      contact.latest_ypp_period_wc,
+      contact.latest_ypp_period_wc === null,
+      contact.date_signed_up_to_ypp,
+      contact.latest_ypp_reward_status
+    )
+
     const contactRewardFields: Partial<HubspotYPPContact> = {
       new_synced_vids: syncedCount.toString(),
       latest_ypp_period_wc: new Date().toISOString(),
@@ -125,6 +136,7 @@ export async function updateHubspotWithCalculatedRewards() {
       latest_ypp_reward_status: anyRewardOwed ? 'To Pay' : 'Paid',
       ...(anyRewardOwed ? {} : { latest_ypp_reward: '0' }),
     }
+    console.log(contactRewardFields)
     updatedContactRewardById.set(contact.contactId, contactRewardFields)
   }
 
@@ -168,6 +180,11 @@ export async function updateContactsInHubspot() {
 
   // Check for all the YPP participants (Lead Status === 'CONNECTED')
   channels.forEach((ch) => {
+    const [same, duplicate] = [
+      mapDynamoItemToContactFields(ch),
+      mapDynamoItemToContactFields(ch, `secondary-${ch.email}`),
+    ]
+
     // (Email, YTChannelId) should be a unique combination since YT-synch backend
     // does not allow change email once channel signs up. Beware that any new
     // channel signup can use the existing email (i.e. duplicate emails are allowed)
@@ -185,13 +202,16 @@ export async function updateContactsInHubspot() {
         id: sameContact.contactId,
         properties: mapDynamoItemToContactFields(ch, sameContact.email),
       })
+      console.log('Same     ', same.email, same.gleev_channel_id, sameContact.contactId)
     }
     // SCENARIO 2:
     else if (existingEmailContact && existingEmailContact.lifecyclestage === 'lead') {
+      console.log('Existing ', same.email, same.gleev_channel_id)
       updateContactInputs.push({ id: existingEmailContact.contactId, properties: mapDynamoItemToContactFields(ch) })
     }
     // SCENARIO 3:
     else if (existingEmailContact && existingEmailContact.lifecyclestage === 'customer') {
+      console.log('Duplicate', duplicate.email, duplicate.gleev_channel_id)
       const modifiedEmail = `secondary-${existingEmailContact.email}`
       const modifiedEmailContact = existingContacts.find((contact) => contact.email === modifiedEmail)
 
@@ -202,13 +222,17 @@ export async function updateContactsInHubspot() {
     }
     // SCENARIO 4:
     else if (existingGleevIdContact && existingGleevIdContact.hs_lead_status === 'REFERRER') {
+      console.log('Referrer ', same.email, same.gleev_channel_id)
       updateContactInputs.push({ id: existingGleevIdContact.contactId, properties: mapDynamoItemToContactFields(ch) })
     }
     // SCENARIO 5:
     else {
+      console.log('New      ', same.email, same.gleev_channel_id)
       createContactInputs.push({ properties: mapDynamoItemToContactFields(ch) })
     }
   })
+
+  // TODO: check if email got changed. Seems like it's not possible currently
 
   // Check for all the new referrers that are not participant yet (Lead Status === 'REFERRER')
   const referrers = channels.reduce((result, channel) => {
@@ -225,9 +249,28 @@ export async function updateContactsInHubspot() {
     )
 
     if (!existingContact && !createContactInput) {
+      console.log(
+        'New      ',
+        mapReferrerToContactFields(referrer).email,
+        mapReferrerToContactFields(referrer).gleev_channel_id
+      )
       createContactInputs.push({ properties: mapReferrerToContactFields(referrer) })
     }
   })
+
+  console.log(updateContactInputs.length, createContactInputs.length)
+
+  // for (const contact of createContactInputs) {
+  //   console.log(contact.properties.email, contact.properties.gleev_channel_id)
+  //   await createYppContact(contact.properties)
+  // }
+
+  // console.log('Updating contacts')
+
+  // for (const contact of updateContactInputs) {
+  //   console.log(contact.properties.email, contact.properties.gleev_channel_id)
+  //   await updateYppContact(contact.id, contact.properties)
+  // }
 
   await createYppContacts(createContactInputs)
   await updateYppContacts(updateContactInputs)

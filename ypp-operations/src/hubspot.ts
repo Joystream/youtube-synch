@@ -288,6 +288,63 @@ export async function getContactsToPay(): Promise<PayableContact[]> {
   }
 }
 
+export async function getContactsPaid(): Promise<PayableContact[]> {
+  const contacts = []
+
+  let nextPage: number | undefined = 0
+
+  try {
+    do {
+      const response = await hubspotClient.crm.contacts.searchApi.doSearch({
+        filterGroups: [
+          {
+            filters: [
+              {
+                propertyName: 'lifecyclestage',
+                operator: 'EQ',
+                value: 'customer',
+              },
+              {
+                propertyName: 'latest_ypp_reward',
+                operator: 'GT',
+                value: '0',
+              },
+            ],
+          },
+        ],
+        sorts: [],
+        properties: [...payableContactProps],
+        limit: 50,
+        after: nextPage,
+      })
+      contacts.push(
+        ...response.results.map((contact) => ({
+          contactId: contact.id,
+          email: contact.properties.email,
+          channel_url: contact.properties.channel_url?.split('/')[1],
+          gleev_channel_id: contact.properties.gleev_channel_id,
+          sign_up_reward_in_usd: contact.properties.sign_up_reward_in_usd,
+          latest_referral_reward_in_usd: contact.properties.latest_referral_reward_in_usd,
+          videos_sync_reward: contact.properties.videos_sync_reward,
+          latest_ypp_reward: contact.properties.latest_ypp_reward,
+          total_ypp_rewards: contact.properties.total_ypp_rewards,
+          date_signed_up_to_ypp: contact.properties.date_signed_up_to_ypp,
+          latest_ypp_period_wc: contact.properties.latest_ypp_period_wc,
+          latest_ypp_reward_status: contact.properties.latest_ypp_reward_status,
+          yppstatus: contact.properties.yppstatus,
+        }))
+      )
+      nextPage = Number(response.paging?.next?.after)
+    } while (nextPage)
+    return contacts.filter(
+      (c) => c.sign_up_reward_in_usd !== '0' || c.latest_referral_reward_in_usd !== '0' || c.videos_sync_reward !== '0'
+    ) as PayableContact[]
+  } catch (err) {
+    console.error(err)
+    throw err
+  }
+}
+
 // Function to update a Hubspot YPP contact
 export async function updateYppContact(contactId: string, properties: Partial<HubspotYPPContact>): Promise<void> {
   try {
