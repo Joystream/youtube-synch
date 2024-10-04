@@ -2,13 +2,15 @@ import _ from 'lodash'
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
-import { YtChannel, YtDlpFlatPlaylistOutput, verifiedVariants } from '../../types/youtube'
+import { ExitCodes, YoutubeApiError } from '../../types/errors'
+import { YtChannel, YtVideo, verifiedVariants } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { JoystreamClient } from '../runtime/client'
 import { IYoutubeApi } from '../youtube/api'
 
 export class YoutubePollingService {
   private logger: Logger
+  private lastPolledChannelId: number | undefined = undefined // Track the last successfully polled channel ID
 
   public constructor(
     logging: LoggingService,
@@ -29,13 +31,10 @@ export class YoutubePollingService {
   }
 
   // get IDs of all videos of a channel that are still not tracked in DB
-  private async getUntrackedVideosIds(
-    channel: YtChannel,
-    videosIds: YtDlpFlatPlaylistOutput
-  ): Promise<YtDlpFlatPlaylistOutput> {
+  private async getUntrackedVideos(channel: YtChannel, videos: YtVideo[]): Promise<YtVideo[]> {
     // Get all the existing videos
     const existingVideos = await this.dynamodbService.repo.videos.query({ channelId: channel.id }, (q) => q)
-    return _.differenceBy(videosIds, existingVideos, 'id')
+    return _.differenceBy(videos, existingVideos, 'id')
   }
 
   /**
@@ -51,18 +50,29 @@ export class YoutubePollingService {
       try {
         this.logger.info(`Resume polling....`)
 
-        const channels = await this.performChannelsIngestion()
+        const channels = _.orderBy(await this.performChannelsIngestion(), ['joystreamChannelId'], ['desc'])
+
+        console.log('Total channels to be polled:', channels.length)
+        // Start polling from the last successfully polled channel ID
+        const startIndex = this.lastPolledChannelId
+          ? channels.findIndex((channel) => channel.joystreamChannelId === this.lastPolledChannelId)
+          : 0
+        const channelsToPoll = channels.slice(startIndex)
 
         this.logger.info(
-          `Completed Channels Ingestion. Videos of ${channels.length} channels will be prepared for syncing in this polling cycle....`
+          `Completed Channels Ingestion. Videos of ${channelsToPoll.length} channels will be prepared for syncing in this polling cycle....`
         )
 
         // Ingest videos of channels in a batch of 50 to limit IO/CPU resource consumption
-        const channelsBatch = _.chunk(channels, 50)
+        const channelsBatch = _.chunk(channelsToPoll, 100)
         // Process each batch
 
+        let a = 0
         for (const channels of channelsBatch) {
+          a = a + channels.length
           await Promise.all(channels.map((channel) => this.performVideosIngestion(channel)))
+          this.lastPolledChannelId = channels[channels.length - 1].joystreamChannelId // Update last polled channel ID
+          console.log('videos ingestion batch:', a)
         }
       } catch (err) {
         this.logger.error(`Critical Polling error`, { err })
@@ -95,14 +105,15 @@ export class YoutubePollingService {
     // updated channel objects with uptodate info
     const channelsToBeIngestedChunks = _.chunk(await channelsWithSyncEnabled(), 100)
 
+    let a = 0
+    console.log('await channelsWithSyncEnabled()', (await channelsWithSyncEnabled()).length)
     for (const channelsToBeIngested of channelsToBeIngestedChunks) {
+      a = a + channelsToBeIngested.length
+      console.log('channels ingestion batch:', a)
       const updatedChannels = (
         await Promise.all(
           channelsToBeIngested.map(async (ch) => {
             try {
-              // ensure that channel exists on Youtube
-              await this.youtubeApi.ytdlpClient.ensureChannelExists(ch.id)
-
               // ensure that Ypp collaborator member is still set as channel's collaborator
               const isCollaboratorSet = await this.joystreamClient.doesChannelHaveCollaborator(ch.joystreamChannelId)
               if (!isCollaboratorSet) {
@@ -147,34 +158,53 @@ export class YoutubePollingService {
       await this.dynamodbService.repo.channels.upsertAll(updatedChannels)
 
       // A delay between batches if necessary to prevent rate limits or high CPU/IO usage
-      await sleep(1000)
+      await sleep(100)
     }
 
     return channelsWithSyncEnabled()
   }
 
-  public async performVideosIngestion(channel: YtChannel) {
+  public async performVideosIngestion(channel: YtChannel, initialIngestion = false) {
     try {
       const historicalVideosCountLimit = YtChannel.videoCap(channel)
+      const limit = initialIngestion ? historicalVideosCountLimit : 50
 
-      // get iDs of all sync-able videos within the channel limits
-      const videosIds = await this.youtubeApi.ytdlpClient.getVideosIDs(channel, historicalVideosCountLimit)
+      // get new sync-able videos of the channel
+      const videos = await this.youtubeApi.getVideos(channel, limit)
 
       // get all video Ids that are not yet being tracked
-      let untrackedVideosIds = await this.getUntrackedVideosIds(channel, videosIds)
+      let untrackedVideos = await this.getUntrackedVideos(channel, videos)
 
-      // if size limit has reached, don't track new historical videos
-      if (YtChannel.hasSizeLimitReached(channel)) {
-        untrackedVideosIds = untrackedVideosIds.filter((v) => v.publishedAt >= channel.createdAt)
-      }
-
-      //  get all videos that are not yet being tracked
-      const untrackedVideos = await this.youtubeApi.ytdlpClient.getVideos(channel, untrackedVideosIds)
-
+      console.log('untrackedVideos.length', videos.length, untrackedVideos.length, channel.joystreamChannelId)
       // save all new videos to DB including
       await this.dynamodbService.repo.videos.upsertAll(untrackedVideos)
     } catch (err) {
-      this.logger.error('Failed to ingest videos for channel', { err, channelId: channel.joystreamChannelId })
+      if (err instanceof YoutubeApiError && err.code === ExitCodes.YoutubeApi.YOUTUBE_QUOTA_LIMIT_EXCEEDED) {
+        this.logger.info('Youtube quota limit exceeded, skipping polling for now.')
+        return
+      }
+
+      // if app permission is revoked by user from Google account then set `shouldBeIngested` to false & OptOut channel from
+      // Ypp program,  because then trying to fetch user channel will throw error with code 400 and 'invalid_grant' message
+      if ((err as any).code === '400' && (err as any).message === 'invalid_grant') {
+        this.logger.warn(
+          `Opting out '${channel.id}' from YPP program as their owner has revoked the permissions from Google settings`
+        )
+
+        await this.dynamodbService.repo.channels.save({
+          ...channel,
+          yppStatus: 'OptedOut',
+          shouldBeIngested: false,
+          lastActedAt: new Date(),
+        })
+        return
+      }
+
+      this.logger.error('Failed to ingest videos for channel', {
+        err,
+        channelId: channel.joystreamChannelId,
+        ytChannelId: channel.id,
+      })
     }
   }
 }

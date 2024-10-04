@@ -7,7 +7,6 @@ import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
 import { DownloadJobData, DownloadJobOutput, VideoUnavailableReasons, YtChannel } from '../../types/youtube'
-import EC2InstanceRestarter from '../../utils/restartEC2Instance'
 import { LoggingService } from '../logging'
 import { IYoutubeApi } from '../youtube/api'
 import { SyncUtils } from './utils'
@@ -132,10 +131,14 @@ export class ContentDownloadService {
         this.logger.error(`${errorMsg}. Skipping from syncing...`, { videoId: video.id, reason: matchedError.code })
       }
 
+      console.log('errorMsg', errorMsg, this.config.chiselProxy?.ec2AutoRotateIp)
+
       // If the error is 403 Forbidden means the IP address was blocked,
       // restart the proxy server EC2 instance if enabled (i.e setup exists)
-      if (errorMsg.includes('HTTP Error 403: Forbidden') && this.config.chiselProxy?.ec2AutoRotateIp) {
-        await EC2InstanceRestarter.restartInstance(this.logger)
+      if (errorMsg.includes('Sign in to confirm') && this.config.chiselProxy?.ec2AutoRotateIp) {
+        console.log('EC2InstanceRestarter.restartInstance(this.logger)')
+        // ! Temporary stopped restarting
+        // await EC2InstanceRestarter.restartInstance(this.logger)
       }
 
       await this.removeVideoFile(video.id)
