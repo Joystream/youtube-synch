@@ -400,6 +400,7 @@ class YoutubeClient implements IYoutubeApi {
       ffmpegLocation: ffmpegInstaller.path,
       // forceIpv6: true,
       limitRate: '4M',
+      retries: '0',
       proxy: this.config.proxy?.url,
     })
     return response
