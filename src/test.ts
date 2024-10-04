@@ -13,4 +13,6 @@ async function downloadVideo(videoUrl: string, outPath: string): ReturnType<type
   return response
 }
 
-downloadVideo('https://youtube.com/watch?v=cU7AAUNACVY', '/home/ubuntu/youtube-synch/').then(console.log)
+downloadVideo('https://youtube.com/watch?v=cU7AAUNACVY', '/home/ubuntu/youtube-synch/')
+  .then(console.log)
+  .catch(error => console.error('Error downloading video:', error));
