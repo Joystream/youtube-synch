@@ -184,6 +184,7 @@ export class ContentProcessingService extends ContentProcessingClient implements
       this.logger.warn(`Local disk space is fully used. The processing of new videos will be postponed.`)
     }
 
+    console.log('allUnsyncedVideos', allUnsyncedVideos.length)
     const allUnsyncedVideosByChannelId = _(allUnsyncedVideos)
       .groupBy((v) => v.channelId)
       .map((videos, channelId) => ({ channelId, unsyncedVideos: [...videos] }))

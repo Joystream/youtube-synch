@@ -19,6 +19,5 @@ ${TAR} -c --sort=name --owner=root:0 --group=root:0 --mode 644 --mtime='UTC 2020
     config.yml \
     package.json \
     bin |
-    if [[ -n "$RUNTIME_PROFILE" ]]; then ${SED} '$a'"$RUNTIME_PROFILE"; else tee; fi |
     shasum |
     cut -d " " -f 1

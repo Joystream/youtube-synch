@@ -436,8 +436,8 @@ export class ChannelsController {
     if (this.config.sync.enable) {
       // The videos ingestion action is done as a background job rather than blocking
       // the request (as it may take a considerable time depending on the number of
-      // videos). Even if the ingestion fails it will be retried in next polling cycle.
-      setImmediate(() => this.youtubePollingService.performVideosIngestion(channel))
+      // videos). If the ingestion fails it will **NOT** be retried in next polling cycle.
+      setImmediate(() => this.youtubePollingService.performVideosIngestion(channel, true))
     }
   }
 

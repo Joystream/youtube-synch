@@ -4,11 +4,17 @@ services:
   chisel-client:
     image: jpillora/chisel
     container_name: chisel-client
-    command: client --fingerprint ${CHISEL_SERVER_FINGERPRINT} ${IP_ADDRESS}:8080 0.0.0.0:1080:socks
+    command: client --fingerprint ${CHISEL_SERVER_FINGERPRINT} 172.17.0.1:9000 0.0.0.0:1080:socks
     restart: always
     networks:
       - youtube-synch
+      - ip6net
 
 networks:
   youtube-synch:
     external: true
+  ip6net:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 2a0a:2d06:22::/64
