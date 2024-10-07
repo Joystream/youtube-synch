@@ -58,6 +58,11 @@ export class YtDlpClient implements IOpenYTApi {
               ) {
                 return
               }
+              if (
+                err instanceof Error && err.message.includes(`This live event will begin in a few moments`)
+              ) {
+                return
+              }
               throw err
             }
           })
