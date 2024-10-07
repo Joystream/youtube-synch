@@ -9,7 +9,7 @@ sync:
   downloadsDir: ./local/data
   intervals: # in minutes
     youtubePolling: 1440 # 24 hours
-    contentProcessing: 5
+    contentProcessing: 1
   limits:
     dailyApiQuota:
       sync: 9500
@@ -17,7 +17,7 @@ sync:
     maxConcurrentDownloads: 2
     maxConcurrentUploads: 20
     createVideoTxBatchSize: 10
-    pendingDownloadTimeoutSec: 3600 # 1 hour
+    pendingDownloadTimeoutSec: 10800 # 1 hour
     storage: 1000G
 logs:
   file:

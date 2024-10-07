@@ -58,6 +58,11 @@ export class YtDlpClient implements IOpenYTApi {
               ) {
                 return
               }
+              if (
+                err instanceof Error && err.message.includes(`This live event will begin in a few moments`)
+              ) {
+                return
+              }
               throw err
             }
           })
@@ -402,13 +407,14 @@ class YoutubeClient implements IYoutubeApi {
       limitRate: '4M',
       retries: 0,
       proxy: this.config.proxy?.url,
+      // noWaitForVideo: true, // our version of youtube-dl-exec is not aware of this flag
     })
     return response
   }
 
   private async iterateVideos(youtube: youtube_v3.Youtube, channel: YtChannel, limit: number) {
     let videos: YtVideo[] = []
-    let continuation: string
+    let nextPageToken: string = ''
 
     do {
       const nextPage = await youtube.playlistItems
@@ -416,6 +422,7 @@ class YoutubeClient implements IYoutubeApi {
           part: ['contentDetails', 'snippet', 'id', 'status'],
           playlistId: channel.uploadsPlaylistId,
           maxResults: 50,
+          pageToken: nextPageToken ?? undefined,
         })
         .catch((err) => {
           if (err instanceof FetchError && err.code === 'ENOTFOUND') {
@@ -423,12 +430,12 @@ class YoutubeClient implements IYoutubeApi {
           }
           throw err
         })
-      continuation = nextPage.data.nextPageToken ?? ''
+        nextPageToken = nextPage.data.nextPageToken ?? ''
 
       const page = this.mapVideos(nextPage.data.items ?? [], channel)
       videos = [...videos, ...page]
       console.log('videos.length   <   max', videos.length, limit, channel.joystreamChannelId)
-    } while (continuation && videos.length < limit)
+    } while (nextPageToken && videos.length < limit)
     return videos
   }
 

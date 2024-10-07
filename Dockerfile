@@ -1,5 +1,5 @@
 # Use the specified image as base
-FROM node:18
+FROM node:20
 
 # Set the working directory to /youtube-synch
 WORKDIR /youtube-synch
