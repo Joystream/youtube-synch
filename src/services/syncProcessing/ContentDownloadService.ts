@@ -77,7 +77,6 @@ export class ContentDownloadService {
     const video = job.data
     try {
       // download the video from youtube
-
       const { ext: fileExt } = await pTimeout(
         this.youtubeApi.downloadVideo(video.url, this.config.downloadsDir),
         this.config.limits.pendingDownloadTimeoutSec * 1000,
@@ -123,6 +122,9 @@ export class ContentDownloadService {
         { message: 'removed by the uploader', code: VideoUnavailableReasons.Private },
         { message: 'Join this channel to get access to members-only content', code: VideoUnavailableReasons.Private },
         { message: 'size cap for historical videos', code: VideoUnavailableReasons.Skipped },
+        { message: 'Offline', code: VideoUnavailableReasons.LiveOffline },
+        { message: 'This live event will begin in a few moments', code: VideoUnavailableReasons.LiveOffline },
+        { message: 'Download timed-out', code: VideoUnavailableReasons.DownloadTimedOut },
       ]
 
       let matchedError = errors.find((e) => errorMsg.includes(e.message))
@@ -131,15 +133,14 @@ export class ContentDownloadService {
         this.logger.error(`${errorMsg}. Skipping from syncing...`, { videoId: video.id, reason: matchedError.code })
       }
 
-      console.log('errorMsg', errorMsg, this.config.chiselProxy?.ec2AutoRotateIp)
+      console.log('errorMsg', errorMsg)
 
-      // If the error is 403 Forbidden means the IP address was blocked,
-      // restart the proxy server EC2 instance if enabled (i.e setup exists)
-      if (errorMsg.includes('Sign in to confirm') && this.config.chiselProxy?.ec2AutoRotateIp) {
-        console.log('EC2InstanceRestarter.restartInstance(this.logger)')
-        // ! Temporary stopped restarting
-        // await EC2InstanceRestarter.restartInstance(this.logger)
+      // If the error is 403 Forbidden means the IP address was blocked
+      if (errorMsg.includes('Sign in to confirm')) {
+        console.log('Download blocked by youtube')
       }
+
+      // TODO: If Download timed out, should we keep it on disk so it can be resumed later?
 
       await this.removeVideoFile(video.id)
       throw err

@@ -211,6 +211,8 @@ export enum VideoUnavailableReasons {
   Unavailable = 'Unavailable',
   PostprocessingError = 'PostprocessingError',
   EmptyDownload = 'EmptyDownload',
+  LiveOffline = 'LiveOffline',
+  DownloadTimedOut = 'DownloadTimedOut',
 }
 
 // Modify the VideoStates enum to include a template literal type for the VideoUnavailable variant
