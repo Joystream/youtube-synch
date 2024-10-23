@@ -86,20 +86,25 @@ export class YoutubePollingService {
   private async performChannelsIngestion(): Promise<YtChannel[]> {
     // get all channels that need to be ingested
     const channelsWithSyncEnabled = async () =>
-      await this.dynamodbService.repo.channels.scan({}, (scan) =>
-        scan
-          .filter('yppStatus')
-          .in(['Unverified', ...verifiedVariants])
-          .where('shouldBeIngested')
-          .eq(true)
-          .and()
-          .where('allowOperatorIngestion')
-          .eq(true)
-          .and()
-          // * Unauthorized channels add by infra operator are exempted from periodic
-          // * ingestion as we don't have access to their access/refresh tokens
-          .where('performUnauthorizedSync')
-          .eq(false)
+      await this.dynamodbService.repo.channels.scan(
+        {},
+        (scan) =>
+          scan
+            .filter('yppStatus')
+            .in(['Unverified', ...verifiedVariants])
+            .where('shouldBeIngested')
+            .eq(true)
+            .and()
+            .where('allowOperatorIngestion')
+            .eq(true)
+            .and()
+            // * Unauthorized channels add by infra operator are exempted from periodic
+            // * ingestion as we don't have access to their access/refresh tokens
+            .where('performUnauthorizedSync')
+            .eq(false)
+        // .and()
+        // .where('id')
+        // .eq('UCBWgpKlykQ8yPAEmTGdsXxw')
       )
 
     // updated channel objects with uptodate info
@@ -191,12 +196,18 @@ export class YoutubePollingService {
           `Opting out '${channel.id}' from YPP program as their owner has revoked the permissions from Google settings`
         )
 
-        await this.dynamodbService.repo.channels.save({
-          ...channel,
-          yppStatus: 'OptedOut',
-          shouldBeIngested: false,
-          lastActedAt: new Date(),
+        this.logger.debug(`Google permissions error`, {
+          err,
+          channelId: channel.joystreamChannelId,
+          ytChannelId: channel.id,
         })
+
+        // await this.dynamodbService.repo.channels.save({
+        //   ...channel,
+        //   yppStatus: 'OptedOut',
+        //   shouldBeIngested: false,
+        //   lastActedAt: new Date(),
+        // })
         return
       }
 

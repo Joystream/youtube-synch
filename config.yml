@@ -8,7 +8,7 @@ sync:
   enable: true
   downloadsDir: ./local/data
   intervals: # in minutes
-    youtubePolling: 1440 # 24 hours
+    youtubePolling: 2 # 24 hours
     contentProcessing: 1
   limits:
     dailyApiQuota:
