@@ -226,7 +226,7 @@ export class ContentProcessingService extends ContentProcessingClient implements
             // add job flow to the flow producer
             const jobNode = await this.flowManager.addFlowJob(flowJob)
 
-            jobNode.job
+            return jobNode.job
           }
         }
       })

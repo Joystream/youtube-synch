@@ -8,6 +8,7 @@ import { DynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
 import { YtChannel, YtVideo } from '../../types/youtube'
 import { SyncUtils } from './utils'
+import sleep from 'sleep-promise'
 
 export const QUEUE_NAME_PREFIXES = ['Upload', 'Creation', 'Metadata', 'Download'] as const
 
@@ -192,8 +193,7 @@ class PriorityJobQueue<
     await this.asyncLock.acquire(this.RECALCULATE_PRIORITY_LOCK_KEY, async () => {
       // Wait until all processing tasks have completed
       while (this.processingCount > 0) {
-        console.log('recalculateJobsPriority', this.queue.name, this.processingCount, this.processingTasks)
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+        await sleep(1000)
       }
 
       const jobs = await this.queue.getJobs(['prioritized'])
