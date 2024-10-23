@@ -68,8 +68,7 @@ export class ContentUploadService {
       if (
         error instanceof Error &&
         (error.message.includes(`File multihash doesn't match the data object's ipfsContentId`) ||
-          error.message.includes(`File size doesn't match the data object's`) ||
-          error.message.includes(`doesn't exist in storage bag`))
+          error.message.includes(`File size doesn't match the data object's`))
       ) {
         console.log('VideoUnavailable::Other', job.data.id)
         await this.dynamodbService.videos.updateState(job.data, 'VideoUnavailable::Other')
