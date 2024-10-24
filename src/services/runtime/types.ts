@@ -83,7 +83,7 @@ export type StorageNodeInfo = {
 
 export type AssetUploadInput = {
   dataObjectId: DataObjectId
-  file: Readable
+  file: () => Promise<Readable>
 }
 
 export type VideoFFProbeMetadata = {
