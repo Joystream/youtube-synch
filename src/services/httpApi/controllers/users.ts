@@ -1,15 +1,20 @@
-import { BadRequestException, Body, Controller, Inject, Post } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Inject, Post, ServiceUnavailableException } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { DynamodbService } from '../../../repository'
 import { ExitCodes, YoutubeApiError } from '../../../types/errors'
 import { YtChannel } from '../../../types/youtube'
 import { IYoutubeApi } from '../../youtube/api'
 import { VerifyChannelRequest, VerifyChannelResponse } from '../dtos'
+import { ReadonlyConfig } from '../../../types'
 
 @Controller('users')
 @ApiTags('channels')
 export class UsersController {
-  constructor(@Inject('youtube') private youtube: IYoutubeApi, private dynamodbService: DynamodbService) {}
+  constructor(
+    @Inject('config') private config: ReadonlyConfig,
+    @Inject('youtube') private youtube: IYoutubeApi,
+    private dynamodbService: DynamodbService
+  ) {}
 
   @ApiOperation({
     description: `fetches user's channel from the supplied google authorization code, and verifies if it satisfies YPP induction criteria`,
@@ -20,6 +25,9 @@ export class UsersController {
   async verifyUserAndChannel(
     @Body() { authorizationCode, youtubeRedirectUri }: VerifyChannelRequest
   ): Promise<VerifyChannelResponse> {
+    if (this.config.httpApi.disableNewSignUps === true) {
+      throw new ServiceUnavailableException('Endpoint temporarily disabled: Not accepting new sign-ups')
+    }
     try {
       // get user from authorization code
       const user = await this.youtube.getUserFromCode(authorizationCode, youtubeRedirectUri)

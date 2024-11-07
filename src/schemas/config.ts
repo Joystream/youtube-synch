@@ -293,6 +293,7 @@ export const configSchema: JSONSchema7 = objectSchema({
       properties: {
         port: { type: 'number' },
         ownerKey: { type: 'string' },
+        disableNewSignUps: { type: 'boolean', default: false }
       },
       required: ['port', 'ownerKey'],
     }),

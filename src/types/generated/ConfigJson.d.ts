@@ -249,6 +249,7 @@ export interface Socks5ProxyClientConfigurationUsedByYtDlpToBypassIPBlockageByYo
 export interface PublicApiConfiguration {
   port: number
   ownerKey: string
+  disableNewSignUps?: boolean
 }
 /**
  * YT-synch's syncronization related settings
