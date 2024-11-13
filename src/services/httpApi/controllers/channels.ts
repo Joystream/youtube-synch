@@ -12,6 +12,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
@@ -58,6 +59,9 @@ export class ChannelsController {
   @ApiResponse({ type: SaveChannelResponse })
   @ApiOperation({ description: `Saves channel record of a YPP verified user` })
   async saveChannel(@Body() channelInfo: SaveChannelRequest): Promise<SaveChannelResponse> {
+    if (this.config.httpApi.disableNewSignUps === true) {
+      throw new ServiceUnavailableException("Endpoint temporarily disabled: Not accepting new sign-ups")
+    }
     try {
       const {
         userId,
