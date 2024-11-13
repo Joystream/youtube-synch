@@ -45,11 +45,7 @@ export class YoutubePollingService {
   private async runPollingWithInterval(pollingIntervalMinutes: number) {
     const sleepInterval = pollingIntervalMinutes * 60 * 1000
     while (true) {
-      this.logger.info(`Youtube polling service paused for ${pollingIntervalMinutes} minute(s).`)
-      await sleep(sleepInterval)
       try {
-        this.logger.info(`Resume polling....`)
-
         const channels = _.orderBy(await this.performChannelsIngestion(), ['joystreamChannelId'], ['desc'])
 
         console.log('Total channels to be polled:', channels.length)
@@ -77,6 +73,9 @@ export class YoutubePollingService {
       } catch (err) {
         this.logger.error(`Critical Polling error`, { err })
       }
+      this.logger.info(`Youtube polling service paused for ${pollingIntervalMinutes} minute(s).`)
+      await sleep(sleepInterval)
+      this.logger.info(`Resume polling....`)
     }
   }
 

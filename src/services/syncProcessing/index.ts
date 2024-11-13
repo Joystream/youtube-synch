@@ -162,10 +162,7 @@ export class ContentProcessingService extends ContentProcessingClient implements
   private async processVideosWithInterval(processingIntervalMinutes: number) {
     const sleepInterval = processingIntervalMinutes * 60 * 1000
     while (true) {
-      this.logger.info(`Content processing service paused for ${processingIntervalMinutes} minute(s).`)
-      await sleep(sleepInterval)
       try {
-        this.logger.info(`Resume service....`)
         // process unsynced videos
         await this.prepareVideosForProcessing()
 
@@ -174,6 +171,9 @@ export class ContentProcessingService extends ContentProcessingClient implements
       } catch (err) {
         this.logger.error(`Critical content processing error`, { err })
       }
+      this.logger.info(`Content processing service paused for ${processingIntervalMinutes} minute(s).`)
+      await sleep(sleepInterval)
+      this.logger.info(`Resume service....`)
     }
   }
 
@@ -190,6 +190,11 @@ export class ContentProcessingService extends ContentProcessingClient implements
       .map((videos, channelId) => ({ channelId, unsyncedVideos: [...videos] }))
       .value()
 
+    // Parents of failed jobs are not automatically cleaned up, so make sure
+    // to clean any jobs in `completed` and `failed` state before adding new ones.
+    // (otherwise it may fail due to jobId clash)
+    await this.cleanCompletedAndFailedJobs()
+
     await Promise.all(
       allUnsyncedVideosByChannelId.map(async ({ channelId, unsyncedVideos }) => {
         const channel = await this.dynamodbService.channels.getById(channelId)
@@ -197,7 +202,7 @@ export class ContentProcessingService extends ContentProcessingClient implements
         const percentageOfCreatorBacklogNotSynched = (unsyncedVideos.length * 100) / (totalVideos || 1)
 
         for (const video of unsyncedVideos) {
-          if ((await this.ensureVideoCanBeProcessed(video, channel)) && !(await this.isActiveJobFlow(video.id))) {
+          if ((await this.ensureVideoCanBeProcessed(video, channel)) && !(await this.jobFlowExists(video.id))) {
             let sudoPriority = SyncUtils.DEFAULT_SUDO_PRIORITY
 
             // Prioritize syncing new videos over old ones
@@ -262,15 +267,24 @@ export class ContentProcessingService extends ContentProcessingClient implements
     return shouldBeProcessed
   }
 
-  private async isActiveJobFlow(videoId: string): Promise<boolean> {
+  private async jobFlowExists(videoId: string): Promise<boolean> {
     for (const jobType of QUEUE_NAME_PREFIXES) {
       const jobQueue = this.flowManager.getJobQueue(`${jobType}Queue`)
-      const state = await (await Job.fromId(jobQueue, videoId))?.getState()
-      if (state === 'active' || state === 'delayed' || state === 'prioritized' || state === 'waiting-children') {
+      const job = await Job.fromId(jobQueue, videoId)
+      if (job) {
         return true
       }
     }
     return false
+  }
+
+  private async cleanCompletedAndFailedJobs(): Promise<void> {
+    this.logger.verbose('Cleaning up completed and failed jobs...')
+    for (const jobType of QUEUE_NAME_PREFIXES) {
+      const jobQueue = this.flowManager.getJobQueue(`${jobType}Queue`)
+      await jobQueue.clean(0, 0, 'completed')
+      await jobQueue.clean(0, 0, 'failed')
+    }
   }
 
   private createFlow(video: YtVideo, priority: number): FlowJob {
