@@ -397,6 +397,11 @@ class YoutubeClient implements IYoutubeApi {
   }
 
   async downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
+    // Those flags are not currently recognized by `youtube-dl-exec`, but they are still
+    // supported by yt-dlp (see: https://github.com/yt-dlp/yt-dlp)
+    const unrecognizedFlags = {
+      throttledRate: '500K'
+    }
     const response = await ytdl(videoUrl, {
       noWarnings: true,
       printJson: true,
@@ -405,9 +410,11 @@ class YoutubeClient implements IYoutubeApi {
       ffmpegLocation: ffmpegInstaller.path,
       // forceIpv6: true,
       limitRate: '4M',
-      retries: 0,
+      bufferSize: '64K',
+      retries: 2,
       proxy: this.config.proxy?.url,
       // noWaitForVideo: true, // our version of youtube-dl-exec is not aware of this flag
+      ...unrecognizedFlags
     })
     return response
   }
