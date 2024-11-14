@@ -241,7 +241,7 @@ class PriorityJobQueue<
         })
       )
 
-      this.logger.info('Done recalculating priorities')
+      this.logger.verbose('Done recalculating priorities')
     })
   }
 }
