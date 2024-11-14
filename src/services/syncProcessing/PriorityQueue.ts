@@ -191,7 +191,14 @@ class PriorityJobQueue<
   async recalculateJobsPriority({ channels }: DynamodbService) {
     await this.asyncLock.acquire(this.RECALCULATE_PRIORITY_LOCK_KEY, async () => {
       const jobs = await this.queue.getJobs(['prioritized'])
-      this.logger.verbose(`Recalculating job priorities (jobs: ${jobs.length})...`)
+      this.logger.verbose(
+        `Recalculating job priorities`,
+        {
+          prioritizedJobsCount: jobs.length,
+          processingCount: this.processingCount,
+          processingTasks: Array.from(this.processingTasks)
+        }
+    )
 
       const jobsByChannelId = _(jobs)
         .groupBy((v) => v.data.channelId)
