@@ -39,9 +39,8 @@ youtube:
   # adcKeyFilePath: path/to/adc-key-file.json
   # maxAllowedQuotaUsageInPercentage: 95
 proxy:
-  url: socks5://chisel-client:1080
-  chiselProxy:
-    ec2AutoRotateIp: false
+  urls:
+    ["socks5://chisel-client:1080"]
 aws:
   endpoint: http://localhost:4566
   region: us-east-1

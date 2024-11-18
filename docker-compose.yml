@@ -1,5 +1,24 @@
 version: '3.4'
 services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    restart: on-failure
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    env_file:
+      - .env
+    environment:
+      - VPN_SERVICE_PROVIDER=ivpn
+      - VPN_TYPE=openvpn
+      - OPENVPN_USER=${VPN_USER}
+    ports:
+      - 127.0.0.1:${YT_SYNCH__HTTP_API__PORT}:${YT_SYNCH__HTTP_API__PORT}
+      - 127.0.0.1:${YT_SYNCH__ENDPOINTS__REDIS__PORT}:${YT_SYNCH__ENDPOINTS__REDIS__PORT}
+
+      
   youtube-synch_httpApi:
     image: youtube-synch:${IMAGE_TAG}
     container_name: youtube-synch_httpApi
@@ -16,7 +35,7 @@ services:
       # since docker-compose does not support creating bind-mount volume with empty path.
       - ${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-./package.json}:${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-/package.json}:ro
       # mount the AWS credentials file to docker container home directory
-      - ~/.aws/:/root/.aws:ro # ? Not needed?
+      # - ~/.aws/:/root/.aws:ro # ? Not needed?
     env_file:
       - .env
     environment:
@@ -40,11 +59,7 @@ services:
       # YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT: ${YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT}
       # YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY: ${YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${TELEMETRY_ENDPOINT}
-    ports:
-      - 127.0.0.1:${YT_SYNCH__HTTP_API__PORT}:${YT_SYNCH__HTTP_API__PORT}
-    networks:
-      - youtube-synch
-      - ip6net
+    network_mode: "service:gluetun"
     command: ['./scripts/start-youtube-synch.sh', '--service', 'httpApi']
 
   youtube-synch_sync:
@@ -58,7 +73,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       # Docker socket mounting is required to restart the socks5 proxy container from inside this container
-      - /var/run/docker.sock:/var/run/docker.sock
+      # - /var/run/docker.sock:/var/run/docker.sock
       - ./local/logs:/youtube-synch/local/logs
       - ./local/data:/youtube-synch/local/data
       # mount Google Cloud's Application Default Credentials file. A default bind mount is created
@@ -66,7 +81,7 @@ services:
       # since docker-compose does not support creating bind-mount volume with empty path.
       - ${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-./package.json}:${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-/package.json}:ro
       # mount the AWS credentials file to docker container home directory
-      - ~/.aws/:/root/.aws:ro
+      # - ~/.aws/:/root/.aws:ro
     env_file:
       # relative to working directory where docker-compose was run from
       - .env
@@ -90,34 +105,16 @@ services:
       # YT_SYNCH__JOYSTREAM__APP__ACCOUNT_SEED: ${YT_SYNCH__JOYSTREAM__APP__ACCOUNT_SEED}
       # YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT: ${YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT}
       # YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY: ${YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY}
-    networks:
-      - youtube-synch
-      - ip6net
+    network_mode: "service:gluetun"
     command: ['./bin/run', 'start', '--service', 'sync']
 
   redis:
     image: redis:7.2.1
     container_name: redis
     command: ['redis-server', '--maxmemory-policy', 'noeviction']
-    ports:
-      - 127.0.0.1:${YT_SYNCH__ENDPOINTS__REDIS__PORT}:${YT_SYNCH__ENDPOINTS__REDIS__PORT}
-    networks:
-      - youtube-synch
+    network_mode: "service:gluetun"
     volumes:
       - redis-data:/data
-
-  # ipv6-assigner:
-  #   image: node:18
-  #   container_name: ipv6-assigner
-  #   working_dir: /ipv6-assigner
-  #   env_file:
-  #     # relative to working directory where docker-compose was run from
-  #     - .env
-  #   volumes:
-  #     - .:/ipv6-assigner
-  #     - ~/.aws/:/root/.aws:ro
-  #   restart: on-failure
-  #   command: sh -c "npx ts-node src/utils/assignIpv6Adress.ts"
 
 volumes:
   logs:
@@ -126,12 +123,3 @@ volumes:
     driver: local
   redis-data:
     driver: local
-
-networks:
-  youtube-synch:
-    name: youtube-synch
-  ip6net:
-    enable_ipv6: true
-    ipam:
-      config:
-        - subnet: 2001:db8::/64

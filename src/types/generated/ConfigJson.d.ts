@@ -230,18 +230,11 @@ export interface AWSCredentials {
  */
 export interface Socks5ProxyClientConfigurationUsedByYtDlpToBypassIPBlockageByYoutube {
   /**
-   * Proxy Client URL e.g. socks://localhost:1080, socks://user:password@localhost:1080
+   * List of available socks5 proxy URLs
+   *
+   * @minItems 1
    */
-  url?: string
-  /**
-   * Configuration option to manage Chisel Client & Server. Before enabling this option please refer to setup guide in `socks5-proxy/SETUP.md`
-   */
-  chiselProxy?: {
-    /**
-     * Boolean option to enable auto rotation of ec2 instance IP where chisel server is running by restating it
-     */
-    ec2AutoRotateIp?: boolean
-  }
+  urls?: string[]
 }
 /**
  * Public api configuration

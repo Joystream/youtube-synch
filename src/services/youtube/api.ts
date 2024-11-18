@@ -193,6 +193,7 @@ export interface IQuotaMonitoringClient {
 
 class YoutubeClient implements IYoutubeApi {
   private config: ReadonlyConfig
+  private proxyIdx = -1
   readonly ytdlpClient: YtDlpClient
 
   constructor(config: ReadonlyConfig) {
@@ -396,9 +397,22 @@ class YoutubeClient implements IYoutubeApi {
     }
   }
 
+  getNextProxy() {
+    const proxies = this.config.proxy?.urls
+    if (!proxies) {
+      return undefined
+    }
+    ++this.proxyIdx
+    if (this.proxyIdx >= proxies.length) {
+      this.proxyIdx = 0
+    }
+    return proxies[this.proxyIdx]
+  }
+
   async downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
     // Those flags are not currently recognized by `youtube-dl-exec`, but they are still
     // supported by yt-dlp (see: https://github.com/yt-dlp/yt-dlp)
+    const proxy = this.getNextProxy()
     const response = await ytdl(videoUrl, {
       noWarnings: true,
       printJson: true,
@@ -409,7 +423,7 @@ class YoutubeClient implements IYoutubeApi {
       limitRate: '4M',
       bufferSize: '64K',
       retries: 0,
-      proxy: this.config.proxy?.url,
+      proxy,
       // noWaitForVideo: true, // our version of youtube-dl-exec is not aware of this flag
     })
     return response

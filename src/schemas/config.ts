@@ -227,25 +227,15 @@ export const configSchema: JSONSchema7 = objectSchema({
       title: 'Socks5 proxy client configuration used by yt-dlp to bypass IP blockage by Youtube',
       description: 'Socks5 proxy client configuration used by yt-dlp to bypass IP blockage by Youtube',
       properties: {
-        url: {
-          description: 'Proxy Client URL e.g. socks://localhost:1080, socks://user:password@localhost:1080',
-          type: 'string',
-        },
-        chiselProxy: objectSchema({
-          description:
-            'Configuration option to manage Chisel Client & Server. Before enabling this option please refer to setup guide in `socks5-proxy/SETUP.md`',
-          properties: {
-            ec2AutoRotateIp: {
-              description:
-                'Boolean option to enable auto rotation of ec2 instance IP where chisel server is running by restating it',
-              type: 'boolean',
-            },
+        urls: {
+          description: 'List of available socks5 proxy URLs',
+          type: 'array',
+          items: {
+            description: 'Socks5 proxy url, e.g. ["socks://localhost:1080"]',
+            type: 'string',
           },
-          required: [],
-        }),
-      },
-      dependencies: {
-        chiselProxy: ['url'],
+          minItems: 1,
+        }
       },
       required: [],
     }),
