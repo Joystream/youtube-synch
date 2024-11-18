@@ -20,8 +20,7 @@ services:
       - es-data:/usr/share/elasticsearch/data
     ports:
       - 127.0.0.1:9200:9200
-    networks:
-      - youtube-synch
+    network_mode: "container:gluetun"
 
   # Ref: https://www.elastic.co/guide/en/kibana/8.7/docker.html
   kibana:
@@ -30,14 +29,13 @@ services:
     depends_on:
       - elasticsearch
     environment:
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: http://localhost:9200
       ELASTICSEARCH_SERVICEACCOUNTTOKEN: ${ELASTICSEARCH_SERVICEACCOUNTTOKEN}
       # Ref: https://www.elastic.co/guide/en/kibana/current/xpack-security-secure-saved-objects.html#xpack-security-secure-saved-objects
       XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: ${XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY}
     ports:
       - 127.0.0.1:5601:5601
-    networks:
-      - youtube-synch
+    network_mode: "container:gluetun"
 
   # Ref: https://www.elastic.co/guide/en/apm/guide/8.7/running-on-docker.html
   apm-server:
@@ -46,13 +44,12 @@ services:
       - elasticsearch
     command: |
       --strict.perms=false -e 
-      -E output.elasticsearch.hosts=["elasticsearch:9200"] 
+      -E output.elasticsearch.hosts=["localhost:9200"] 
       -E output.elasticsearch.username=${ELASTIC_USERNAME:-elastic} 
       -E output.elasticsearch.password=${ELASTIC_PASSWORD:-password}
     ports:
       - 8200:8200
-    networks:
-      - youtube-synch
+    network_mode: "container:gluetun"
 
 volumes:
   es-data:
