@@ -18,7 +18,12 @@ services:
     ports:
       - 127.0.0.1:${YT_SYNCH__HTTP_API__PORT}:${YT_SYNCH__HTTP_API__PORT}
       - 127.0.0.1:${YT_SYNCH__ENDPOINTS__REDIS__PORT}:${YT_SYNCH__ENDPOINTS__REDIS__PORT}
-
+      # Elasticsearch
+      - 127.0.0.1:9200:9200
+      # Kibana
+      - 127.0.0.1:5601:5601
+      # Apm server
+      - 127.0.0.1:8200:8200
       
   youtube-synch_httpApi:
     image: youtube-synch:${IMAGE_TAG}

@@ -18,8 +18,6 @@ services:
         hard: -1
     volumes:
       - es-data:/usr/share/elasticsearch/data
-    ports:
-      - 127.0.0.1:9200:9200
     network_mode: "container:gluetun"
 
   # Ref: https://www.elastic.co/guide/en/kibana/8.7/docker.html
@@ -33,8 +31,6 @@ services:
       ELASTICSEARCH_SERVICEACCOUNTTOKEN: ${ELASTICSEARCH_SERVICEACCOUNTTOKEN}
       # Ref: https://www.elastic.co/guide/en/kibana/current/xpack-security-secure-saved-objects.html#xpack-security-secure-saved-objects
       XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: ${XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY}
-    ports:
-      - 127.0.0.1:5601:5601
     network_mode: "container:gluetun"
 
   # Ref: https://www.elastic.co/guide/en/apm/guide/8.7/running-on-docker.html
@@ -47,8 +43,6 @@ services:
       -E output.elasticsearch.hosts=["localhost:9200"] 
       -E output.elasticsearch.username=${ELASTIC_USERNAME:-elastic} 
       -E output.elasticsearch.password=${ELASTIC_PASSWORD:-password}
-    ports:
-      - 8200:8200
     network_mode: "container:gluetun"
 
 volumes:
