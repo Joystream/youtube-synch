@@ -4,43 +4,28 @@
 
 # proxy Properties
 
-| Property                    | Type     | Required | Nullable       | Defined by                                                                                                                                                                                                                                                         |
-| :-------------------------- | :------- | :------- | :------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [url](#url)                 | `string` | Optional | cannot be null | [Youtube Sync node configuration](definition-properties-socks5-proxy-client-configuration-used-by-yt-dlp-to-bypass-ip-blockage-by-youtube-properties-url.md "https://joystream.org/schemas/youtube-synch/config#/properties/proxy/properties/url")                 |
-| [chiselProxy](#chiselproxy) | `object` | Optional | cannot be null | [Youtube Sync node configuration](definition-properties-socks5-proxy-client-configuration-used-by-yt-dlp-to-bypass-ip-blockage-by-youtube-properties-chiselproxy.md "https://joystream.org/schemas/youtube-synch/config#/properties/proxy/properties/chiselProxy") |
+| Property      | Type    | Required | Nullable       | Defined by                                                                                                                                                                                                                                           |
+| :------------ | :------ | :------- | :------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [urls](#urls) | `array` | Optional | cannot be null | [Youtube Sync node configuration](definition-properties-socks5-proxy-client-configuration-used-by-yt-dlp-to-bypass-ip-blockage-by-youtube-properties-urls.md "https://joystream.org/schemas/youtube-synch/config#/properties/proxy/properties/urls") |
 
-## url
+## urls
 
-Proxy Client URL e.g. socks\://localhost:1080, socks\://user:password\@localhost:1080
+List of available socks5 proxy URLs
 
-`url`
-
-*   is optional
-
-*   Type: `string`
-
-*   cannot be null
-
-*   defined in: [Youtube Sync node configuration](definition-properties-socks5-proxy-client-configuration-used-by-yt-dlp-to-bypass-ip-blockage-by-youtube-properties-url.md "https://joystream.org/schemas/youtube-synch/config#/properties/proxy/properties/url")
-
-### url Type
-
-`string`
-
-## chiselProxy
-
-Configuration option to manage Chisel Client & Server. Before enabling this option please refer to setup guide in `socks5-proxy/SETUP.md`
-
-`chiselProxy`
+`urls`
 
 *   is optional
 
-*   Type: `object` ([Details](definition-properties-socks5-proxy-client-configuration-used-by-yt-dlp-to-bypass-ip-blockage-by-youtube-properties-chiselproxy.md))
+*   Type: `string[]`
 
 *   cannot be null
 
-*   defined in: [Youtube Sync node configuration](definition-properties-socks5-proxy-client-configuration-used-by-yt-dlp-to-bypass-ip-blockage-by-youtube-properties-chiselproxy.md "https://joystream.org/schemas/youtube-synch/config#/properties/proxy/properties/chiselProxy")
+*   defined in: [Youtube Sync node configuration](definition-properties-socks5-proxy-client-configuration-used-by-yt-dlp-to-bypass-ip-blockage-by-youtube-properties-urls.md "https://joystream.org/schemas/youtube-synch/config#/properties/proxy/properties/urls")
 
-### chiselProxy Type
+### urls Type
 
-`object` ([Details](definition-properties-socks5-proxy-client-configuration-used-by-yt-dlp-to-bypass-ip-blockage-by-youtube-properties-chiselproxy.md))
+`string[]`
+
+### urls Constraints
+
+**minimum number of items**: the minimum number of items for this array is: `1`
