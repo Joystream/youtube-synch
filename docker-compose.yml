@@ -14,6 +14,7 @@ services:
       - VPN_SERVICE_PROVIDER=ivpn
       - VPN_TYPE=openvpn
       - OPENVPN_USER=${VPN_USER}
+      - OPENVPN_PASSWORD=password
     ports:
       - 127.0.0.1:${YT_SYNCH__HTTP_API__PORT}:${YT_SYNCH__HTTP_API__PORT}
       - 127.0.0.1:${YT_SYNCH__ENDPOINTS__REDIS__PORT}:${YT_SYNCH__ENDPOINTS__REDIS__PORT}
