@@ -24,7 +24,9 @@ services:
       - 127.0.0.1:5601:5601
       # Apm server
       - 127.0.0.1:8200:8200
-      
+    profiles:
+      - gluetun
+
   youtube-synch_httpApi:
     image: youtube-synch:${IMAGE_TAG}
     container_name: youtube-synch_httpApi
@@ -65,7 +67,7 @@ services:
       # YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT: ${YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT}
       # YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY: ${YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${TELEMETRY_ENDPOINT}
-    network_mode: "service:gluetun"
+    network_mode: "container:gluetun"
     command: ['./scripts/start-youtube-synch.sh', '--service', 'httpApi']
 
   youtube-synch_sync:
@@ -111,14 +113,14 @@ services:
       # YT_SYNCH__JOYSTREAM__APP__ACCOUNT_SEED: ${YT_SYNCH__JOYSTREAM__APP__ACCOUNT_SEED}
       # YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT: ${YT_SYNCH__JOYSTREAM__FAUCET__ENDPOINT}
       # YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY: ${YT_SYNCH__JOYSTREAM__FAUCET__CAPTCHA_BYPASS_KEY}
-    network_mode: "service:gluetun"
+    network_mode: "container:gluetun"
     command: ['./bin/run', 'start', '--service', 'sync']
 
   redis:
     image: redis:7.2.1
     container_name: redis
     command: ['redis-server', '--maxmemory-policy', 'noeviction']
-    network_mode: "service:gluetun"
+    network_mode: "container:gluetun"
     volumes:
       - redis-data:/data
 
