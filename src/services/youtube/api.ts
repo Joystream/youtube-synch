@@ -191,7 +191,7 @@ export interface IQuotaMonitoringClient {
   getQuotaLimit(): Promise<number>
 }
 
-class YoutubeClient implements IYoutubeApi {
+export class YoutubeClient implements IYoutubeApi {
   private config: ReadonlyConfig
   private proxyIdx = -1
   readonly ytdlpClient: YtDlpClient
@@ -413,6 +413,7 @@ class YoutubeClient implements IYoutubeApi {
     // Those flags are not currently recognized by `youtube-dl-exec`, but they are still
     // supported by yt-dlp (see: https://github.com/yt-dlp/yt-dlp)
     const proxy = this.getNextProxy()
+    console.error(`Using proxy ${proxy} to download ${videoUrl}...`)
     const response = await ytdl(videoUrl, {
       noWarnings: true,
       printJson: true,
@@ -420,7 +421,7 @@ class YoutubeClient implements IYoutubeApi {
       output: `${outPath}/%(id)s.%(ext)s`,
       ffmpegLocation: ffmpegInstaller.path,
       // forceIpv6: true,
-      limitRate: '4M',
+      limitRate: this.config.sync.limits?.bandwidthPerDownload,
       bufferSize: '64K',
       retries: 0,
       proxy,

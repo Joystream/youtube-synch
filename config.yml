@@ -14,6 +14,7 @@ sync:
     dailyApiQuota:
       sync: 9500
       signup: 500
+    bandwidthPerDownload: '1M'
     maxConcurrentDownloads: 2
     maxConcurrentUploads: 20
     createVideoTxBatchSize: 10
