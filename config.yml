@@ -18,7 +18,7 @@ sync:
     maxConcurrentDownloads: 2
     preDownloadSleep:
       min: 0
-      max: 30_000 # 30s
+      max: 30000 # 30s
     maxConcurrentUploads: 20
     createVideoTxBatchSize: 10
     pendingDownloadTimeoutSec: 10800 # 3 hours
