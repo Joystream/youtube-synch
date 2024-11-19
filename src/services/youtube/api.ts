@@ -10,7 +10,7 @@ import { FetchError } from 'node-fetch'
 import path from 'path'
 import pkgDir from 'pkg-dir'
 import { promisify } from 'util'
-import ytdl from 'youtube-dl-exec'
+import ytdl, { create } from 'youtube-dl-exec'
 import { StatsRepository } from '../../repository'
 import { ReadonlyConfig, WithRequired, formattedJSON } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
@@ -23,6 +23,8 @@ export interface IOpenYTApi {
   ensureChannelExists(channelId: string): Promise<string>
   getVideos(channel: YtChannel, ids: YtDlpFlatPlaylistOutput): Promise<YtVideo[]>
 }
+
+const YT_DLP_PATH = path.join(require.resolve('youtube-dl-exec'), 'bin', 'yt-dlp')
 
 export class YtDlpClient implements IOpenYTApi {
   private ytdlpPath: string
@@ -414,7 +416,12 @@ export class YoutubeClient implements IYoutubeApi {
     // supported by yt-dlp (see: https://github.com/yt-dlp/yt-dlp)
     const proxy = this.getNextProxy()
     console.error(`Using proxy ${proxy} to download ${videoUrl}...`)
-    const response = await ytdl(videoUrl, {
+
+    const bandwidthLimit = this.config.sync.limits?.bandwidthPerDownload
+    const executable = bandwidthLimit ?
+      `trickle -s -d ${bandwidthLimit} -u ${bandwidthLimit} ${YT_DLP_PATH}`
+      : YT_DLP_PATH
+    const response = await create(executable)(videoUrl, {
       noWarnings: true,
       printJson: true,
       format: 'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/bv*[height<=1080][ext=webm]+ba[ext=webm]/best[height<=1080]',
