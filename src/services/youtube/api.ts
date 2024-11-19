@@ -10,25 +10,22 @@ import { FetchError } from 'node-fetch'
 import path from 'path'
 import pkgDir from 'pkg-dir'
 import { promisify } from 'util'
-import ytdl, { create } from 'youtube-dl-exec'
+import ytdl from 'youtube-dl-exec'
 import { StatsRepository } from '../../repository'
 import { ReadonlyConfig, WithRequired, formattedJSON } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
 import { YtChannel, YtDlpFlatPlaylistOutput, YtDlpVideoOutput, YtUser, YtVideo } from '../../types/youtube'
+import sleep from 'sleep-promise'
 
 import Schema$Channel = youtube_v3.Schema$Channel
 import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
+import { LoggingService } from '../logging'
+import { Logger } from 'winston'
 
 export interface IOpenYTApi {
   ensureChannelExists(channelId: string): Promise<string>
   getVideos(channel: YtChannel, ids: YtDlpFlatPlaylistOutput): Promise<YtVideo[]>
 }
-
-const YT_DLP_PATH = path.join(
-  path.dirname(require.resolve('youtube-dl-exec/package.json')),
-  'bin',
-  'yt-dlp'
-)
 
 export class YtDlpClient implements IOpenYTApi {
   private ytdlpPath: string
@@ -200,10 +197,12 @@ export interface IQuotaMonitoringClient {
 export class YoutubeClient implements IYoutubeApi {
   private config: ReadonlyConfig
   private proxyIdx = -1
+  private logger: Logger
   readonly ytdlpClient: YtDlpClient
 
-  constructor(config: ReadonlyConfig) {
+  constructor(config: ReadonlyConfig, logging: LoggingService) {
     this.config = config
+    this.logger = logging.createLogger('YoutubeClient')
     this.ytdlpClient = new YtDlpClient()
   }
 
@@ -415,24 +414,31 @@ export class YoutubeClient implements IYoutubeApi {
     return proxies[this.proxyIdx]
   }
 
+  async preDownloadSleep(): Promise<number | undefined> {
+    const {preDownloadSleep} = this.config.sync.limits || {}
+    if (preDownloadSleep) {
+      const { min, max } = preDownloadSleep
+      const sleepTime = _.random(min, max)
+      await sleep(sleepTime)
+      return sleepTime
+    }
+  }
+
   async downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
     // Those flags are not currently recognized by `youtube-dl-exec`, but they are still
     // supported by yt-dlp (see: https://github.com/yt-dlp/yt-dlp)
     const proxy = this.getNextProxy()
-    console.error(`Using proxy ${proxy} to download ${videoUrl}...`)
+    const preDownloadSleepTime = await this.preDownloadSleep()
+    
+    this.logger.debug(`Downloading video`, { proxy, videoUrl, preDownloadSleepTime })
 
-    const bandwidthLimit = this.config.sync.limits?.bandwidthPerDownload
-    const executable = bandwidthLimit ?
-      `trickle -s -d ${bandwidthLimit} -u ${bandwidthLimit} ${YT_DLP_PATH}`
-      : YT_DLP_PATH
-    const response = await create(executable)(videoUrl, {
+    const response = await ytdl(videoUrl, {
       noWarnings: true,
       printJson: true,
       format: 'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/bv*[height<=1080][ext=webm]+ba[ext=webm]/best[height<=1080]',
       output: `${outPath}/%(id)s.%(ext)s`,
       ffmpegLocation: ffmpegInstaller.path,
       // forceIpv6: true,
-      limitRate: bandwidthLimit ?? `${bandwidthLimit}K`,
       bufferSize: '64K',
       retries: 0,
       proxy,
@@ -747,7 +753,7 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
 }
 
 export const YoutubeApi = {
-  create(config: ReadonlyConfig, statsRepo: StatsRepository): IYoutubeApi {
-    return new QuotaMonitoringClient(new YoutubeClient(config), config, statsRepo)
+  create(config: ReadonlyConfig, statsRepo: StatsRepository, logging: LoggingService): IYoutubeApi {
+    return new QuotaMonitoringClient(new YoutubeClient(config, logging), config, statsRepo)
   },
 }

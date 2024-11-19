@@ -360,6 +360,20 @@ export const configSchema: JSONSchema7 = objectSchema({
               type: 'string',
               pattern: byteSizeRegex.source,
             },
+            preDownloadSleep: objectSchema({
+              description: 'Specifies the time to sleep before each download is started',
+              properties: {
+                min: {
+                  description: "Minimum value to sleep (in miliseconds)",
+                  type: "integer"
+                },
+                max: {
+                  description: "Maximum value to sleep (in miliseconds)",
+                  type: "integer"
+                },
+              },
+              required: ['min', 'max']
+            }),
           },
           required: [
             'dailyApiQuota',

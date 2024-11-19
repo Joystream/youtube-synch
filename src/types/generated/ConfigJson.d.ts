@@ -279,9 +279,9 @@ export interface YTSynchSyncronizationRelatedSettings {
      */
     maxConcurrentDownloads: number
     /**
-     * Bandwidth limit per each individual video download (e.g. 500K, 1M etc.)
+     * Bandwidth limit per each individual video download (in KB/s)
      */
-    bandwidthPerDownload?: string
+    bandwidthPerDownload?: number
     /**
      * No. of videos that should be created in a batched 'create_video' tx
      */
@@ -298,6 +298,19 @@ export interface YTSynchSyncronizationRelatedSettings {
      * Maximum total size of all downloaded assets stored in `downloadsDir`
      */
     storage: string
+    /**
+     * Specifies the time to sleep before each download is started
+     */
+    preDownloadSleep?: {
+      /**
+       * Minimum value to sleep (in miliseconds)
+       */
+      min: number
+      /**
+       * Maximum value to sleep (in miliseconds)
+       */
+      max: number
+    }
   }
 }
 /**
