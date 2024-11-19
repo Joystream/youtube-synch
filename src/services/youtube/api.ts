@@ -24,7 +24,11 @@ export interface IOpenYTApi {
   getVideos(channel: YtChannel, ids: YtDlpFlatPlaylistOutput): Promise<YtVideo[]>
 }
 
-const YT_DLP_PATH = path.join(require.resolve('youtube-dl-exec'), 'bin', 'yt-dlp')
+const YT_DLP_PATH = path.join(
+  path.dirname(require.resolve('youtube-dl-exec/package.json')),
+  'bin',
+  'yt-dlp'
+)
 
 export class YtDlpClient implements IOpenYTApi {
   private ytdlpPath: string
