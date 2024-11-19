@@ -432,7 +432,7 @@ export class YoutubeClient implements IYoutubeApi {
       output: `${outPath}/%(id)s.%(ext)s`,
       ffmpegLocation: ffmpegInstaller.path,
       // forceIpv6: true,
-      limitRate: this.config.sync.limits?.bandwidthPerDownload,
+      limitRate: bandwidthLimit ?? `${bandwidthLimit}K`,
       bufferSize: '64K',
       retries: 0,
       proxy,
