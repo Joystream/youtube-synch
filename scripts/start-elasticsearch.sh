@@ -31,7 +31,7 @@ export XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=$(openssl rand -base64 24)
 curl -X DELETE -u "${ELASTIC_USERNAME}":"${ELASTIC_PASSWORD}" "http://localhost:9200/_security/service/elastic/kibana/credential/token/my_kibana_token" -H 'Content-Type: application/json'
 # Generate the service token
 # Ref: https://www.elastic.co/guide/en/elasticsearch/reference/current/service-accounts.html#service-accounts-tokens
-response=$(curl -s -w "\n%{http_code}\n" -X GET -u "${ELASTIC_USERNAME}":"${ELASTIC_PASSWORD}" "http://localhost:9200/_security/service/elastic/kibana/credential/token/my_kibana_token" -H 'Content-Type: application/json')
+response=$(curl -s -w "\n%{http_code}\n" -X POST -u "${ELASTIC_USERNAME}":"${ELASTIC_PASSWORD}" "http://localhost:9200/_security/service/elastic/kibana/credential/token/my_kibana_token" -H 'Content-Type: application/json')
 response_body=$(echo "$response" | head -n1)
 status_code=$(echo "$response" | tail -n1)
 

@@ -14,7 +14,6 @@ sync:
     dailyApiQuota:
       sync: 9500
       signup: 500
-    bandwidthPerDownload: 1000
     maxConcurrentDownloads: 2
     preDownloadSleep:
       min: 0
@@ -42,9 +41,9 @@ youtube:
   clientSecret: google-client-secret
   # adcKeyFilePath: path/to/adc-key-file.json
   # maxAllowedQuotaUsageInPercentage: 95
-proxy:
-  urls:
-    ["socks5://chisel-client:1080"]
+# proxy:
+#   urls:
+#     ["socks5://proxy1:1080", "socks5://proxy2:1080"]
 aws:
   endpoint: http://localhost:4566
   region: us-east-1

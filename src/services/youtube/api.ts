@@ -10,7 +10,7 @@ import { FetchError } from 'node-fetch'
 import path from 'path'
 import pkgDir from 'pkg-dir'
 import { promisify } from 'util'
-import ytdl from 'youtube-dl-exec'
+import ytdl, { create } from 'youtube-dl-exec'
 import { StatsRepository } from '../../repository'
 import { ReadonlyConfig, WithRequired, formattedJSON } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
@@ -21,6 +21,12 @@ import Schema$Channel = youtube_v3.Schema$Channel
 import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
 import { LoggingService } from '../logging'
 import { Logger } from 'winston'
+
+const YT_DLP_PATH = path.join(
+  path.dirname(require.resolve('youtube-dl-exec/package.json')),
+  'bin',
+  'yt-dlp'
+)
 
 export interface IOpenYTApi {
   ensureChannelExists(channelId: string): Promise<string>
@@ -432,7 +438,7 @@ export class YoutubeClient implements IYoutubeApi {
     
     this.logger.debug(`Downloading video`, { proxy, videoUrl, preDownloadSleepTime })
 
-    const response = await ytdl(videoUrl, {
+    const response = await create(`proxychains ${YT_DLP_PATH}`)(videoUrl, {
       noWarnings: true,
       printJson: true,
       format: 'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/bv*[height<=1080][ext=webm]+ba[ext=webm]/best[height<=1080]',
@@ -441,6 +447,7 @@ export class YoutubeClient implements IYoutubeApi {
       // forceIpv6: true,
       bufferSize: '64K',
       retries: 0,
+      forceIpv4: true,
       proxy,
       // noWaitForVideo: true, // our version of youtube-dl-exec is not aware of this flag
     })

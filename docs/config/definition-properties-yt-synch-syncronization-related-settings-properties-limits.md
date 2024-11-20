@@ -8,11 +8,11 @@
 | :------------------------------------------------------ | :-------- | :------- | :------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [dailyApiQuota](#dailyapiquota)                         | `object`  | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-specifies-daily-youtube-api-quota-rationing-scheme-for-youtube-partner-program.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/dailyApiQuota") |
 | [maxConcurrentDownloads](#maxconcurrentdownloads)       | `number`  | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-maxconcurrentdownloads.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/maxConcurrentDownloads")                                                |
-| [bandwidthPerDownload](#bandwidthperdownload)           | `string`  | Optional | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-bandwidthperdownload.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/bandwidthPerDownload")                                                    |
 | [createVideoTxBatchSize](#createvideotxbatchsize)       | `number`  | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-createvideotxbatchsize.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/createVideoTxBatchSize")                                                |
 | [maxConcurrentUploads](#maxconcurrentuploads)           | `number`  | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-maxconcurrentuploads.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/maxConcurrentUploads")                                                    |
 | [pendingDownloadTimeoutSec](#pendingdownloadtimeoutsec) | `integer` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-pendingdownloadtimeoutsec.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/pendingDownloadTimeoutSec")                                          |
 | [storage](#storage)                                     | `string`  | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-storage.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/storage")                                                                              |
+| [preDownloadSleep](#predownloadsleep)                   | `object`  | Optional | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-predownloadsleep.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/preDownloadSleep")                                                            |
 
 ## dailyApiQuota
 
@@ -57,34 +57,6 @@ The default value is:
 ```json
 50
 ```
-
-## bandwidthPerDownload
-
-Bandwidth limit per each individual video download (in bytes per second, e.g. 500K, 1M etc.)
-
-`bandwidthPerDownload`
-
-*   is optional
-
-*   Type: `string`
-
-*   cannot be null
-
-*   defined in: [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-bandwidthperdownload.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/bandwidthPerDownload")
-
-### bandwidthPerDownload Type
-
-`string`
-
-### bandwidthPerDownload Constraints
-
-**pattern**: the string must match the following regular expression: 
-
-```regexp
-[1-9][0-9]*(K|M)
-```
-
-[try pattern](https://regexr.com/?expression=%5B1-9%5D%5B0-9%5D\*\(K%7CM\) "try regular expression with regexr.com")
 
 ## createVideoTxBatchSize
 
@@ -187,3 +159,21 @@ Maximum total size of all downloaded assets stored in `downloadsDir`
 ```
 
 [try pattern](https://regexr.com/?expression=%5E%5B0-9%5D%2B\(B%7CK%7CM%7CG%7CT\)%24 "try regular expression with regexr.com")
+
+## preDownloadSleep
+
+Specifies the time to sleep before each download is started
+
+`preDownloadSleep`
+
+*   is optional
+
+*   Type: `object` ([Details](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-predownloadsleep.md))
+
+*   cannot be null
+
+*   defined in: [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-predownloadsleep.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/preDownloadSleep")
+
+### preDownloadSleep Type
+
+`object` ([Details](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-predownloadsleep.md))

@@ -336,10 +336,6 @@ export const configSchema: JSONSchema7 = objectSchema({
               type: 'number',
               default: 50,
             },
-            bandwidthPerDownload: {
-              description: 'Bandwidth limit per each individual video download (in KB/s)',
-              type: 'integer',
-            },
             createVideoTxBatchSize: {
               description: `No. of videos that should be created in a batched 'create_video' tx`,
               type: 'number',

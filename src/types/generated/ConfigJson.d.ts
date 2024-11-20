@@ -279,10 +279,6 @@ export interface YTSynchSyncronizationRelatedSettings {
      */
     maxConcurrentDownloads: number
     /**
-     * Bandwidth limit per each individual video download (in KB/s)
-     */
-    bandwidthPerDownload?: number
-    /**
      * No. of videos that should be created in a batched 'create_video' tx
      */
     createVideoTxBatchSize: number
