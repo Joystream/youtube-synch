@@ -41,7 +41,8 @@ export class StorageNodeApi {
       ]
       try {
         await this.upload(bagId, assetsInput)
-      } catch(e) {
+        return
+      } catch (e) {
         if (attempt === maxAttempts) {
           throw e
         }
