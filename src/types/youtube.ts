@@ -203,6 +203,12 @@ export type Thumbnails = {
   standard: string
 }
 
+export class DurationLimitExceededError extends Error {
+  constructor(actual: number, allowed: number) {
+    super(`Video duration limit exceeded! Actual: ${actual}, allowed: ${allowed}`)
+  }
+}
+
 export enum VideoUnavailableReasons {
   Deleted = 'Deleted',
   Private = 'Private',

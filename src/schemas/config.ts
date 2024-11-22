@@ -356,6 +356,14 @@ export const configSchema: JSONSchema7 = objectSchema({
               type: 'string',
               pattern: byteSizeRegex.source,
             },
+            maxVideoSizeMB: {
+              description: 'Maxiumum size of a single video (in MB)',
+              type: 'integer',
+            },
+            maxVideoDuration: {
+              description: 'Maximum duration of a single video in seconds',
+              type: 'integer'
+            },
             preDownloadSleep: objectSchema({
               description: 'Specifies the time to sleep before each download is started',
               properties: {

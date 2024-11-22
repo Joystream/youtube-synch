@@ -11,6 +11,7 @@ import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
 import { getThumbnailAsset } from '../runtime/client'
 import { AssetUploadInput, StorageNodeInfo } from '../runtime/types'
+import sleep from 'sleep-promise'
 
 export type OperatorInfo = { id: string; endpoint: string }
 export type OperatorsMapping = Record<string, OperatorInfo>
@@ -25,18 +26,30 @@ export class StorageNodeApi {
     this.logger = logging.createLogger('StorageNodeApi')
   }
 
-  async uploadVideo(bagId: string, video: YtVideo, videoFilePath: string): Promise<void> {
-    const assetsInput: AssetUploadInput[] = [
-      {
-        dataObjectId: createType('u64', new BN(video.joystreamVideo.assetIds[0])),
-        file: fs.createReadStream(videoFilePath),
-      },
-      {
-        dataObjectId: createType('u64', new BN(video.joystreamVideo.assetIds[1])),
-        file: await getThumbnailAsset(video.thumbnails),
-      },
-    ]
-    return this.upload(bagId, assetsInput)
+  async uploadVideo(bagId: string, video: YtVideo, videoFilePath: string, maxAttempts = 5): Promise<void> {
+    let attempt = 1
+    while(true) {
+      const assetsInput: AssetUploadInput[] = [
+        {
+          dataObjectId: createType('u64', new BN(video.joystreamVideo.assetIds[0])),
+          file: fs.createReadStream(videoFilePath),
+        },
+        {
+          dataObjectId: createType('u64', new BN(video.joystreamVideo.assetIds[1])),
+          file: await getThumbnailAsset(video.thumbnails),
+        },
+      ]
+      try {
+        await this.upload(bagId, assetsInput)
+      } catch(e) {
+        if (attempt === maxAttempts) {
+          throw e
+        }
+        ++attempt
+        // Colossus may not yet be aware of the newly created data object - try again after a little while
+        await sleep(6000)
+      }
+    }
   }
 
   private async upload(bagId: string, assets: AssetUploadInput[]) {

@@ -438,10 +438,18 @@ export class YoutubeClient implements IYoutubeApi {
     
     this.logger.debug(`Downloading video`, { proxy, videoUrl, preDownloadSleepTime })
 
+    const { maxVideoSizeMB } = this.config.sync.limits || {}
+    const sizeFormat = maxVideoSizeMB ?
+      `[filesize<=${maxVideoSizeMB}M]` : ''
+    const formats = [
+      `bv*[height<=1080]${sizeFormat}[ext=mp4]+ba[ext=m4a]`, // mp4
+      `bv*[height<=1080]${sizeFormat}[ext=webm]+ba[ext=webm]`, // webm
+      `best[height<=1080]${sizeFormat}` // any
+    ]
     const response = await create(`proxychains ${YT_DLP_PATH}`)(videoUrl, {
       noWarnings: true,
       printJson: true,
-      format: 'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/bv*[height<=1080][ext=webm]+ba[ext=webm]/best[height<=1080]',
+      format: formats.join('/'),
       output: `${outPath}/%(id)s.%(ext)s`,
       ffmpegLocation: ffmpegInstaller.path,
       // forceIpv6: true,
@@ -449,6 +457,7 @@ export class YoutubeClient implements IYoutubeApi {
       retries: 0,
       forceIpv4: true,
       proxy,
+      maxFilesize: maxVideoSizeMB ? `${maxVideoSizeMB}M` : undefined,
       // noWaitForVideo: true, // our version of youtube-dl-exec is not aware of this flag
     })
     return response

@@ -295,6 +295,14 @@ export interface YTSynchSyncronizationRelatedSettings {
      */
     storage: string
     /**
+     * Maxiumum size of a single video (in MB)
+     */
+    maxVideoSizeMB?: number
+    /**
+     * Maximum duration of a single video in seconds
+     */
+    maxVideoDuration?: number
+    /**
      * Specifies the time to sleep before each download is started
      */
     preDownloadSleep?: {
