@@ -28,7 +28,7 @@ export class StorageNodeApi {
 
   async uploadVideo(bagId: string, video: YtVideo, videoFilePath: string, maxAttempts = 5): Promise<void> {
     let attempt = 1
-    while(true) {
+    while (attempt <= maxAttempts) {
       const assetsInput: AssetUploadInput[] = [
         {
           dataObjectId: createType('u64', new BN(video.joystreamVideo.assetIds[0])),
