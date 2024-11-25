@@ -89,12 +89,6 @@ export class ContentDownloadService {
 
       const { ext: fileExt } = ytpOutput
       const filePath = path.join(this.config.downloadsDir, `${video.id}.${fileExt}`)
-      try {
-        await fsp.access(filePath, fs.constants.R_OK)
-      } catch (e: any) {
-        this.logger.error(`Cannot access downloaded video: ${e.toString()}`, { ytpOutput })
-        throw e
-      }
       const size = this.fileSize(filePath)
       if (!SyncUtils.downloadedVideoFilePaths.has(video.id)) {
         SyncUtils.setVideoFilePath(video.id, filePath)
