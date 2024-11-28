@@ -227,12 +227,17 @@ export class YoutubeClient implements IYoutubeApi {
   }
 
   private getYoutube(accessToken?: string, refreshToken?: string) {
-    const auth = this.getAuth()
-    auth.setCredentials({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    })
-    return new youtube_v3.Youtube({ auth })
+    if (accessToken || refreshToken) {
+      const auth = this.getAuth()
+      auth.setCredentials({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      })
+
+      return new youtube_v3.Youtube({ auth })
+    }
+    
+    return new youtube_v3.Youtube({ key: this.config.youtube.apiKey })
   }
 
   private async getAccessToken(

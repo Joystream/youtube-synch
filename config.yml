@@ -41,6 +41,7 @@ logs:
 youtube:
   clientId: google-client-id
   clientSecret: google-client-secret
+  apiKey: youtube-api-key
   # adcKeyFilePath: path/to/adc-key-file.json
   # maxAllowedQuotaUsageInPercentage: 95
 # proxy:

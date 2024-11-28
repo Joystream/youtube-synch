@@ -177,6 +177,7 @@ export const configSchema: JSONSchema7 = objectSchema({
       properties: {
         clientId: { type: 'string', description: 'Youtube Oauth2 Client Id' },
         clientSecret: { type: 'string', description: 'Youtube Oauth2 Client Secret' },
+        apiKey: { type: 'string', description: 'Youtube API key used for the purpose retrieving public data' },
         maxAllowedQuotaUsageInPercentage: {
           description:
             `Maximum percentage of daily Youtube API quota that can be used by the Periodic polling service. ` +

@@ -196,6 +196,10 @@ export interface YoutubeOauth2ClientConfiguration {
    */
   clientSecret: string
   /**
+   * Youtube API key used for the purpose retrieving public data
+   */
+  apiKey?: string
+  /**
    * Maximum percentage of daily Youtube API quota that can be used by the Periodic polling service. Once this limit is reached the service will stop polling for new videos until the next day(when Quota resets). All the remaining quota (100 - maxAllowedQuotaUsageInPercentage) will be used for potential channel's signups.
    */
   maxAllowedQuotaUsageInPercentage?: number
