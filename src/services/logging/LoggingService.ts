@@ -8,6 +8,8 @@ import winston, { Logger, LoggerOptions } from 'winston'
 import 'winston-daily-rotate-file'
 import { ElasticsearchTransport } from 'winston-elasticsearch'
 import { ReadonlyConfig } from '../../types'
+import { FetchError } from 'node-fetch'
+import { GaxiosError } from 'googleapis-common'
 
 const colors = {
   error: 'red',
@@ -41,19 +43,58 @@ const pauseFormat: (opts: PauseFormatOpts) => Format = winston.format((info, opt
 })
 
 // Error format applied to specific log meta field
-type ErrorFormatOpts = { filedName: string }
-const errorFormat: (opts: ErrorFormatOpts) => Format = winston.format((info, opts: ErrorFormatOpts) => {
-  if (!info[opts.filedName]) {
+type CLIErrorFormatOpts = { fieldName: string }
+const cliErrorFormat: (opts: CLIErrorFormatOpts) => Format = winston.format((info, { fieldName }: CLIErrorFormatOpts) => {
+  if (!info[fieldName]) {
     return info
   }
   const formatter = winston.format.errors({ stack: true })
-  info[opts.filedName] = formatter.transform(info[opts.filedName], formatter.options)
+  info[fieldName] = formatter.transform(info[fieldName], formatter.options)
+  return info
+})
+
+// Elastic error format
+type ElasticErrorFormatOpts = { fieldName: string }
+const elasticErrorFormat: (opts: ElasticErrorFormatOpts) => Format = winston.format((info, { fieldName }: ElasticErrorFormatOpts) => {
+  const err = info[fieldName]
+  if (!err) {
+    return info
+  }
+  // Collect error data depending on type
+  if (err instanceof GaxiosError) {
+    info[fieldName] = {
+      message: err.message,
+      code: err.code,
+      ...(err.response ? {
+        response: {
+          status: err.response.status,
+          statusText: err.response.statusText,
+          // TODO: Maybe we can add .data later, but need to adjust es mappings
+        }
+      }: {}),
+      name: err.name
+    }
+  }
+  else if (err instanceof FetchError) {
+    info[fieldName] = {
+      message: err.message,
+      code: err.code,
+      type: err.type,
+      name: err.name
+    }
+  }
+  else if (err instanceof Error) {
+    info[fieldName] = { message: err.message }
+  }
+  else {
+    info[fieldName] = { message: String(err) }
+  }
   return info
 })
 
 const cliFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-  errorFormat({ filedName: 'err' }),
+  cliErrorFormat({ fieldName: 'err' }),
   winston.format.metadata({ fillExcept: ['label', 'level', 'timestamp', 'message'] }),
   winston.format.colorize({ all: true }),
   winston.format.printf(
@@ -88,7 +129,11 @@ export class LoggingService {
       esTransport = new ElasticsearchTransport({
         index: 'youtube-synch',
         level: logs.elastic.level,
-        format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
+        format: winston.format.combine(
+          pauseFormat({ id: 'es' }),
+          elasticErrorFormat({ fieldName: 'err' }),
+          escFormat()
+        ),
         retryLimit: 10,
         flushInterval: 1000,
         clientOpts: {
