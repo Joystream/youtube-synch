@@ -237,7 +237,7 @@ export class YoutubeClient implements IYoutubeApi {
       return new youtube_v3.Youtube({ auth })
     }
     
-    return new youtube_v3.Youtube({ key: this.config.youtube.apiKey })
+    return new youtube_v3.Youtube({ auth: this.config.youtube.apiKey })
   }
 
   private async getAccessToken(
