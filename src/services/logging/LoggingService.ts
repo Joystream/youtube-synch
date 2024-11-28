@@ -54,41 +54,54 @@ const cliErrorFormat: (opts: CLIErrorFormatOpts) => Format = winston.format((inf
 })
 
 // Elastic error format
+class NormalizedError extends Error {
+  message: string
+  name: string
+  code?: string
+  type?: string
+  response?: {
+    status: number
+    statusText: string
+  }
+
+  constructor(err: unknown) {
+    // Collect error data depending on type
+    if (err instanceof GaxiosError) {
+      super(err.message)
+      this.code = err.code
+      if (err.response) {
+        this.response = {
+          status: err.response.status,
+          statusText: err.response.statusText
+          // TODO: Maybe we can add .data later, but need to adjust es mappings
+        }
+      }
+      this.name = err.name
+    }
+    else if (err instanceof FetchError) {
+      super(err.message)
+      this.code = err.code,
+      this.type = err.type,
+      this.name = err.name
+    }
+    else if (err instanceof Error) {
+      super(err.message)
+      this.name = 'Error'
+    }
+    else {
+      super(String(err))
+      this.name = 'UnknownError'
+    }
+  }
+}
+
 type ElasticErrorFormatOpts = { fieldName: string }
 const elasticErrorFormat: (opts: ElasticErrorFormatOpts) => Format = winston.format((info, { fieldName }: ElasticErrorFormatOpts) => {
   const err = info[fieldName]
   if (!err) {
     return info
   }
-  // Collect error data depending on type
-  if (err instanceof GaxiosError) {
-    info[fieldName] = {
-      message: err.message,
-      code: err.code,
-      ...(err.response ? {
-        response: {
-          status: err.response.status,
-          statusText: err.response.statusText,
-          // TODO: Maybe we can add .data later, but need to adjust es mappings
-        }
-      }: {}),
-      name: err.name
-    }
-  }
-  else if (err instanceof FetchError) {
-    info[fieldName] = {
-      message: err.message,
-      code: err.code,
-      type: err.type,
-      name: err.name
-    }
-  }
-  else if (err instanceof Error) {
-    info[fieldName] = { message: err.message }
-  }
-  else {
-    info[fieldName] = { message: String(err) }
-  }
+  info[fieldName] = new NormalizedError(err)
   return info
 })
 
