@@ -58,8 +58,7 @@ export class YoutubePollingService {
 
         let channelsProcessed = 0
         for (const channelsBatch of channelsBatches) {
-          // TODO: Uncomment after verification
-          // await Promise.all(channelsBatch.map((channel) => this.performVideosIngestion(channel)))
+          await Promise.all(channelsBatch.map((channel) => this.performVideosIngestion(channel)))
           channelsProcessed += channelsBatch.length
           this.logger.info(`Ingested videos of ${channelsProcessed}/${channelsWithNewVideos.length} channels...`)
         }
@@ -129,24 +128,23 @@ export class YoutubePollingService {
               const channelStats = channelStatsbyId.get(ch.id)
               if (!channelStats) {
                 this.logger.warn(`Missing channel stats for channel ${ch.id}! Verifying channel status...`)
-                // TODO: Uncomment after verification
-                // try {
-                //   await this.youtubeApi.getChannel({ id: ch.userId, accessToken: ch.userAccessToken, refreshToken: ch.userRefreshToken })
-                // } catch (e) {
-                //   if (e instanceof GaxiosError && e.message.includes('YouTube account of the authenticated user is suspended')) {
-                //     this.logger.warn(
-                //       `Opting out '${ch.id}' from YPP program as their Youtube channel has been terminated by the Youtube.`
-                //     )
-                //     return {
-                //       ...ch,
-                //       yppStatus: 'OptedOut',
-                //       shouldBeIngested: false,
-                //       lastActedAt: new Date(),
-                //     }
-                //   }
-                //   this.logger.warn(`Status of channel ${ch.id} unclear. Will be skipped for this cycle...`, { err: e })
-                //   return
-                // }
+                try {
+                  await this.youtubeApi.getChannel({ id: ch.userId, accessToken: ch.userAccessToken, refreshToken: ch.userRefreshToken })
+                } catch (e) {
+                  if (e instanceof GaxiosError && e.message.includes('YouTube account of the authenticated user is suspended')) {
+                    this.logger.warn(
+                      `Opting out '${ch.id}' from YPP program as their Youtube channel has been terminated by the Youtube.`
+                    )
+                    return {
+                      ...ch,
+                      yppStatus: 'OptedOut',
+                      shouldBeIngested: false,
+                      lastActedAt: new Date(),
+                    }
+                  }
+                  this.logger.warn(`Status of channel ${ch.id} unclear. Will be skipped for this cycle...`, { err: e })
+                  return
+                }
                 this.logger.warn(`Status of channel ${ch.id} unclear. Will be skipped for this cycle...`)
                 return
               }
@@ -156,13 +154,12 @@ export class YoutubePollingService {
                 channelsScheduledForVideoIngestion.push(ch)
               }
               // Update stats in DynamoDB
-              // TODO: Uncomment after verification
-              // return {
-              //   ...ch,
-              //   statistics: {
-              //     ...channelStats
-              //   }
-              // }
+              return {
+                ...ch,
+                statistics: {
+                  ...channelStats
+                }
+              }
             } catch (err: unknown) {
               this.logger.error('Failed to fetch updated channel info', { err, channelId: ch.joystreamChannelId })
             }
@@ -171,8 +168,7 @@ export class YoutubePollingService {
       ).filter((ch): ch is YtChannel => ch !== undefined)
 
       // save updated  channels
-      // TODO: Uncomment after verification
-      // await this.dynamodbService.repo.channels.upsertAll(updatedChannels)
+      await this.dynamodbService.repo.channels.upsertAll(updatedChannels)
       updatedChannelsCount += updatedChannels.length
 
       this.logger.info(`Processed ${checkedChannelsCount}/${channelsWithSyncEnabled.length} channels...`)
