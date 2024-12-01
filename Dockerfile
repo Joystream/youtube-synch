@@ -4,6 +4,8 @@ FROM node:20
 # Set the working directory to /youtube-synch
 WORKDIR /youtube-synch
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Install AWS CLI
 RUN apt-get update && \
     apt-get install -y awscli && \
@@ -16,6 +18,9 @@ RUN curl -fsSL https://get.docker.com -o get-docker.sh && \
 
 # Install node-gyp
 RUN npm install -g node-gyp
+
+# Install proxychains
+RUN apt-get update && apt-get install -y proxychains4
 
 # Copy the package.json and yarn.lock (or package-lock.json for npm) files
 COPY package.json package-lock.json ./

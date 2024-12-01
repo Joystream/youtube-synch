@@ -1,0 +1,3 @@
+## disableNewSignUps Type
+
+`boolean`

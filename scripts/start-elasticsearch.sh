@@ -14,11 +14,11 @@ set +a
 ELASTIC_USERNAME=${ELASTIC_USERNAME:="elastic"}
 ELASTIC_PASSWORD=${ELASTIC_PASSWORD:="password"}
 
-# Remove elasticsearch stack containers & volumes
-docker-compose -f ../docker-compose.elasticsearch.yml down -v
+# Remove elasticsearch stack containers
+docker compose -f ../docker-compose.elasticsearch.yml down
 
-## Run docker-compose to start elasticsearch container
-docker-compose -f ../docker-compose.elasticsearch.yml up -d elasticsearch
+## Run docker compose to start elasticsearch container
+docker compose -f ../docker-compose.elasticsearch.yml up -d elasticsearch
 
 printf 'Waiting for Elasticsearch...\n'
 
@@ -28,6 +28,7 @@ sleep 30
 # Ref: https://www.elastic.co/guide/en/kibana/current/xpack-security-secure-saved-objects.html#xpack-security-secure-saved-objects
 export XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=$(openssl rand -base64 24)
 
+curl -X DELETE -u "${ELASTIC_USERNAME}":"${ELASTIC_PASSWORD}" "http://localhost:9200/_security/service/elastic/kibana/credential/token/my_kibana_token" -H 'Content-Type: application/json'
 # Generate the service token
 # Ref: https://www.elastic.co/guide/en/elasticsearch/reference/current/service-accounts.html#service-accounts-tokens
 response=$(curl -s -w "\n%{http_code}\n" -X POST -u "${ELASTIC_USERNAME}":"${ELASTIC_PASSWORD}" "http://localhost:9200/_security/service/elastic/kibana/credential/token/my_kibana_token" -H 'Content-Type: application/json')
@@ -50,10 +51,10 @@ export ELASTICSEARCH_SERVICEACCOUNTTOKEN=$(echo $response_body | jq -r '.token.v
 
 echo 'Starting for Kibana...'
 
-## Run docker-compose to start kibana container
-docker-compose -f ../docker-compose.elasticsearch.yml up -d kibana
+## Run docker compose to start kibana container
+docker compose -f ../docker-compose.elasticsearch.yml up -d kibana
 
 echo 'Starting APM Server...'
 
-## Run docker-compose to start apm-server container
-docker-compose -f ../docker-compose.elasticsearch.yml up -d apm-server
+## Run docker compose to start apm-server container
+docker compose -f ../docker-compose.elasticsearch.yml up -d apm-server

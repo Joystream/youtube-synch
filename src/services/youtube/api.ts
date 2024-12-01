@@ -10,14 +10,23 @@ import { FetchError } from 'node-fetch'
 import path from 'path'
 import pkgDir from 'pkg-dir'
 import { promisify } from 'util'
-import ytdl from 'youtube-dl-exec'
+import ytdl, { create } from 'youtube-dl-exec'
 import { StatsRepository } from '../../repository'
 import { ReadonlyConfig, WithRequired, formattedJSON } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
 import { YtChannel, YtDlpFlatPlaylistOutput, YtDlpVideoOutput, YtUser, YtVideo } from '../../types/youtube'
+import sleep from 'sleep-promise'
 
 import Schema$Channel = youtube_v3.Schema$Channel
 import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
+import { LoggingService } from '../logging'
+import { Logger } from 'winston'
+
+const YT_DLP_PATH = path.join(
+  path.dirname(require.resolve('youtube-dl-exec/package.json')),
+  'bin',
+  'yt-dlp'
+)
 
 export interface IOpenYTApi {
   ensureChannelExists(channelId: string): Promise<string>
@@ -191,12 +200,15 @@ export interface IQuotaMonitoringClient {
   getQuotaLimit(): Promise<number>
 }
 
-class YoutubeClient implements IYoutubeApi {
+export class YoutubeClient implements IYoutubeApi {
   private config: ReadonlyConfig
+  private proxyIdx = -1
+  private logger: Logger
   readonly ytdlpClient: YtDlpClient
 
-  constructor(config: ReadonlyConfig) {
+  constructor(config: ReadonlyConfig, logging: LoggingService) {
     this.config = config
+    this.logger = logging.createLogger('YoutubeClient')
     this.ytdlpClient = new YtDlpClient()
   }
 
@@ -396,20 +408,56 @@ class YoutubeClient implements IYoutubeApi {
     }
   }
 
+  getNextProxy() {
+    const proxies = this.config.proxy?.urls
+    if (!proxies) {
+      return undefined
+    }
+    ++this.proxyIdx
+    if (this.proxyIdx >= proxies.length) {
+      this.proxyIdx = 0
+    }
+    return proxies[this.proxyIdx]
+  }
+
+  async preDownloadSleep(): Promise<number | undefined> {
+    const {preDownloadSleep} = this.config.sync.limits || {}
+    if (preDownloadSleep) {
+      const { min, max } = preDownloadSleep
+      const sleepTime = _.random(min, max)
+      await sleep(sleepTime)
+      return sleepTime
+    }
+  }
+
   async downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
     // Those flags are not currently recognized by `youtube-dl-exec`, but they are still
     // supported by yt-dlp (see: https://github.com/yt-dlp/yt-dlp)
-    const response = await ytdl(videoUrl, {
+    const proxy = this.getNextProxy()
+    const preDownloadSleepTime = await this.preDownloadSleep()
+    
+    this.logger.debug(`Downloading video`, { proxy, videoUrl, preDownloadSleepTime })
+
+    const { maxVideoSizeMB } = this.config.sync.limits || {}
+    const sizeFormat = maxVideoSizeMB ?
+      `[filesize<=${maxVideoSizeMB}M]` : ''
+    const formats = [
+      `bv*[height<=1080]${sizeFormat}[ext=mp4]+ba[ext=m4a]`, // mp4
+      `bv*[height<=1080]${sizeFormat}[ext=webm]+ba[ext=webm]`, // webm
+      `best[height<=1080]${sizeFormat}` // any
+    ]
+    const response = await create(`proxychains ${YT_DLP_PATH}`)(videoUrl, {
       noWarnings: true,
       printJson: true,
-      format: 'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/bv*[height<=1080][ext=webm]+ba[ext=webm]/best[height<=1080]',
+      format: formats.join('/'),
       output: `${outPath}/%(id)s.%(ext)s`,
       ffmpegLocation: ffmpegInstaller.path,
       // forceIpv6: true,
-      limitRate: '4M',
       bufferSize: '64K',
       retries: 0,
-      proxy: this.config.proxy?.url,
+      forceIpv4: true,
+      proxy,
+      maxFilesize: maxVideoSizeMB ? `${maxVideoSizeMB}M` : undefined,
       // noWaitForVideo: true, // our version of youtube-dl-exec is not aware of this flag
     })
     return response
@@ -721,7 +769,7 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
 }
 
 export const YoutubeApi = {
-  create(config: ReadonlyConfig, statsRepo: StatsRepository): IYoutubeApi {
-    return new QuotaMonitoringClient(new YoutubeClient(config), config, statsRepo)
+  create(config: ReadonlyConfig, statsRepo: StatsRepository, logging: LoggingService): IYoutubeApi {
+    return new QuotaMonitoringClient(new YoutubeClient(config, logging), config, statsRepo)
   },
 }

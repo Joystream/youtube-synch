@@ -16,7 +16,7 @@ services:
       # since docker-compose does not support creating bind-mount volume with empty path.
       - ${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-./package.json}:${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-/package.json}:ro
       # mount the AWS credentials file to docker container home directory
-      - ~/.aws/:/root/.aws:ro # ? Not needed?
+      # - ~/.aws/:/root/.aws:ro # ? Not needed?
     env_file:
       - .env
     environment:
@@ -58,15 +58,16 @@ services:
       dockerfile: Dockerfile
     volumes:
       # Docker socket mounting is required to restart the socks5 proxy container from inside this container
-      - /var/run/docker.sock:/var/run/docker.sock
+      # - /var/run/docker.sock:/var/run/docker.sock
       - ./local/logs:/youtube-synch/local/logs
       - ./local/data:/youtube-synch/local/data
+      - ./proxychains4.conf:/etc/proxychains4.conf
       # mount Google Cloud's Application Default Credentials file. A default bind mount is created
       # as workaround for scenario when `YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH` will be undefined,
       # since docker-compose does not support creating bind-mount volume with empty path.
       - ${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-./package.json}:${YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH:-/package.json}:ro
       # mount the AWS credentials file to docker container home directory
-      - ~/.aws/:/root/.aws:ro
+      # - ~/.aws/:/root/.aws:ro
     env_file:
       # relative to working directory where docker-compose was run from
       - .env

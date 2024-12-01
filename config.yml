@@ -15,10 +15,15 @@ sync:
       sync: 9500
       signup: 500
     maxConcurrentDownloads: 2
+    preDownloadSleep:
+      min: 0
+      max: 30000 # 30s
     maxConcurrentUploads: 20
     createVideoTxBatchSize: 10
     pendingDownloadTimeoutSec: 10800 # 3 hours
     storage: 1000G
+    maxVideoSizeMB: 15000
+    maxVideoDuration: 10800 # 3 hours
 logs:
   file:
     level: debug
@@ -38,10 +43,9 @@ youtube:
   clientSecret: google-client-secret
   # adcKeyFilePath: path/to/adc-key-file.json
   # maxAllowedQuotaUsageInPercentage: 95
-proxy:
-  url: socks5://chisel-client:1080
-  chiselProxy:
-    ec2AutoRotateIp: false
+# proxy:
+#   urls:
+#     ["socks5://proxy1:1080", "socks5://proxy2:1080"]
 aws:
   endpoint: http://localhost:4566
   region: us-east-1

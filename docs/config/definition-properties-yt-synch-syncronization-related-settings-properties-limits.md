@@ -12,6 +12,7 @@
 | [maxConcurrentUploads](#maxconcurrentuploads)           | `number`  | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-maxconcurrentuploads.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/maxConcurrentUploads")                                                    |
 | [pendingDownloadTimeoutSec](#pendingdownloadtimeoutsec) | `integer` | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-pendingdownloadtimeoutsec.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/pendingDownloadTimeoutSec")                                          |
 | [storage](#storage)                                     | `string`  | Required | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-storage.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/storage")                                                                              |
+| [preDownloadSleep](#predownloadsleep)                   | `object`  | Optional | cannot be null | [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-predownloadsleep.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/preDownloadSleep")                                                            |
 
 ## dailyApiQuota
 
@@ -158,3 +159,21 @@ Maximum total size of all downloaded assets stored in `downloadsDir`
 ```
 
 [try pattern](https://regexr.com/?expression=%5E%5B0-9%5D%2B\(B%7CK%7CM%7CG%7CT\)%24 "try regular expression with regexr.com")
+
+## preDownloadSleep
+
+Specifies the time to sleep before each download is started
+
+`preDownloadSleep`
+
+*   is optional
+
+*   Type: `object` ([Details](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-predownloadsleep.md))
+
+*   cannot be null
+
+*   defined in: [Youtube Sync node configuration](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-predownloadsleep.md "https://joystream.org/schemas/youtube-synch/config#/properties/sync/properties/limits/properties/preDownloadSleep")
+
+### preDownloadSleep Type
+
+`object` ([Details](definition-properties-yt-synch-syncronization-related-settings-properties-limits-properties-predownloadsleep.md))

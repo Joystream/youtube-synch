@@ -1,12 +1,12 @@
 import { Job } from 'bullmq'
-import fs from 'fs'
+import fs, { promises as fsp } from 'fs'
 import fsPromises from 'fs/promises'
 import pTimeout from 'p-timeout'
 import path from 'path'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
 import { ReadonlyConfig } from '../../types'
-import { DownloadJobData, DownloadJobOutput, VideoUnavailableReasons, YtChannel } from '../../types/youtube'
+import { DownloadJobData, DownloadJobOutput, DurationLimitExceededError, VideoUnavailableReasons, YtChannel } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { IYoutubeApi } from '../youtube/api'
 import { SyncUtils } from './utils'
@@ -76,13 +76,18 @@ export class ContentDownloadService {
   async process(job: Job<DownloadJobData>): Promise<DownloadJobOutput> {
     const video = job.data
     try {
+      const { maxVideoDuration } = this.config.limits
+      if (maxVideoDuration && video.duration > maxVideoDuration) {
+        throw new DurationLimitExceededError(video.duration, maxVideoDuration)
+      }
       // download the video from youtube
-      const { ext: fileExt } = await pTimeout(
+      const ytpOutput = await pTimeout(
         this.youtubeApi.downloadVideo(video.url, this.config.downloadsDir),
         this.config.limits.pendingDownloadTimeoutSec * 1000,
         `Download timed-out`
       )
 
+      const { ext: fileExt } = ytpOutput
       const filePath = path.join(this.config.downloadsDir, `${video.id}.${fileExt}`)
       const size = this.fileSize(filePath)
       if (!SyncUtils.downloadedVideoFilePaths.has(video.id)) {
@@ -110,34 +115,40 @@ export class ContentDownloadService {
 
       return { filePath }
     } catch (err) {
-      const errorMsg = (err as Error).message
-      const errors: { message: string; code: VideoUnavailableReasons }[] = [
-        { message: 'Video unavailable', code: VideoUnavailableReasons.Unavailable },
-        { message: 'This video is not available', code: VideoUnavailableReasons.Unavailable },
-        { message: 'This video has been removed', code: VideoUnavailableReasons.Unavailable },
-        { message: 'Private video', code: VideoUnavailableReasons.Private },
-        { message: 'Postprocessing:', code: VideoUnavailableReasons.PostprocessingError },
-        { message: 'The downloaded file is empty', code: VideoUnavailableReasons.EmptyDownload },
-        { message: 'This video is private', code: VideoUnavailableReasons.Private },
-        { message: 'removed by the uploader', code: VideoUnavailableReasons.Private },
-        { message: 'Join this channel to get access to members-only content', code: VideoUnavailableReasons.Private },
-        { message: 'size cap for historical videos', code: VideoUnavailableReasons.Skipped },
-        { message: 'Offline', code: VideoUnavailableReasons.LiveOffline },
-        { message: 'This live event will begin in a few moments', code: VideoUnavailableReasons.LiveOffline },
-        { message: 'Download timed-out', code: VideoUnavailableReasons.DownloadTimedOut },
-      ]
+      if (err instanceof DurationLimitExceededError) {
+        // Skip video creation
+        this.logger.error(`${err.message}. Skipping from syncing...`),
+        await this.dynamodbService.videos.updateState(video, 'VideoUnavailable::Skipped')
+      } else {
+        const errorMsg = (err as Error).message
+        const errors: { message: string; code: VideoUnavailableReasons }[] = [
+          { message: 'Video unavailable', code: VideoUnavailableReasons.Unavailable },
+          { message: 'This video is not available', code: VideoUnavailableReasons.Unavailable },
+          { message: 'This video has been removed', code: VideoUnavailableReasons.Unavailable },
+          { message: 'Private video', code: VideoUnavailableReasons.Private },
+          { message: 'Postprocessing:', code: VideoUnavailableReasons.PostprocessingError },
+          { message: 'The downloaded file is empty', code: VideoUnavailableReasons.EmptyDownload },
+          { message: 'This video is private', code: VideoUnavailableReasons.Private },
+          { message: 'removed by the uploader', code: VideoUnavailableReasons.Private },
+          { message: 'Join this channel to get access to members-only content', code: VideoUnavailableReasons.Private },
+          { message: 'size cap for historical videos', code: VideoUnavailableReasons.Skipped },
+          { message: 'Offline', code: VideoUnavailableReasons.LiveOffline },
+          { message: 'This live event will begin in a few moments', code: VideoUnavailableReasons.LiveOffline },
+          { message: 'Download timed-out', code: VideoUnavailableReasons.DownloadTimedOut },
+        ]
 
-      let matchedError = errors.find((e) => errorMsg.includes(e.message))
-      if (matchedError) {
-        await this.dynamodbService.videos.updateState(video, `VideoUnavailable::${matchedError.code}`)
-        this.logger.error(`${errorMsg}. Skipping from syncing...`, { videoId: video.id, reason: matchedError.code })
-      }
+        let matchedError = errors.find((e) => errorMsg.includes(e.message))
+        if (matchedError) {
+          await this.dynamodbService.videos.updateState(video, `VideoUnavailable::${matchedError.code}`)
+          this.logger.error(`${errorMsg}. Skipping from syncing...`, { videoId: video.id, reason: matchedError.code })
+        }
 
-      console.log('errorMsg', errorMsg)
+        console.log('errorMsg', errorMsg)
 
-      // If the error is 403 Forbidden means the IP address was blocked
-      if (errorMsg.includes('Sign in to confirm')) {
-        console.log('Download blocked by youtube')
+        // If the error is 403 Forbidden means the IP address was blocked
+        if (errorMsg.includes('Sign in to confirm')) {
+          console.log('Download blocked by youtube')
+        }
       }
 
       // TODO: If Download timed out, should we keep it on disk so it can be resumed later?

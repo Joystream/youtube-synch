@@ -230,18 +230,11 @@ export interface AWSCredentials {
  */
 export interface Socks5ProxyClientConfigurationUsedByYtDlpToBypassIPBlockageByYoutube {
   /**
-   * Proxy Client URL e.g. socks://localhost:1080, socks://user:password@localhost:1080
+   * List of available socks5 proxy URLs
+   *
+   * @minItems 1
    */
-  url?: string
-  /**
-   * Configuration option to manage Chisel Client & Server. Before enabling this option please refer to setup guide in `socks5-proxy/SETUP.md`
-   */
-  chiselProxy?: {
-    /**
-     * Boolean option to enable auto rotation of ec2 instance IP where chisel server is running by restating it
-     */
-    ec2AutoRotateIp?: boolean
-  }
+  urls?: string[]
 }
 /**
  * Public api configuration
@@ -301,6 +294,27 @@ export interface YTSynchSyncronizationRelatedSettings {
      * Maximum total size of all downloaded assets stored in `downloadsDir`
      */
     storage: string
+    /**
+     * Maxiumum size of a single video (in MB)
+     */
+    maxVideoSizeMB?: number
+    /**
+     * Maximum duration of a single video in seconds
+     */
+    maxVideoDuration?: number
+    /**
+     * Specifies the time to sleep before each download is started
+     */
+    preDownloadSleep?: {
+      /**
+       * Minimum value to sleep (in miliseconds)
+       */
+      min: number
+      /**
+       * Maximum value to sleep (in miliseconds)
+       */
+      max: number
+    }
   }
 }
 /**

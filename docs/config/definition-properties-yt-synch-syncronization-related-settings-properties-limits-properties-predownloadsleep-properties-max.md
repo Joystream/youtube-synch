@@ -1,0 +1,3 @@
+## max Type
+
+`integer`
