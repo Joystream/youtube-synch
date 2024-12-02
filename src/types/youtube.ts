@@ -96,6 +96,9 @@ export class YtChannel {
   // This field serves the purpose of nonce to avoid playback attacks
   lastActedAt: Date
 
+  // Channel's status before opt-out issue (ref: https://github.com/Joystream/youtube-synch/issues/337)
+  preOptOutStatus: ChannelYppStatus
+
   // Timestamp when the channel verification was processed, either to Verified or Suspended
   processedAt: Date
 
