@@ -113,6 +113,7 @@ export class ChannelDto {
   @ApiProperty() description: string
   @ApiProperty() shouldBeIngested: boolean
   @ApiProperty({ enum: channelYppStatus }) yppStatus: ChannelYppStatus
+  @ApiProperty({ enum: channelYppStatus }) preOptOutStatus: ChannelYppStatus
   @ApiProperty() joystreamChannelId: number
   @ApiProperty() referrerChannelId?: number
   @ApiProperty() videoCategoryId: string
@@ -133,6 +134,7 @@ export class ChannelDto {
     this.language = channel.language
     this.shouldBeIngested = channel.shouldBeIngested
     this.yppStatus = channel.yppStatus
+    this.preOptOutStatus = channel.preOptOutStatus
     this.thumbnails = channel.thumbnails
     this.createdAt = new Date(channel.createdAt)
     this.syncStatus = new ChannelSyncStatusDto(syncStatus)

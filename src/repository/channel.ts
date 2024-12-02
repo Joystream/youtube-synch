@@ -164,6 +164,12 @@ function createChannelModel(tablePrefix: ResourcePrefix) {
         enum: channelYppStatus,
       },
 
+      // Channel's YPP program participation status before the opt-out bug (ref: https://github.com/Joystream/youtube-synch/issues/337)
+      preOptOutStatus: {
+        type: String,
+        enum: channelYppStatus,
+      },
+
       phantomKey: {
         type: String,
         index: {
@@ -287,6 +293,7 @@ export class ChannelsRepository implements IRepository<YtChannel> {
       let lastKey = undefined
       const results = []
       do {
+        // FIXME: Is this the reason why /channels returns ALL channels?
         let queriedBatch: QueryResponse<AnyItem> = await f(this.model.query(init))
           .startAt(lastKey as any)
           .exec()

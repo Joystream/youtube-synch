@@ -230,6 +230,21 @@ export type HubspotYPPContact = {
    * Synced video category name
    */
   synccategoryname: string
+
+  /**
+   * OPT-OUT BUG PROPS
+   * (ref: https://github.com/Joystream/youtube-synch/issues/337) 
+   */
+
+  /**
+   * Date and time when the channel was opted-out due to a bug.
+   */
+  opt_out_bug_date: string
+
+  /**
+   * Status that the channel had before being opted-out.
+   */
+  pre_opt_out_status: ChannelYppStatus
 }
 
 export const payableContactProps = [

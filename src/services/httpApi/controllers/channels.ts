@@ -120,7 +120,7 @@ export class ChannelsController {
         ...(existingChannel
           ? {
               ...existingChannel,
-              yppStatus: 'Unverified',
+              yppStatus: existingChannel.preOptOutStatus || 'Unverified',
               userAccessToken: channel.userAccessToken,
               userRefreshToken: channel.userRefreshToken,
             }
