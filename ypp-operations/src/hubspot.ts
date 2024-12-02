@@ -120,6 +120,10 @@ export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] 
       if (!nextPage && !lastContactId) {
         shouldContinue = false
       }
+
+      if (contacts.length % 1000 === 0) {
+        console.error(`Contacts fetched: ${contacts.length}...`)
+      }
     }
 
     return contacts as any
@@ -363,9 +367,12 @@ export async function updateYppContacts(
   updateInputs: Array<{ id: string; properties: Partial<HubspotYPPContact> }>
 ): Promise<void> {
   const batchedInputs = _.chunk(updateInputs, 100)
+  let updated = 0
   try {
     for (const inputs of batchedInputs) {
       await hubspotClient.crm.contacts.batchApi.update({ inputs })
+      updated += inputs.length
+      console.log(`Updated ${updated}/${updateInputs.length} contacts...`)
     }
   } catch (err) {
     if (isAxiosError(err) && err.code === 'ECONNRESET') {

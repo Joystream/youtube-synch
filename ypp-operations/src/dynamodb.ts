@@ -1,6 +1,7 @@
 import AWS from './aws-config'
 import { loadConfig as config } from './config'
-import { YtChannel } from './types'
+import { OptedOutContactData, YtChannel } from './types'
+import _ from 'lodash'
 
 const documentClient = new AWS.DynamoDB.DocumentClient()
 
@@ -113,4 +114,53 @@ export async function getAllChannels(): Promise<YtChannel[]> {
   } while (cursor)
 
   return channels as YtChannel[]
+}
+
+/**
+ * Mark channels affected by opted-out bug
+ */
+export async function markOptedOutChannels(data: OptedOutContactData[]): Promise<void> {
+  let updatesExecuted = 0
+  const batches = _.chunk(data, 100)
+  for (const batch of batches) {
+    await Promise.all(batch.map(async (channelData) => {
+      const params: AWS.DynamoDB.DocumentClient.QueryInput = {
+        TableName: 'channels',
+        IndexName: 'id-index',
+        KeyConditionExpression: '#idAttr = :idVal',
+        ExpressionAttributeNames: {
+          '#idAttr': 'id',
+        },
+        ExpressionAttributeValues: {
+          ':idVal': channelData.channel_url,
+        },
+      }
+
+      const queryRes = await documentClient.query(params).promise()
+      const [ch] = (queryRes.Items || []) as YtChannel[]
+      if (queryRes.Items?.length === 1 && ch) {
+        const updateRes = await documentClient.update({
+          Key: {
+            userId: ch.userId,
+            id: ch.id
+          },
+          TableName: 'channels',
+          UpdateExpression: "set preOptOutStatus = :status",
+          ExpressionAttributeValues: {
+            ":status": channelData.pre_opt_out_status,
+          },
+          ReturnValues: 'UPDATED_NEW'
+        }).promise()
+        if (updateRes.Attributes?.preOptOutStatus === channelData.pre_opt_out_status) {
+          updatesExecuted += 1
+        } else {
+          console.error(`Unexpected preOptOutStatus after update: ${updateRes.Attributes?.preOptOutStatus} (id: ${channelData.channel_url})`)
+        }
+      } else {
+        console.error(`Unexpected items count: ${queryRes.Items?.length} (id: ${channelData.channel_url})`)
+      }
+    }))
+
+    console.log(`Succesfully updated ${updatesExecuted} records...`)
+  }
 }

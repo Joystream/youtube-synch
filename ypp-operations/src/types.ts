@@ -247,6 +247,15 @@ export type HubspotYPPContact = {
   pre_opt_out_status: ChannelYppStatus
 }
 
+export type OptedOutContactData = {
+  contactId: number,
+  gleev_channel_id: number,
+  yppstatus: string,
+  opted_out_date_str: string,
+  pre_opt_out_status: ChannelYppStatus,
+  channel_url: string
+}
+
 export const payableContactProps = [
   'hs_lead_status',
   'lifecyclestage',

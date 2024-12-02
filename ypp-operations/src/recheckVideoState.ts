@@ -11,7 +11,7 @@ import {
   mapReferrerToContactFields,
   updateYppContacts
 } from './hubspot'
-import { ChannelYppStatus, HubspotYPPContact } from './types'
+import { ChannelYppStatus, HubspotYPPContact, OptedOutContactData } from './types'
 
 function getCapitalizedTierFromYppStatus(yppStatus: ChannelYppStatus) {
   const verifiedPrefix = 'Verified::'
@@ -66,7 +66,7 @@ async function referralsRewardInUsd(contact: YppContact, allContacts: YppContact
 async function latestSyncRewardInUsd(contact: YppContact) {
   const tier = getCapitalizedTierFromYppStatus(contact.yppstatus)
 
-  // todo check shouldbeingested be true? & allowoperatoringestion
+  // TODO: check shouldbeingested be true? & allowoperatoringestion
   if (tier) {
     const syncedCount = await countVideosSyncedAfter(
       contact.channel_url,
@@ -279,6 +279,18 @@ export async function updateContactsInHubspot() {
     `Pushed channel contacts to the Hubspot - ` +
       `New Contacts: ${createContactInputs.length}, Updated Contacts: ${updateContactInputs.length}`
   )
+}
+
+export async function markOptedOutContacts(contactsData: OptedOutContactData[]) {
+  console.log('Marking opted-out contacts...')
+
+  updateYppContacts(contactsData.map(c => ({
+    id: c.contactId.toString(),
+    properties: {
+      opt_out_bug_date: new Date(c.opted_out_date_str).toISOString(),
+      pre_opt_out_status: c.pre_opt_out_status
+    }
+  })))
 }
 
 export function getLastMondayMiddayCET(): Date {

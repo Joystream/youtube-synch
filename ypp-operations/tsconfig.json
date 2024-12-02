@@ -16,6 +16,7 @@
     "baseUrl": ".",
     "strict": true,
     "strictPropertyInitialization": false,
+    "resolveJsonModule": true,
     "outDir": "lib/",
     "types": ["node"]
   },
