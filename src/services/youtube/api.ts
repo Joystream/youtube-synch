@@ -4,6 +4,7 @@ import { youtube_v3 } from '@googleapis/youtube'
 import { exec } from 'child_process'
 import { GetTokenResponse } from 'google-auth-library/build/src/auth/oauth2client'
 import { GaxiosError, OAuth2Client } from 'googleapis-common'
+import { parse, toSeconds } from 'iso8601-duration'
 import _ from 'lodash'
 import moment from 'moment-timezone'
 import { FetchError } from 'node-fetch'
@@ -18,7 +19,7 @@ import { YtChannel, YtDlpFlatPlaylistOutput, YtDlpVideoOutput, YtUser, YtVideo }
 import sleep from 'sleep-promise'
 
 import Schema$Channel = youtube_v3.Schema$Channel
-import Schema$PlaylistItem = youtube_v3.Schema$PlaylistItem
+import Schema$Video = youtube_v3.Schema$Video
 import { LoggingService } from '../logging'
 import { Logger } from 'winston'
 
@@ -187,6 +188,7 @@ export interface IYoutubeApi {
   ytdlpClient: YtDlpClient
   getUserFromCode(code: string, youtubeRedirectUri: string): Promise<YtUser>
   getChannel(user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>): Promise<YtChannel>
+  getChannelsStats(ids: string[]): Promise<Pick<YtChannel, 'id' | 'statistics'>[]>
   getVerifiedChannel(
     user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>
   ): Promise<{ channel: YtChannel; errors: YoutubeApiError[] }>
@@ -224,13 +226,18 @@ export class YoutubeClient implements IYoutubeApi {
     })
   }
 
-  private getYoutube(accessToken: string, refreshToken: string) {
-    const auth = this.getAuth()
-    auth.setCredentials({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    })
-    return new youtube_v3.Youtube({ auth })
+  private getYoutube(accessToken?: string, refreshToken?: string) {
+    if (accessToken || refreshToken) {
+      const auth = this.getAuth()
+      auth.setCredentials({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      })
+
+      return new youtube_v3.Youtube({ auth })
+    }
+    
+    return new youtube_v3.Youtube({ auth: this.config.youtube.apiKey })
   }
 
   private async getAccessToken(
@@ -308,6 +315,45 @@ export class YoutubeClient implements IYoutubeApi {
     }
 
     return channel
+  }
+
+  async getChannelsStats(ids: string[]): Promise<Pick<YtChannel, 'id' | 'statistics'>[]> {
+    const yt = this.getYoutube()
+
+    let nextPageToken: string = ''
+    const allChannelsStats: Pick<YtChannel, 'id' | 'statistics'>[] = []
+    do {
+      const channelsResponse = await yt.channels
+        .list({
+          id: ids,
+          part: ['id', 'statistics'],
+          maxResults: 50
+        })
+        .catch((err) => {
+          if (err instanceof FetchError && err.code === 'ENOTFOUND') {
+            throw new YoutubeApiError(ExitCodes.YoutubeApi.YOUTUBE_API_NOT_CONNECTED, err.message)
+          }
+          throw err
+        })
+      nextPageToken = channelsResponse.data.nextPageToken ?? ''
+
+      // YouTube API will return HTTP 200 even if some of the channels
+      // are missing due to being suspended or removed.
+      const channelsStats = (channelsResponse.data.items || [])
+        .flatMap(c => c.id && c.statistics ? [{ id: c.id, statistics: c.statistics }] : [])
+        .map(c => ({
+          id: c.id,
+          statistics: {
+            viewCount: parseInt(c.statistics.viewCount ?? '0'),
+            subscriberCount: parseInt(c.statistics.subscriberCount ?? '0'),
+            videoCount: parseInt(c.statistics.videoCount ?? '0'),
+            commentCount: parseInt(c.statistics.commentCount ?? '0'),
+          }
+        }))
+        allChannelsStats.push(...channelsStats)
+    } while (nextPageToken)
+
+    return allChannelsStats
   }
 
   async getVerifiedChannel(
@@ -470,7 +516,7 @@ export class YoutubeClient implements IYoutubeApi {
     do {
       const nextPage = await youtube.playlistItems
         .list({
-          part: ['contentDetails', 'snippet', 'id', 'status'],
+          part: ['contentDetails'],
           playlistId: channel.uploadsPlaylistId,
           maxResults: 50,
           pageToken: nextPageToken ?? undefined,
@@ -483,9 +529,21 @@ export class YoutubeClient implements IYoutubeApi {
         })
         nextPageToken = nextPage.data.nextPageToken ?? ''
 
-      const page = this.mapVideos(nextPage.data.items ?? [], channel)
-      videos = [...videos, ...page]
-      console.log('videos.length   <   max', videos.length, limit, channel.joystreamChannelId)
+        const videoIds = nextPage.data.items?.flatMap(item => item.contentDetails?.videoId ? [item.contentDetails.videoId] : []) || []
+        if (videoIds.length) {
+          const videosPage = await youtube.videos.list({
+            id: videoIds,
+            part: ['id', 'status', 'snippet', 'statistics', 'fileDetails', 'contentDetails', 'liveStreamingDetails'],
+            maxResults: 50
+          }).catch((err) => {
+            if (err instanceof FetchError && err.code === 'ENOTFOUND') {
+              throw new YoutubeApiError(ExitCodes.YoutubeApi.YOUTUBE_API_NOT_CONNECTED, err.message)
+            }
+            throw err
+          })
+          const page = this.mapVideos(videosPage.data.items || [], channel)
+          videos = [...videos, ...page]
+        }
     } while (nextPageToken && videos.length < limit)
     return videos
   }
@@ -529,13 +587,13 @@ export class YoutubeClient implements IYoutubeApi {
     )
   }
 
-  private mapVideos(videos: Schema$PlaylistItem[], channel: YtChannel): YtVideo[] {
+  private mapVideos(videos: Schema$Video[], channel: YtChannel): YtVideo[] {
     return (
       videos
         .map(
           (video) =>
             <YtVideo>{
-              id: video.contentDetails?.videoId,
+              id: video.id,
               description: video.snippet?.description,
               title: video.snippet?.title,
               channelId: video.snippet?.channelId,
@@ -545,19 +603,19 @@ export class YoutubeClient implements IYoutubeApi {
                 standard: video.snippet?.thumbnails?.standard?.url,
                 default: video.snippet?.thumbnails?.default?.url,
               },
-              url: `https://youtube.com/watch?v=${video.snippet?.resourceId?.videoId}`,
+              url: `https://youtube.com/watch?v=${video.id}`,
               publishedAt: video.snippet?.publishedAt,
               createdAt: new Date(),
               category: channel.videoCategoryId,
               languageIso: channel.joystreamChannelLanguageIso,
               privacyStatus: video.status?.privacyStatus,
-              ytRating: undefined,
-              liveBroadcastContent: 'none',
-              license: 'creativeCommon',
-              duration: 0,
-              container: '',
-              uploadStatus: 'processed',
-              viewCount: 0,
+              ytRating: video.contentDetails?.contentRating?.ytRating,
+              liveBroadcastContent: video.snippet?.liveBroadcastContent,
+              license: video.status?.license,
+              duration: toSeconds(parse(video.contentDetails?.duration ?? 'PT0S')),
+              container: video.fileDetails?.container,
+              uploadStatus: video.status?.uploadStatus,
+              viewCount: parseInt(video.statistics?.viewCount ?? '0'),
               state: 'New',
             }
         )
@@ -701,6 +759,19 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
 
     // increase used quota count by 1 because only one page is returned
     await this.increaseUsedQuota({ syncQuotaIncrement: 1 })
+
+    return channels
+  }
+
+  async getChannelsStats(ids: string[]) {
+    // ensure have some left api quota
+    await this.ensureYoutubeQuota()
+
+    // get channels from api
+    const channels = await this.decorated.getChannelsStats(ids)
+
+    // increase used quota count, 1 api call is being used per page of 50 channels
+    await this.increaseUsedQuota({ syncQuotaIncrement: Math.ceil(ids.length / 50) })
 
     return channels
   }
