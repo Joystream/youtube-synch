@@ -25,6 +25,7 @@ import {
 } from './controllers'
 import { MembershipController } from './controllers/membership'
 import { ReferrersController } from './controllers/referrers'
+import { Logger } from 'winston'
 
 class ApiModule {}
 
@@ -70,6 +71,7 @@ export async function bootstrapHttpApi(
   await cryptoWaitReady()
 
   const dynamodbService = new DynamodbService(config.aws, false)
+  const logger = logging.createLogger('HttpApi')
 
   const objectAppModule: DynamicModule = {
     module: ApiModule,
@@ -104,6 +106,10 @@ export async function bootstrapHttpApi(
       {
         provide: ContentProcessingClient,
         useValue: contentProcessingClient,
+      },
+      {
+        provide: Logger,
+        useValue: logger,
       },
       {
         provide: 'youtube',
@@ -146,7 +152,6 @@ export async function bootstrapHttpApi(
   })
 
   // API request/response logging
-  const logger = logging.createLogger('HttpApi')
   app.use((request: express.Request, response: express.Response, next: express.NextFunction) => {
     const { method, originalUrl } = request
 

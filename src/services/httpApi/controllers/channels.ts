@@ -41,6 +41,7 @@ import {
   VerifyChannelDto,
   WhitelistChannelDto,
 } from '../dtos'
+import { Logger } from 'winston'
 
 @Controller('channels')
 @ApiTags('channels')
@@ -51,7 +52,8 @@ export class ChannelsController {
     private qnApi: QueryNodeApi,
     private dynamodbService: DynamodbService,
     private youtubePollingService: YoutubePollingService,
-    private contentProcessingClient: ContentProcessingClient
+    private contentProcessingClient: ContentProcessingClient,
+    private logger: Logger
   ) {}
 
   @Post()
@@ -130,6 +132,13 @@ export class ChannelsController {
         videoCategoryId,
         referrerChannelId,
         joystreamChannelLanguageIso,
+      }
+
+      if (existingChannel && existingChannel.preOptOutStatus) {
+        this.logger.info(
+          `Automatically assigned previous ${existingChannel.preOptOutStatus} tier ` +
+          `to channel ${joystreamChannelId} (${existingChannel.id})`
+        )
       }
 
       // save user and channel
