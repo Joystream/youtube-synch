@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import moment from 'moment-timezone'
 import { loadConfig as config } from './config'
-import { countVideosSyncedAfter, getAllChannels, getAllReferredChannels } from './dynamodb'
+import { countVideosSyncedAfter, getAllChannels, getAllReferredChannels, getNoDurationVideosOf } from './dynamodb'
 import {
   YppContact,
   createYppContacts,
@@ -12,6 +12,9 @@ import {
   updateYppContacts
 } from './hubspot'
 import { ChannelYppStatus, HubspotYPPContact } from './types'
+import { ValueWithTimestamp } from '@hubspot/api-client/lib/codegen/crm/contacts'
+import { getVideoDurationsMap } from './yt-api'
+import assert from 'assert'
 
 function getCapitalizedTierFromYppStatus(yppStatus: ChannelYppStatus) {
   const verifiedPrefix = 'Verified::'
@@ -66,7 +69,7 @@ async function referralsRewardInUsd(contact: YppContact, allContacts: YppContact
 async function latestSyncRewardInUsd(contact: YppContact) {
   const tier = getCapitalizedTierFromYppStatus(contact.yppstatus)
 
-  // todo check shouldbeingested be true? & allowoperatoringestion
+  // TODO: check shouldbeingested be true? & allowoperatoringestion
   if (tier) {
     const syncedCount = await countVideosSyncedAfter(
       contact.channel_url,
@@ -298,6 +301,232 @@ export function getLastMondayMiddayCET(): Date {
 
   // Return timestamp
   return new Date(parseInt(nowCET.format('X')) * 1000) // Unix Timestamp (seconds since the Unix Epoch)
+}
+
+/**
+ * Fix index in Hubspot's status history which corresponds to
+ * 'OptedOut' status update which happend due to a bug.
+ * (ref: https://github.com/Joystream/youtube-synch/issues/337)
+ * Those updates happened at 2024-09-23 between 08:30 and 08:40
+ */
+function findOptOutBugIdx(statusHistory: ValueWithTimestamp[]): number {
+  const optOutBugStart = new Date("2024-09-23T08:30:00Z")
+  const optOutBugEnd = new Date("2024-09-23T08:40:00Z")
+  const optOutBugIdx = statusHistory.findIndex(
+    s => s.value === 'OptedOut' &&
+    new Date(s.timestamp) > optOutBugStart &&
+    new Date(s.timestamp) < optOutBugEnd
+  )
+  return optOutBugIdx
+}
+
+/**
+ * Based on status history, find the tier (status) that a channel
+ * had at a given date.
+ */
+function channelStatusAt(statusHistory: ValueWithTimestamp[], atDate: Date): string | null {
+  let i = 0
+  while (i < statusHistory.length && new Date(statusHistory[i].timestamp) > new Date(atDate)) {
+    ++i
+  }
+  return i === statusHistory.length ? null : statusHistory[i].value
+}
+
+/**
+ * Get data about payout week that a specified date "belongs to".
+ * (we assume each payout week starts and ends at Monday, 12:00:00 CET)
+ */
+export function getPayoutWeek(date: Date): {
+  start: Date,
+  end: Date,
+  label: string
+} {
+  const dateCET = moment(date).tz('Europe/Berlin')
+  const weekStartCET = dateCET.clone()
+  // Adjust to last Monday
+  if (weekStartCET.day() === 0) {
+    // Sunday
+    weekStartCET.subtract(6, 'days')
+  } else {
+    weekStartCET.subtract(weekStartCET.day() - 1, 'days')
+  }
+  // Set time to midday (12:00 PM)
+  weekStartCET.set({ hour: 12, minute: 0, second: 0, millisecond: 0 })
+
+  // If the date is < weekBeginCET (for exmaple, it's Monday 8:00)
+  // then we go back a week
+  if (dateCET < weekStartCET) {
+    weekStartCET.subtract(1, 'week')
+  }
+
+  const weekStart = weekStartCET.clone()
+  const weekEnd = weekStartCET.clone().add(1, 'week')  
+  return {
+    start: new Date(parseInt(weekStart.format('X')) * 1000),
+    end: new Date(parseInt(weekEnd.format('X')) * 1000),
+    label: weekStart.format('DD.MM') + " - " + weekEnd.format('DD.MM')
+  }
+}
+
+type MissedRewardWeek = {
+  week: string,
+  tier: string,
+  totalReward: number,
+  rewardedVideosNum: number,
+  videos: {
+    youtubeId: string,
+    joystreamId?: string,
+    duration: number,
+    createdAt: string,
+    status: string,
+  }[]
+}
+
+type MissedReawrdChannel = {
+  channelId: string,
+  joystreamChannelId: string,
+  missedRewardsTotal: number,
+  missedRewards: MissedRewardWeek[]
+}
+
+type MissedRewards = {
+  missedRewardsTotal: number,
+  channels: MissedReawrdChannel[]
+}
+
+export async function calculateMissedRewards(
+  contacts: (YppContact & { propertiesWithHistory: { yppstatus?: ValueWithTimestamp[] } })[]
+): Promise<MissedRewards | undefined> {
+  const rewardedTiers: Map<string, number> = new Map([
+    ['Verified::Silver', config('SILVER_TIER_SYNC_REWARD_IN_USD')],
+    ['Verified::Gold', config('GOLD_TIER_SYNC_REWARD_IN_USD')],
+    ['Verified::Diamond', config('DIAMOND_TIER_SYNC_REWARD_IN_USD')]
+  ])
+
+  // Create a list of "contacts of interest"
+  // (contacts that ever had Silver+ status)
+  const contactsOfInterest = contacts.filter(c => _.find(c.propertiesWithHistory.yppstatus || [], s => rewardedTiers.has(s.value)))
+  
+  // Adjust contact status histories taking into account the opt-out bug...
+  let optOutBugAffectedLen = 0
+  const statusHistories = new Map(contactsOfInterest.map(c => {
+    const statusHistory = c.propertiesWithHistory.yppstatus || []
+    const optOutBugIdx = findOptOutBugIdx(statusHistory)
+    if (optOutBugIdx !== -1) {
+      ++optOutBugAffectedLen
+      // If affected by opt-out bug: We ignore any status change starting from
+      // the 'OptedOut' update (ie. we'll use last *correct* status)
+      return [c.gleev_channel_id, statusHistory.slice(optOutBugIdx + 1)]
+    }
+    return [c.gleev_channel_id, statusHistory]
+  }))
+
+  console.error(
+    `Found ${contactsOfInterest.length} contacts (including ${optOutBugAffectedLen} affected by opt-out issue) ` +
+    `with potentially missed rewards...`
+  )
+
+  // Load data about all DynamoDB videos that:
+  // - have duration = 0
+  // - were uploaded by one of the `contactsOfInterest`
+  // - were uploaded after a given contact joined YPP
+  const videos = (
+    await Promise.all(contactsOfInterest.map(async contact => {
+      const videos = await getNoDurationVideosOf(contact.channel_url, contact.date_signed_up_to_ypp)
+      return videos
+        .map(v => ({
+          ...v,
+          channelId: contact.channel_url,
+          joystreamChannelId: contact.gleev_channel_id,
+        }))
+    }))
+  ).flat()
+  console.error(`Found ${videos.length} videos to potentially reward...`)
+  
+  // Print some information about date range of the videos
+  const earliestDate = new Date(_.minBy(videos, v => new Date(v.createdAt))?.createdAt || 0)
+  const latestDate = new Date(_.maxBy(videos, v => new Date(v.createdAt))?.createdAt || 0)
+  console.error(`Earliest: ${earliestDate.toISOString()}`)
+  console.error(`Latest: ${latestDate.toISOString()}`)
+  
+  // Fetch the actual duration of videos using YouTube API
+  console.error(`Fetching data from YouTube...`)
+  const ytVideoDurationsMap = await getVideoDurationsMap(videos.map(v => v.id))
+  
+  // Create `videosToReward` array based on actual durations
+  const videosToReward = []
+  for (const video of videos) {
+    const trueDuration = ytVideoDurationsMap.get(video.id) || 0
+    const payoutWeek = getPayoutWeek(new Date(video.createdAt))
+    const channelStatusHistory = statusHistories.get(video.joystreamChannelId) || []
+    const channelStatus = channelStatusAt(channelStatusHistory, payoutWeek.end)
+    // Only consider videos which:
+    // - Have trueDuration > MIN_VIDEO_DURATION_IN_MINS
+    // - Belong to a channel which had one of the `rewardedTiers`
+    //   at the end of the payout week during which the video was created 
+    if (
+      trueDuration &&
+      trueDuration > config('MIN_VIDEO_DURATION_IN_MINS') * 60 &&
+      channelStatus &&
+      rewardedTiers.has(channelStatus)
+    ) {
+      videosToReward.push({
+        ...video,
+        tier: channelStatus,
+        payoutWeek,
+        duration: trueDuration
+      })
+    }
+  }
+  console.error(
+    `Final number of videos to consider: ${videosToReward.length} `  +
+    `(in ${_.uniqBy(videosToReward, v => v.joystreamChannelId).length} channels)`
+  )
+  
+  // Restructure the data into a more readable format
+  const missedRewardsChannels: MissedRewards['channels'] = _.chain(videosToReward)
+    .groupBy(v => v.joystreamChannelId)
+    .map((videos, joystreamChannelId) => {
+      const channelId = videos[0].channelId
+      assert(videos.every(v => v.channelId === channelId))
+      const missedRewards = _.chain(videos)
+        .groupBy(v => v.payoutWeek.label)
+        .entries()
+        .orderBy(([_, videos]) => videos[0].payoutWeek.end)
+        .map(([weekLabel, videos]) => {
+          const rewardedVideosNum = Math.min(videos.length, config('MAX_REWARDED_VIDEOS_PER_WEEK'))
+          const tier = videos[0].tier
+          const totalReward = rewardedVideosNum * (rewardedTiers.get(tier) || 0)
+          return {
+            week: weekLabel,
+            tier,
+            totalReward,
+            rewardedVideosNum,
+            videos: videos.map(v => ({
+              youtubeId: v.id,
+              joystreamId: v.joystreamVideo?.id,
+              duration: v.duration,
+              createdAt: v.createdAt,
+              status: v.state
+            }))
+          }
+        })
+        .valueOf()
+        .flatMap((v) => !!v ? [v] : [])
+      return {
+        channelId,
+        joystreamChannelId,
+        missedRewards,
+        missedRewardsTotal: Object.values(missedRewards).reduce((sum, week) => sum += week.totalReward, 0)
+      }
+    })
+    .valueOf()
+    .filter(c => c.missedRewardsTotal > 0)
+
+  return {
+    missedRewardsTotal: Object.values(missedRewardsChannels).reduce((sum, channel) => sum += channel.missedRewardsTotal, 0),
+    channels: missedRewardsChannels
+  }
 }
 
 // TODO: Note: Status change from one tier to another tier, or from referrer (lead status) to customer does not result in signup rewards, so this case needs to be handled manually -> This will not happen after we use processedAt.

@@ -29,6 +29,37 @@ export async function countVideosSyncedAfter(channelId: string, yppSignupDate: s
   return videosEligibleForReward.length
 }
 
+type PartialVideo = {
+  id: string,
+  createdAt: string,
+  duration: number,
+  state: string,
+  joystreamVideo?: { assetIds?: string[], id?: string }
+}
+export async function getNoDurationVideosOf(channelId: string, yppSignupDate: string): Promise<PartialVideo[]> {
+  const videos = (await documentClient.query({
+    TableName: 'videos',
+    ProjectionExpression: '#createdAt, #duration, #state, #id, #joystreamVideo',
+    KeyConditionExpression: '#channelId = :channelIdVal',
+    FilterExpression: '#duration = :durationVal and #publishedAt > :publishedAtVal',
+    ExpressionAttributeNames: {
+      '#channelId': 'channelId',
+      '#duration': 'duration',
+      '#createdAt': 'createdAt',
+      '#state': 'state',
+      '#id': 'id',
+      '#publishedAt': 'publishedAt',
+      '#joystreamVideo': 'joystreamVideo'
+    },
+    ExpressionAttributeValues: {
+      ':channelIdVal': channelId,
+      ':durationVal': 0,
+      ':publishedAtVal': yppSignupDate,
+    },
+  }).promise()).Items || []
+  return videos as PartialVideo[]
+}
+
 export async function getAllReferredChannels(referrerId: number, date?: string): Promise<YtChannel[]> {
   // Define basic query parameters
   let params: AWS.DynamoDB.DocumentClient.QueryInput = {

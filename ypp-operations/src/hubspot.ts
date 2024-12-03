@@ -110,6 +110,8 @@ export async function getAllYppContacts(lifecyclestage: ('customer' | 'lead')[] 
         }))
       )
 
+      console.error(`Fetched ${contacts.length} contacts...`)
+
       if (nextPage === 9900) {
         lastContactId = contacts[contacts.length - 1].contactId
         nextPage = 0 // Reset nextPage to start fresh with the new filter
@@ -137,12 +139,16 @@ export async function getAllYppContactsWithPropertyHistory(
 > {
   // First, get all contacts
   const contacts: YppContact[] = await getAllYppContacts()
-
+  // Map contacts by id
+  const contactsById = _.groupBy(contacts, c => c.contactId)
+  const contactsWithHistory: (
+    YppContact & {
+      propertiesWithHistory: { [key in typeof payableContactProps[number]]?: ValueWithTimestamp[] }
+    }
+  )[] = []
   // Extract the IDs for the batch read operation and chunk them
-  const contactIds = contacts.map((contact) => ({ id: contact.contactId }))
-  const contactIdChunks = chunkArray(contactIds, 50)
-
-  let batchResponses: BatchResponseSimplePublicObject['results'] = [] // Initialize an array to hold the batch responses
+  const contactIds = Object.keys(contactsById).map(id => ({ id }))
+  const contactIdChunks = _.chunk(contactIds, 50)
 
   try {
     // Process each chunk of contact IDs in a loop
@@ -152,28 +158,20 @@ export async function getAllYppContactsWithPropertyHistory(
         properties: [],
         propertiesWithHistory: propertiesNames,
       })
-      batchResponses = batchResponses.concat(batchResponse.results)
-    }
-
-    // Map the batch responses to include history in the original contacts array
-    const updatedContacts = contacts.map((contact, i) => {
-      // Find the corresponding batch response result for each contact
-      const batchResult = batchResponses[i]
-      const propertiesWithHistory: { [key in typeof payableContactProps[number]]?: ValueWithTimestamp[] } = {}
-
-      // If there's a match, populate propertiesWithHistory for each requested property
-      if (batchResult) {
+      for (const result of batchResponse.results) {
+        const propertiesWithHistory: { [key in typeof payableContactProps[number]]?: ValueWithTimestamp[] } = {}
         propertiesNames.forEach((propertyName) => {
-          propertiesWithHistory[propertyName] = batchResult.propertiesWithHistory
-            ? batchResult.propertiesWithHistory[propertyName]
-            : undefined
+          propertiesWithHistory[propertyName] = result.propertiesWithHistory?.[propertyName]
+        })
+        contactsWithHistory.push({
+          ...contactsById[result.id][0],
+          propertiesWithHistory
         })
       }
+      console.error(`Fetched ${contactsWithHistory.length} / ${contactIds.length} property histories...`)
+    }
 
-      return { ...contact, propertiesWithHistory }
-    })
-
-    return updatedContacts
+    return contactsWithHistory
   } catch (error) {
     console.error('Error fetching property history for contacts:', error)
     throw error

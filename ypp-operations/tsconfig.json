@@ -13,6 +13,7 @@
     "module": "CommonJS",
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
+    "resolveJsonModule": true,
     "baseUrl": ".",
     "strict": true,
     "strictPropertyInitialization": false,
