@@ -518,18 +518,21 @@ export class YoutubeClient implements IYoutubeApi {
     this.logger.debug(`Checking video`, { proxy, videoUrl })
 
     const { maxVideoSizeMB } = this.config.sync.limits || {}
-    const response = await create(`proxychains ${YT_DLP_PATH}`)(videoUrl, {
-      listFormats: true,
+    const executable = proxy ? `proxychains ${YT_DLP_PATH}` : YT_DLP_PATH
+    const response = await create(executable)(videoUrl, {
+      dumpJson: true,
       simulate: true,
       noWarnings: true,
       abortOnError: true,
-      printJson: true,
       format: this.getAcceptedFormats().join('/'),
       retries: 0,
       forceIpv4: true,
       proxy,
       maxFilesize: maxVideoSizeMB ? `${maxVideoSizeMB}M` : undefined,
     })
+    if (typeof response === 'string') {
+      throw new Error(`yt-dlp response was a string: ${(response as string).slice(0, 200)} (...)`)
+    }
     return response
   }
 
@@ -540,7 +543,8 @@ export class YoutubeClient implements IYoutubeApi {
     this.logger.debug(`Downloading video`, { proxy, videoUrl, preDownloadSleepTime })
 
     const { maxVideoSizeMB } = this.config.sync.limits || {}
-    const response = await create(`proxychains ${YT_DLP_PATH}`)(videoUrl, {
+    const executable = proxy ? `proxychains ${YT_DLP_PATH}` : YT_DLP_PATH
+    const response = await create(executable)(videoUrl, {
       noWarnings: true,
       abortOnError: true,
       printJson: true,
@@ -555,6 +559,9 @@ export class YoutubeClient implements IYoutubeApi {
       maxFilesize: maxVideoSizeMB ? `${maxVideoSizeMB}M` : undefined,
       // noWaitForVideo: true, // our version of youtube-dl-exec is not aware of this flag
     })
+    if (typeof response === 'string') {
+      throw new Error(`yt-dlp response was a string: ${(response as string).slice(0, 200)} (...)`)
+    }
     return response
   }
 
