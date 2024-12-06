@@ -80,6 +80,22 @@ export class ContentDownloadService {
       if (maxVideoDuration && video.duration > maxVideoDuration) {
         throw new DurationLimitExceededError(video.duration, maxVideoDuration)
       }
+
+      const channel = await this.dynamodbService.channels.getById(video.channelId)
+      const isHistoricalVideo = new Date(video.publishedAt) < channel.createdAt
+
+      // check available video formats before attempting to download
+      const ytpMetadata = await this.youtubeApi.checkVideo(video.url)
+      // check historical videos size cap
+      const expectedFilesize = ytpMetadata.filesize_approx
+      if (
+        isHistoricalVideo &&
+        expectedFilesize &&
+        (channel.historicalVideoSyncedSize + expectedFilesize) > YtChannel.sizeCap(channel)
+      ) {
+        throw new Error(`aborted: size cap for historical videos of channel ${channel.id} reached.`)
+      }
+      
       // download the video from youtube
       const ytpOutput = await pTimeout(
         this.youtubeApi.downloadVideo(video.url, this.config.downloadsDir),
@@ -103,13 +119,10 @@ export class ContentDownloadService {
        * Post download check (ensure that syncing this video won't
        * violate per channel total videos count & size limits)
        */
-
-      const channel = await this.dynamodbService.channels.getById(video.channelId)
-      const isHistoricalVideo = new Date(video.publishedAt) < channel.createdAt
       if (isHistoricalVideo) {
         const sizeLimitReached = channel.historicalVideoSyncedSize + size > YtChannel.sizeCap(channel)
         if (sizeLimitReached) {
-          throw new Error(`size cap for historical videos of channel ${channel.id} has reached.`)
+          throw new Error(`size cap for historical videos of channel ${channel.id} reached.`)
         }
       }
 

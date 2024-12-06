@@ -17,7 +17,6 @@ import { ReadonlyConfig, WithRequired, formattedJSON } from '../../types'
 import { ExitCodes, YoutubeApiError } from '../../types/errors'
 import { YtChannel, YtDlpFlatPlaylistOutput, YtDlpVideoOutput, YtUser, YtVideo } from '../../types/youtube'
 import sleep from 'sleep-promise'
-
 import Schema$Channel = youtube_v3.Schema$Channel
 import Schema$Video = youtube_v3.Schema$Video
 import { LoggingService } from '../logging'
@@ -184,6 +183,8 @@ export class YtDlpClient implements IOpenYTApi {
   }
 }
 
+export type YouTubeVideoData = Schema$Video & { id: string, missing: boolean }
+
 export interface IYoutubeApi {
   ytdlpClient: YtDlpClient
   getUserFromCode(code: string, youtubeRedirectUri: string): Promise<YtUser>
@@ -193,7 +194,9 @@ export interface IYoutubeApi {
     user: Pick<YtUser, 'id' | 'accessToken' | 'refreshToken'>
   ): Promise<{ channel: YtChannel; errors: YoutubeApiError[] }>
   getVideos(channel: YtChannel, top: number): Promise<YtVideo[]>
+  getYoutubeVideosByIds(ids: string[]): Promise<YouTubeVideoData[]>
   downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl>
+  checkVideo(videoUrl: string): ReturnType<typeof ytdl> 
   getCreatorOnboardingRequirements(): ReadonlyConfig['creatorOnboardingRequirements']
 }
 
@@ -454,6 +457,27 @@ export class YoutubeClient implements IYoutubeApi {
     }
   }
 
+  async getYoutubeVideosByIds(ids: string[]): Promise<YouTubeVideoData[]> {
+    const yt = this.getYoutube()
+    const videos: YouTubeVideoData[] = []
+    const idBatches = _.chunk(ids, 50)
+    for (const idsBatch of idBatches) {
+      const nextPage = await yt.videos.list({
+        id: idsBatch,
+        part: ['id', 'status', 'snippet', 'contentDetails'],
+        maxResults: 50
+      })
+      const pageItems = (nextPage.data.items || []).filter((v): v is Schema$Video & { id: string } => !!v.id)
+      const missingIds = _.difference(idsBatch, pageItems.map(v => v.id))
+      videos.push(
+        ...pageItems.map(v => ({...v, missing: false })),
+        ...missingIds.map(id => ({ id, missing: true }))
+      )
+      this.logger.info(`${videos.length} videos loaded...`)
+    }
+    return videos
+  }
+
   getNextProxy() {
     const proxies = this.config.proxy?.urls
     if (!proxies) {
@@ -476,14 +500,7 @@ export class YoutubeClient implements IYoutubeApi {
     }
   }
 
-  async downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
-    // Those flags are not currently recognized by `youtube-dl-exec`, but they are still
-    // supported by yt-dlp (see: https://github.com/yt-dlp/yt-dlp)
-    const proxy = this.getNextProxy()
-    const preDownloadSleepTime = await this.preDownloadSleep()
-    
-    this.logger.debug(`Downloading video`, { proxy, videoUrl, preDownloadSleepTime })
-
+  private getAcceptedFormats(): string[] {
     const { maxVideoSizeMB } = this.config.sync.limits || {}
     const sizeFormat = maxVideoSizeMB ?
       `[filesize<=${maxVideoSizeMB}M]` : ''
@@ -492,10 +509,42 @@ export class YoutubeClient implements IYoutubeApi {
       `bv*[height<=1080]${sizeFormat}[ext=webm]+ba[ext=webm]`, // webm
       `best[height<=1080]${sizeFormat}` // any
     ]
+    return formats
+  }
+
+  async checkVideo(videoUrl: string): ReturnType<typeof ytdl> {
+    const proxy = this.getNextProxy()
+    
+    this.logger.debug(`Checking video`, { proxy, videoUrl })
+
+    const { maxVideoSizeMB } = this.config.sync.limits || {}
+    const response = await create(`proxychains ${YT_DLP_PATH}`)(videoUrl, {
+      listFormats: true,
+      simulate: true,
+      noWarnings: true,
+      abortOnError: true,
+      printJson: true,
+      format: this.getAcceptedFormats().join('/'),
+      retries: 0,
+      forceIpv4: true,
+      proxy,
+      maxFilesize: maxVideoSizeMB ? `${maxVideoSizeMB}M` : undefined,
+    })
+    return response
+  }
+
+  async downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
+    const proxy = this.getNextProxy()
+    const preDownloadSleepTime = await this.preDownloadSleep()
+    
+    this.logger.debug(`Downloading video`, { proxy, videoUrl, preDownloadSleepTime })
+
+    const { maxVideoSizeMB } = this.config.sync.limits || {}
     const response = await create(`proxychains ${YT_DLP_PATH}`)(videoUrl, {
       noWarnings: true,
+      abortOnError: true,
       printJson: true,
-      format: formats.join('/'),
+      format: this.getAcceptedFormats().join('/'),
       output: `${outPath}/%(id)s.%(ext)s`,
       ffmpegLocation: ffmpegInstaller.path,
       // forceIpv6: true,
@@ -789,8 +838,25 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
     return videos
   }
 
+  async getYoutubeVideosByIds(ids: string[]): Promise<YouTubeVideoData[]> {
+    // ensure have some left api quota
+    await this.ensureYoutubeQuota()
+
+    // get videos from api
+    const videos = await this.decorated.getYoutubeVideosByIds(ids)
+
+    // increase used quota count, 1 api call is being used per page of 50 videos
+    await this.increaseUsedQuota({ syncQuotaIncrement: Math.ceil(ids.length / 50) })
+
+    return videos
+  }
+
   downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
     return this.decorated.downloadVideo(videoUrl, outPath)
+  }
+
+  checkVideo(videoUrl: string): ReturnType<typeof ytdl> {
+    return this.decorated.checkVideo(videoUrl)
   }
 
   private async increaseUsedQuota({ syncQuotaIncrement = 0, signupQuotaIncrement = 0 }) {
