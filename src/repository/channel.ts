@@ -259,6 +259,17 @@ export class ChannelsRepository implements IRepository<YtChannel> {
     })
   }
 
+  async getById<T extends keyof YtChannel = keyof YtChannel>(id: string, attrs?: T[]): Promise<Pick<YtChannel, T> | undefined> {
+    return this.withLock(async () => {
+      let q = this.model.query({ id }).using('id-index')
+      if (attrs) {
+        q = q.attributes(attrs)
+      }
+      const [result] = await q.exec()
+      return result ? mapTo<YtChannel>(result) : undefined
+    })
+  }
+
   async save(channel: YtChannel): Promise<YtChannel> {
     return this.withLock(async () => {
       const update = omit(['id', 'userId', 'updatedAt'], channel)
@@ -356,8 +367,8 @@ export class ChannelsService {
    * @param channelId
    * @returns Returns channel by youtube channelId
    */
-  async getById(channelId: string): Promise<YtChannel> {
-    const result = await this.channelsRepository.get(channelId.toString())
+  async getById<T extends keyof YtChannel>(channelId: string, attrs?: T[]): Promise<Pick<YtChannel, T>> {
+    const result = await this.channelsRepository.getById(channelId.toString(), attrs)
     if (!result) {
       throw new Error(`Could not find channel with id ${channelId}`)
     }

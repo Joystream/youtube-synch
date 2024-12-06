@@ -250,16 +250,22 @@ export class VideosService {
     return await this.videosRepository.batchSave(videos.map((v) => ({ ...v, state })))
   }
 
-  async getVideosInState(state: VideoState): Promise<YtVideo[]> {
-    return this.videosRepository.query({ state }, (q) => q.sort('ascending').using('state-publishedAt-index'))
+  async getVideosInState<T extends keyof YtVideo = keyof YtVideo>(state: VideoState, attrs?: T[]): Promise<Pick<YtVideo, T>[]> {
+    const data = await this.videosRepository.query({ state }, (q) => {
+      if (attrs) {
+        q = q.attributes(attrs)
+      }
+      return q.sort('ascending').using('state-publishedAt-index')
+    })
+    return data
   }
 
-  async getAllUnsyncedVideos(): Promise<YtVideo[]> {
+  async getAllUnsyncedVideos<T extends keyof YtVideo = keyof YtVideo>(attrs?: T[]): Promise<Pick<YtVideo, T>[]> {
     return [
-      ...(await this.getVideosInState('New')),
-      ...(await this.getVideosInState('VideoCreationFailed')),
-      ...(await this.getVideosInState('UploadFailed')),
-      ...(await this.getVideosInState('VideoCreated')),
+      ...(await this.getVideosInState('New', attrs)),
+      ...(await this.getVideosInState('VideoCreationFailed', attrs)),
+      ...(await this.getVideosInState('UploadFailed', attrs)),
+      ...(await this.getVideosInState('VideoCreated', attrs)),
     ]
   }
 
@@ -291,5 +297,15 @@ export class VideosService {
    */
   async delete(video: YtVideo): Promise<void> {
     return this.videosRepository.delete(video.channelId, video.id)
+  }
+
+  /**
+   * 
+   * @param channelId 
+   * @param videoId 
+   * @returns YtVideo
+   */
+  async get(channelId: string, videoId: string): Promise<YtVideo | undefined> {
+    return this.videosRepository.get(channelId, videoId)
   }
 }
