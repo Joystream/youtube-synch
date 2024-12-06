@@ -1,18 +1,32 @@
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
-import ytdl from 'youtube-dl-exec'
+import assert from 'assert'
+import { LoggingService }  from './services/logging'
+import { YoutubeClient } from './services/youtube/api'
+import { ConfigParserService } from './utils/configParser'
+import path from 'path'
 
-async function downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
-  const response = await ytdl(videoUrl, {
-    noWarnings: true,
-    printJson: true,
-    format: 'bv[height<=1080][ext=mp4]+ba[ext=m4a]/bv[height<=1080][ext=webm]+ba[ext=webm]/best[height<=1080]',
-    output: `${outPath}/%(id)s.%(ext)s`,
-    ffmpegLocation: ffmpegInstaller.path,
-  })
-  console.log('video downloaded', outPath, videoUrl)
-  return response
+const configParser = new ConfigParserService(path.join(__dirname, '../config.yml'))
+const config = configParser.parse()
+const logging = LoggingService.withCLIConfig()
+const youtubeClient = new YoutubeClient(config, logging)
+
+async function main() {
+  const { downloadsDir } = config.sync
+  assert(downloadsDir)
+  const videos = process.argv.slice(2)
+  await Promise.all(videos.map(async (v) => {
+    const checkResp = await youtubeClient.checkVideo(v)
+    if (typeof checkResp === 'string') {
+      console.log((checkResp as any).slice(0, 200))
+    }
+    assert(typeof checkResp === 'object', `Check: Expected object, got ${typeof checkResp}`)
+    assert(checkResp.format, 'Check: Missing format')
+    assert(checkResp.filesize_approx, 'Check: Missing filesize_approx')
+    const downloadResp = await youtubeClient.downloadVideo(v, downloadsDir)
+    assert(typeof downloadResp === 'object', `Download: Expected object, got ${typeof downloadResp}`)
+    assert(checkResp.ext, 'Download: Missing ext')
+    assert(checkResp.format, 'Download: Missing format')
+  }))
+  console.error("All videos successfully downloaded!")
 }
 
-downloadVideo('https://youtube.com/watch?v=cU7AAUNACVY', '/home/ubuntu/youtube-synch/')
-  .then(console.log)
-  .catch(error => console.error('Error downloading video:', error));
+main().catch(e => console.error(e))
