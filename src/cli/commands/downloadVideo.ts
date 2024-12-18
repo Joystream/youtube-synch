@@ -16,7 +16,8 @@ export default class DownloadVideo extends DefaultCommandBase {
         description: 'YouTube video url(s) of the video(s) to be downloaded'
     }),
     skipProxy: flags.boolean({
-        description: 'Skip proxy even if configured.'
+        description: 'Skip proxy even if configured.',
+        default: false,
     }),
     ...DefaultCommandBase.flags,
   }

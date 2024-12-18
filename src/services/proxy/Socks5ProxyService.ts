@@ -5,6 +5,7 @@ import { LoggingService } from "../logging"
 import sleep from "sleep-promise"
 import AsyncLock from "async-lock"
 import { ReadonlyConfig } from "../../types"
+import _ from 'lodash'
 
 export class Socks5ProxyService {
   private readonly logger: Logger
@@ -71,11 +72,11 @@ export class Socks5ProxyService {
 
   private async bindProxy(jobId: string): Promise<string> {
     return this.asyncLock.acquire(this.BIND_LOCK_ID, async () => {
-      let [selectedProxy] = this.availableProxies
+      let selectedProxy = _.sample(this.availableProxies)
       while (!selectedProxy) {
         this.logger.debug(`No proxy endpoints available, waiting ${this.config.waitInterval}s...`, { jobId })
         await sleep(this.config.waitInterval * 1_000)
-        selectedProxy = this.availableProxies[0]
+        selectedProxy = _.sample(this.availableProxies)
       }
       this.proxyByJobIdCache.set(jobId, selectedProxy)
       this.logger.debug(`Proxy ${selectedProxy} bound to job`, { jobId })

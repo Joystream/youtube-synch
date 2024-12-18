@@ -109,7 +109,7 @@ export class ContentDownloadService {
     )
     try {
       await promisify(exec)(
-        `${this.proxyService?.proxychainExec?.concat(' ')}` +
+        `${this.proxyService?.proxychainExec?.concat(' ') || ''}` +
         `node ${DOWNLOAD_ASSET_SCRIPT_PATH} ` +
         `${assetUrl} ` +
         `${thumbnailPath} ` +

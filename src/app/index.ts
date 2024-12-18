@@ -38,7 +38,7 @@ export class Service {
     this.socks5ProxyService = config.proxy ? new Socks5ProxyService(config.proxy, this.logging) : undefined
     this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
     this.dynamodbService = new DynamodbService(this.config.aws)
-    this.youtubeApi = YoutubeApi.create(this.config, this.dynamodbService.repo.stats, this.logging)
+    this.youtubeApi = YoutubeApi.create(this.config, this.dynamodbService.repo.stats, this.logging, this.socks5ProxyService)
     this.runtimeApi = new RuntimeApi(config.endpoints.joystreamNodeWs, this.logging)
     this.joystreamClient = new JoystreamClient(config, this.runtimeApi, this.queryNodeApi, this.logging)
     this.contentProcessingClient = new ContentProcessingClient({ ...config.sync, ...config.endpoints })

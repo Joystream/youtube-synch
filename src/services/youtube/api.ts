@@ -505,7 +505,7 @@ export class YoutubeClient implements IYoutubeApi {
     this.logger.debug(`Checking video`, { proxy, videoUrl })
 
     const { maxVideoSizeMB } = this.config.sync.limits || {}
-    const executable = `${this.proxyService?.proxychainExec?.concat(' ')}${YT_DLP_PATH}`
+    const executable = `${this.proxyService?.proxychainExec?.concat(' ') || ''}${YT_DLP_PATH}`
     const response = await create(executable)(videoUrl, {
       dumpJson: true,
       simulate: true,
@@ -529,7 +529,7 @@ export class YoutubeClient implements IYoutubeApi {
     this.logger.debug(`Downloading video`, { proxy, videoUrl, preDownloadSleepTime })
 
     const { maxVideoSizeMB } = this.config.sync.limits || {}
-    const executable = `${this.proxyService?.proxychainExec?.concat(' ')}${YT_DLP_PATH}`
+    const executable = `${this.proxyService?.proxychainExec?.concat(' ') || ''}${YT_DLP_PATH}`
     const response = await create(executable)(videoUrl, {
       noWarnings: true,
       abortOnError: true,
