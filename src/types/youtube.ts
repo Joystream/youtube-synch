@@ -1,4 +1,5 @@
 import { VideoMetadataAndHash } from '../services/syncProcessing/ContentMetadataService'
+import { VideoAssetPaths } from '../services/syncProcessing/utils'
 
 type DeploymentEnv = 'dev' | 'local' | 'testing' | 'prod'
 const deploymentEnv = process.env.DEPLOYMENT_ENV as DeploymentEnv | undefined
@@ -367,9 +368,7 @@ export type DownloadJobData = YtVideo & {
   priority: number
 }
 
-export type DownloadJobOutput = {
-  filePath: string
-}
+export type DownloadJobOutput = Required<VideoAssetPaths>
 
 export type CreateVideoJobData = YtVideo & {
   priority: number

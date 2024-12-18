@@ -47,6 +47,7 @@ youtube:
 # proxy:
 #   urls:
 #     ["socks5://proxy1:1080", "socks5://proxy2:1080"]
+#   banDuration: 14400 # 4 hours
 aws:
   endpoint: http://localhost:4566
   region: us-east-1

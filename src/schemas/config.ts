@@ -228,17 +228,33 @@ export const configSchema: JSONSchema7 = objectSchema({
       title: 'Socks5 proxy client configuration used by yt-dlp to bypass IP blockage by Youtube',
       description: 'Socks5 proxy client configuration used by yt-dlp to bypass IP blockage by Youtube',
       properties: {
+        chainThrough: {
+          description: 'Url of the socks5 proxy through which all requests should be chained (if required to access other proxies).',
+          type: 'string',
+          pattern: '^socks5://'
+        },
         urls: {
           description: 'List of available socks5 proxy URLs',
           type: 'array',
           items: {
-            description: 'Socks5 proxy url, e.g. ["socks://localhost:1080"]',
+            description: 'Socks5 proxy url, e.g. ["socks5://localhost:1080"]',
             type: 'string',
+            pattern: '^socks5://'
           },
           minItems: 1,
+        },
+        waitInterval: {
+          description: 'How long should the application wait in case no proxies are available (in seconds)',
+          type: 'integer',
+          default: 60
+        },
+        exclusionDuration: {
+          description: `How long should the proxy remain excluded in case it's blocked (in seconds)`,
+          type: 'integer',
+          default: 24 * 60 * 60
         }
       },
-      required: [],
+      required: ['urls', 'exclusionDuration', 'waitInterval'],
     }),
 
     creatorOnboardingRequirements: objectSchema({

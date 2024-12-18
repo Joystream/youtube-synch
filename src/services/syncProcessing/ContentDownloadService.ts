@@ -2,6 +2,8 @@ import { Job } from 'bullmq'
 import fs, { promises as fsp } from 'fs'
 import fsPromises from 'fs/promises'
 import pTimeout from 'p-timeout'
+import { exec } from 'child_process'
+import { promisify } from 'util'
 import path from 'path'
 import { Logger } from 'winston'
 import { IDynamodbService } from '../../repository'
@@ -10,16 +12,21 @@ import { DownloadJobData, DownloadJobOutput, DurationLimitExceededError, VideoUn
 import { LoggingService } from '../logging'
 import { IYoutubeApi } from '../youtube/api'
 import { SyncUtils } from './utils'
+import { Socks5ProxyService } from '../proxy/Socks5ProxyService'
+import { SCRIPT_PATH as DOWNLOAD_ASSET_SCRIPT_PATH } from '../../scripts/downloadAsset'
+
+export const THUMBNAILS_SUBDIR = 'thumbs'
 
 // Youtube videos download service
 export class ContentDownloadService {
   readonly logger: Logger
 
   public constructor(
-    private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['proxy'],
+    private config: Required<ReadonlyConfig['sync']>,
     logging: LoggingService,
     private dynamodbService: IDynamodbService,
-    private youtubeApi: IYoutubeApi
+    private youtubeApi: IYoutubeApi,
+    private proxyService?: Socks5ProxyService
   ) {
     this.logger = logging.createLogger('ContentDownloadService')
   }
@@ -31,22 +38,22 @@ export class ContentDownloadService {
     this.resolveDownloadedVideos()
   }
 
-  private async removeVideoFile(videoId: string) {
+  private async removeAllVideoFiles(videoId: string) {
     try {
       const dir = this.config.downloadsDir
-      const files = await fsPromises.readdir(dir)
-      for (const file of files) {
-        if (file.startsWith(videoId)) {
-          const filePath = path.join(dir, file)
+      const videoDirEntries = await fsPromises.readdir(dir, { withFileTypes: true })
+      const thumbDirEntries = await fsPromises.readdir(path.join(dir, THUMBNAILS_SUBDIR), { withFileTypes: true })
+      for (const entry of videoDirEntries.concat(thumbDirEntries)) {
+        if (entry.isFile() && entry.name.startsWith(videoId)) {
+          const filePath = path.join(dir, entry.name)
           const size = fs.statSync(filePath).size
-          SyncUtils.updateUsedStorageSize(-size)
-
           await fsPromises.unlink(filePath)
+          SyncUtils.updateUsedStorageSize(-size)
         }
       }
-      SyncUtils.downloadedVideoFilePaths.delete(videoId)
+      SyncUtils.downloadedVideoAssetPaths.delete(videoId)
     } catch (err) {
-      this.logger.error(`Failed to delete media file for video. File not found.`, { videoId: videoId, err })
+      this.logger.error(`Failed to remove all files associated with video.`, { videoId: videoId, err })
     }
   }
 
@@ -56,20 +63,62 @@ export class ContentDownloadService {
 
   private resolveDownloadedVideos() {
     const videoDownloadsDir = this.config.downloadsDir
-    const resolvedDownloads = fs
+    const resolvedVideos = fs
       .readdirSync(videoDownloadsDir)
       .map((filePath) => filePath.split('.'))
       .filter((filePath) => filePath.length === 2)
       .map(([videoId, ext]) => {
         const filePath = path.join(this.config.downloadsDir, `${videoId}.${ext}`)
-        SyncUtils.setVideoFilePath(videoId, filePath)
+        SyncUtils.setVideoAssetPath(videoId, 'video', filePath)
+        SyncUtils.updateUsedStorageSize(this.fileSize(filePath))
+        return videoId
+      })
+    const resolvedThumbs = fs
+      .readdirSync(path.join(videoDownloadsDir, THUMBNAILS_SUBDIR))
+      .map((filePath) => {
+        const [videoId, ext] = filePath.split('.')
+        if (ext.includes('.')) {
+          // Remove partially downloaded thumbnails
+          try {
+            fs.unlinkSync(filePath)
+          } catch (e: any) {
+            this.logger.warn(`Failed to remove ${filePath}: ${e.toString()}`)
+          }
+        }
+        SyncUtils.setVideoAssetPath(videoId, 'thumbnail', filePath)
         SyncUtils.updateUsedStorageSize(this.fileSize(filePath))
         return videoId
       })
     this.logger.verbose(`Resolved already downloaded video assets in local storage`, {
-      resolvedDownloads: resolvedDownloads.length,
+      resolvedVideos: resolvedVideos.length,
+      resolvedThumbs: resolvedThumbs.length,
       usedSpace: SyncUtils.usedSpace,
     })
+  }
+
+  async downloadThumbnail(video: DownloadJobData, proxy?: string): Promise<string> {
+    const assetUrl = video.thumbnails?.medium
+    if (!assetUrl) {
+      throw new Error(`Cannot download thumbnail: Missing thumbnail asset url`)
+    }
+    const [ext] = assetUrl.split('.').slice(-1)
+    const thumbnailPath = path.join(
+      this.config.downloadsDir,
+      THUMBNAILS_SUBDIR,
+      `${video.id}.${ext}`,
+    )
+    try {
+      await promisify(exec)(
+        `${this.proxyService?.proxychainExec?.concat(' ')}` +
+        `node ${DOWNLOAD_ASSET_SCRIPT_PATH} ` +
+        `${assetUrl} ` +
+        `${thumbnailPath} ` +
+        `${proxy}` 
+      )
+    } catch (e: any) {
+      throw new Error(`Thumbnail download failed: ${e.toString()}`)
+    }
+    return thumbnailPath
   }
 
   /// Process download tasks based on their priority.
@@ -84,8 +133,11 @@ export class ContentDownloadService {
       const channel = await this.dynamodbService.channels.getById(video.channelId)
       const isHistoricalVideo = new Date(video.publishedAt) < channel.createdAt
 
+      // Establish a proxy endpoint to use
+      const proxy = await this.proxyService?.getProxy(video.id)
+
       // check available video formats before attempting to download
-      const ytpMetadata = await this.youtubeApi.checkVideo(video.url)
+      const ytpMetadata = await this.youtubeApi.checkVideo(video.url, proxy)
       // check historical videos size cap
       const expectedFilesize = ytpMetadata.filesize_approx
       if (
@@ -95,24 +147,40 @@ export class ContentDownloadService {
       ) {
         throw new Error(`aborted: size cap for historical videos of channel ${channel.id} reached.`)
       }
-      
-      // download the video from youtube
-      const ytpOutput = await pTimeout(
-        this.youtubeApi.downloadVideo(video.url, this.config.downloadsDir),
-        this.config.limits.pendingDownloadTimeoutSec * 1000,
-        `Download timed-out`
-      )
 
-      const { ext: fileExt } = ytpOutput
-      const filePath = path.join(this.config.downloadsDir, `${video.id}.${fileExt}`)
-      const size = this.fileSize(filePath)
-      if (!SyncUtils.downloadedVideoFilePaths.has(video.id)) {
-        SyncUtils.setVideoFilePath(video.id, filePath)
-        SyncUtils.updateUsedStorageSize(size)
+      const alreadyDownloadedAssets = SyncUtils.downloadedVideoAssetPaths.get(video.id)
+      // download thumbnail if missing
+      if (!alreadyDownloadedAssets?.thumbnail) {
+        const thumbnailPath = await this.downloadThumbnail(video, proxy)
+        const thumbnailSize = this.fileSize(thumbnailPath)
+        SyncUtils.setVideoAssetPath(video.id, 'thumbnail', thumbnailPath)
+        SyncUtils.updateUsedStorageSize(thumbnailSize)
+      } else {
+        this.logger.info(`Thumbnail already downloaded, skipping...`, { jobId: video.id })
+      }
+      
+      // download the video from youtube if missing
+      if (!alreadyDownloadedAssets?.video) {
+        const ytpOutput = await pTimeout(
+          this.youtubeApi.downloadVideo(video.url, this.config.downloadsDir, proxy),
+          this.config.limits.pendingDownloadTimeoutSec * 1000,
+          `Download timed-out`
+        )
+        const { ext: fileExt } = ytpOutput
+        const videoPath = path.join(this.config.downloadsDir, `${video.id}.${fileExt}`)
+        const videoSize = this.fileSize(videoPath)
+        SyncUtils.setVideoAssetPath(video.id, 'video', videoPath)
+        SyncUtils.updateUsedStorageSize(videoSize)
+      } else {
+        this.logger.info(`Video already downloaded, skipping...`, { jobId: video.id })
       }
 
+      const videoAssets = SyncUtils.expectedVideoAssetPaths(video.id)
+      const assetsSize = Object.values(videoAssets).reduce((sizeSum, assetPath) => sizeSum += this.fileSize(assetPath), 0)
+
+      // TODO: Why would that ever happen?
       if (video.joystreamVideo) {
-        return { filePath }
+        return videoAssets
       }
 
       /**
@@ -120,17 +188,19 @@ export class ContentDownloadService {
        * violate per channel total videos count & size limits)
        */
       if (isHistoricalVideo) {
-        const sizeLimitReached = channel.historicalVideoSyncedSize + size > YtChannel.sizeCap(channel)
+        const sizeLimitReached = channel.historicalVideoSyncedSize + assetsSize > YtChannel.sizeCap(channel)
         if (sizeLimitReached) {
           throw new Error(`size cap for historical videos of channel ${channel.id} reached.`)
         }
       }
 
-      return { filePath }
+      return videoAssets
     } catch (err) {
+      const usedProxy = this.proxyService?.unbindProxy(video.id)
+      const logDetails = { videoId: video.id, proxy: usedProxy }
       if (err instanceof DurationLimitExceededError) {
         // Skip video creation
-        this.logger.error(`${err.message}. Skipping from syncing...`),
+        this.logger.error(`${err.message}. Skipping from syncing...`, { ...logDetails }),
         await this.dynamodbService.videos.updateState(video, 'VideoUnavailable::Skipped')
       } else {
         const errorMsg = (err as Error).message
@@ -153,20 +223,19 @@ export class ContentDownloadService {
         let matchedError = errors.find((e) => errorMsg.includes(e.message))
         if (matchedError) {
           await this.dynamodbService.videos.updateState(video, `VideoUnavailable::${matchedError.code}`)
-          this.logger.error(`${errorMsg}. Skipping from syncing...`, { videoId: video.id, reason: matchedError.code })
+          this.logger.error(`${errorMsg}. Skipping from syncing...`, { ...logDetails, reason: matchedError.code })
         }
-
-        console.log('errorMsg', errorMsg)
-
-        // If the error is 403 Forbidden means the IP address was blocked
-        if (errorMsg.includes('Sign in to confirm')) {
-          console.log('Download blocked by youtube')
+        else if (errorMsg.includes('Sign in to confirm you’re not a bot.')) {
+          this.logger.error('Download blocked by YouTube', { ...logDetails })
+          if (usedProxy) {
+            this.proxyService?.reportFaultyProxy(usedProxy)
+          }
         }
       }
 
       // TODO: If Download timed out, should we keep it on disk so it can be resumed later?
 
-      await this.removeVideoFile(video.id)
+      await this.removeAllVideoFiles(video.id)
       throw err
     }
   }

@@ -17,6 +17,7 @@ import { ContentMetadataService } from './ContentMetadataService'
 import { ContentUploadService } from './ContentUploadService'
 import { FlowJobManager, QUEUE_NAME_PREFIXES, QueueNamePrefix, TaskType } from './PriorityQueue'
 import { SyncUtils } from './utils'
+import { Socks5ProxyService } from '../proxy/Socks5ProxyService'
 
 export interface IContentProcessingClient {
   getQueues: Queue<TaskType<YtVideo>, any, string>[]
@@ -86,19 +87,20 @@ export class ContentProcessingService extends ContentProcessingClient implements
   private contentUploadService: ContentUploadService
 
   constructor(
-    private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['endpoints'] & ReadonlyConfig['proxy'],
+    private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['endpoints'],
     logging: LoggingService,
     private dynamodbService: DynamodbService,
     youtubeApi: IYoutubeApi,
     runtimeApi: RuntimeApi,
     private joystreamClient: JoystreamClient,
-    queryNodeApi: QueryNodeApi
+    queryNodeApi: QueryNodeApi,
+    private proxyService?: Socks5ProxyService
   ) {
     super(config)
     this.logger = logging.createLogger('ContentProcessingService')
 
-    this.contentDownloadService = new ContentDownloadService(config, logging, dynamodbService, youtubeApi)
-    this.contentMetadataService = new ContentMetadataService(logging, dynamodbService)
+    this.contentDownloadService = new ContentDownloadService(config, logging, dynamodbService, youtubeApi, proxyService)
+    this.contentMetadataService = new ContentMetadataService(config, logging, dynamodbService)
     this.contentCreationService = new ContentCreationService(logging, dynamodbService, joystreamClient)
     this.contentUploadService = new ContentUploadService(logging, dynamodbService, runtimeApi, queryNodeApi)
 
@@ -137,7 +139,21 @@ export class ContentProcessingService extends ContentProcessingClient implements
     const downloadQueueEvents = this.flowManager.getQueueEvents('DownloadQueue')
     const uploadQueueEvents = this.flowManager.getQueueEvents('UploadQueue')
     downloadQueueEvents.on('active', ({ jobId }) => this.logger.verbose(`Started processing of job:`, { jobId }))
-    uploadQueueEvents.on('completed', ({ jobId }) => this.logger.verbose(`Completed processing of job:`, { jobId }))
+    uploadQueueEvents.on('completed', ({ jobId }) => {
+      this.logger.verbose(`Completed processing of job:`, { jobId })
+      this.proxyService?.unbindProxy(jobId)
+    })
+
+    this.setJobFailureCleanups()
+  }
+
+  private setJobFailureCleanups() {
+    for (const jobType of QUEUE_NAME_PREFIXES) {
+      const queueEvents = this.flowManager.getQueueEvents(`${jobType}Queue`)
+      queueEvents.on('failed', ({ jobId }) => {
+        this.proxyService?.unbindProxy(jobId)
+      })
+    }
   }
 
   async start(interval: number) {
@@ -260,8 +276,8 @@ export class ContentProcessingService extends ContentProcessingClient implements
       (!isHistoricalVideo || (isHistoricalVideo && !sizeLimitReached)) &&
       spaceCondition
 
-    if (!shouldBeProcessed && SyncUtils.downloadedVideoFilePaths.has(video.id)) {
-      await SyncUtils.removeVideoFile(video.id)
+    if (!shouldBeProcessed && SyncUtils.downloadedVideoAssetPaths.has(video.id)) {
+      await SyncUtils.removeVideoAssets(video.id)
     }
 
     return shouldBeProcessed

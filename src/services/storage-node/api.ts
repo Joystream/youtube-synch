@@ -9,9 +9,9 @@ import { ExitCodes, StorageApiError } from '../../types/errors'
 import { YtVideo } from '../../types/youtube'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
-import { getThumbnailAsset } from '../runtime/client'
 import { AssetUploadInput, StorageNodeInfo } from '../runtime/types'
 import sleep from 'sleep-promise'
+import { VideoAssetPaths } from '../syncProcessing/utils'
 
 export type OperatorInfo = { id: string; endpoint: string }
 export type OperatorsMapping = Record<string, OperatorInfo>
@@ -26,17 +26,17 @@ export class StorageNodeApi {
     this.logger = logging.createLogger('StorageNodeApi')
   }
 
-  async uploadVideo(bagId: string, video: YtVideo, videoFilePath: string, maxAttempts = 5): Promise<void> {
+  async uploadVideo(bagId: string, video: YtVideo, assetPaths: Required<VideoAssetPaths>, maxAttempts = 5): Promise<void> {
     let attempt = 1
     while (attempt <= maxAttempts) {
       const assetsInput: AssetUploadInput[] = [
         {
           dataObjectId: createType('u64', new BN(video.joystreamVideo.assetIds[0])),
-          file: fs.createReadStream(videoFilePath),
+          file: fs.createReadStream(assetPaths.video),
         },
         {
           dataObjectId: createType('u64', new BN(video.joystreamVideo.assetIds[1])),
-          file: await getThumbnailAsset(video.thumbnails),
+          file: fs.createReadStream(assetPaths.thumbnail),
         },
       ]
       try {

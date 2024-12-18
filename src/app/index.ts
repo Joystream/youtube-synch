@@ -1,3 +1,4 @@
+import path from 'path'
 import fs from 'fs'
 import _ from 'lodash'
 import nodeCleanup from 'node-cleanup'
@@ -12,6 +13,8 @@ import { ContentProcessingClient, ContentProcessingService } from '../services/s
 import { YoutubePollingService } from '../services/syncProcessing/YoutubePollingService'
 import { IYoutubeApi, YoutubeApi } from '../services/youtube/api'
 import { Config, DisplaySafeConfig } from '../types'
+import { Socks5ProxyService } from '../services/proxy/Socks5ProxyService'
+import { THUMBNAILS_SUBDIR } from '../services/syncProcessing/ContentDownloadService'
 
 export class Service {
   private config: Config
@@ -25,12 +28,14 @@ export class Service {
   private youtubePollingService: YoutubePollingService
   private contentProcessingService: ContentProcessingService
   private contentProcessingClient: ContentProcessingClient
+  private socks5ProxyService?: Socks5ProxyService
   private isStopping = false
 
   constructor(config: Config) {
     this.config = config
     this.logging = LoggingService.withAppConfig(config.logs)
     this.logger = this.logging.createLogger('Server')
+    this.socks5ProxyService = config.proxy ? new Socks5ProxyService(config.proxy, this.logging) : undefined
     this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
     this.dynamodbService = new DynamodbService(this.config.aws)
     this.youtubeApi = YoutubeApi.create(this.config, this.dynamodbService.repo.stats, this.logging)
@@ -69,6 +74,11 @@ export class Service {
   private checkConfigDirectories(): void {
     if (this.config.sync.enable) {
       this.checkConfigDir('sync.downloadsDir', this.config.sync.downloadsDir)
+      const thumbsDir = path.join(this.config.sync.downloadsDir, THUMBNAILS_SUBDIR)
+      if (!fs.existsSync(thumbsDir)) {
+        fs.mkdirSync(thumbsDir)
+      }
+      this.checkConfigDir('thumbnails', thumbsDir)
     }
     if (this.config.logs?.file) {
       this.checkConfigDir('logs.file.path', this.config.logs.file.path)
@@ -84,7 +94,8 @@ export class Service {
         this.youtubeApi,
         this.runtimeApi,
         this.joystreamClient,
-        this.queryNodeApi
+        this.queryNodeApi,
+        this.socks5ProxyService
       )
 
       const {

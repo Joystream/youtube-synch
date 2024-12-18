@@ -2,13 +2,19 @@ import fs from 'fs'
 import fsPromises from 'fs/promises'
 import { VideoMetadataAndHash } from './ContentMetadataService'
 
+export const videoAssetTypes = ['video', 'thumbnail'] as const 
+export type VideoAssetType = typeof videoAssetTypes[number]
+export type VideoAssetPaths = {
+  [k in VideoAssetType]?: string
+}
+
 export class SyncUtils {
   private static readonly MAX_BULLMQ_PRIORITY = 2097152
   private static readonly MAX_SUDO_PRIORITY = 100
   static readonly DEFAULT_SUDO_PRIORITY = 10
   private static readonly OLDEST_PUBLISHED_DATE = 946684800 // Unix timestamp of year 2000
 
-  static readonly downloadedVideoFilePaths = new Map<string, string>()
+  static readonly downloadedVideoAssetPaths = new Map<string, VideoAssetPaths>()
 
   private static downloadedVideosSizeSum = 0
 
@@ -23,29 +29,35 @@ export class SyncUtils {
     this.downloadedVideosSizeSum += size
   }
 
-  static setVideoFilePath(videoId: string, filePath: string) {
-    this.downloadedVideoFilePaths.set(videoId, filePath)
+  static setVideoAssetPath(videoId: string, assetType: VideoAssetType, filePath: string) {
+    const currentAssets: VideoAssetPaths = this.downloadedVideoAssetPaths.get(videoId) || {}
+    this.downloadedVideoAssetPaths.set(videoId, { ...currentAssets, [assetType]: filePath })
   }
 
-  static expectedVideoFilePath(videoId: string): string {
-    const filePath = this.downloadedVideoFilePaths.get(videoId)
-    if (filePath && fs.existsSync(filePath)) {
-      return filePath
+  static expectedVideoAssetPaths(videoId: string): Required<VideoAssetPaths> {
+    const assetPaths = this.downloadedVideoAssetPaths.get(videoId)
+    if (!assetPaths) {
+      throw new Error(`Failed to get assets paths for video: ${videoId}.`)
     }
-    throw new Error(`Failed to get video file path: ${videoId}. File not found.`)
+    for (const assetType of videoAssetTypes) {
+      if (!assetPaths[assetType] || !fs.existsSync(assetPaths[assetType])) {
+        throw new Error(`Failed to get ${assetType} file path for video: ${videoId}. File not found.`)
+      }
+    }
+    return { ...assetPaths } as Required<VideoAssetPaths>
   }
 
-  static videoSize(videoId: string): number {
-    const videoFilePath = this.expectedVideoFilePath(videoId)
-    return fs.statSync(videoFilePath).size
-  }
-
-  static async removeVideoFile(videoId: string) {
-    const path = this.expectedVideoFilePath(videoId)
-    const size = this.videoSize(videoId)
-    await fsPromises.unlink(path)
-    this.downloadedVideoFilePaths.delete(videoId)
-    this.downloadedVideosSizeSum -= size
+  static async removeVideoAssets(videoId: string) {
+    const assets = this.downloadedVideoAssetPaths.get(videoId)
+    if (!assets) {
+      return
+    }
+    for (const assetPath of Object.values(assets)) {
+      const assetSize = fs.statSync(assetPath).size
+      await fsPromises.unlink(assetPath)
+      this.downloadedVideosSizeSum -= assetSize
+    }
+    this.downloadedVideoAssetPaths.delete(videoId)
   }
 
   static getSizeFromVideoMetadata(videoMetadata: VideoMetadataAndHash) {
