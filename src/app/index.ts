@@ -83,6 +83,9 @@ export class Service {
     if (this.config.logs?.file) {
       this.checkConfigDir('logs.file.path', this.config.logs.file.path)
     }
+    if (this.config.proxy?.chain) {
+      this.checkConfigDir('proxy.chain.configPath', this.config.proxy.chain.configPath)
+    }
   }
 
   private async startSync(): Promise<void> {

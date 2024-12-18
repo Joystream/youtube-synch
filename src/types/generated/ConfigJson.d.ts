@@ -233,10 +233,7 @@ export interface AWSCredentials {
  * Socks5 proxy client configuration used by yt-dlp to bypass IP blockage by Youtube
  */
 export interface Socks5ProxyClientConfigurationUsedByYtDlpToBypassIPBlockageByYoutube {
-  /**
-   * Url of the socks5 proxy through which all requests should be chained (if required to access other proxies).
-   */
-  chainThrough?: string
+  chain?: Socks5ProxyChainingConfiguration
   /**
    * List of available socks5 proxy URLs
    *
@@ -251,6 +248,16 @@ export interface Socks5ProxyClientConfigurationUsedByYtDlpToBypassIPBlockageByYo
    * How long should the proxy remain excluded in case it's blocked (in seconds)
    */
   exclusionDuration: number
+}
+export interface Socks5ProxyChainingConfiguration {
+  /**
+   * Url of the socks5 proxy that all other proxy requests will be chained through.
+   */
+  url: string
+  /**
+   * Absolute path to a location where proxychains.conf file will be stored
+   */
+  configPath: string
 }
 /**
  * Public api configuration

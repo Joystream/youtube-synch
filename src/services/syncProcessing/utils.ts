@@ -40,7 +40,8 @@ export class SyncUtils {
       throw new Error(`Failed to get assets paths for video: ${videoId}.`)
     }
     for (const assetType of videoAssetTypes) {
-      if (!assetPaths[assetType] || !fs.existsSync(assetPaths[assetType])) {
+      const assetPath = assetPaths[assetType]
+      if (!assetPath || !fs.existsSync(assetPath)) {
         throw new Error(`Failed to get ${assetType} file path for video: ${videoId}. File not found.`)
       }
     }

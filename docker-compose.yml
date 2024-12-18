@@ -61,7 +61,6 @@ services:
       # - /var/run/docker.sock:/var/run/docker.sock
       - ./local/logs:/youtube-synch/local/logs
       - ./local/data:/youtube-synch/local/data
-      - ./proxychains4.conf:/etc/proxychains4.conf
       # mount Google Cloud's Application Default Credentials file. A default bind mount is created
       # as workaround for scenario when `YT_SYNCH__YOUTUBE__ADC_KEY_FILE_PATH` will be undefined,
       # since docker-compose does not support creating bind-mount volume with empty path.

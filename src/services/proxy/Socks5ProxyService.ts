@@ -1,5 +1,6 @@
 import { Logger } from "winston"
 import NodeCache from 'node-cache'
+import fs from 'fs' 
 import { LoggingService } from "../logging"
 import sleep from "sleep-promise"
 import AsyncLock from "async-lock"
@@ -13,7 +14,7 @@ export class Socks5ProxyService {
   private _proxychainExec: string | undefined
   private readonly BIND_LOCK_ID = 'proxy_bind'
 
-  public constructor(
+  constructor(
     private config: NonNullable<ReadonlyConfig['proxy']>,
     logging: LoggingService,
   ) {
@@ -26,18 +27,36 @@ export class Socks5ProxyService {
     })
     this.asyncLock = new AsyncLock({ maxPending: proxiesNum * 10 })
     this.logger = logging.createLogger('Socks5ProxyService')
-    if (this.config.chainThrough) {
-      try {
-        const chainThroughUrl = new URL(this.config.chainThrough)
-        this._proxychainExec = [
-          `PROXYCHAINS_SOCKS5_HOST=${chainThroughUrl.host}`,
-          `PROXYCHAINS_SOCKS5_PORT=${chainThroughUrl.port}`,
-          'proxychains'
-        ].join(' ')
-      } catch (e) {
-        throw new Error(`Invalid config.proxy.chainThrough URL: ${this.config.chainThrough}`)
-      }
+    if (this.config.chain) {
+      this.initProxychainsConfig(this.config.chain.url, this.config.chain.configPath)
+      this._proxychainExec = [
+        'proxychains',
+        `-f ${this.config.chain.configPath}`
+      ].join(' ')
     }
+  }
+
+  private initProxychainsConfig(proxyUrl: string, configPath: string) {
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(proxyUrl)
+    } catch (e: any) {
+      throw new Error(`Cannot parse config.proxy.chain.url as URL: ${e.toString()}`)
+    }
+    fs.writeFileSync(
+      configPath,
+      [
+        'strict_chain',
+        'quiet_mode',
+        '',
+        'tcp_read_time_out 15000',
+        'tcp_connect_time_out 8000',
+        '',
+        '[ProxyList]',
+        '',
+        `socks5 ${parsedUrl.hostname} ${parsedUrl.port}`
+      ].join("\n")
+    )
   }
 
   private get availableProxies(): string[] {
