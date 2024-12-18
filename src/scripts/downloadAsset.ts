@@ -1,10 +1,11 @@
-import axios, { AxiosRequestConfig } from 'axios'
+import axios, { AddressFamily, AxiosRequestConfig } from 'axios'
 import assert from 'assert'
 import { argv } from 'process'
 import { SocksProxyAgent } from 'socks-proxy-agent'
 import { Readable, promises as streamPromise } from 'stream'
 import path from 'path'
 import { createWriteStream } from 'fs'
+import dns from 'dns'
 
 const isTS =  path.extname(__filename) === '.ts'
 export const SCRIPT_PATH = __filename.split(path.sep)
@@ -34,9 +35,18 @@ function validateArgs() {
   }
 }
 
+// Define a custom lookup function that forces IPv4 resolution
+const ipv4Lookup: AxiosRequestConfig<any>['lookup'] = (hostname, options, callback) => {
+  return dns.lookup(hostname, { ...options, family: 4 }, (err, address, family) => callback(err, address, family as AddressFamily));
+}
+
 async function main() {
   const { assetUrl, destPath, proxyUrl } = validateArgs()
-  const reqConfig: AxiosRequestConfig<any> = { responseType: 'stream' }
+  const reqConfig: AxiosRequestConfig<any> = {
+    responseType: 'stream',
+    family: 4,
+    lookup: ipv4Lookup
+  }
   if (proxyUrl) {
     const proxyAgent = new SocksProxyAgent(proxyUrl)
     reqConfig.httpAgent = proxyAgent
