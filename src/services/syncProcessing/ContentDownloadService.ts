@@ -77,7 +77,7 @@ export class ContentDownloadService {
       .readdirSync(path.join(videoDownloadsDir, THUMBNAILS_SUBDIR))
       .map((fileName) => {
         const [videoId, ext] = fileName.split('.')
-        const filePath = path.join(this.config.downloadsDir, fileName)
+        const filePath = path.join(this.config.downloadsDir, THUMBNAILS_SUBDIR, fileName)
         if (ext.includes('.')) {
           // Remove partially downloaded thumbnails
           try {
