@@ -6,7 +6,11 @@ import { Readable, promises as streamPromise } from 'stream'
 import path from 'path'
 import { createWriteStream } from 'fs'
 
-export const SCRIPT_PATH = __filename
+const isTS =  path.extname(__filename) === '.ts'
+export const SCRIPT_PATH = __filename.split(path.sep)
+  .map((part) => part === 'src' ? 'lib' : part)
+  .join(path.sep)
+  .replace('.ts', '.js')
 
 function validateArgs() {
   try {
@@ -44,7 +48,7 @@ async function main() {
 }
 
 // Execute script only if the file was executed directly (not imported as module)
-if (require.main === module) {
+if (require.main === module && !isTS) {
   main()
     .then(() => process.exit(0))
     .catch(e => {
