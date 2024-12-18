@@ -38,14 +38,14 @@ export default class DownloadVideo extends DefaultCommandBase {
     const proxyService = proxyConfig ? new Socks5ProxyService(proxyConfig, logging) : undefined
     const youtubeClient = new YoutubeClient(this.appConfig, logging, proxyService)
     for (const videoUrl of videoUrls) {
-        const checkResp = await youtubeClient.checkVideo(videoUrl)
-        this.log(`Downloading ${videoUrl}...`)
-        this.log('Selected format: ', checkResp.format)
-        this.log('Expected size: ', checkResp.filesize_approx)
         const proxy = await proxyService?.getProxy(videoUrl)
         if (proxy) {
             this.log(`Selected proxy: ${proxy}`)
         }
+        const checkResp = await youtubeClient.checkVideo(videoUrl, proxy)
+        this.log(`Downloading ${videoUrl}...`)
+        this.log(`Selected format: ${checkResp.format}`)
+        this.log(`Expected size: ${checkResp.filesize_approx}`)
         const downloadResp = await youtubeClient.downloadVideo(videoUrl, downloadsDir, proxy)
         assert(
             fs.existsSync(path.join(downloadsDir, `${downloadResp.id}.${downloadResp.ext}`)),
