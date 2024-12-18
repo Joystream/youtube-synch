@@ -59,7 +59,7 @@ export class ContentMetadataService {
 
     const { maxVideoSizeMB, maxVideoDuration } = this.config.limits
     if (
-      (maxVideoSizeMB && mediaMetadata.size > maxVideoSizeMB) || 
+      (maxVideoSizeMB && mediaMetadata.size > maxVideoSizeMB * 1_000_000) || 
       (maxVideoDuration && mediaMetadata.duration && mediaMetadata.duration > maxVideoDuration)
     ) {
       // Skip video creation
@@ -70,7 +70,7 @@ export class ContentMetadataService {
 
       // Throw error to stop processing
       throw new Error(`Video size or duration exceeds the limit (`+
-        `size: ${mediaMetadata.size} / ${maxVideoSizeMB}, `+
+        `size: ${mediaMetadata.size} / ${maxVideoSizeMB ? maxVideoSizeMB * 1_000_000 : undefined}, `+
         `duration: ${mediaMetadata.duration} / ${maxVideoDuration}` +
       `). Video skipped.`)
     }
