@@ -6,9 +6,10 @@ import { IDynamodbService } from '../../repository'
 import { DownloadJobOutput, MetadataJobData, MetadataJobOutput } from '../../types/youtube'
 import { FileHash, computeFileHashAndSize } from '../../utils/hasher'
 import { LoggingService } from '../logging'
-import { getThumbnailAsset, getVideoFileMetadata } from '../runtime/client'
+import { getVideoFileMetadata } from '../runtime/client'
 import { VideoFileMetadata } from '../runtime/types'
 import { SyncUtils } from './utils'
+import { ReadonlyConfig } from '../../types'
 
 export type VideoMetadataAndHash = {
   thumbnailHash: FileHash
@@ -22,7 +23,11 @@ export type VideoMetadataAndHash = {
 export class ContentMetadataService {
   readonly logger: Logger
 
-  public constructor(logging: LoggingService, private dynamodbService: IDynamodbService) {
+  public constructor(
+    private config: Required<ReadonlyConfig['sync']>,
+    logging: LoggingService,
+    private dynamodbService: IDynamodbService
+  ) {
     this.logger = logging.createLogger('ContentHashingService')
   }
 
@@ -39,30 +44,35 @@ export class ContentMetadataService {
       throw new Error(`Failed to get video file path from 'completed' child job: ${video.id}. File not found.`)
     }
 
-    const videoHashStream = fs.createReadStream(downloadJobOutput.filePath)
-    const thumbnailPhotoStream = await getThumbnailAsset(video.thumbnails)
+    const videoHashStream = fs.createReadStream(downloadJobOutput.video)
+    const thumbnailPhotoStream = fs.createReadStream(downloadJobOutput.thumbnail)
 
     const [thumbnailHash, mediaHash, mediaMetadata] = await pTimeout(
       Promise.all([
         computeFileHashAndSize(thumbnailPhotoStream),
         computeFileHashAndSize(videoHashStream),
-        getVideoFileMetadata(downloadJobOutput.filePath),
+        getVideoFileMetadata(downloadJobOutput.video),
       ]),
       30 * 60 * 1000, // 30 mins
       'Video metadata & hash calculation operation timed=out'
     )
 
-    // For any channel max size of a single synced video is 15 GB
-    // For any channel max duration of synced video is 3 hrs
-    if (mediaMetadata.size > 15_000_000_000 || (mediaMetadata.duration && mediaMetadata.duration > 10800)) {
+    const { maxVideoSizeMB, maxVideoDuration } = this.config.limits
+    if (
+      (maxVideoSizeMB && mediaMetadata.size > maxVideoSizeMB * 1_000_000) || 
+      (maxVideoDuration && mediaMetadata.duration && mediaMetadata.duration > maxVideoDuration)
+    ) {
       // Skip video creation
       await this.dynamodbService.videos.updateState(video, 'VideoUnavailable::Skipped')
 
       // Remove video file
-      await SyncUtils.removeVideoFile(video.id)
+      await SyncUtils.removeVideoAssets(video.id)
 
       // Throw error to stop processing
-      throw new Error('Video size or duration exceeds the limit. Video skipped.')
+      throw new Error(`Video size or duration exceeds the limit (`+
+        `size: ${mediaMetadata.size} / ${maxVideoSizeMB ? maxVideoSizeMB * 1_000_000 : undefined}, `+
+        `duration: ${mediaMetadata.duration} / ${maxVideoDuration}` +
+      `). Video skipped.`)
     }
     return { thumbnailHash, mediaHash, mediaMetadata }
   }

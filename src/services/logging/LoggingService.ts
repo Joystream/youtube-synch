@@ -48,8 +48,8 @@ const cliErrorFormat: (opts: CLIErrorFormatOpts) => Format = winston.format((inf
   if (!info[fieldName]) {
     return info
   }
-  const formatter = winston.format.errors({ stack: true })
-  info[fieldName] = formatter.transform(info[fieldName], formatter.options)
+  const err = info[fieldName]
+  info[fieldName] = err instanceof Error ? `${err.name}: ${err.message}` : err
   return info
 })
 

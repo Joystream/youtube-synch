@@ -46,7 +46,13 @@ youtube:
   # maxAllowedQuotaUsageInPercentage: 95
 # proxy:
 #   urls:
-#     ["socks5://proxy1:1080", "socks5://proxy2:1080"]
+#     - socks5://proxy1:1080
+#     - socks5://proxy2:1080
+#   exclusionDuration: 14400
+#   waitInterval: 60
+#   chain:
+#      url: socks5://proxy.chain:1080
+#      configDir: /etc
 aws:
   endpoint: http://localhost:4566
   region: us-east-1

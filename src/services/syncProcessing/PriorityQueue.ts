@@ -29,6 +29,10 @@ export interface ProcessorInstance<P, T, R> {
   process: P extends 'concurrent' ? ConcurrentProcessor<T, R> : BatchProcessor<T>
 }
 
+type JobFailureHandler =
+  ((jobId: string | undefined, err: Error) => void) |
+  ((jobId: string | undefined, err: Error, logger: Logger) => void)
+
 type PriorityQueueOptions<
   N extends QueueName = QueueName,
   P extends ProcessorType = ProcessorType,
@@ -40,6 +44,7 @@ type PriorityQueueOptions<
   processorType: P
   concurrencyOrBatchSize: number
   processorInstance: I
+  onFailure?: JobFailureHandler
 }
 
 class PriorityJobQueue<
@@ -60,11 +65,13 @@ class PriorityJobQueue<
   readonly queue: Queue<T>
   private worker: Worker
   private connection: IORedis
+  private customFailureHandler?: JobFailureHandler
 
   constructor(redis: ReadonlyConfig['endpoints']['redis'], options: PriorityQueueOptions<N, P, T, R, I>) {
     this.logger = options.processorInstance.logger
     this.concurrencyOrBatchSize = options.concurrencyOrBatchSize
     this.connection = new IORedis(redis.port, redis.host, { maxRetriesPerRequest: null })
+    this.customFailureHandler = options.onFailure
 
     this.queue = new Queue(options.name, { connection: this.connection })
     this.RECALCULATE_PRIORITY_LOCK_KEY = this.queue.name
@@ -79,6 +86,29 @@ class PriorityJobQueue<
   }
 
   processingTasks = new Set<string>()
+
+  private setupEventHandlers(worker: Worker<T, R, string>) {
+    worker.on('active', (job) => {
+      this.logger.debug(`Started job in queue '${this.queue.name}'`, { jobId: job.data.id })
+    })
+
+    worker.on('completed', (job) => {
+      this.logger.debug(`Completed job in queue '${this.queue.name}'`, { jobId: job.data.id })
+    })
+
+    worker.on('failed', (job, err) => {
+      if (this.customFailureHandler) {
+        this.customFailureHandler(job?.data.id, err, this.logger)
+      } else {
+        this.logger.error(`Failed job in queue '${this.queue.name}'`, { jobId: job?.data.id, err })
+      }
+    })
+
+    worker.on('error', (err) => {
+      // log the error
+      this.logger.error(err)
+    })
+  }
 
   private setupConcurrentProcessing(processor: ConcurrentProcessor<T, R>) {
     const wrappedProcessor = async (job: Job<T, R>) => {
@@ -102,22 +132,7 @@ class PriorityJobQueue<
       skipStalledCheck: true,
     })
 
-    this.worker.on('active', (job) => {
-      this.logger.debug(`Started job in queue '${this.queue.name}'`, { jobId: job.data.id })
-    })
-
-    this.worker.on('completed', (job) => {
-      this.logger.debug(`Completed job in queue '${this.queue.name}'`, { jobId: job.data.id })
-    })
-
-    this.worker.on('failed', (job, err) => {
-      this.logger.error(`Failed job in queue '${this.queue.name}'`, { jobId: job?.data.id, err: err?.message })
-    })
-
-    this.worker.on('error', (err) => {
-      // log the error
-      this.logger.error(err)
-    })
+    this.setupEventHandlers(this.worker)
   }
 
   /**
@@ -131,6 +146,7 @@ class PriorityJobQueue<
       connection: this.connection,
       lockDuration: jobsLockDuration,
     })
+    this.setupEventHandlers(this.worker)
 
     // get `N` next jobs that need to be processed
     const getNJobs = async (n: number): Promise<Job[]> => {

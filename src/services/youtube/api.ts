@@ -21,6 +21,7 @@ import Schema$Channel = youtube_v3.Schema$Channel
 import Schema$Video = youtube_v3.Schema$Video
 import { LoggingService } from '../logging'
 import { Logger } from 'winston'
+import { Socks5ProxyService } from '../proxy/Socks5ProxyService'
 
 const YT_DLP_PATH = path.join(
   path.dirname(require.resolve('youtube-dl-exec/package.json')),
@@ -195,8 +196,8 @@ export interface IYoutubeApi {
   ): Promise<{ channel: YtChannel; errors: YoutubeApiError[] }>
   getVideos(channel: YtChannel, top: number): Promise<YtVideo[]>
   getYoutubeVideosByIds(ids: string[]): Promise<YouTubeVideoData[]>
-  downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl>
-  checkVideo(videoUrl: string): ReturnType<typeof ytdl> 
+  downloadVideo(videoUrl: string, outPath: string, proxy?: string): ReturnType<typeof ytdl>
+  checkVideo(videoUrl: string, proxy?: string): ReturnType<typeof ytdl> 
   getCreatorOnboardingRequirements(): ReadonlyConfig['creatorOnboardingRequirements']
 }
 
@@ -211,7 +212,7 @@ export class YoutubeClient implements IYoutubeApi {
   private logger: Logger
   readonly ytdlpClient: YtDlpClient
 
-  constructor(config: ReadonlyConfig, logging: LoggingService) {
+  constructor(config: ReadonlyConfig, logging: LoggingService, private proxyService?: Socks5ProxyService) {
     this.config = config
     this.logger = logging.createLogger('YoutubeClient')
     this.ytdlpClient = new YtDlpClient()
@@ -478,28 +479,6 @@ export class YoutubeClient implements IYoutubeApi {
     return videos
   }
 
-  getNextProxy() {
-    const proxies = this.config.proxy?.urls
-    if (!proxies) {
-      return undefined
-    }
-    ++this.proxyIdx
-    if (this.proxyIdx >= proxies.length) {
-      this.proxyIdx = 0
-    }
-    return proxies[this.proxyIdx]
-  }
-
-  async preDownloadSleep(): Promise<number | undefined> {
-    const {preDownloadSleep} = this.config.sync.limits || {}
-    if (preDownloadSleep) {
-      const { min, max } = preDownloadSleep
-      const sleepTime = _.random(min, max)
-      await sleep(sleepTime)
-      return sleepTime
-    }
-  }
-
   private getAcceptedFormats(): string[] {
     const { maxVideoSizeMB } = this.config.sync.limits || {}
     const sizeFormat = maxVideoSizeMB ?
@@ -512,13 +491,11 @@ export class YoutubeClient implements IYoutubeApi {
     return formats
   }
 
-  async checkVideo(videoUrl: string): ReturnType<typeof ytdl> {
-    const proxy = this.getNextProxy()
-    
+  async checkVideo(videoUrl: string, proxy?: string): ReturnType<typeof ytdl> {
     this.logger.debug(`Checking video`, { proxy, videoUrl })
 
     const { maxVideoSizeMB } = this.config.sync.limits || {}
-    const executable = proxy ? `proxychains ${YT_DLP_PATH}` : YT_DLP_PATH
+    const executable = `${this.proxyService?.proxychainExec?.concat(' ') || ''}${YT_DLP_PATH}`
     const response = await create(executable)(videoUrl, {
       dumpJson: true,
       simulate: true,
@@ -536,14 +513,11 @@ export class YoutubeClient implements IYoutubeApi {
     return response
   }
 
-  async downloadVideo(videoUrl: string, outPath: string): ReturnType<typeof ytdl> {
-    const proxy = this.getNextProxy()
-    const preDownloadSleepTime = await this.preDownloadSleep()
-    
-    this.logger.debug(`Downloading video`, { proxy, videoUrl, preDownloadSleepTime })
+  async downloadVideo(videoUrl: string, outPath: string, proxy?: string): ReturnType<typeof ytdl> {
+    this.logger.debug(`Downloading video`, { proxy, videoUrl })
 
     const { maxVideoSizeMB } = this.config.sync.limits || {}
-    const executable = proxy ? `proxychains ${YT_DLP_PATH}` : YT_DLP_PATH
+    const executable = `${this.proxyService?.proxychainExec?.concat(' ') || ''}${YT_DLP_PATH}`
     const response = await create(executable)(videoUrl, {
       noWarnings: true,
       abortOnError: true,
@@ -913,7 +887,7 @@ class QuotaMonitoringClient implements IQuotaMonitoringClient, IYoutubeApi {
 }
 
 export const YoutubeApi = {
-  create(config: ReadonlyConfig, statsRepo: StatsRepository, logging: LoggingService): IYoutubeApi {
-    return new QuotaMonitoringClient(new YoutubeClient(config, logging), config, statsRepo)
+  create(config: ReadonlyConfig, statsRepo: StatsRepository, logging: LoggingService, proxyService?: Socks5ProxyService): IYoutubeApi {
+    return new QuotaMonitoringClient(new YoutubeClient(config, logging, proxyService), config, statsRepo)
   },
 }
