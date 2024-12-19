@@ -1,3 +1,5 @@
+import _ from 'lodash'
+import sleep from 'sleep-promise'
 import { Job } from 'bullmq'
 import fs, { promises as fsp } from 'fs'
 import fsPromises from 'fs/promises'
@@ -121,6 +123,17 @@ export class ContentDownloadService {
     return thumbnailPath
   }
 
+  async preDownloadSleep(): Promise<number | undefined> {
+    const {preDownloadSleep} = this.config.limits || {}
+    if (preDownloadSleep) {
+      const { min, max } = preDownloadSleep
+      const sleepTime = _.random(min, max)
+      this.logger.debug(`Sleeping ${sleepTime}...`)
+      await sleep(sleepTime)
+      return sleepTime
+    }
+  }
+
   /// Process download tasks based on their priority.
   async process(job: Job<DownloadJobData>): Promise<DownloadJobOutput> {
     const video = job.data
@@ -137,6 +150,8 @@ export class ContentDownloadService {
       const proxy = await this.proxyService?.getProxy(video.id)
 
       // check available video formats before attempting to download
+      // (we're using sleep here, because this is also a yt-dlp request)
+      await this.preDownloadSleep()
       const ytpMetadata = await this.youtubeApi.checkVideo(video.url, proxy)
       // check historical videos size cap
       const expectedFilesize = ytpMetadata.filesize_approx
@@ -151,6 +166,7 @@ export class ContentDownloadService {
       const alreadyDownloadedAssets = SyncUtils.downloadedVideoAssetPaths.get(video.id)
       // download thumbnail if missing
       if (!alreadyDownloadedAssets?.thumbnail) {
+        await this.preDownloadSleep()
         const thumbnailPath = await this.downloadThumbnail(video, proxy)
         const thumbnailSize = this.fileSize(thumbnailPath)
         SyncUtils.setVideoAssetPath(video.id, 'thumbnail', thumbnailPath)
@@ -161,6 +177,7 @@ export class ContentDownloadService {
       
       // download the video from youtube if missing
       if (!alreadyDownloadedAssets?.video) {
+        await this.preDownloadSleep()
         const ytpOutput = await pTimeout(
           this.youtubeApi.downloadVideo(video.url, this.config.downloadsDir, proxy),
           this.config.limits.pendingDownloadTimeoutSec * 1000,

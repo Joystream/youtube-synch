@@ -479,16 +479,6 @@ export class YoutubeClient implements IYoutubeApi {
     return videos
   }
 
-  async preDownloadSleep(): Promise<number | undefined> {
-    const {preDownloadSleep} = this.config.sync.limits || {}
-    if (preDownloadSleep) {
-      const { min, max } = preDownloadSleep
-      const sleepTime = _.random(min, max)
-      await sleep(sleepTime)
-      return sleepTime
-    }
-  }
-
   private getAcceptedFormats(): string[] {
     const { maxVideoSizeMB } = this.config.sync.limits || {}
     const sizeFormat = maxVideoSizeMB ?
@@ -524,9 +514,7 @@ export class YoutubeClient implements IYoutubeApi {
   }
 
   async downloadVideo(videoUrl: string, outPath: string, proxy?: string): ReturnType<typeof ytdl> {
-    const preDownloadSleepTime = await this.preDownloadSleep()
-    
-    this.logger.debug(`Downloading video`, { proxy, videoUrl, preDownloadSleepTime })
+    this.logger.debug(`Downloading video`, { proxy, videoUrl })
 
     const { maxVideoSizeMB } = this.config.sync.limits || {}
     const executable = `${this.proxyService?.proxychainExec?.concat(' ') || ''}${YT_DLP_PATH}`
