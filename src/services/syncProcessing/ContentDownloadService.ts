@@ -68,27 +68,21 @@ export class ContentDownloadService {
     const videoDownloadsDir = this.config.downloadsDir
     const resolvedVideos = fs
       .readdirSync(videoDownloadsDir)
-      .map((filePath) => filePath.split('.'))
-      .filter((filePath) => filePath.length === 2)
+      .map((fileName) => fileName.split('.'))
+      .filter((fileNameParts) => fileNameParts.length === 2)
       .map(([videoId, ext]) => {
-        const filePath = path.join(this.config.downloadsDir, `${videoId}.${ext}`)
+        const filePath = path.join(videoDownloadsDir, `${videoId}.${ext}`)
         SyncUtils.setVideoAssetPath(videoId, 'video', filePath)
         SyncUtils.updateUsedStorageSize(this.fileSize(filePath))
         return videoId
       })
+    const thumbDownloadsDir = path.join(videoDownloadsDir, THUMBNAILS_SUBDIR)
     const resolvedThumbs = fs
-      .readdirSync(path.join(videoDownloadsDir, THUMBNAILS_SUBDIR))
-      .map((fileName) => {
-        const [videoId, ext] = fileName.split('.')
-        const filePath = path.join(this.config.downloadsDir, THUMBNAILS_SUBDIR, fileName)
-        if (ext.includes('.')) {
-          // Remove partially downloaded thumbnails
-          try {
-            fs.unlinkSync(filePath)
-          } catch (e: any) {
-            this.logger.warn(`Failed to remove ${filePath}: ${e.toString()}`)
-          }
-        }
+      .readdirSync(thumbDownloadsDir)
+      .map((fileName) => fileName.split('.'))
+      .filter((fileNameParts) => fileNameParts.length === 2)
+      .map(([videoId, ext]) => {
+        const filePath = path.join(thumbDownloadsDir, `${videoId}.${ext}`)
         SyncUtils.setVideoAssetPath(videoId, 'thumbnail', filePath)
         SyncUtils.updateUsedStorageSize(this.fileSize(filePath))
         return videoId
