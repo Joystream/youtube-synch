@@ -137,6 +137,7 @@ export class ContentDownloadService {
   /// Process download tasks based on their priority.
   async process(job: Job<DownloadJobData>): Promise<DownloadJobOutput> {
     const video = job.data
+    let proxy: string | undefined
     try {
       const { maxVideoDuration } = this.config.limits
       if (maxVideoDuration && video.duration > maxVideoDuration) {
@@ -147,7 +148,7 @@ export class ContentDownloadService {
       const isHistoricalVideo = new Date(video.publishedAt) < channel.createdAt
 
       // Establish a proxy endpoint to use
-      const proxy = await this.proxyService?.getProxy(video.id)
+      proxy = await this.proxyService?.getProxy(video.id)
 
       // check available video formats before attempting to download
       // (we're using sleep here, because this is also a yt-dlp request)
@@ -213,8 +214,7 @@ export class ContentDownloadService {
 
       return videoAssets
     } catch (err) {
-      const usedProxy = this.proxyService?.unbindProxy(video.id)
-      const logDetails = { videoId: video.id, proxy: usedProxy }
+      const logDetails = { videoId: video.id, proxy }
       if (err instanceof DurationLimitExceededError) {
         // Skip video creation
         this.logger.error(`${err.message}. Skipping from syncing...`, { ...logDetails }),
@@ -244,8 +244,8 @@ export class ContentDownloadService {
         }
         else if (errorMsg.includes('Sign in to confirm you’re not a bot.')) {
           this.logger.error('Download blocked by YouTube', { ...logDetails })
-          if (usedProxy) {
-            this.proxyService?.reportFaultyProxy(usedProxy)
+          if (proxy) {
+            this.proxyService?.reportFaultyProxy(proxy)
           }
         }
       }
