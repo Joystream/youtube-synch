@@ -255,9 +255,9 @@ export interface Socks5ProxyChainingConfiguration {
    */
   url: string
   /**
-   * Absolute path to a location where proxychains.conf file will be stored
+   * Absolute path to a location where proxychains4.conf file will be stored
    */
-  configPath: string
+  configDir: string
 }
 /**
  * Public api configuration

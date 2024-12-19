@@ -75,16 +75,13 @@ export class Service {
     if (this.config.sync.enable) {
       this.checkConfigDir('sync.downloadsDir', this.config.sync.downloadsDir)
       const thumbsDir = path.join(this.config.sync.downloadsDir, THUMBNAILS_SUBDIR)
-      if (!fs.existsSync(thumbsDir)) {
-        fs.mkdirSync(thumbsDir)
-      }
       this.checkConfigDir('thumbnails', thumbsDir)
     }
     if (this.config.logs?.file) {
       this.checkConfigDir('logs.file.path', this.config.logs.file.path)
     }
     if (this.config.proxy?.chain) {
-      this.checkConfigDir('proxy.chain.configPath', this.config.proxy.chain.configPath)
+      this.checkConfigDir('proxy.chain.configDir', this.config.proxy.chain.configDir)
     }
   }
 

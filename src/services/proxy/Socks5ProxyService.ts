@@ -1,6 +1,7 @@
+import path from 'path'
+import fs from 'fs'
 import { Logger } from "winston"
 import NodeCache from 'node-cache'
-import fs from 'fs' 
 import { LoggingService } from "../logging"
 import sleep from "sleep-promise"
 import AsyncLock from "async-lock"
@@ -29,21 +30,22 @@ export class Socks5ProxyService {
     this.asyncLock = new AsyncLock({ maxPending: proxiesNum * 10 })
     this.logger = logging.createLogger('Socks5ProxyService')
     if (this.config.chain) {
-      this.initProxychainsConfig(this.config.chain.url, this.config.chain.configPath)
+      const configFilePath = this.initProxychainsConfig(this.config.chain.url, this.config.chain.configDir)
       this._proxychainExec = [
         'proxychains',
-        `-f ${this.config.chain.configPath}`
+        `-f ${configFilePath}`
       ].join(' ')
     }
   }
 
-  private initProxychainsConfig(proxyUrl: string, configPath: string) {
+  private initProxychainsConfig(proxyUrl: string, configDir: string) {
     let parsedUrl: URL
     try {
       parsedUrl = new URL(proxyUrl)
     } catch (e: any) {
       throw new Error(`Cannot parse config.proxy.chain.url as URL: ${e.toString()}`)
     }
+    const configPath = path.join(configDir, 'proxychains4.conf')
     fs.writeFileSync(
       configPath,
       [
@@ -58,6 +60,8 @@ export class Socks5ProxyService {
         `socks5 ${parsedUrl.hostname} ${parsedUrl.port}`
       ].join("\n")
     )
+    
+    return configPath
   }
 
   private get availableProxies(): string[] {

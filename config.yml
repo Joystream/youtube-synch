@@ -52,7 +52,7 @@ youtube:
 #   waitInterval: 60
 #   chain:
 #      url: socks5://proxy.chain:1080
-#      configPath: /etc/proxychains4.conf
+#      configDir: /etc
 aws:
   endpoint: http://localhost:4566
   region: us-east-1

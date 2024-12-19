@@ -236,12 +236,12 @@ export const configSchema: JSONSchema7 = objectSchema({
               type: 'string',
               pattern: '^socks5://'
             },
-            configPath: {
-              description: 'Absolute path to a location where proxychains.conf file will be stored',
+            configDir: {
+              description: 'Absolute path to a location where proxychains4.conf file will be stored',
               type: 'string'
             },
           },
-          required: ['url', 'configPath']
+          required: ['url', 'configDir']
         }),
         urls: {
           description: 'List of available socks5 proxy URLs',
