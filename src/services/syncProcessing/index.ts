@@ -107,9 +107,9 @@ export class ContentProcessingService extends ContentProcessingClient implements
     // create job queues
 
     const { maxConcurrentDownloads, maxConcurrentUploads, createVideoTxBatchSize } = this.config.limits
-    const onFailedJob = (queueName: string) => (jobId: string | undefined, err: Error) => {
+    const onFailedJob = (queueName: string) => (jobId: string | undefined, err: Error, logger: Logger) => {
       const usedProxy = jobId ? this.proxyService?.unbindProxy(jobId) : undefined
-      this.logger.error(`Failed job in queue '${queueName}'`, { jobId, proxy: usedProxy, err })
+      logger.error(`Failed job in queue '${queueName}'`, { jobId, proxy: usedProxy, err })
     }
     this.flowManager.createJobQueue({
       name: 'DownloadQueue',

@@ -29,7 +29,9 @@ export interface ProcessorInstance<P, T, R> {
   process: P extends 'concurrent' ? ConcurrentProcessor<T, R> : BatchProcessor<T>
 }
 
-type JobFailureHandler = (jobId: string | undefined, err: Error) => void
+type JobFailureHandler =
+  ((jobId: string | undefined, err: Error) => void) |
+  ((jobId: string | undefined, err: Error, logger: Logger) => void)
 
 type PriorityQueueOptions<
   N extends QueueName = QueueName,
@@ -96,7 +98,7 @@ class PriorityJobQueue<
 
     worker.on('failed', (job, err) => {
       if (this.customFailureHandler) {
-        this.customFailureHandler(job?.data.id, err)
+        this.customFailureHandler(job?.data.id, err, this.logger)
       } else {
         this.logger.error(`Failed job in queue '${this.queue.name}'`, { jobId: job?.data.id, err })
       }
