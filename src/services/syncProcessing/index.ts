@@ -107,11 +107,16 @@ export class ContentProcessingService extends ContentProcessingClient implements
     // create job queues
 
     const { maxConcurrentDownloads, maxConcurrentUploads, createVideoTxBatchSize } = this.config.limits
+    const onFailedJob = (queueName: string) => (jobId: string | undefined, err: Error) => {
+      const usedProxy = jobId ? this.proxyService?.unbindProxy(jobId) : undefined
+      this.logger.error(`Failed job in queue '${queueName}'`, { jobId, proxy: usedProxy, err })
+    }
     this.flowManager.createJobQueue({
       name: 'DownloadQueue',
       processorType: 'concurrent',
       concurrencyOrBatchSize: maxConcurrentDownloads,
       processorInstance: this.contentDownloadService,
+      onFailure: onFailedJob('DownloadQueue')
     })
 
     this.flowManager.createJobQueue({
@@ -119,6 +124,7 @@ export class ContentProcessingService extends ContentProcessingClient implements
       processorType: 'concurrent',
       concurrencyOrBatchSize: maxConcurrentDownloads,
       processorInstance: this.contentMetadataService,
+      onFailure: onFailedJob('MetadataQueue')
     })
 
     this.flowManager.createJobQueue({
@@ -126,6 +132,7 @@ export class ContentProcessingService extends ContentProcessingClient implements
       processorType: 'batch',
       concurrencyOrBatchSize: createVideoTxBatchSize,
       processorInstance: this.contentCreationService,
+      onFailure: onFailedJob('CreationQueue')
     })
 
     this.flowManager.createJobQueue({
@@ -133,6 +140,7 @@ export class ContentProcessingService extends ContentProcessingClient implements
       processorType: 'concurrent',
       concurrencyOrBatchSize: maxConcurrentUploads,
       processorInstance: this.contentUploadService,
+      onFailure: onFailedJob('UploadQueue')
     })
 
     // log starting and completed events for each job
@@ -140,20 +148,9 @@ export class ContentProcessingService extends ContentProcessingClient implements
     const uploadQueueEvents = this.flowManager.getQueueEvents('UploadQueue')
     downloadQueueEvents.on('active', ({ jobId }) => this.logger.verbose(`Started processing of job:`, { jobId }))
     uploadQueueEvents.on('completed', ({ jobId }) => {
-      this.logger.verbose(`Completed processing of job:`, { jobId })
-      this.proxyService?.unbindProxy(jobId)
+      const usedProxy = this.proxyService?.unbindProxy(jobId)
+      this.logger.verbose(`Completed processing of job:`, { jobId, proxy: usedProxy })
     })
-
-    this.setJobFailureCleanups()
-  }
-
-  private setJobFailureCleanups() {
-    for (const jobType of QUEUE_NAME_PREFIXES) {
-      const queueEvents = this.flowManager.getQueueEvents(`${jobType}Queue`)
-      queueEvents.on('failed', ({ jobId }) => {
-        this.proxyService?.unbindProxy(jobId)
-      })
-    }
   }
 
   async start(interval: number) {
