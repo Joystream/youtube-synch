@@ -40,20 +40,23 @@ export class ContentDownloadService {
 
   private async removeAllVideoFiles(videoId: string) {
     try {
-      const dir = this.config.downloadsDir
-      const videoDirEntries = await fsPromises.readdir(dir, { withFileTypes: true })
-      const thumbDirEntries = await fsPromises.readdir(path.join(dir, THUMBNAILS_SUBDIR), { withFileTypes: true })
-      for (const entry of videoDirEntries.concat(thumbDirEntries)) {
-        if (entry.isFile() && entry.name.startsWith(videoId)) {
-          const filePath = path.join(dir, entry.name)
-          const size = fs.statSync(filePath).size
-          await fsPromises.unlink(filePath)
-          SyncUtils.updateUsedStorageSize(-size)
-        }
+      const videoDir = this.config.downloadsDir
+      const thumbDir = path.join(videoDir, THUMBNAILS_SUBDIR)
+      const videoDirFiles = (await fsPromises.readdir(videoDir, { withFileTypes: true }))
+        .filter((e) => e.isFile() && e.name.startsWith(videoId))
+        .map((e) => path.join(videoDir, e.name))
+      const thumbDirFiles = (await fsPromises.readdir(thumbDir, { withFileTypes: true }))
+        .filter((e) => e.isFile() && e.name.startsWith(videoId))
+        .map((e) => path.join(thumbDir, e.name))
+
+      for (const filePath of videoDirFiles.concat(thumbDirFiles)) {
+        const size = this.fileSize(filePath)
+        await fsPromises.unlink(filePath)
+        SyncUtils.updateUsedStorageSize(-size)
       }
       SyncUtils.downloadedVideoAssetPaths.delete(videoId)
     } catch (err) {
-      this.logger.error(`Failed to remove all files associated with video.`, { videoId: videoId, err })
+      this.logger.error(`Failed to remove all files associated with video.`, { videoId, err })
     }
   }
 
@@ -108,14 +111,16 @@ export class ContentDownloadService {
       THUMBNAILS_SUBDIR,
       `${video.id}.${ext}`,
     )
+    const tmpPath = `${thumbnailPath}.tmp`
     try {
       await promisify(exec)(
         `${this.proxyService?.proxychainExec?.concat(' ') || ''}` +
         `node ${DOWNLOAD_ASSET_SCRIPT_PATH} ` +
         `${assetUrl} ` +
-        `${thumbnailPath} ` +
+        `${tmpPath} ` +
         `${proxy}` 
       )
+      await fsPromises.rename(tmpPath, thumbnailPath)
     } catch (e: any) {
       throw new Error(`Thumbnail download failed: ${e.toString()}`)
     }
