@@ -33,6 +33,7 @@ export class Socks5ProxyService {
       const configFilePath = this.initProxychainsConfig(this.config.chain.url, this.config.chain.configDir)
       this._proxychainExec = [
         'proxychains',
+        '-q',
         `-f ${configFilePath}`
       ].join(' ')
     }
