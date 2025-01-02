@@ -46,24 +46,24 @@ export class ContentUploadService {
       // Joystream. If not, mark video as Unavailable and skip uploading
       if (!inChannel.toNumber()) {
         await this.dynamodbService.videos.updateState(video, 'VideoUnavailable::Deleted')
-        await SyncUtils.removeVideoFile(video.id)
+        await SyncUtils.removeVideoAssets(video.id)
         return
       }
 
       // Update video state and save to DB
       await this.dynamodbService.videos.updateState(video, 'UploadStarted')
 
-      // Get video file path
-      const filePath = SyncUtils.expectedVideoFilePath(video.id)
+      // Get video asset paths
+      const assetPaths = SyncUtils.expectedVideoAssetPaths(video.id)
 
       // Upload the video assets
-      await this.storageNodeApi.uploadVideo(`dynamic:channel:${inChannel}`, video, filePath)
+      await this.storageNodeApi.uploadVideo(`dynamic:channel:${inChannel}`, video, assetPaths)
 
       // Update video state and save to DB
       await this.dynamodbService.videos.updateState(video, 'UploadSucceeded')
 
-      // After upload is successful, remove the video file from local storage
-      await SyncUtils.removeVideoFile(video.id)
+      // After upload is successful, remove the video assets from local storage
+      await SyncUtils.removeVideoAssets(video.id)
     } catch (error) {
       if (
         error instanceof Error &&
@@ -73,7 +73,7 @@ export class ContentUploadService {
       ) {
         console.log('VideoUnavailable::Other', job.data.id)
         await this.dynamodbService.videos.updateState(job.data, 'VideoUnavailable::Other')
-        await SyncUtils.removeVideoFile(video.id)
+        await SyncUtils.removeVideoAssets(video.id)
         return
       }
 

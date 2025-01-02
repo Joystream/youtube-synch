@@ -28,6 +28,9 @@ COPY package.json package-lock.json ./
 # Install dependencies
 RUN npm install
 
+# Force-update yt-dlp
+RUN node ./node_modules/youtube-dl-exec/scripts/postinstall.js
+
 # Copy the rest of your application
 COPY . .
 

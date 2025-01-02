@@ -17,6 +17,7 @@ import { ContentMetadataService } from './ContentMetadataService'
 import { ContentUploadService } from './ContentUploadService'
 import { FlowJobManager, QUEUE_NAME_PREFIXES, QueueNamePrefix, TaskType } from './PriorityQueue'
 import { SyncUtils } from './utils'
+import { Socks5ProxyService } from '../proxy/Socks5ProxyService'
 
 export interface IContentProcessingClient {
   getQueues: Queue<TaskType<YtVideo>, any, string>[]
@@ -86,30 +87,36 @@ export class ContentProcessingService extends ContentProcessingClient implements
   private contentUploadService: ContentUploadService
 
   constructor(
-    private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['endpoints'] & ReadonlyConfig['proxy'],
+    private config: Required<ReadonlyConfig['sync']> & ReadonlyConfig['endpoints'],
     logging: LoggingService,
     private dynamodbService: DynamodbService,
     youtubeApi: IYoutubeApi,
     runtimeApi: RuntimeApi,
     private joystreamClient: JoystreamClient,
-    queryNodeApi: QueryNodeApi
+    queryNodeApi: QueryNodeApi,
+    private proxyService?: Socks5ProxyService
   ) {
     super(config)
     this.logger = logging.createLogger('ContentProcessingService')
 
-    this.contentDownloadService = new ContentDownloadService(config, logging, dynamodbService, youtubeApi)
-    this.contentMetadataService = new ContentMetadataService(logging, dynamodbService)
+    this.contentDownloadService = new ContentDownloadService(config, logging, dynamodbService, youtubeApi, proxyService)
+    this.contentMetadataService = new ContentMetadataService(config, logging, dynamodbService)
     this.contentCreationService = new ContentCreationService(logging, dynamodbService, joystreamClient)
     this.contentUploadService = new ContentUploadService(logging, dynamodbService, runtimeApi, queryNodeApi)
 
     // create job queues
 
     const { maxConcurrentDownloads, maxConcurrentUploads, createVideoTxBatchSize } = this.config.limits
+    const onFailedJob = (queueName: string) => (jobId: string | undefined, err: Error, logger: Logger) => {
+      const usedProxy = jobId ? this.proxyService?.unbindProxy(jobId) : undefined
+      logger.error(`Failed job in queue '${queueName}'`, { jobId, proxy: usedProxy, err })
+    }
     this.flowManager.createJobQueue({
       name: 'DownloadQueue',
       processorType: 'concurrent',
       concurrencyOrBatchSize: maxConcurrentDownloads,
       processorInstance: this.contentDownloadService,
+      onFailure: onFailedJob('DownloadQueue')
     })
 
     this.flowManager.createJobQueue({
@@ -117,6 +124,7 @@ export class ContentProcessingService extends ContentProcessingClient implements
       processorType: 'concurrent',
       concurrencyOrBatchSize: maxConcurrentDownloads,
       processorInstance: this.contentMetadataService,
+      onFailure: onFailedJob('MetadataQueue')
     })
 
     this.flowManager.createJobQueue({
@@ -124,6 +132,7 @@ export class ContentProcessingService extends ContentProcessingClient implements
       processorType: 'batch',
       concurrencyOrBatchSize: createVideoTxBatchSize,
       processorInstance: this.contentCreationService,
+      onFailure: onFailedJob('CreationQueue')
     })
 
     this.flowManager.createJobQueue({
@@ -131,13 +140,17 @@ export class ContentProcessingService extends ContentProcessingClient implements
       processorType: 'concurrent',
       concurrencyOrBatchSize: maxConcurrentUploads,
       processorInstance: this.contentUploadService,
+      onFailure: onFailedJob('UploadQueue')
     })
 
     // log starting and completed events for each job
     const downloadQueueEvents = this.flowManager.getQueueEvents('DownloadQueue')
     const uploadQueueEvents = this.flowManager.getQueueEvents('UploadQueue')
     downloadQueueEvents.on('active', ({ jobId }) => this.logger.verbose(`Started processing of job:`, { jobId }))
-    uploadQueueEvents.on('completed', ({ jobId }) => this.logger.verbose(`Completed processing of job:`, { jobId }))
+    uploadQueueEvents.on('completed', ({ jobId }) => {
+      const usedProxy = this.proxyService?.unbindProxy(jobId)
+      this.logger.verbose(`Completed processing of job:`, { jobId, proxy: usedProxy })
+    })
   }
 
   async start(interval: number) {
@@ -260,8 +273,8 @@ export class ContentProcessingService extends ContentProcessingClient implements
       (!isHistoricalVideo || (isHistoricalVideo && !sizeLimitReached)) &&
       spaceCondition
 
-    if (!shouldBeProcessed && SyncUtils.downloadedVideoFilePaths.has(video.id)) {
-      await SyncUtils.removeVideoFile(video.id)
+    if (!shouldBeProcessed && SyncUtils.downloadedVideoAssetPaths.has(video.id)) {
+      await SyncUtils.removeVideoAssets(video.id)
     }
 
     return shouldBeProcessed

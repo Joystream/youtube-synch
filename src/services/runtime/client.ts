@@ -14,17 +14,15 @@ import { Bytes } from '@polkadot/types'
 import { Option } from '@polkadot/types/'
 import { PalletContentStorageAssetsRecord } from '@polkadot/types/lookup'
 import type { ISubmittableResult } from '@polkadot/types/types'
-import axios from 'axios'
 import BN from 'bn.js'
 import ffmpeg from 'fluent-ffmpeg'
 import fs from 'fs'
 import mimeTypes from 'mime-types'
 import path from 'path'
-import { Readable } from 'stream'
 import { Logger } from 'winston'
 import { ReadonlyConfig } from '../../types'
 import { ExitCodes, RuntimeApiError } from '../../types/errors'
-import { Thumbnails, YtVideo, YtVideoWithJsChannelId } from '../../types/youtube'
+import { YtVideo, YtVideoWithJsChannelId } from '../../types/youtube'
 import { AppActionSignatureInput, signAppActionCommitmentForVideo } from '../../utils/hasher'
 import { LoggingService } from '../logging'
 import { QueryNodeApi } from '../query-node/api'
@@ -223,19 +221,6 @@ export class JoystreamClient {
     const assets = prepareAssetsForExtrinsic(perMegabyteFee, dataObjectsMetadata)
 
     return { meta, assets }
-  }
-}
-
-export async function getThumbnailAsset(thumbnails: Thumbnails) {
-  try {
-    // * We are using `medium` thumbnail because it has correct aspect ratio for Atlas (16/9)
-    const response = await axios.get<Readable>(thumbnails.medium, { responseType: 'stream' })
-    return response.data
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw error.toJSON()
-    }
-    throw error
   }
 }
 
