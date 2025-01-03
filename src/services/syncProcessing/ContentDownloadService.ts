@@ -231,6 +231,7 @@ export class ContentDownloadService {
           { message: 'This video is private', code: VideoUnavailableReasons.Private },
           { message: 'removed by the uploader', code: VideoUnavailableReasons.Private },
           { message: 'members-only content', code: VideoUnavailableReasons.Private },
+          { message: "This video is available to this channel's members on level", code: VideoUnavailableReasons.Private },
           { message: 'size cap for historical videos', code: VideoUnavailableReasons.Skipped },
           { message: 'Offline', code: VideoUnavailableReasons.LiveOffline },
           { message: 'This live event will begin in a few moments', code: VideoUnavailableReasons.LiveOffline },
