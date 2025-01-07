@@ -130,6 +130,9 @@ volumes:
 networks:
   youtube-synch:
     name: youtube-synch
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
   ip6net:
     enable_ipv6: true
     ipam:
