@@ -180,11 +180,6 @@ export async function updateContactsInHubspot() {
 
   // Check for all the YPP participants (Lead Status === 'CONNECTED')
   channels.forEach((ch) => {
-    const [same, duplicate] = [
-      mapDynamoItemToContactFields(ch),
-      mapDynamoItemToContactFields(ch, `secondary-${ch.email}`),
-    ]
-
     // (Email, YTChannelId) should be a unique combination since YT-synch backend
     // does not allow change email once channel signs up. Beware that any new
     // channel signup can use the existing email (i.e. duplicate emails are allowed)
@@ -195,40 +190,60 @@ export async function updateContactsInHubspot() {
     const existingGleevIdContact = existingContacts.find(
       ({ gleev_channel_id }) => gleev_channel_id === ch.joystreamChannelId
     )
+    const scheduledEmailContact = createContactInputs.find(
+      ({ properties: { email } }) => email && (email.toLowerCase() === ch.email.toLowerCase())
+    )
 
     // SCENARIO 1:
     if (sameContact) {
+      const properties = mapDynamoItemToContactFields(ch, sameContact.email)
       updateContactInputs.push({
         id: sameContact.contactId,
-        properties: mapDynamoItemToContactFields(ch, sameContact.email),
+        properties,
       })
-      console.log('Same     ', same.email, same.gleev_channel_id, sameContact.contactId)
+      console.log('Same     ', properties.email, properties.gleev_channel_id, sameContact.contactId)
     }
     // SCENARIO 2:
     else if (existingEmailContact && existingEmailContact.lifecyclestage === 'lead') {
-      console.log('Existing ', same.email, same.gleev_channel_id)
-      updateContactInputs.push({ id: existingEmailContact.contactId, properties: mapDynamoItemToContactFields(ch) })
+      const properties = mapDynamoItemToContactFields(ch)
+      console.log('Existing ', properties.email, properties.gleev_channel_id)
+      updateContactInputs.push({ id: existingEmailContact.contactId, properties })
     }
     // SCENARIO 3:
-    else if (existingEmailContact && existingEmailContact.lifecyclestage === 'customer') {
-      console.log('Duplicate', duplicate.email, duplicate.gleev_channel_id)
-      const modifiedEmail = `secondary-${existingEmailContact.email}`
-      const modifiedEmailContact = existingContacts.find((contact) => contact.email === modifiedEmail)
+    else if ((existingEmailContact && existingEmailContact.lifecyclestage === 'customer') || scheduledEmailContact) {
+      const secondaryEmail = `secondary-${ch.email}`
+      const properties = mapDynamoItemToContactFields(ch, secondaryEmail)
 
-      const properties = mapDynamoItemToContactFields(ch, modifiedEmail)
-      modifiedEmailContact
-        ? updateContactInputs.push({ id: modifiedEmailContact.contactId, properties })
-        : createContactInputs.push({ properties })
+      console.log('Duplicate', properties.email, properties.gleev_channel_id)
+
+      const existingSecondaryEmailContact = existingContacts.find(
+        (contact) => contact.email.toLowerCase() === secondaryEmail.toLowerCase()
+      )
+      const scheduledSecondaryEmailContact = createContactInputs.find(
+        ({ properties: { email } }) => email && (email.toLowerCase() === secondaryEmail.toLowerCase())
+      )
+
+      if (existingSecondaryEmailContact) {
+        updateContactInputs.push({ id: existingSecondaryEmailContact.contactId, properties })
+      }
+      else if (scheduledSecondaryEmailContact) {
+        Object.assign(scheduledSecondaryEmailContact.properties, properties)
+      }
+      else {
+        createContactInputs.push({ properties })
+      }
     }
     // SCENARIO 4:
     else if (existingGleevIdContact && existingGleevIdContact.hs_lead_status === 'REFERRER') {
-      console.log('Referrer ', same.email, same.gleev_channel_id)
-      updateContactInputs.push({ id: existingGleevIdContact.contactId, properties: mapDynamoItemToContactFields(ch) })
+      const properties = mapDynamoItemToContactFields(ch)
+      console.log('Referrer ', properties.email, properties.gleev_channel_id)
+      updateContactInputs.push({ id: existingGleevIdContact.contactId, properties })
     }
     // SCENARIO 5:
     else {
-      console.log('New      ', same.email, same.gleev_channel_id)
-      createContactInputs.push({ properties: mapDynamoItemToContactFields(ch) })
+      const properties = mapDynamoItemToContactFields(ch)
+      console.log('New      ', properties.email, properties.gleev_channel_id)
+      createContactInputs.push({ properties })
     }
   })
 
