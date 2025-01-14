@@ -211,7 +211,7 @@ export async function updateContactsInHubspot() {
     }
     // SCENARIO 3:
     else if ((existingEmailContact && existingEmailContact.lifecyclestage === 'customer') || scheduledEmailContact) {
-      const secondaryEmail = `secondary-${ch.email}`
+      const secondaryEmail = `secondary-${ch.email}`.toLowerCase()
       const properties = mapDynamoItemToContactFields(ch, secondaryEmail)
 
       console.log('Duplicate', properties.email, properties.gleev_channel_id)
@@ -227,7 +227,7 @@ export async function updateContactsInHubspot() {
         updateContactInputs.push({ id: existingSecondaryEmailContact.contactId, properties })
       }
       else if (scheduledSecondaryEmailContact) {
-        Object.assign(scheduledSecondaryEmailContact.properties, properties)
+        scheduledSecondaryEmailContact.properties = properties
       }
       else {
         createContactInputs.push({ properties })
