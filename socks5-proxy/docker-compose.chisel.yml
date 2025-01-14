@@ -7,12 +7,15 @@ services:
     command: client --fingerprint ${CHISEL_SERVER_FINGERPRINT} 172.17.0.1:9000 0.0.0.0:1080:socks
     restart: always
     networks:
-      - youtube-synch
-      - ip6net
+      youtube-synch:
+        # Configure a static IP
+        ipv4_address: 172.20.0.123
+      ip6net:
 
 networks:
   youtube-synch:
     external: true
+
   ip6net:
     enable_ipv6: true
     ipam:
