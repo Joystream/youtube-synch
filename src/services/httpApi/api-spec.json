@@ -90,6 +90,29 @@
         ]
       }
     },
+    "/channels/unverified": {
+      "get": {
+        "operationId": "ChannelsController_getUnverifiedChannels",
+        "summary": "",
+        "description": "Retrieves channels waiting for verification",
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "channels"
+        ]
+      }
+    },
     "/channels/{joystreamChannelId}": {
       "get": {
         "operationId": "ChannelsController_get",
@@ -898,6 +921,21 @@
               "OptedOut"
             ]
           },
+          "preOptOutStatus": {
+            "type": "string",
+            "enum": [
+              "Unverified",
+              "Verified::Bronze",
+              "Verified::Silver",
+              "Verified::Gold",
+              "Verified::Diamond",
+              "Suspended::CopyrightBreach",
+              "Suspended::MisleadingContent",
+              "Suspended::ProgramTermsExploit",
+              "Suspended::UnsupportedTopic",
+              "OptedOut"
+            ]
+          },
           "joystreamChannelId": {
             "type": "number"
           },
@@ -930,6 +968,7 @@
           "description",
           "shouldBeIngested",
           "yppStatus",
+          "preOptOutStatus",
           "joystreamChannelId",
           "referrerChannelId",
           "videoCategoryId",
