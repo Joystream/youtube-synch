@@ -152,6 +152,19 @@ export class ChannelsController {
     }
   }
 
+  @Get("/unverified")
+  @ApiResponse({ type: ChannelDto })
+  @ApiOperation({ description: 'Retrieves channels waiting for verification' })
+  async getUnverifiedChannels() {
+    try {
+      const channels = await this.dynamodbService.channels.getUnverified()
+      return channels.map((channel) => new ChannelDto(channel))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : error
+      throw new ServiceUnavailableException(message)
+    }
+  }
+
   @Get(':joystreamChannelId')
   @ApiResponse({ type: ChannelDto })
   @ApiOperation({ description: 'Retrieves channel by joystreamChannelId' })

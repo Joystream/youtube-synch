@@ -299,17 +299,19 @@ export class ChannelsRepository implements IRepository<YtChannel> {
     })
   }
 
-  async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>) {
+  async query(init: ConditionInitializer, f: (q: Query<AnyItem>) => Query<AnyItem>, limit?: number) {
     return this.withLock(async () => {
       let lastKey = undefined
       const results = []
       do {
-        // FIXME: Is this the reason why /channels returns ALL channels?
         let queriedBatch: QueryResponse<AnyItem> = await f(this.model.query(init))
           .startAt(lastKey as any)
           .exec()
         let batchResult = queriedBatch.map((b) => mapTo<YtChannel>(b))
         results.push(...batchResult)
+        if (limit && results.length >= limit) {
+          return results.slice(0, limit)
+        }
         lastKey = queriedBatch.lastKey
       } while (lastKey)
       return results
@@ -396,12 +398,26 @@ export class ChannelsService {
   }
 
   /**
-   * @param count Number of record to retrieve
-   * @returns List of `n` recent verified channels
+   * @param limit Max. number of records to retrieve
+   * @returns List of up to `limit` recent, VERIFIED channels
    */
-  async getRecent(count: number): Promise<YtChannel[]> {
-    return this.channelsRepository.query({ phantomKey: 'phantomData' }, (q) =>
-      q.sort('descending').limit(count).using('phantomKey-createdAt-index')
+  async getRecent(limit: number): Promise<YtChannel[]> {
+    return this.channelsRepository.query(
+      { phantomKey: 'phantomData' },
+      (q) => q.sort('descending').using('phantomKey-createdAt-index'),
+      limit
+    )
+  }
+
+  /**
+   * @param limit Max. number of records to retrieve
+   * @returns List of up to `limit` recent, UNVERIFIED channels
+   */
+  async getUnverified(limit?: number): Promise<YtChannel[]> {
+    return this.channelsRepository.query(
+      { phantomKey: 'phantomData', yppStatus: 'Unverified' },
+      (q) => q.sort('descending').using('phantomKey-createdAt-index'),
+      limit
     )
   }
 
