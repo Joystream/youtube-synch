@@ -24,7 +24,7 @@ export default abstract class DefaultCommandBase extends Command {
     }),
     rpcEndpoint: flags.string({
       required: false,
-      default: 'wss://rpc.joystream.org:9944',
+      default: 'wss://rpc.joystream.org',
       description: 'RPC endpoint of the Joystream node to connect to',
     }),
     queryNodeEndpoint: flags.string({

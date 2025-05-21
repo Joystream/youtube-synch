@@ -26,6 +26,6 @@ OPTIONS
 
   --queryNodeEndpoint=queryNodeEndpoint  [default: https://query.joystream.org/graphql] Query node endpoint to use
 
-  --rpcEndpoint=rpcEndpoint              [default: wss://rpc.joystream.org:9944] RPC endpoint of the Joystream node to
+  --rpcEndpoint=rpcEndpoint              [default: wss://rpc.joystream.org] RPC endpoint of the Joystream node to
                                          connect to
 ```
